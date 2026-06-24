@@ -36,8 +36,10 @@ urlpatterns = [
     path("api/docs/", schema_view.with_ui("swagger", cache_timeout=0), name="schema-swagger-ui"),
     path("admin/", admin.site.urls),
     path("", include("catalog.urls")),
+    path("", include("catalog.integrations.urls")),
     path("", include("agent.urls")),
     path("", include("agent.agentic_execution.urls")),
     path("", include("account.urls")),
-    path("", include("sync.urls")),
+    # Entity records use a /datasets/<id>/<slug>/ catch-all, so include last.
+    path("", include("catalog.entities.urls")),
 ]

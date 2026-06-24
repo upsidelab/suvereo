@@ -77,7 +77,6 @@ INSTALLED_APPS = [
     "catalog",
     "agent",
     "account",
-    "sync",
     "drf_yasg",
     "django_filters",
 ]
@@ -234,22 +233,16 @@ CATALOG_EMBEDDING_PROVIDERS = [
 ]
 
 # Configuration of installed plugins
-CATALOG_PRODUCT_SOURCE_PLUGINS = [
-    "enthusiast_source_sample.SampleProductSource",
-]
-CATALOG_DOCUMENT_SOURCE_PLUGINS = [
-    "enthusiast_source_sample.SampleDocumentSource",
-]
-CATALOG_ECOMMERCE_INTEGRATION_PLUGINS: list[str] = []
+INSTALLED_VERTICALS: list[str] = []
+CATALOG_INTEGRATION_PLUGINS: list[str] = []
+CATALOG_BUILDER_PLUGINS: list[str] = []
+CATALOG_ENTITY_PLUGINS: list[str] = []
 
 CATALOG_MODELS = {
     "user": "account.models.User",
     "message": "agent.models.Message",
     "conversation": "agent.models.Conversation",
     "data_set": "catalog.models.DataSet",
-    "document_chunk": "catalog.models.DocumentChunk",
-    "product": "catalog.models.Product",
-    "product_chunk": "catalog.models.ProductContentChunk",
     "agent": "agent.models.Agent",
 }
 
@@ -270,4 +263,9 @@ UPLOADED_FILE_RETENTION_PERIOD_HOURS: int = 48
 
 SERVICE_ACCOUNT_DOMAIN = env.str("SERVICE_ACCOUNT_DOMAIN", "enthusiast.internal")
 
-from .settings_override import *  # noqa
+try:
+    from config.settings_override import *  # noqa: F401, F403
+except ImportError:
+    pass
+
+INSTALLED_APPS += INSTALLED_VERTICALS

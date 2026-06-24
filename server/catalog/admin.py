@@ -1,7 +1,6 @@
 from django.contrib import admin
 
-from .models import DataSet, Document
+from .models import DataSet, Integration
 
-# Register your models here.
 admin.site.register(DataSet)
-admin.site.register(Document)
+admin.site.register(Integration)
