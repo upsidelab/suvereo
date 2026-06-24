@@ -5,8 +5,6 @@ from enthusiast_common.repositories import (
     BaseConversationRepository,
     BaseDataSetRepository,
     BaseMessageRepository,
-    BaseModelChunkRepository,
-    BaseProductRepository,
     BaseUserRepository,
 )
 
@@ -17,7 +15,4 @@ class RepositoriesInstances:
     message: BaseMessageRepository
     conversation: BaseConversationRepository
     data_set: BaseDataSetRepository
-    document_chunk: BaseModelChunkRepository
-    product: BaseProductRepository
-    product_chunk: BaseModelChunkRepository
     agent: BaseAgentRepository

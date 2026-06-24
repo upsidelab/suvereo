@@ -1,10 +1,11 @@
-from .interfaces import DocumentSourcePlugin, ProductSourcePlugin
-from .structures import DocumentDetails, ProductDetails, RepositoriesInstances
+from .entities import DomainEntity, EntityField
+from .integrations import BaseIntegration
+from .structures import DocumentDetails, RepositoriesInstances
 
 __all__ = [
+    "BaseIntegration",
     "DocumentDetails",
-    "DocumentSourcePlugin",
-    "ProductSourcePlugin",
+    "DomainEntity",
+    "EntityField",
     "RepositoriesInstances",
-    "ProductDetails",
 ]

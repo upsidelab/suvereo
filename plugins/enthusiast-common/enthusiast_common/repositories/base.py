@@ -47,12 +47,6 @@ class BaseModelChunkRepository(BaseRepository[T], ABC):
         pass
 
 
-class BaseProductRepository(BaseRepository[T], ABC):
-    @abstractmethod
-    def extra(self, where_conditions: list[str]) -> list[T]:
-        pass
-
-
 class BaseMessageRepository(BaseRepository[T], ABC):
     pass
 
