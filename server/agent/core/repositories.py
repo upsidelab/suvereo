@@ -1,6 +1,5 @@
 from typing import Any, Optional, Type, TypeVar
 
-from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
 from django.db import models
 from django.db.models import QuerySet
 from enthusiast_common.repositories import (
@@ -8,19 +7,16 @@ from enthusiast_common.repositories import (
     BaseConversationRepository,
     BaseDataSetRepository,
     BaseMessageRepository,
-    BaseModelChunkRepository,
-    BaseProductRepository,
     BaseRepository,
     BaseUserRepository,
 )
 from enthusiast_common.structures import LLMFile
-from pgvector.django import CosineDistance
 
 from account.models import User
 from agent.models import Conversation, Message
 from agent.models.agent import Agent
 from agent.models.conversation import ConversationFile
-from catalog.models import DataSet, DocumentChunk, Product, ProductContentChunk
+from catalog.models import DataSet
 
 T = TypeVar("T", bound=models.Model)
 
@@ -66,49 +62,7 @@ class DjangoUserRepository(
 ):
     def get_user_dataset(self, user_id: int, data_set_id: int) -> DataSet:
         user = self.model.objects.get(pk=user_id)
-        return user.datasets.get(pk=data_set_id)
-
-
-class DjangoDocumentChunkRepository(BaseDjangoRepository[DocumentChunk], BaseModelChunkRepository[DocumentChunk]):
-    def get_chunk_by_distance_for_data_set(self, data_set_id: int, distance: CosineDistance) -> QuerySet[DocumentChunk]:
-        embeddings_by_distance = self.model.objects.annotate(distance=distance).order_by("distance")
-        embeddings_with_documents = embeddings_by_distance.select_related("document").filter(
-            document__data_set_id__exact=data_set_id
-        )
-        return embeddings_with_documents
-
-
-class DjangoProductChunkRepository(
-    BaseDjangoRepository[ProductContentChunk], BaseModelChunkRepository[ProductContentChunk]
-):
-    def get_chunk_by_distance_for_data_set(
-        self, data_set_id: int, distance: CosineDistance
-    ) -> QuerySet[ProductContentChunk]:
-        embeddings_by_distance = self.model.objects.annotate(distance=distance).order_by("distance")
-        embeddings_with_products = embeddings_by_distance.select_related("product").filter(
-            product__data_set_id__exact=data_set_id
-        )
-        return embeddings_with_products
-
-    def get_chunk_by_distance_and_keyword_for_data_set(
-        self, data_set_id: int, distance: CosineDistance, keyword: str
-    ) -> QuerySet[ProductContentChunk]:
-        embeddings_by_distance_and_keyword = (
-            self.model.objects.annotate(
-                rank=SearchRank(SearchVector("content"), SearchQuery(keyword)), distance=distance
-            )
-            .filter(rank__gt=0.05)
-            .order_by("distance")
-        )
-        embeddings_with_products = embeddings_by_distance_and_keyword.select_related("product").filter(
-            product__data_set_id__exact=data_set_id
-        )
-        return embeddings_with_products
-
-
-class DjangoProductRepository(BaseDjangoRepository[Product], BaseProductRepository[Product]):
-    def extra(self, where_conditions: list[str]) -> QuerySet[Product]:
-        return self.model.objects.extra(where=where_conditions)
+        return user.data_sets.get(pk=data_set_id)
 
 
 class DjangoMessageRepository(BaseDjangoRepository[Message], BaseMessageRepository[Message]):

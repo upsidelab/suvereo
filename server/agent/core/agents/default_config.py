@@ -10,8 +10,6 @@ from enthusiast_common.config import (
     ModelsRegistryConfig,
     RegistryConfig,
     RepositoriesConfig,
-    RetrieverConfig,
-    RetrieversConfig,
 )
 from pydantic import BaseModel
 
@@ -24,19 +22,13 @@ from agent.core.repositories import (
     DjangoAgentRepository,
     DjangoConversationRepository,
     DjangoDataSetRepository,
-    DjangoDocumentChunkRepository,
     DjangoMessageRepository,
-    DjangoProductChunkRepository,
-    DjangoProductRepository,
     DjangoUserRepository,
 )
-from agent.core.retrievers import DocumentRetriever, ProductRetriever
-from agent.core.retrievers.product_retriever import QUERY_PROMPT_TEMPLATE
 
 
 class DefaultAgentConfig(BaseModel):
     repositories: RepositoriesConfig
-    retrievers: RetrieversConfig
     injector: Type[Injector]
     registry: RegistryConfig
     llm: LLMConfig
@@ -50,21 +42,7 @@ def get_default_config() -> DefaultAgentConfig:
             data_set=DjangoDataSetRepository,
             conversation=DjangoConversationRepository,
             message=DjangoMessageRepository,
-            product=DjangoProductRepository,
-            document_chunk=DjangoDocumentChunkRepository,
-            product_chunk=DjangoProductChunkRepository,
             agent=DjangoAgentRepository,
-        ),
-        retrievers=RetrieversConfig(
-            document=RetrieverConfig(retriever_class=DocumentRetriever),
-            product=RetrieverConfig(
-                retriever_class=ProductRetriever,
-                extra_kwargs={
-                    "prompt_template": QUERY_PROMPT_TEMPLATE,
-                    "max_sample_products": 12,
-                    "number_of_products": 12,
-                },
-            ),
         ),
         injector=Injector,
         registry=RegistryConfig(
