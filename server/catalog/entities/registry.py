@@ -4,7 +4,7 @@ from typing import List, Optional, Type
 from enthusiast_common.entities import EntityField
 from rest_framework import serializers
 
-from agent.plugins import import_class
+from importlib import import_module
 
 
 @dataclass
@@ -33,7 +33,7 @@ class EntityRegistry:
 
         self.reset()
         for path in settings.CATALOG_ENTITY_PLUGINS:
-            self.register_model(import_class(path))
+            self.register_model(self._import_class(path))
         return self
 
     def register_model(self, model: type) -> None:
@@ -45,6 +45,11 @@ class EntityRegistry:
             fields=list(getattr(meta, "list_fields", [])),
             serializer=self._build_serializer(model, meta),
         )
+
+    @staticmethod
+    def _import_class(dotted_path: str) -> type:
+        module_path, class_name = dotted_path.rsplit(".", 1)
+        return getattr(import_module(module_path), class_name)
 
     @staticmethod
     def _build_serializer(model: type, meta) -> Type[serializers.ModelSerializer]:

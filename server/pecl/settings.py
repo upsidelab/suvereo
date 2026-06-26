@@ -235,7 +235,6 @@ CATALOG_EMBEDDING_PROVIDERS = [
 # Configuration of installed plugins
 INSTALLED_VERTICALS: list[str] = []
 CATALOG_INTEGRATION_PLUGINS: list[str] = []
-CATALOG_BUILDER_PLUGINS: list[str] = []
 CATALOG_ENTITY_PLUGINS: list[str] = []
 
 CATALOG_MODELS = {
@@ -264,7 +263,7 @@ UPLOADED_FILE_RETENTION_PERIOD_HOURS: int = 48
 SERVICE_ACCOUNT_DOMAIN = env.str("SERVICE_ACCOUNT_DOMAIN", "enthusiast.internal")
 
 try:
-    from config.settings_override import *  # noqa: F401, F403
+    from pecl.settings_override import *  # noqa: F401, F403
 except ImportError:
     pass
 

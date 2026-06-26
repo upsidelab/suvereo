@@ -27,3 +27,10 @@ class BaseVectorStoreRetriever(BaseRetriever, ABC, Generic[T]):
     @abstractmethod
     def find_content_matching_query(self, query: str) -> Iterable[T]:
         pass
+
+    def _create_embedding_for_query(self, query: str) -> list[float]:
+        """Embed a query with the same provider/config that produced the stored vectors."""
+        data_set = self.data_set_repo.get_by_id(self.data_set_id)
+        provider_class = self.embeddings_registry.provider_for_dataset(self.data_set_id)
+        provider = provider_class(data_set.embedding_model, data_set.embedding_vector_dimensions)
+        return provider.generate_embeddings(query)
