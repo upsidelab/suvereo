@@ -1,10 +1,9 @@
 from dataclasses import dataclass
+from importlib import import_module
 from typing import List, Optional, Type
 
 from enthusiast_common.entities import EntityField
 from rest_framework import serializers
-
-from importlib import import_module
 
 
 @dataclass
