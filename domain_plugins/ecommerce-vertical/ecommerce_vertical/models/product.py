@@ -1,0 +1,36 @@
+from django.db import models
+
+from enthusiast_common.entities import DomainEntity, EntityField
+
+
+class Product(DomainEntity, models.Model):
+    """A product synced from an external source, indexed for vector search."""
+
+    dataset = models.ForeignKey("catalog.DataSet", on_delete=models.PROTECT, related_name="products")
+    entry_id = models.CharField(max_length=255)
+    name = models.CharField(max_length=255)
+    slug = models.CharField(max_length=255)
+    description = models.TextField()
+    sku = models.CharField(max_length=255, blank=True)
+    properties = models.CharField(max_length=65535, blank=True)
+    categories = models.CharField(max_length=65535, blank=True)
+    price = models.FloatField()
+
+    class Meta:
+        db_table_comment = "List of products from a given data set."
+        constraints = [models.UniqueConstraint(fields=["dataset", "entry_id"], name="uq_ecommerce_product")]
+
+    class EntityMeta:
+        slug = "products"
+        label = "Products"
+        list_fields = [
+            EntityField("name"),
+            EntityField("sku"),
+            EntityField("price"),
+        ]
+
+    def get_indexable_content(self) -> str:
+        return f"{self.name} {self.description} {self.properties} {self.categories}"
+
+    def __str__(self):
+        return self.name
