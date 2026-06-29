@@ -1,15 +1,16 @@
 import csv
 from pathlib import Path
-from typing import Any
 
-from enthusiast_common import ProductDetails, ProductSourcePlugin
+from enthusiast_ecommerce_common.interfaces import ProductSourcePlugin
+from enthusiast_ecommerce_common.structures import ProductDetails
 
 
 class SampleProductSource(ProductSourcePlugin):
-    NAME = "Sample Product Source"
+    TYPE = "sample-product"
+    LABEL = "Sample Products"
 
-    def __init__(self, data_set_id: Any):
-        super().__init__(data_set_id)
+    def __init__(self, config=None):
+        super().__init__(config)
         self.sample_file_path = Path(__file__).parent / "sample_products.csv"
 
     def fetch(self) -> list[ProductDetails]:

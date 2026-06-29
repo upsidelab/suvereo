@@ -1,15 +1,16 @@
 import csv
 from pathlib import Path
-from typing import Any
 
-from enthusiast_common import DocumentDetails, DocumentSourcePlugin
+from enthusiast_ecommerce_common.interfaces import DocumentSourcePlugin
+from enthusiast_ecommerce_common.structures import DocumentDetails
 
 
 class SampleDocumentSource(DocumentSourcePlugin):
-    NAME = "Sample Document Source"
+    TYPE = "sample-document"
+    LABEL = "Sample Documents"
 
-    def __init__(self, data_set_id: Any):
-        super().__init__(data_set_id)
+    def __init__(self, config=None):
+        super().__init__(config)
         self.sample_file_path = Path(__file__).parent / "sample_documents.csv"
 
     def fetch(self) -> list[DocumentDetails]:
