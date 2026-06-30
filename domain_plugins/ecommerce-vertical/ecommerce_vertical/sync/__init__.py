@@ -1,5 +1,5 @@
-from .document import DocumentSyncManager
-from .ecommerce_integration import ECommerceIntegrationSyncManager
-from .product import ProductSyncManager
+from .document import DocumentSourceManager
+from .ecommerce_integration import ECommerceIntegrationManager
+from .product import ProductSourceManager
 
-__all__ = ["DocumentSyncManager", "ECommerceIntegrationSyncManager", "ProductSyncManager"]
+__all__ = ["DocumentSourceManager", "ECommerceIntegrationManager", "ProductSourceManager"]

@@ -2,11 +2,11 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 
-class BaseIntegrationType(ABC):
+class BaseIntegrationManager(ABC):
     """Marker base for a category of integrations."""
 
 
-class BaseSourceIntegrationType(BaseIntegrationType):
+class BaseSourceIntegrationManager(BaseIntegrationManager):
     """Marker for integration categories whose plugins pull data from an external source."""
 
     @abstractmethod
@@ -28,7 +28,7 @@ class BaseIntegration(ABC):
     #: Human-readable name shown in the UI.
     LABEL: str
     #: Category this integration belongs to. Verticals set this on their plugin ABCs.
-    INTEGRATION_TYPE: type[BaseIntegrationType] | None = None
+    INTEGRATION_MANAGER: type[BaseIntegrationManager] | None = None
     #: Pydantic model class describing the configuration fields. Set to None when no config is required.
     CONFIGURATION_ARGS = None
 

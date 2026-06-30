@@ -1,17 +1,15 @@
-from typing import Any
+from enthusiast_ecommerce_common import DocumentSourcePlugin
+from enthusiast_ecommerce_common.interfaces.integration_managers import BaseDocumentSourceManager
 
-from enthusiast_ecommerce_common.types import DocumentSourceType
+from ecommerce_vertical.models import Document
 
 
-class DocumentSyncManager(DocumentSourceType):
+class DocumentSourceManager(BaseDocumentSourceManager):
     """Syncs documents from a DocumentSourcePlugin into the ecommerce vertical."""
 
-    HANDLES_TYPE = DocumentSourceType
-
-    def sync(self, plugin: Any, dataset_id: Any) -> None:
+    def sync(self, plugin: DocumentSourcePlugin, dataset_id: int) -> None:
         """Fetch documents via the plugin and upsert + index each one."""
         from catalog.indexing.pipeline import index_entity
-        from ecommerce_vertical.models import Document
 
         for details in plugin.fetch():
             document, _ = Document.objects.update_or_create(

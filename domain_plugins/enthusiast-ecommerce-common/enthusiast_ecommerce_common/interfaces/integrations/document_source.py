@@ -2,18 +2,18 @@ from abc import abstractmethod
 
 from enthusiast_common.integrations import BaseIntegration
 
+from enthusiast_ecommerce_common.interfaces.integration_managers import BaseDocumentSourceManager
 from enthusiast_ecommerce_common.structures import DocumentDetails
-from enthusiast_ecommerce_common.types import DocumentSourceType
 
 
 class DocumentSourcePlugin(BaseIntegration):
     """Fetches documents from an external source.
 
     Subclasses must declare ``TYPE``, ``LABEL``, and implement ``fetch()``.
-    Persistence is handled by the vertical's ``DocumentSyncManager``.
+    Persistence is handled by the vertical's ``DocumentSourceManager``.
     """
 
-    INTEGRATION_TYPE = DocumentSourceType
+    INTEGRATION_MANAGER = BaseDocumentSourceManager
 
     @abstractmethod
     def fetch(self) -> list[DocumentDetails]:

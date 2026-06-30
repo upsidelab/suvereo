@@ -2,18 +2,18 @@ from abc import abstractmethod
 
 from enthusiast_common.integrations import BaseIntegration
 
+from enthusiast_ecommerce_common.interfaces.integration_managers import BaseProductSourceManager
 from enthusiast_ecommerce_common.structures import ProductDetails
-from enthusiast_ecommerce_common.types import ProductSourceType
 
 
 class ProductSourcePlugin(BaseIntegration):
     """Fetches products from an external source.
 
     Subclasses must declare ``TYPE``, ``LABEL``, and implement ``fetch()``.
-    Persistence is handled by the vertical's ``ProductSyncManager``.
+    Persistence is handled by the vertical's ``ProductSourceManager``.
     """
 
-    INTEGRATION_TYPE = ProductSourceType
+    INTEGRATION_MANAGER = BaseProductSourceManager
 
     @abstractmethod
     def fetch(self) -> list[ProductDetails]:

@@ -11,6 +11,7 @@
 #     CATALOG_EMBEDDING_PROVIDERS      = ["enthusiast_model_openai.OpenAIEmbeddingProvider"]
 #     AVAILABLE_AGENTS                 = ["myvertical.agents.MyAgent"]
 #     CATALOG_INTEGRATION_PLUGINS      = ["myvertical.integrations.MyIntegration"]
+#     CATALOG_INTEGRATION_MANAGERS     = ["myvertical.sync.MyIntegrationManager"]
 #     CATALOG_ENTITY_PLUGINS           = ["myvertical.models.MyEntity"]
 #
 # Out of the box (no vertical) agentcore runs standalone with these lists empty.
