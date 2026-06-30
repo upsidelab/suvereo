@@ -9,8 +9,7 @@ class SampleProductSource(ProductSourcePlugin):
     TYPE = "sample-product"
     LABEL = "Sample Products"
 
-    def __init__(self, config=None):
-        super().__init__(config)
+    def __init__(self):
         self.sample_file_path = Path(__file__).parent / "sample_products.csv"
 
     def fetch(self) -> list[ProductDetails]:

@@ -29,14 +29,30 @@ class BaseIntegration(ABC):
     LABEL: str
     #: Category this integration belongs to. Verticals set this on their plugin ABCs.
     INTEGRATION_TYPE: type[BaseIntegrationType] | None = None
+    #: Pydantic model class describing the configuration fields. Set to None when no config is required.
+    CONFIGURATION_ARGS = None
 
-    def __init__(self, config: dict[str, Any] | None = None):
-        self.config = config or {}
+    def set_runtime_arguments(self, runtime_arguments: dict[str, Any]) -> None:
+        """Populate class-level config fields from a dict of runtime values.
 
-    @abstractmethod
+        Typically called as ``plugin.set_runtime_arguments({"configuration_args": {...}})``,
+        which instantiates ``CONFIGURATION_ARGS`` with the provided dict and stores it as
+        an instance attribute so ``self.CONFIGURATION_ARGS.<field>`` works throughout the plugin.
+        """
+        for key, value in runtime_arguments.items():
+            class_field_key = key.upper()
+            field = getattr(self, class_field_key)
+            if field is None:
+                continue
+            setattr(self, class_field_key, field(**value))
+
     def get_config_schema(self) -> Any:
-        """Describe the config fields this integration accepts, to drive its config form."""
+        """Return the JSON Schema for this plugin's configuration, derived from ``CONFIGURATION_ARGS``."""
+        config_class = type(self).CONFIGURATION_ARGS
+        if config_class is None:
+            return {}
+        return config_class.model_json_schema()
 
     @abstractmethod
     def test_connection(self) -> bool:
-        """Check that ``self.config`` can reach the external system."""
+        """Check that the stored configuration can reach the external system."""

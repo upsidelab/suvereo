@@ -9,8 +9,7 @@ class SampleDocumentSource(DocumentSourcePlugin):
     TYPE = "sample-document"
     LABEL = "Sample Documents"
 
-    def __init__(self, config=None):
-        super().__init__(config)
+    def __init__(self):
         self.sample_file_path = Path(__file__).parent / "sample_documents.csv"
 
     def fetch(self) -> list[DocumentDetails]:

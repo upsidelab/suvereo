@@ -1,5 +1,4 @@
 from abc import abstractmethod
-from typing import Any
 
 from enthusiast_common.integrations import BaseIntegration
 
@@ -15,9 +14,6 @@ class DocumentSourcePlugin(BaseIntegration):
     """
 
     INTEGRATION_TYPE = DocumentSourceType
-
-    def get_config_schema(self) -> Any:
-        return {}
 
     def test_connection(self) -> bool:
         return True
