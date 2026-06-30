@@ -44,6 +44,8 @@ class EcommerceInjector(Injector):
         for integration in Integration.objects.filter(dataset_id=self._data_set_id):
             plugin_class = IntegrationPluginRegistry().get_plugin_class_by_type(integration.type)
             if issubclass(plugin_class, ECommerceIntegrationPlugin):
-                plugin = plugin_class(config=integration.config)
+                plugin = plugin_class()
+                if integration.config:
+                    plugin.set_runtime_arguments({"configuration_args": integration.config})
                 return plugin.build_connector()
         return None
