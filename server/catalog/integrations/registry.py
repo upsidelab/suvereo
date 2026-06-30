@@ -26,4 +26,7 @@ class IntegrationPluginRegistry(BaseRegistry[BaseIntegration]):
 
     def build_instance(self, integration: Integration) -> BaseIntegration:
         """Instantiate the plugin for a stored Integration record, with its config on self."""
-        return self.get_plugin_class_by_type(integration.type)(config=integration.config)
+        plugin = self.get_plugin_class_by_type(integration.type)()
+        if integration.config:
+            plugin.set_runtime_arguments({"configuration_args": integration.config})
+        return plugin
