@@ -3,7 +3,6 @@ from django.urls import path
 from .views import (
     IntegrationListView,
     IntegrationSyncView,
-    IntegrationTestConnectionView,
     IntegrationTypeListView,
 )
 
@@ -14,10 +13,5 @@ urlpatterns = [
         "api/data_sets/<int:data_set_id>/integrations/<int:pk>/sync/",
         IntegrationSyncView.as_view(),
         name="integration-sync",
-    ),
-    path(
-        "api/data_sets/<int:data_set_id>/integrations/<int:pk>/test-connection/",
-        IntegrationTestConnectionView.as_view(),
-        name="integration-test-connection",
     ),
 ]

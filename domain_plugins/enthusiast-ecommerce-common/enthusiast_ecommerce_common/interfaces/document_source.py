@@ -15,9 +15,6 @@ class DocumentSourcePlugin(BaseIntegration):
 
     INTEGRATION_TYPE = DocumentSourceType
 
-    def test_connection(self) -> bool:
-        return True
-
     @abstractmethod
     def fetch(self) -> list[DocumentDetails]:
         """Return all documents available from this source."""

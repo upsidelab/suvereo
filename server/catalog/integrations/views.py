@@ -76,10 +76,3 @@ class IntegrationSyncView(_DataSetScopedView):
         return Response({"task_id": task.id}, status=status.HTTP_202_ACCEPTED)
 
 
-class IntegrationTestConnectionView(_DataSetScopedView):
-    def post(self, request, data_set_id, pk):
-        if self._get_dataset(request, data_set_id) is None:
-            return Response({"detail": "No dataset access."}, status=status.HTTP_403_FORBIDDEN)
-        integration = get_object_or_404(Integration, pk=pk, dataset_id=data_set_id)
-        plugin = IntegrationPluginRegistry().build_instance(integration)
-        return Response({"ok": bool(plugin.test_connection())})

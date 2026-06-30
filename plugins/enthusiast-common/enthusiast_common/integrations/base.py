@@ -52,7 +52,3 @@ class BaseIntegration(ABC):
         if config_class is None:
             return {}
         return config_class.model_json_schema()
-
-    @abstractmethod
-    def test_connection(self) -> bool:
-        """Check that the stored configuration can reach the external system."""

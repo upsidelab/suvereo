@@ -15,9 +15,6 @@ class ProductSourcePlugin(BaseIntegration):
 
     INTEGRATION_TYPE = ProductSourceType
 
-    def test_connection(self) -> bool:
-        return True
-
     @abstractmethod
     def fetch(self) -> list[ProductDetails]:
         """Return all products available from this source."""
