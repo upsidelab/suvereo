@@ -3,6 +3,7 @@ from enthusiast_ecommerce_common.interfaces.integration_managers import BaseECom
 
 from ecommerce_vertical.sync.product import ProductSourceManager
 
+
 class ECommerceIntegrationManager(BaseECommerceIntegrationManager):
     """Syncs products from an ECommerceIntegrationPlugin by delegating to its product source."""
 

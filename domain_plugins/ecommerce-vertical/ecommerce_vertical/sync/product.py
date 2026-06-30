@@ -2,6 +2,7 @@ from typing import Any
 
 from enthusiast_ecommerce_common import ProductSourcePlugin
 from enthusiast_ecommerce_common.interfaces.integration_managers import BaseProductSourceManager
+
 from ecommerce_vertical.models import Product
 
 
