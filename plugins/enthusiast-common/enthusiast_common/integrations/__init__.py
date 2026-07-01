@@ -1,3 +1,3 @@
-from .base import BaseIntegration
+from .base import BaseIntegration, BaseIntegrationManager, BaseSourceIntegrationManager
 
-__all__ = ["BaseIntegration"]
+__all__ = ["BaseIntegration", "BaseIntegrationManager", "BaseSourceIntegrationManager"]

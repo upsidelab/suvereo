@@ -235,6 +235,7 @@ CATALOG_EMBEDDING_PROVIDERS = [
 # Configuration of installed plugins
 INSTALLED_VERTICALS: list[str] = []
 CATALOG_INTEGRATION_PLUGINS: list[str] = []
+CATALOG_INTEGRATION_MANAGERS: list[str] = []
 CATALOG_ENTITY_PLUGINS: list[str] = []
 
 CATALOG_MODELS = {

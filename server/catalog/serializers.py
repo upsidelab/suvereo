@@ -67,5 +67,5 @@ class IntegrationSerializer(serializers.ModelSerializer):
 
 class IntegrationTypeSerializer(serializers.Serializer):
     type = serializers.CharField()
-    label = serializers.CharField()
+    name = serializers.CharField()
     config_schema = serializers.JSONField()
