@@ -18,8 +18,6 @@ from ..repositories.base import (
     BaseConversationRepository,
     BaseDataSetRepository,
     BaseMessageRepository,
-    BaseModelChunkRepository,
-    BaseProductRepository,
     BaseUserRepository,
 )
 from ..retrievers import BaseRetriever
@@ -67,9 +65,6 @@ class RepositoriesConfig(ArbitraryTypeBaseModel):
     message: Type[BaseMessageRepository]
     conversation: Type[BaseConversationRepository]
     data_set: Type[BaseDataSetRepository]
-    document_chunk: Type[BaseModelChunkRepository]
-    product: Type[BaseProductRepository]
-    product_chunk: Type[BaseModelChunkRepository]
     agent: Type[BaseAgentRepository]
 
 
@@ -97,11 +92,6 @@ class RetrieverConfig(ArbitraryTypeBaseModel):
     extra_kwargs: dict[str, Any] = Field(default_factory=dict)
 
 
-class RetrieversConfig(ArbitraryTypeBaseModel):
-    document: RetrieverConfig
-    product: RetrieverConfig
-
-
 class AgentCallbackHandlerConfig(ArbitraryTypeBaseModel):
     handler_class: Type[BaseCallbackHandler]
 
@@ -110,7 +100,6 @@ class AgentConfig(ArbitraryTypeBaseModel, Generic[InjectorT]):
     agent_class: Type[BaseAgent]
     llm: LLMConfig
     repositories: RepositoriesConfig
-    retrievers: RetrieversConfig
     injector: Type[InjectorT]
     registry: RegistryConfig
     system_prompt: str
@@ -122,7 +111,6 @@ class AgentConfig(ArbitraryTypeBaseModel, Generic[InjectorT]):
 class AgentConfigWithDefaults(AgentConfig, Generic[InjectorT]):
     system_prompt: Optional[str] = None
     repositories: Optional[RepositoriesConfig] = None
-    retrievers: Optional[RetrieversConfig] = None
     injector: Optional[Type[InjectorT]] = None
     registry: Optional[RegistryConfig] = None
     llm: Optional[LLMConfig] = None

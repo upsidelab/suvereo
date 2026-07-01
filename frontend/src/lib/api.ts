@@ -1,13 +1,14 @@
 import { AuthenticationProvider } from "./authentication-provider.ts";
 import { UsersApiClient } from "@/lib/api/users.ts";
-import { CatalogApiClient } from "@/lib/api/catalog.ts";
 import { DataSetsApiClient } from "@/lib/api/data-sets.ts";
 import { ConversationsApiClient } from "@/lib/api/conversations.ts";
 import { ServiceAccountsApiClient } from "@/lib/api/service-accounts.ts";
-import { Account, SourcePlugin, User } from "@/lib/types.ts";
+import { Account, User } from "@/lib/types.ts";
 import { ConfigApiClient } from "@/lib/api/config.ts";
-import {AgentsApiClient} from "@/lib/api/agents.ts";
+import { AgentsApiClient } from "@/lib/api/agents.ts";
 import { AgenticExecutionsApiClient } from "@/lib/api/agentic-executions.ts";
+import { IntegrationsApiClient } from "@/lib/api/integrations.ts";
+import { EntitiesApiClient } from "@/lib/api/entities.ts";
 
 export type Token = {
   token: string;
@@ -69,25 +70,6 @@ export class ApiClient {
     return (await response.json()).results as User[];
   }
 
-  async getAllProductSourcePlugins(): Promise<SourcePlugin[]> {
-    const response = await fetch(`${this.apiBase}/api/plugins/product_source_plugins?page_size=1000`, this._requestConfiguration());
-    return (await response.json()).choices as SourcePlugin[];
-  }
-
-  async getAllDocumentSourcePlugins(): Promise<SourcePlugin[]> {
-    const response = await fetch(`${this.apiBase}/api/plugins/document_source_plugins?page_size=1000`, this._requestConfiguration());
-    return (await response.json()).choices as SourcePlugin[];
-  }
-
-  async getAllEcommerceIntegrationPlugins(): Promise<SourcePlugin[]> {
-    const response = await fetch(`${this.apiBase}/api/plugins/ecommerce_integration_plugins?page_size=1000`, this._requestConfiguration());
-    return (await response.json()).choices as SourcePlugin[];
-  }  
-
-  catalog(): CatalogApiClient {
-    return new CatalogApiClient(this.apiBase, this.authenticationProvider);
-  }
-
   serviceAccounts(): ServiceAccountsApiClient {
     return new ServiceAccountsApiClient(this.apiBase, this.authenticationProvider);
   }
@@ -110,6 +92,14 @@ export class ApiClient {
 
   agenticExecutions(): AgenticExecutionsApiClient {
     return new AgenticExecutionsApiClient(this.apiBase, this.authenticationProvider);
+  }
+
+  integrations(): IntegrationsApiClient {
+    return new IntegrationsApiClient(this.apiBase, this.authenticationProvider);
+  }
+
+  entities(): EntitiesApiClient {
+    return new EntitiesApiClient(this.apiBase, this.authenticationProvider);
   }
 
   _requestConfiguration(): RequestInit {

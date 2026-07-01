@@ -1,7 +1,30 @@
 export interface PaginatedResult<T> {
   results: T[];
   count: number;
+  next?: string | null;
+  previous?: string | null;
 }
+
+export type EntityType = {
+  slug: string;
+  label: string;
+  fields: { name: string; label: string }[];
+};
+
+export type IntegrationType = {
+  type: string;
+  label: string;
+  config_schema: unknown;
+};
+
+export type Integration = {
+  id: number;
+  dataset: number;
+  type: string;
+  config: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+};
 
 export type DataSet = {
   id: number | undefined;

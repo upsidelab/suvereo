@@ -1,14 +1,14 @@
+import { useEffect, useState } from "react";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from "@/components/ui/sidebar.tsx";
 import { DataSetSelector } from "@/components/navigation/data-set-selector.tsx";
 import { MainSidebarSection, SidebarSectionItemProps } from "@/components/navigation/main-sidebar-section.tsx";
 import {
-  BookOpenIcon,
   BookTextIcon,
   BotMessageSquareIcon,
   DatabaseIcon,
-  FileTextIcon,
   HelpCircleIcon,
   HistoryIcon,
+  LayersIcon,
   LinkIcon,
   PlayIcon,
   PlugZapIcon,
@@ -18,27 +18,21 @@ import {
 } from "lucide-react";
 import { UserMenu } from "@/components/navigation/user-menu.tsx";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
+import { ApiClient } from "@/lib/api.ts";
+import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
+import { EntityType } from "@/lib/types.ts";
+
+const api = new ApiClient(authenticationProviderInstance);
 
 export function MainSidebar() {
   const { account, dataSetId } = useApplicationContext()!;
   const { isLoadingAgents } = useApplicationContext()!;
   const { availableAgents } = useApplicationContext()!;
+  const [entityTypes, setEntityTypes] = useState<EntityType[]>([]);
 
-
-  const synchronizeItems: SidebarSectionItemProps[] = [
-    {
-      title: "Products",
-      link: `/data-sets/${dataSetId}/products`,
-      key: "products",
-      icon: <BookOpenIcon />
-    },
-    {
-      title: "Documents",
-      link: `/data-sets/${dataSetId}/documents`,
-      key: "documents",
-      icon: <FileTextIcon />
-    }
-  ];
+  useEffect(() => {
+    api.entities().listTypes().then(setEntityTypes).catch(() => setEntityTypes([]));
+  }, []);
 
   const askItems: SidebarSectionItemProps[] = [
     ...(isLoadingAgents ? [] : availableAgents.map(agent => ({
@@ -112,26 +106,34 @@ export function MainSidebar() {
       ]
     },
   ];
+
   const configureItems: SidebarSectionItemProps[] = [
-      {
-        title: "Agents",
-        link: `/data-sets/${dataSetId}/agents`,
-        key: "agents",
-        icon: <BotMessageSquareIcon />
-      },
-      {
-        title: "Agentic Executions",
-        link: `/data-sets/${dataSetId}/agentic-executions`,
-        key: "agentic-executions",
-        icon: <PlayIcon />
-      },
-      {
-        title: "Integrations",
-        link: `/data-sets/${dataSetId}/integrations`,
-        key: "integrations",
-        icon: <LinkIcon />
-      },
-  ]
+    {
+      title: "Agents",
+      link: `/data-sets/${dataSetId}/agents`,
+      key: "agents",
+      icon: <BotMessageSquareIcon />
+    },
+    {
+      title: "Agentic Executions",
+      link: `/data-sets/${dataSetId}/agentic-executions`,
+      key: "agentic-executions",
+      icon: <PlayIcon />
+    },
+    {
+      title: "Integrations",
+      link: `/data-sets/${dataSetId}/integrations`,
+      key: "integrations",
+      icon: <LinkIcon />
+    },
+  ];
+
+  const catalogItems: SidebarSectionItemProps[] = entityTypes.map(entityType => ({
+    title: entityType.label,
+    link: `/data-sets/${dataSetId}/entities/${entityType.slug}`,
+    key: `entity-${entityType.slug}`,
+    icon: <LayersIcon />
+  }));
 
   return (
     <Sidebar>
@@ -141,11 +143,13 @@ export function MainSidebar() {
       <SidebarContent>
         <MainSidebarSection title="Ask" items={askItems} />
         <MainSidebarSection title="Configure" items={configureItems} />
-        <MainSidebarSection title="Catalog" items={synchronizeItems} />
+        {catalogItems.length > 0 && (
+          <MainSidebarSection title="Catalog" items={catalogItems} />
+        )}
         {account && account.isStaff && (
           <>
             <MainSidebarSection className="mt-auto" title="Manage" items={manageItems} />
-        </>
+          </>
         )}
       </SidebarContent>
       <SidebarFooter>

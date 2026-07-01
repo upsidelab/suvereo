@@ -2,10 +2,8 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 from enthusiast_common.agentic_execution import ToolScratchpad
-from enthusiast_common.connectors import ECommercePlatformConnector
 from enthusiast_common.memory import BaseMemoryCompactor
-from enthusiast_common.retrievers import BaseProductRetriever, BaseVectorStoreRetriever
-from enthusiast_common.structures import DocumentChunkDetails, RepositoriesInstances
+from enthusiast_common.structures import RepositoriesInstances
 from langchain_core.chat_history import BaseChatMessageHistory
 
 
@@ -15,25 +13,11 @@ class BaseInjector(ABC):
 
     @property
     @abstractmethod
-    def document_retriever(self) -> BaseVectorStoreRetriever[DocumentChunkDetails]:
-        pass
-
-    @property
-    @abstractmethod
-    def product_retriever(self) -> BaseProductRetriever:
-        pass
-
-    @property
-    @abstractmethod
-    def ecommerce_platform_connector(self) -> Optional[ECommercePlatformConnector]:
-        pass
-
-    @property
-    @abstractmethod
     def chat_history(self) -> BaseChatMessageHistory:
         pass
 
     @property
+    @abstractmethod
     def memory_compactor(self) -> Optional[BaseMemoryCompactor]:
         pass
 

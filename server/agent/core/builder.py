@@ -11,17 +11,14 @@ from enthusiast_common.config import (
     LLMConfig,
     LLMToolConfig,
 )
-from enthusiast_common.connectors import ECommercePlatformConnector
 from enthusiast_common.injectors import BaseInjector
 from enthusiast_common.registry import BaseDBModelsRegistry, BaseEmbeddingProviderRegistry, BaseLanguageModelRegistry
-from enthusiast_common.retrievers import BaseRetriever
 from enthusiast_common.tools import BaseAgentTool, BaseFileTool, BaseFunctionTool, BaseLLMTool
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.tools import BaseTool
 
 from agent.core.memory import LLMMemoryCompactor, PersistentChatHistory
-from catalog.models import ECommerceIntegration
 
 
 class AgentBuilder(BaseAgentBuilder[AgentConfig]):
@@ -145,20 +142,13 @@ class AgentBuilder(BaseAgentBuilder[AgentConfig]):
         )
 
     def _build_agent_tool(self, config: AgentToolConfig) -> BaseAgentTool:
-        builder = self.__init__(config.agent, self.conversation_id, self.streaming)
-        agent = builder.build()
+        agent = AgentBuilder(config.agent, self.conversation_id, self.streaming).build()
         return config.tool_class(agent=agent)
 
     def _build_injector(self) -> BaseInjector:
-        document_retriever = self._build_document_retriever()
-        product_retriever = self._build_product_retriever()
         chat_history = self._build_chat_history()
         memory_compactor = self._build_memory_compactor(chat_history)
-        ecommerce_platform_connector = self._build_ecommerce_platform_connector()
         return self._config.injector(
-            product_retriever=product_retriever,
-            document_retriever=document_retriever,
-            ecommerce_platform_connector=ecommerce_platform_connector,
             repositories=self._repositories,
             chat_history=chat_history,
             memory_compactor=memory_compactor,
@@ -185,37 +175,6 @@ class AgentBuilder(BaseAgentBuilder[AgentConfig]):
                 handler = config.handler_class()
             handlers.append(handler)
         return handlers
-
-    def _build_product_retriever(self) -> BaseRetriever:
-        llm = self._build_default_llm()
-        return self._config.retrievers.product.retriever_class.create(
-            config=self._config,
-            data_set_id=self._data_set_id,
-            repositories=self._repositories,
-            embeddings_registry=self._embeddings_registry,
-            llm=llm,
-        )
-
-    def _build_document_retriever(self) -> BaseRetriever:
-        return self._config.retrievers.document.retriever_class.create(
-            config=self._config,
-            data_set_id=self._data_set_id,
-            repositories=self._repositories,
-            embeddings_registry=self._embeddings_registry,
-            llm=self._llm,
-        )
-
-    def _build_ecommerce_platform_connector(self) -> Optional[ECommercePlatformConnector]:
-        try:
-            ecommerce_integration = ECommerceIntegration.objects.get(data_set_id=self._data_set_id)
-        except ECommerceIntegration.DoesNotExist:
-            return None
-
-        from sync.ecommerce.registry import ECommerceIntegrationPluginRegistry
-        ecommerce_integration_registry = ECommerceIntegrationPluginRegistry()
-        ecommerce_integration_plugin = ecommerce_integration_registry.get_plugin_instance(ecommerce_integration)
-
-        return ecommerce_integration_plugin.build_connector()
 
     def _build_chat_history(self) -> PersistentChatHistory:
         return PersistentChatHistory(self._repositories.conversation, self.conversation_id)

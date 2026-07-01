@@ -5,8 +5,6 @@ import './index.css';
 import { createBrowserRouter, redirect, RouterProvider } from "react-router-dom";
 import { ChatHistory } from "@/pages/data-sets/(id)/history.tsx";
 import { Chat } from "@/pages/data-sets/(id)/chat/index.tsx";
-import { ProductsIndex } from "@/pages/data-sets/(id)/products/index.tsx";
-import { DocumentsIndex } from "@/pages/data-sets/(id)/documents/index.tsx";
 import { LoginPage } from "@/pages/login.tsx";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { ApiConnectionIndex } from "@/pages/service-accounts/index.tsx";
@@ -18,13 +16,12 @@ import { DataSetsIndex } from "@/pages/data-sets";
 import { EditDataSet } from "@/pages/data-sets/(id)/edit.tsx";
 import { IndexDataSetUsers } from "@/pages/data-sets/(id)/users.tsx";
 import { IndexDataSetIntegrations } from "@/pages/data-sets/(id)/integrations.tsx";
-import { ConfigureDataSetProductSource } from "@/pages/data-sets/(id)/product-sources/(id)/config.tsx";
-import { ConfigureDataSetDocumentSource } from "@/pages/data-sets/(id)/document-sources/(id)/config.tsx";
 import { UsersIndex } from "@/pages/users";
 import { OnboardingIndex } from "@/pages/onboarding";
 import AgentsPage from "@/pages/data-sets/(id)/agents";
 import { AgenticExecutionsPage } from "@/pages/data-sets/(id)/agentic-executions/index.tsx";
 import { AgenticExecutionDetailPage } from "@/pages/data-sets/(id)/agentic-executions/(id)/index.tsx";
+import { EntityRecordsPage } from "@/pages/data-sets/(id)/entities/[slug].tsx";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -57,14 +54,6 @@ const router = createBrowserRouter([
     loader: protectedLoginLoader,
     errorElement: <ErrorPage />,
     children: [
-      {
-        path: '/data-sets/:id/products',
-        element: <ProductsIndex />
-      },
-      {
-        path: '/data-sets/:id/documents',
-        element: <DocumentsIndex />
-      },
       {
         path: "/",
         element: <Chat />
@@ -101,14 +90,10 @@ const router = createBrowserRouter([
       {
         path: '/data-sets/:id/integrations',
         element: <IndexDataSetIntegrations />
-      },      
+      },
       {
-        path: '/data-sets/:dataSetId/product-sources/:productSourceId',
-        element: <ConfigureDataSetProductSource />
-      },      
-      {
-        path: '/data-sets/:dataSetId/document-sources/:documentSourceId',
-        element: <ConfigureDataSetDocumentSource />
+        path: '/data-sets/:id/entities/:slug',
+        element: <EntityRecordsPage />
       },
       {
         path: '/service-accounts',
