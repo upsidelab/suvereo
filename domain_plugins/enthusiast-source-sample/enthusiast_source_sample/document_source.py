@@ -7,7 +7,7 @@ from enthusiast_ecommerce_common.structures import DocumentDetails
 
 class SampleDocumentSource(DocumentSourcePlugin):
     TYPE = "sample-document"
-    LABEL = "Sample Documents"
+    NAME = "Sample Documents Source"
 
     def __init__(self):
         self.sample_file_path = Path(__file__).parent / "sample_documents.csv"

@@ -26,7 +26,7 @@ class BaseIntegration(ABC):
     #: Stable identifier for this integration type. Unique per DataSet.
     TYPE: str
     #: Human-readable name shown in the UI.
-    LABEL: str
+    NAME: str
     #: Category this integration belongs to. Verticals set this on their plugin ABCs.
     INTEGRATION_MANAGER: type[BaseIntegrationManager] | None = None
     #: Pydantic model class describing the configuration fields. Set to None when no config is required.

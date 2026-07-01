@@ -17,7 +17,7 @@ class MedusaIntegrationConfig(RequiredFieldsModel):
 
 class MedusaIntegration(ECommerceIntegrationPlugin):
     TYPE = "medusa"
-    LABEL = "Medusa"
+    NAME = "Medusa"
     CONFIGURATION_ARGS = MedusaIntegrationConfig
 
     def build_connector(self) -> ECommercePlatformConnector:

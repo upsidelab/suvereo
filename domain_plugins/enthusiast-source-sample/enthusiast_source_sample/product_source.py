@@ -7,7 +7,7 @@ from enthusiast_ecommerce_common.structures import ProductDetails
 
 class SampleProductSource(ProductSourcePlugin):
     TYPE = "sample-product"
-    LABEL = "Sample Products"
+    NAME = "Sample Products Source"
 
     def __init__(self):
         self.sample_file_path = Path(__file__).parent / "sample_products.csv"

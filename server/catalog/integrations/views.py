@@ -17,7 +17,7 @@ class IntegrationTypeListView(APIView):
 
     def get(self, request):
         types = [
-            {"type": cls.TYPE, "label": cls.LABEL, "config_schema": cls().get_config_schema()}
+            {"type": cls.TYPE, "name": cls.NAME, "config_schema": cls().get_config_schema()}
             for cls in IntegrationPluginRegistry().get_plugin_classes()
         ]
         return Response(IntegrationTypeSerializer(types, many=True).data)

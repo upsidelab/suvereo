@@ -108,7 +108,7 @@ export function AddIntegrationModal({ dataSetId, open, onOpenChange, onSuccess }
           </SelectTrigger>
           <SelectContent>
             {integrationTypes.map(t => (
-              <SelectItem key={t.type} value={t.type}>{t.label}</SelectItem>
+              <SelectItem key={t.type} value={t.type}>{t.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>

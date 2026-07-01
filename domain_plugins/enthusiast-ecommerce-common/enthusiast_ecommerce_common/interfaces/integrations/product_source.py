@@ -9,7 +9,7 @@ from enthusiast_ecommerce_common.structures import ProductDetails
 class ProductSourcePlugin(BaseIntegration):
     """Fetches products from an external source.
 
-    Subclasses must declare ``TYPE``, ``LABEL``, and implement ``fetch()``.
+    Subclasses must declare ``TYPE``, ``NAME``, and implement ``fetch()``.
     Persistence is handled by the vertical's ``ProductSourceManager``.
     """
 

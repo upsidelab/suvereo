@@ -13,7 +13,7 @@ export type EntityType = {
 
 export type IntegrationType = {
   type: string;
-  label: string;
+  name: string;
   config_schema: unknown;
 };
 

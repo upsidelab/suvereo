@@ -16,7 +16,7 @@ class MedusaProductSourceConfig(RequiredFieldsModel):
 
 class MedusaProductSource(ProductSourcePlugin):
     TYPE = "medusa_product"
-    LABEL = "Medusa"
+    NAME = "Medusa"
     CONFIGURATION_ARGS = MedusaProductSourceConfig
 
     @staticmethod
