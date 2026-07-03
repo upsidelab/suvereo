@@ -1,6 +1,7 @@
 import requests
-from enthusiast_common import ProductDetails, ProductSourcePlugin
 from enthusiast_common.utils import RequiredFieldsModel
+from enthusiast_ecommerce_common.interfaces import ProductSourcePlugin
+from enthusiast_ecommerce_common.structures import ProductDetails
 from pydantic import Field
 
 
@@ -10,11 +11,9 @@ class SolidusConfig(RequiredFieldsModel):
 
 
 class SolidusProductSource(ProductSourcePlugin):
+    TYPE = "solidus"
     NAME = "Solidus"
     CONFIGURATION_ARGS = SolidusConfig
-
-    def __init__(self, data_set_id, **kwargs):
-        super().__init__(data_set_id)
 
     @staticmethod
     def get_properties(solidus_properties):

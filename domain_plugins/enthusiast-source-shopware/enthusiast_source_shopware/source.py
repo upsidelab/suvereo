@@ -1,6 +1,7 @@
 import requests
-from enthusiast_common import ProductDetails, ProductSourcePlugin
 from enthusiast_common.utils import RequiredFieldsModel
+from enthusiast_ecommerce_common.interfaces import ProductSourcePlugin
+from enthusiast_ecommerce_common.structures import ProductDetails
 from pydantic import Field
 
 
@@ -12,12 +13,11 @@ class ShopwareConfig(RequiredFieldsModel):
 
 
 class ShopwareProductSource(ProductSourcePlugin):
+    TYPE = "shopware"
     NAME = "Shopware"
     CONFIGURATION_ARGS = ShopwareConfig
 
-    def __init__(self, data_set_id, **kwargs):
-        super().__init__(data_set_id)
-
+    def __init__(self):
         self._access_token = None
         self._categories = None
         self._currency_id = None

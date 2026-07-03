@@ -3,8 +3,9 @@ import re
 import urllib.parse
 
 import requests
-from enthusiast_common import DocumentDetails, DocumentSourcePlugin
 from enthusiast_common.utils import RequiredFieldsModel
+from enthusiast_ecommerce_common.interfaces import DocumentSourcePlugin
+from enthusiast_ecommerce_common.structures import DocumentDetails
 from pydantic import Field
 from requests import Response
 
@@ -17,11 +18,9 @@ class WordpressConfig(RequiredFieldsModel):
 
 
 class WordpressDocumentSource(DocumentSourcePlugin):
+    TYPE = "wordpress"
     NAME = "WordPress"
     CONFIGURATION_ARGS = WordpressConfig
-
-    def __init__(self, data_set_id, **kwargs):
-        super().__init__(data_set_id)
 
     def fetch(self) -> list[DocumentDetails]:
         session = self._create_http_session()

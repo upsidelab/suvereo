@@ -1,8 +1,9 @@
 import json
 
 import shopify
-from enthusiast_common import ProductDetails, ProductSourcePlugin
 from enthusiast_common.utils import RequiredFieldsModel
+from enthusiast_ecommerce_common.interfaces import ProductSourcePlugin
+from enthusiast_ecommerce_common.structures import ProductDetails
 from pydantic import Field
 
 
@@ -12,11 +13,9 @@ class ShopifyConfig(RequiredFieldsModel):
 
 
 class ShopifyProductSource(ProductSourcePlugin):
+    TYPE = "shopify"
     NAME = "Shopify"
     CONFIGURATION_ARGS = ShopifyConfig
-
-    def __init__(self, data_set_id, **kwargs):
-        super().__init__(data_set_id)
 
     def get_query_template(self):
         """Prepares template for querying shopify platform.
