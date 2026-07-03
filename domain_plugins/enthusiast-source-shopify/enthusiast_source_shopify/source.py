@@ -78,7 +78,9 @@ class ShopifyProductSource(ProductSourcePlugin):
                     "tags": shopify_product.get("tags", ""),
                 }
             ),
-            categories=shopify_product.get("category", ""),
+            # Shopify returns category: null for products with no category, and a
+            # {fullName: ...} object otherwise. Extract the name, defaulting to "".
+            categories=(shopify_product.get("category") or {}).get("fullName", ""),
         )
         # Collect attributes from variants level.
         prices = []
