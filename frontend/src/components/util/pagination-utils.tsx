@@ -8,7 +8,7 @@ import {
 interface RenderPaginationItemsProps {
   currentPage: number;
   totalPages: number;
-  handlePageChange: (page: number) => void;
+  handlePageChange: (page: number, event?: React.MouseEvent) => void;
 }
 
 const RenderPaginationItems: React.FC<RenderPaginationItemsProps> = ({ currentPage, totalPages, handlePageChange }) => {
@@ -19,7 +19,7 @@ const RenderPaginationItems: React.FC<RenderPaginationItemsProps> = ({ currentPa
   if (startPage > 1) {
     pages.push(
       <PaginationItem key={1}>
-        <PaginationLink href="#" onClick={() => handlePageChange(1)}>
+        <PaginationLink href="#" onClick={(e) => handlePageChange(1, e)}>
           1
         </PaginationLink>
       </PaginationItem>
@@ -39,7 +39,7 @@ const RenderPaginationItems: React.FC<RenderPaginationItemsProps> = ({ currentPa
         <PaginationLink
           href="#"
           isActive={page === currentPage}
-          onClick={() => handlePageChange(page)}
+          onClick={(e) => handlePageChange(page, e)}
         >
           {page}
         </PaginationLink>
@@ -57,7 +57,7 @@ const RenderPaginationItems: React.FC<RenderPaginationItemsProps> = ({ currentPa
     }
     pages.push(
       <PaginationItem key={totalPages}>
-        <PaginationLink href="#" onClick={() => handlePageChange(totalPages)}>
+        <PaginationLink href="#" onClick={(e) => handlePageChange(totalPages, e)}>
           {totalPages}
         </PaginationLink>
       </PaginationItem>
