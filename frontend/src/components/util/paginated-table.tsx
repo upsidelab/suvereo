@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { MouseEvent, ReactNode, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { PaginatedResult } from "@/lib/types.ts";
 import { SkeletonLoader } from "@/components/util/skeleton-loader.tsx";
@@ -44,7 +44,8 @@ export function PaginatedTable<T>({
   const [searchParams, setSearchParams] = useSearchParams();
   const currentPage = Number(searchParams.get(pageParamName) ?? "1") || 1;
 
-  const handlePageChange = (page: number) => {
+  const handlePageChange = (page: number, event?: MouseEvent) => {
+    event?.preventDefault();
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
       if (page > 1) next.set(pageParamName, page.toString());
@@ -107,7 +108,7 @@ export function PaginatedTable<T>({
             <PaginationItem>
               <PaginationPrevious
                 href="#"
-                onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
+                onClick={(e) => handlePageChange(Math.max(currentPage - 1, 1), e)}
               />
             </PaginationItem>
             <RenderPaginationItems
@@ -118,7 +119,7 @@ export function PaginatedTable<T>({
             <PaginationItem>
               <PaginationNext
                 href="#"
-                onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
+                onClick={(e) => handlePageChange(Math.min(currentPage + 1, totalPages), e)}
               />
             </PaginationItem>
           </PaginationContent>
