@@ -40,7 +40,7 @@ QUERY_PROMPT_TEMPLATE = """
 
 
 class ProductRetriever:
-    """Retrieves products from the vertical's ProductContentChunk table using vector similarity."""
+    """Retrieves products from the vertical's Product table using an LLM-generated SQL where clause."""
 
     def __init__(
         self,
