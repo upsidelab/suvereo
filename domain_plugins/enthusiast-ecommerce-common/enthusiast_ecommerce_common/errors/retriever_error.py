@@ -1,5 +1,7 @@
-from enthusiast_common.errors import RetrieverError as BaseRetrieverError
+from abc import ABC
+
+from .base_agent_friendly_error import BaseAgentFriendlyError
 
 
-class RetrieverError(BaseRetrieverError):
+class RetrieverError(BaseAgentFriendlyError, ABC):
     pass
