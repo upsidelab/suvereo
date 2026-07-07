@@ -1,5 +1,5 @@
 from enthusiast_agent_tool_calling import BaseToolCallingAgent
-from enthusiast_agent_tools import ProductExamplesTool, ProductSQLSearchTool
+from enthusiast_ecommerce_agent_tools import ProductExamplesTool, ProductSQLSearchTool
 from enthusiast_common.config.base import LLMToolConfig
 
 
