@@ -40,12 +40,7 @@ QUERY_PROMPT_TEMPLATE = """
 
 
 class ProductRetriever:
-    """Finds products by letting the LLM build an SQL WHERE clause from the query, scoped to a DataSet.
-
-    Mirrors the Enthusiast product retriever: the LLM is shown the product schema plus a few sample
-    rows and asked for a WHERE clause, which is then run against the vertical's Product table. A raw
-    SQL entry point (``find_products_with_sql``) is guarded by :class:`SQLValidator`.
-    """
+    """Retrieves products from the vertical's ProductContentChunk table using vector similarity."""
 
     def __init__(
         self,
