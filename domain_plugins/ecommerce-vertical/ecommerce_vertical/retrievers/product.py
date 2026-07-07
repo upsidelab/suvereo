@@ -5,7 +5,7 @@ from langchain_core.language_models import BaseLanguageModel
 from langchain_core.prompts import PromptTemplate
 
 from ecommerce_vertical.models import Product
-from ecommerce_vertical.retrievers.errors import RetrieverSQLExecutionError
+from ecommerce_vertical.retrievers.retriever_sql_execution_error import RetrieverSQLExecutionError
 from ecommerce_vertical.retrievers.sql_validator import SQLValidator
 
 PRODUCT_TABLE_NAME = "ecommerce_vertical_product"
@@ -68,7 +68,8 @@ class ProductRetriever:
     def _build_where_clause_for_query(self, query: str) -> str:
         chain = PromptTemplate.from_template(self.prompt_template) | self.llm
         llm_result = chain.invoke({"sample_products_json": self.get_sample_products_json(), "query": query})
-        return llm_result.content.strip("`").removeprefix("sql").strip("\n").replace("%", "%%")
+        sanitized_result = llm_result.content.strip("`").removeprefix("sql").strip("\n").replace("%", "%%")
+        return sanitized_result
 
     def find_products_with_sql(self, sql_query: str) -> list[Product]:
         sanitized_query = self._sql_validator.add_data_set_id_condition_and_raise_if_not_allowed(sql_query)

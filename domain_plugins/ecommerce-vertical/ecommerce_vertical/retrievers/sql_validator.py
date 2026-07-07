@@ -1,7 +1,7 @@
 import sqlglot
 from sqlglot.errors import SqlglotError
 
-from ecommerce_vertical.retrievers.errors import RetrieverSQLPermissionError
+from ecommerce_vertical.retrievers.retriever_sql_permission_error import RetrieverSQLPermissionError
 
 
 class SQLValidator:
