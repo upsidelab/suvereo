@@ -28,7 +28,7 @@ class EcommerceAgentBuilder(AgentBuilder):
         )
 
     def _build_product_retriever(self) -> ProductRetriever:
-        return ProductRetriever(data_set_id=self._data_set_id)
+        return ProductRetriever(data_set_id=self._data_set_id, llm=self._build_default_llm())
 
     def _build_document_retriever(self) -> DocumentRetriever:
         return DocumentRetriever(data_set_id=self._data_set_id)
