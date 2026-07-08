@@ -10,4 +10,4 @@ def sync_integration_task(integration_id: int):
     plugin = IntegrationPluginRegistry().build_instance(integration)
     manager = IntegrationManagerRegistry().get_manager_for(getattr(type(plugin), "INTEGRATION_MANAGER", None))
     if manager:
-        manager.sync(plugin, integration.dataset_id)
+        manager.sync(plugin, integration.dataset_id, integration.id)

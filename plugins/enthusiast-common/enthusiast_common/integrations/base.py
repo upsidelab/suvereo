@@ -10,7 +10,7 @@ class BaseSourceIntegrationManager(BaseIntegrationManager):
     """Marker for integration categories whose plugins pull data from an external source."""
 
     @abstractmethod
-    def sync(self, plugin: Any, dataset_id: Any) -> None:
+    def sync(self, plugin: Any, dataset_id: Any, integration_id: Any) -> None:
         """Pull data from the plugin's external source into the DataSet."""
 
 
