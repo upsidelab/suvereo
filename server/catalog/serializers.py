@@ -65,6 +65,13 @@ class IntegrationSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "dataset", "created_at", "updated_at"]
 
 
+class IntegrationUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Integration
+        fields = ["id", "dataset", "type", "config", "created_at", "updated_at"]
+        read_only_fields = ["id", "dataset", "type", "created_at", "updated_at"]
+
+
 class IntegrationTypeSerializer(serializers.Serializer):
     type = serializers.CharField()
     name = serializers.CharField()

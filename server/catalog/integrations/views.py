@@ -1,5 +1,6 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -7,7 +8,7 @@ from rest_framework.views import APIView
 from catalog.integrations.registry import IntegrationPluginRegistry
 from catalog.integrations.tasks import sync_integration_task
 from catalog.models import DataSet, Integration
-from catalog.serializers import IntegrationSerializer, IntegrationTypeSerializer
+from catalog.serializers import IntegrationSerializer, IntegrationTypeSerializer, IntegrationUpdateSerializer
 
 
 class IntegrationTypeListView(APIView):
@@ -29,21 +30,21 @@ class _DataSetScopedView(APIView):
     def _get_dataset(self, request, data_set_id):
         data_set = get_object_or_404(DataSet, pk=data_set_id)
         if not request.user.has_dataset_access(data_set):
-            return None
+            raise PermissionDenied("No dataset access.")
         return data_set
+
+    def _get_integration(self, data_set_id, pk):
+        return get_object_or_404(Integration, pk=pk, dataset_id=data_set_id)
 
 
 class IntegrationListView(_DataSetScopedView):
     def get(self, request, data_set_id):
-        if self._get_dataset(request, data_set_id) is None:
-            return Response({"detail": "No dataset access."}, status=status.HTTP_403_FORBIDDEN)
+        self._get_dataset(request, data_set_id)
         qs = Integration.objects.filter(dataset_id=data_set_id).order_by("type")
         return Response(IntegrationSerializer(qs, many=True).data)
 
     def post(self, request, data_set_id):
         data_set = self._get_dataset(request, data_set_id)
-        if data_set is None:
-            return Response({"detail": "No dataset access."}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = IntegrationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -69,10 +70,23 @@ class IntegrationListView(_DataSetScopedView):
 
 class IntegrationSyncView(_DataSetScopedView):
     def post(self, request, data_set_id, pk):
-        if self._get_dataset(request, data_set_id) is None:
-            return Response({"detail": "No dataset access."}, status=status.HTTP_403_FORBIDDEN)
-        integration = get_object_or_404(Integration, pk=pk, dataset_id=data_set_id)
+        self._get_dataset(request, data_set_id)
+        integration = self._get_integration(data_set_id, pk)
         task = sync_integration_task.delay(integration.id)
         return Response({"task_id": task.id}, status=status.HTTP_202_ACCEPTED)
 
 
+class IntegrationUpdateDeleteView(_DataSetScopedView):
+    def patch(self, request, data_set_id, pk):
+        self._get_dataset(request, data_set_id)
+        integration = self._get_integration(data_set_id, pk)
+        serializer = IntegrationUpdateSerializer(integration, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(IntegrationSerializer(integration).data)
+
+    def delete(self, request, data_set_id, pk):
+        self._get_dataset(request, data_set_id)
+        integration = self._get_integration(data_set_id, pk)
+        integration.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
