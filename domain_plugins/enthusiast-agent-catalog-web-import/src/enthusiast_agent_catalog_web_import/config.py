@@ -1,6 +1,6 @@
+from enthusiast_agent_tools import StopExecutionTool
 from enthusiast_common.agents import BaseAgentConfigProvider, ConfigType
 from enthusiast_common.config import AgentConfigWithDefaults, LLMToolConfig
-from enthusiast_ecommerce_agent_tools.tools.stop_execution_tool import StopExecutionTool
 
 from .agent import CatalogWebImportAgent
 from .execution_prompt import CATALOG_WEB_IMPORT_EXECUTION_PROMPT
