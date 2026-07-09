@@ -1,3 +1,4 @@
+from ecommerce_vertical.builder import EcommerceAgentBuilder
 from enthusiast_agent_tools import StopExecutionTool
 from enthusiast_common.agents import BaseAgentConfigProvider, ConfigType
 from enthusiast_common.config import AgentConfigWithDefaults, LLMToolConfig
@@ -7,6 +8,8 @@ from .prompt import CATALOG_ENRICHMENT_EXECUTION_SYSTEM_PROMPT, CATALOG_ENRICHME
 
 
 class CatalogEnrichmentConfigProvider(BaseAgentConfigProvider):
+    BUILDER_CLASS = EcommerceAgentBuilder
+
     def get_config(self, config_type: ConfigType = ConfigType.CONVERSATION) -> AgentConfigWithDefaults:
         if config_type == ConfigType.CONVERSATION:
             system_prompt = CATALOG_ENRICHMENT_TOOL_CALLING_AGENT_PROMPT

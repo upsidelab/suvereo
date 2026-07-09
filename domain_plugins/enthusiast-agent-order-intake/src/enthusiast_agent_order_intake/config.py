@@ -1,3 +1,4 @@
+from ecommerce_vertical.builder import EcommerceAgentBuilder
 from enthusiast_common.agents import BaseAgentConfigProvider, ConfigType
 from enthusiast_common.config import AgentConfigWithDefaults, LLMToolConfig
 
@@ -8,6 +9,8 @@ from .tools import StopExecutionTool
 
 
 class OrderIntakeConfigProvider(BaseAgentConfigProvider):
+    BUILDER_CLASS = EcommerceAgentBuilder
+
     def get_config(self, config_type: ConfigType = ConfigType.CONVERSATION) -> AgentConfigWithDefaults:
         if config_type == ConfigType.CONVERSATION:
             system_prompt = ORDER_INTAKE_TOOL_CALLING_AGENT_PROMPT

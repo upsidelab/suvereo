@@ -1,3 +1,4 @@
+from ecommerce_vertical.builder import EcommerceAgentBuilder
 from enthusiast_common.agents import BaseAgentConfigProvider, ConfigType
 from enthusiast_common.config import AgentConfigWithDefaults, LLMToolConfig
 
@@ -9,6 +10,8 @@ from .tools import StopExecutionTool
 
 class InvoiceScanningConfigProvider(BaseAgentConfigProvider):
     """Config provider for the Invoice Scanning agent."""
+
+    BUILDER_CLASS = EcommerceAgentBuilder
 
     def get_config(self, config_type: ConfigType = ConfigType.CONVERSATION) -> AgentConfigWithDefaults:
         if config_type == ConfigType.CONVERSATION:
