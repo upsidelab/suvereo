@@ -27,24 +27,27 @@ class IntegrationTypeListView(APIView):
 class _DataSetScopedView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def _get_dataset(self, request, data_set_id):
+    def _get_dataset_or_raise(self, request, data_set_id):
+        """Return the dataset, raising 404 when it doesn't exist and 403 when the user has no access to it."""
         data_set = get_object_or_404(DataSet, pk=data_set_id)
         if not request.user.has_dataset_access(data_set):
             raise PermissionDenied("No dataset access.")
         return data_set
 
-    def _get_integration(self, data_set_id, pk):
+    def _get_integration_or_raise(self, request, data_set_id, pk):
+        """Return the integration, guarding dataset access the same way as ``_get_dataset_or_raise``."""
+        self._get_dataset_or_raise(request, data_set_id)
         return get_object_or_404(Integration, pk=pk, dataset_id=data_set_id)
 
 
 class IntegrationListView(_DataSetScopedView):
     def get(self, request, data_set_id):
-        self._get_dataset(request, data_set_id)
+        self._get_dataset_or_raise(request, data_set_id)
         qs = Integration.objects.filter(dataset_id=data_set_id).order_by("type")
         return Response(IntegrationSerializer(qs, many=True).data)
 
     def post(self, request, data_set_id):
-        data_set = self._get_dataset(request, data_set_id)
+        data_set = self._get_dataset_or_raise(request, data_set_id)
 
         serializer = IntegrationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -70,23 +73,20 @@ class IntegrationListView(_DataSetScopedView):
 
 class IntegrationSyncView(_DataSetScopedView):
     def post(self, request, data_set_id, pk):
-        self._get_dataset(request, data_set_id)
-        integration = self._get_integration(data_set_id, pk)
+        integration = self._get_integration_or_raise(request, data_set_id, pk)
         task = sync_integration_task.delay(integration.id)
         return Response({"task_id": task.id}, status=status.HTTP_202_ACCEPTED)
 
 
 class IntegrationUpdateDeleteView(_DataSetScopedView):
     def patch(self, request, data_set_id, pk):
-        self._get_dataset(request, data_set_id)
-        integration = self._get_integration(data_set_id, pk)
+        integration = self._get_integration_or_raise(request, data_set_id, pk)
         serializer = IntegrationUpdateSerializer(integration, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(IntegrationSerializer(integration).data)
 
     def delete(self, request, data_set_id, pk):
-        self._get_dataset(request, data_set_id)
-        integration = self._get_integration(data_set_id, pk)
+        integration = self._get_integration_or_raise(request, data_set_id, pk)
         integration.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
