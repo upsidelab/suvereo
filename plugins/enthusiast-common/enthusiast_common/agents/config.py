@@ -1,7 +1,11 @@
 from abc import ABC, abstractmethod
 from enum import StrEnum
+from typing import TYPE_CHECKING, Optional, Type
 
 from ..config import AgentConfig
+
+if TYPE_CHECKING:
+    from ..builder import BaseAgentBuilder
 
 
 class ConfigType(StrEnum):
@@ -22,6 +26,11 @@ class BaseAgentConfigProvider(ABC):
     Plugins that do not need context-specific configs can ignore the
     ``config_type`` argument and always return the same configuration.
     """
+
+    #: Builder class used to assemble this agent. Declare it when the agent needs a
+    #: dedicated builder (e.g. a vertical's builder wiring domain-specific retrievers).
+    #: Left as None, the registry falls back to the framework's default builder.
+    BUILDER_CLASS: Optional[Type["BaseAgentBuilder"]] = None
 
     @abstractmethod
     def get_config(self, config_type: ConfigType = ConfigType.CONVERSATION) -> AgentConfig:

@@ -1,3 +1,4 @@
+from ecommerce_vertical.builder import EcommerceAgentBuilder
 from enthusiast_agent_tools import StopExecutionTool
 from enthusiast_common.agents import BaseAgentConfigProvider, ConfigType
 from enthusiast_common.config import AgentConfigWithDefaults, LLMToolConfig
@@ -12,6 +13,8 @@ class CatalogWebImportConfigProvider(BaseAgentConfigProvider):
 
     Returns agent configuration appropriate for the requested context type.
     """
+
+    BUILDER_CLASS = EcommerceAgentBuilder
 
     def get_config(self, config_type: ConfigType = ConfigType.CONVERSATION) -> AgentConfigWithDefaults:
         if config_type == ConfigType.CONVERSATION:

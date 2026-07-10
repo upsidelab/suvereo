@@ -1,19 +1,15 @@
-import logging
 from abc import ABC, abstractmethod
 from typing import List, Optional, Type
 
 from django.conf import settings
 from enthusiast_common.agentic_execution.memory import ToolScratchpad
 from enthusiast_common.agents import BaseAgent, BaseAgentConfigProvider, ConfigType
-from enthusiast_common.builder import BaseAgentBuilder
 from enthusiast_common.config import AgentConfig
 from utils.base_registry import BaseRegistry
 
 from agent.core.agents.default_config import merge_config
 from agent.core.builder import AgentBuilder
 from agent.models import Conversation
-
-logger = logging.getLogger(__name__)
 
 
 class AgentRegistryError(Exception):
@@ -54,9 +50,9 @@ class AgentRegistry(BaseAgentRegistry):
         tool_scratchpad: Optional[ToolScratchpad] = None,
     ) -> BaseAgent:
         try:
-            builder = self._get_builder_class_by_name(agent_type=conversation.agent.agent_type)
-            config = self._get_config_by_name(agent_type=conversation.agent.agent_type, config_type=config_type)
-            config = merge_config(partial=config)
+            config_provider_cls = self._get_config_provider_class(agent_type=conversation.agent.agent_type)
+            builder = config_provider_cls.BUILDER_CLASS or AgentBuilder
+            config = merge_config(partial=config_provider_cls().get_config(config_type=config_type))
             return builder(
                 config=config,
                 conversation_id=conversation.id,
@@ -93,21 +89,12 @@ class AgentRegistry(BaseAgentRegistry):
         except KeyError as e:
             raise AgentNotFoundError(f"Agent with AGENT_KEY: '{agent_type}' is not defined in settings.AVAILABLE_AGENTS.") from e
 
-    def _get_config_by_name(self, agent_type: str, config_type: ConfigType = ConfigType.CONVERSATION) -> AgentConfig:
+    def _get_config_provider_class(self, agent_type: str) -> Type[BaseAgentConfigProvider]:
         agent_directory_path = self._get_agent_directory_path(agent_type)
         try:
-            config_cls = self._get_class_by_path(agent_directory_path, BaseAgentConfigProvider, BaseRegistry.PathType.MODULE)
-            return config_cls().get_config(config_type=config_type)
+            return self._get_class_by_path(agent_directory_path, BaseAgentConfigProvider, BaseRegistry.PathType.MODULE)
         except (ModuleNotFoundError, ValueError):
             raise AgentImportError(f"Cannot config module of a BaseAgentConfigProvider class for agent '{agent_type}'.")
 
-
-    def _get_builder_class_by_name(self, agent_type: str) -> Type[BaseAgentBuilder]:
-        agent_directory_path = self._get_agent_directory_path(agent_type)
-        try:
-            return self._get_class_by_path(agent_directory_path, BaseAgentBuilder)
-        except (ModuleNotFoundError, ValueError):
-            logger.info(
-                f"Cannot import module '{BaseAgentBuilder.__name__}' from path '{agent_directory_path}'. Defaulting to AgentBuilder."
-            )
-            return AgentBuilder
+    def _get_config_by_name(self, agent_type: str, config_type: ConfigType = ConfigType.CONVERSATION) -> AgentConfig:
+        return self._get_config_provider_class(agent_type)().get_config(config_type=config_type)

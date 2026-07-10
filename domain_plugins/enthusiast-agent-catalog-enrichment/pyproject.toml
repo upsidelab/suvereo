@@ -12,6 +12,7 @@ dependencies = [
     "langchain (>=1.2.0,<2.0.0)",
     "enthusiast-agent-tool-calling (>=1.2.0)",
     "enthusiast-agent-tools (>=1.0.0,<2.0.0)",
+    "ecommerce-vertical (>=1.0.0,<2.0.0)",
     "enthusiast-ecommerce-agent-tools (>=1.0.0,<2.0.0)",
 ]
 
