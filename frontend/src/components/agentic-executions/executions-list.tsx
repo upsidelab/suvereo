@@ -48,7 +48,11 @@ export function ExecutionsList() {
 
   const loadItems = useCallback(
     async (page: number) => {
-      const result = await api.agenticExecutions().list({ datasetId: dataSetId ?? undefined, agentId, status }, page);
+      if (dataSetId === null) {
+        return;
+      }
+
+      const result = await api.agenticExecutions().list({ datasetId: dataSetId, agentId, status }, page);
       setHasItems(result.count > 0);
       return result;
     },

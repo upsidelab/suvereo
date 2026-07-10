@@ -1,7 +1,7 @@
 from enthusiast_agent_tool_calling import BaseToolCallingAgent
-from enthusiast_agent_tools import UpsertProductDetailsTool
 from enthusiast_common.config.base import LLMToolConfig
 from enthusiast_common.utils import RequiredFieldsModel
+from enthusiast_ecommerce_agent_tools import UpsertProductDetailsTool
 from pydantic import Field, Json
 
 
