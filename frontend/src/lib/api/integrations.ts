@@ -47,19 +47,20 @@ export class IntegrationsApiClient extends BaseApiClient {
     return await response.json() as { task_id: string };
   }
 
-  async testConnection(dataSetId: number, id: number): Promise<{ ok: boolean }> {
-    const response = await fetch(`${this.apiBase}/api/data_sets/${dataSetId}/integrations/${id}/test-connection/`, {
+  async update(dataSetId: number, id: number, config: Record<string, unknown>): Promise<Integration> {
+    const response = await fetch(`${this.apiBase}/api/data_sets/${dataSetId}/integrations/${id}/`, {
       ...this._requestConfiguration(),
-      method: "POST",
+      method: "PATCH",
+      body: JSON.stringify({ config }),
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new ApiError(`Failed to test connection: ${response.statusText}`, {
+      throw new ApiError(`Failed to update integration: ${response.statusText}`, {
         data: errorData,
         status: response.status,
       });
     }
-    return await response.json() as { ok: boolean };
+    return await response.json() as Integration;
   }
 
   async delete(dataSetId: number, id: number): Promise<void> {

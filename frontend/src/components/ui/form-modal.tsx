@@ -75,7 +75,7 @@ export function FormModal({
       <div className="relative">
         <div 
           ref={scrollContainerRef}
-          className="flex-1 overflow-y-auto space-y-4 px-2 [&::-webkit-scrollbar]:hidden max-h-[60vh]"
+          className="flex-1 overflow-y-auto space-y-4 p-2 [&::-webkit-scrollbar]:hidden max-h-[60vh]"
           style={{
             scrollbarWidth: 'none',
             msOverflowStyle: 'none'
