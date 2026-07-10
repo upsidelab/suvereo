@@ -27,10 +27,17 @@ class BaseIntegration(ABC):
     TYPE: str
     #: Human-readable name shown in the UI.
     NAME: str
+    #: Human-readable category label shown in the UI. Verticals override this on their plugin ABCs.
+    INTEGRATION_TYPE_NAME: str = "Basic integration"
     #: Category this integration belongs to. Verticals set this on their plugin ABCs.
     INTEGRATION_MANAGER: type[BaseIntegrationManager] | None = None
     #: Pydantic model class describing the configuration fields. Set to None when no config is required.
     CONFIGURATION_ARGS = None
+
+    @classmethod
+    def is_syncable(cls) -> bool:
+        """An integration is syncable when its manager pulls data from an external source."""
+        return cls.INTEGRATION_MANAGER is not None and issubclass(cls.INTEGRATION_MANAGER, BaseSourceIntegrationManager)
 
     def set_runtime_arguments(self, runtime_arguments: dict[str, Any]) -> None:
         """Populate class-level config fields from a dict of runtime values.

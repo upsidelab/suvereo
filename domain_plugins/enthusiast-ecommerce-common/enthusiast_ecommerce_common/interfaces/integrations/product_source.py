@@ -13,6 +13,7 @@ class ProductSourcePlugin(BaseIntegration):
     Persistence is handled by the vertical's ``ProductSourceManager``.
     """
 
+    INTEGRATION_TYPE_NAME = "Product source"
     INTEGRATION_MANAGER = BaseProductSourceManager
 
     @abstractmethod

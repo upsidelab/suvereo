@@ -13,6 +13,7 @@ class DocumentSourcePlugin(BaseIntegration):
     Persistence is handled by the vertical's ``DocumentSourceManager``.
     """
 
+    INTEGRATION_TYPE_NAME = "Document source"
     INTEGRATION_MANAGER = BaseDocumentSourceManager
 
     @abstractmethod
