@@ -5,7 +5,7 @@ from enthusiast_common.entities import DomainEntity, EntityField
 class Document(DomainEntity, models.Model):
     """A document synced from an external source, indexed for vector search."""
 
-    dataset = models.ForeignKey("catalog.DataSet", on_delete=models.PROTECT, related_name="documents")
+    dataset = models.ForeignKey("catalog.DataSet", on_delete=models.CASCADE, related_name="documents")
     integration = models.ForeignKey(
         "catalog.Integration", on_delete=models.CASCADE, related_name="documents", null=True, blank=True
     )

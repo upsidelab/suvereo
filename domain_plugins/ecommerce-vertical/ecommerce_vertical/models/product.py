@@ -5,7 +5,7 @@ from enthusiast_common.entities import DomainEntity, EntityField
 class Product(DomainEntity, models.Model):
     """A product synced from an external source, indexed for vector search."""
 
-    dataset = models.ForeignKey("catalog.DataSet", on_delete=models.PROTECT, related_name="products")
+    dataset = models.ForeignKey("catalog.DataSet", on_delete=models.CASCADE, related_name="products")
     integration = models.ForeignKey(
         "catalog.Integration", on_delete=models.CASCADE, related_name="products", null=True, blank=True
     )

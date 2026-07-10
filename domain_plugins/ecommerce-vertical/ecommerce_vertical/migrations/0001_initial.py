@@ -24,6 +24,9 @@ class Migration(migrations.Migration):
                 ('content', models.TextField()),
                 ('dataset', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='documents', to='catalog.dataset')),
             ],
+            options={
+                'db_table_comment': "List of documents being part of a larger data set. A document may be for instance a blog post. This is the main entity being analysed by ECL engine when user asks questions regarding company's offer.",
+            },
             bases=(enthusiast_common.entities.base.DomainEntity, models.Model),
         ),
         migrations.CreateModel(
@@ -49,6 +52,9 @@ class Migration(migrations.Migration):
                 ('price', models.FloatField()),
                 ('dataset', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='products', to='catalog.dataset')),
             ],
+            options={
+                'db_table_comment': 'List of products from a given data set.',
+            },
             bases=(enthusiast_common.entities.base.DomainEntity, models.Model),
         ),
         migrations.CreateModel(
@@ -64,16 +70,8 @@ class Migration(migrations.Migration):
             model_name='document',
             constraint=models.UniqueConstraint(fields=('dataset', 'url'), name='uq_ecommerce_document'),
         ),
-        migrations.AddIndex(
-            model_name='documentchunk',
-            index=models.Index(fields=['document'], name='ecommerce_v_documen_1ffdaf_idx'),
-        ),
         migrations.AddConstraint(
             model_name='product',
             constraint=models.UniqueConstraint(fields=('dataset', 'entry_id'), name='uq_ecommerce_product'),
-        ),
-        migrations.AddIndex(
-            model_name='productcontentchunk',
-            index=models.Index(fields=['product'], name='ecommerce_v_product_e5d34c_idx'),
         ),
     ]

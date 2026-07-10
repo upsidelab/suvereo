@@ -28,14 +28,12 @@ class _DataSetScopedView(APIView):
     permission_classes = [IsAuthenticated]
 
     def _get_dataset_or_raise(self, request, data_set_id):
-        """Return the dataset, raising 404 when it doesn't exist and 403 when the user has no access to it."""
         data_set = get_object_or_404(DataSet, pk=data_set_id)
         if not request.user.has_dataset_access(data_set):
             raise PermissionDenied("No dataset access.")
         return data_set
 
     def _get_integration_or_raise(self, request, data_set_id, pk):
-        """Return the integration, guarding dataset access the same way as ``_get_dataset_or_raise``."""
         self._get_dataset_or_raise(request, data_set_id)
         return get_object_or_404(Integration, pk=pk, dataset_id=data_set_id)
 

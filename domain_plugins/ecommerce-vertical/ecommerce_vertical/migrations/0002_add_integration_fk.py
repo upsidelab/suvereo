@@ -8,7 +8,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('catalog', '0014_drop_domain_tables_add_integration'),
-        ('ecommerce_vertical', '0002_reconcile_field_drift'),
+        ('ecommerce_vertical', '0001_initial'),
     ]
 
     operations = [
