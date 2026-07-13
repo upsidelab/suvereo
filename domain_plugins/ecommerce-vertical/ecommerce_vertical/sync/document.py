@@ -9,8 +9,6 @@ class DocumentSourceManager(BaseDocumentSourceManager):
 
     def sync(self, plugin: DocumentSourcePlugin, dataset_id: int, integration_id: int) -> None:
         """Fetch documents via the plugin and upsert + index each one."""
-        from catalog.indexing.pipeline import index_entity
-
         for details in plugin.fetch():
             document, _ = Document.objects.update_or_create(
                 dataset_id=dataset_id,
@@ -21,4 +19,4 @@ class DocumentSourceManager(BaseDocumentSourceManager):
                     "content": details.content,
                 },
             )
-            index_entity(document)
+            self._indexer.index(document)

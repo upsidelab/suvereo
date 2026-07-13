@@ -9,4 +9,4 @@ class ECommerceIntegrationManager(BaseECommerceIntegrationManager):
 
     def sync(self, plugin: ECommerceIntegrationPlugin, dataset_id: int, integration_id: int) -> None:
         source = plugin.build_product_source()
-        ProductSourceManager().sync(source, dataset_id, integration_id)
+        ProductSourceManager(self._indexer).sync(source, dataset_id, integration_id)
