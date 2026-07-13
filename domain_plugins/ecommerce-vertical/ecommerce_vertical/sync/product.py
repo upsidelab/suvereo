@@ -10,9 +10,13 @@ class ProductSourceManager(BaseProductSourceManager):
     """Syncs products from a ProductSourcePlugin into the ecommerce vertical."""
 
     def sync(self, plugin: ProductSourcePlugin, dataset_id: Any, integration_id: Any) -> None:
-        """Fetch products via the plugin and upsert + index each one."""
+        """Fetch products via the plugin and upsert each one.
+
+        Products are searched via SQL over their structured attributes, so they are
+        not chunked or embedded — only documents go through the vector pipeline.
+        """
         for details in plugin.fetch():
-            product, _ = Product.objects.update_or_create(
+            Product.objects.update_or_create(
                 dataset_id=dataset_id,
                 entry_id=details.entry_id,
                 defaults={
@@ -26,4 +30,3 @@ class ProductSourceManager(BaseProductSourceManager):
                     "price": details.price,
                 },
             )
-            self._indexer.index(product)
