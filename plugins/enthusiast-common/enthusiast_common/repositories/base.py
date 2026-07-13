@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Any, Generic, List, Optional, Type, TypeVar
 
-from pgvector.django import CosineDistance
-
 T = TypeVar("T")
 U = TypeVar("U")
 
@@ -39,11 +37,6 @@ class BaseRepository(ABC, Generic[T]):
 class BaseUserRepository(BaseRepository[T], ABC, Generic[T, U]):
     @abstractmethod
     def get_user_dataset(self, user_id: Any, data_set_id: Any) -> U:
-        pass
-
-
-class BaseModelChunkRepository(BaseRepository[T], ABC):
-    def get_chunk_by_distance_for_data_set(self, data_set_id: Any, distance: CosineDistance) -> Optional[T]:
         pass
 
 
