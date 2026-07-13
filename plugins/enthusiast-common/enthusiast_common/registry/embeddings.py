@@ -55,8 +55,8 @@ class BaseEmbeddingProviderRegistry(ABC):
     """Registry of available embedding providers.
 
     Subclasses must implement ``_get_plugin_paths`` to return the list of
-    class paths from settings and ``provider_for_dataset`` to resolve a
-    provider for a given data set.
+    class paths from settings and ``provider_instance_for_dataset`` to resolve
+    a ready-to-use provider for a given data set.
     """
 
     @abstractmethod
@@ -68,5 +68,5 @@ class BaseEmbeddingProviderRegistry(ABC):
         """Looks up a provider class by its ``NAME`` attribute."""
 
     @abstractmethod
-    def provider_for_dataset(self, data_set_id: Any) -> Type[EmbeddingProvider]:
-        """Returns the provider class configured for the given data set."""
+    def provider_instance_for_dataset(self, data_set_id: Any) -> EmbeddingProvider:
+        """Returns a provider configured with the data set's embedding model and dimensions."""
