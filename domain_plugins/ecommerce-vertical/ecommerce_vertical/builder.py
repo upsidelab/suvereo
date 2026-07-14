@@ -1,6 +1,6 @@
 from typing import Optional
 
-from enthusiast_common.builder import BaseAgentBuilder
+from enthusiast_common.builder import AgentBuilder
 from enthusiast_common.config import AgentConfig
 from enthusiast_ecommerce_common.connectors import ECommercePlatformConnector
 from enthusiast_ecommerce_common.interfaces import ECommerceIntegrationPlugin
@@ -9,7 +9,7 @@ from ecommerce_vertical.injector import EcommerceInjector
 from ecommerce_vertical.retrievers import DocumentRetriever, ProductRetriever
 
 
-class EcommerceAgentBuilder(BaseAgentBuilder[AgentConfig]):
+class EcommerceAgentBuilder(AgentBuilder[AgentConfig]):
     """AgentBuilder that wires an EcommerceInjector with product and document retrievers."""
 
     def _build_injector(self) -> EcommerceInjector:

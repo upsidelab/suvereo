@@ -4,7 +4,7 @@ from typing import List, Optional, Type
 from django.conf import settings
 from enthusiast_common.agentic_execution.memory import ToolScratchpad
 from enthusiast_common.agents import BaseAgent, BaseAgentConfigProvider, ConfigType
-from enthusiast_common.builder import BaseAgentBuilder
+from enthusiast_common.builder import AgentBuilder
 from enthusiast_common.config import AgentConfig
 from utils.base_registry import BaseRegistry
 
@@ -51,7 +51,7 @@ class AgentRegistry(BaseAgentRegistry):
     ) -> BaseAgent:
         try:
             config_provider_cls = self._get_config_provider_class(agent_type=conversation.agent.agent_type)
-            builder = config_provider_cls.BUILDER_CLASS or BaseAgentBuilder
+            builder = config_provider_cls.BUILDER_CLASS or AgentBuilder
             config = merge_config(partial=config_provider_cls().get_config(config_type=config_type))
             return builder(
                 config=config,

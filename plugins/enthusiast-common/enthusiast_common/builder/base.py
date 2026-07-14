@@ -1,42 +1,22 @@
+from abc import ABC, abstractmethod
 from typing import Any, Generic, Optional, TypeVar
-
-from langchain_core.callbacks import BaseCallbackHandler
-from langchain_core.chat_history import BaseChatMessageHistory
-from langchain_core.language_models import BaseLanguageModel
-from langchain_core.tools import BaseTool
 
 from ..agentic_execution.memory import ToolScratchpad
 from ..agents import BaseAgent
-from ..callbacks import ConversationCallbackHandler
-from ..config.base import (
-    AgentConfig,
-    AgentToolConfig,
-    FileToolConfig,
-    FunctionToolConfig,
-    LLMConfig,
-    LLMToolConfig,
-)
-from ..injectors import BaseInjector
-from ..memory import BaseMemoryCompactor
-from ..registry import BaseDBModelsRegistry, BaseEmbeddingProviderRegistry, BaseLanguageModelRegistry
-from ..structures import RepositoriesInstances
-from ..tools import BaseAgentTool, BaseFileTool, BaseFunctionTool, BaseLLMTool
+from ..config.base import AgentConfig
 
 ConfigT = TypeVar("ConfigT", bound=AgentConfig)
 
 
-class BaseAgentBuilder(Generic[ConfigT]):
-    """Builds a fully wired agent from an ``AgentConfig``.
+class BaseAgentBuilder(ABC, Generic[ConfigT]):
+    """Contract every agent builder must satisfy.
 
-    The whole build is config-driven: every host-specific piece (repositories,
-    registries, memory classes, callback handlers, the integration plugin
-    resolver) arrives through the config, so this class depends only on
-    contracts defined in ``enthusiast-common``. The framework host supplies its
-    implementations via its default config; a vertical subclasses this builder
-    only to extend the injector with domain-specific dependencies.
+    This is the full extent of what the framework requires from a builder: the
+    constructor signature below and a ``build()`` returning a ready agent. A
+    config provider's ``BUILDER_CLASS`` may point at any class honouring this
+    contract. For the config-driven default implementation with overridable
+    steps, see :class:`enthusiast_common.builder.AgentBuilder`.
     """
-
-    _repositories: RepositoriesInstances
 
     def __init__(
         self,
@@ -45,189 +25,11 @@ class BaseAgentBuilder(Generic[ConfigT]):
         streaming: bool = False,
         tool_scratchpad: Optional[ToolScratchpad] = None,
     ):
-        self._llm_registry = None
-        self._llm = None
-        self._default_llm = None
-        self._embeddings_registry = None
-        self._data_set_id = None
-        self._injector = None
         self._config = config
         self.conversation_id = conversation_id
         self.streaming = streaming
         self._tool_scratchpad = tool_scratchpad
 
+    @abstractmethod
     def build(self) -> BaseAgent:
-        """Build the agent: repositories, registries, LLMs, injector, tools, callbacks."""
-        model_registry = self._build_db_models_registry()
-        self._build_and_set_repositories(model_registry)
-        self._data_set_id = self._repositories.conversation.get_data_set_id(self.conversation_id)
-        self._llm_registry = self._build_llm_registry()
-        self._embeddings_registry = self._build_embeddings_registry()
-        self._llm = self._build_llm(self._config.llm)
-        self._default_llm = self._build_default_llm()
-        self._injector = self._build_injector()
-        tools = self._build_tools(default_llm=self._default_llm, injector=self._injector)
-        agent_callback_handler = self._build_agent_callback_handler()
-        agent_instance = self._build_agent(tools, self._llm, agent_callback_handler)
-        self._inject_additional_arguments(agent_instance)
-        return agent_instance
-
-    def _inject_additional_arguments(self, agent_instance: BaseAgent) -> None:
-        agent_configuration_id = self._repositories.conversation.get_agent_id(self.conversation_id)
-        runtime_arguments = self._repositories.agent.get_agent_configuration_by_id(agent_configuration_id)
-        agent_instance.set_runtime_arguments(runtime_arguments)
-
-    def _build_agent(
-        self,
-        tools: list[BaseTool],
-        llm: BaseLanguageModel,
-        callback_handler: BaseCallbackHandler,
-    ) -> BaseAgent:
-        return self._config.agent_class(
-            tools=tools,
-            llm=llm,
-            system_prompt=self._config.system_prompt,
-            conversation_id=self.conversation_id,
-            callback_handler=callback_handler,
-            injector=self._injector,
-        )
-
-    def _build_llm_registry(self) -> BaseLanguageModelRegistry:
-        llm_registry_class = self._config.registry.llm.registry_class
-        if providers := self._config.registry.llm.providers:
-            return llm_registry_class(providers=providers)
-        return llm_registry_class(data_set_repo=self._repositories.data_set)
-
-    def _build_db_models_registry(self) -> BaseDBModelsRegistry:
-        db_models_registry_class = self._config.registry.model.registry_class
-        if models_config := self._config.registry.model.models_config:
-            return db_models_registry_class(models_config=models_config)
-        return db_models_registry_class()
-
-    def _build_and_set_repositories(self, models_registry: BaseDBModelsRegistry) -> None:
-        repositories = {}
-        for name in self._config.repositories.__class__.model_fields.keys():
-            repo_class = getattr(self._config.repositories, name)
-            model_class = models_registry.get_model_class_by_name(name)
-            repositories[name] = repo_class(model_class)
-        self._repositories = RepositoriesInstances(**repositories)
-
-    def _build_embeddings_registry(self) -> BaseEmbeddingProviderRegistry:
-        embeddings_registry_class = self._config.registry.embeddings.registry_class
-        if providers := self._config.registry.llm.providers:
-            return embeddings_registry_class(providers=providers)
-        return embeddings_registry_class(data_set_repo=self._repositories.data_set)
-
-    def _build_llm(self, llm_config: LLMConfig) -> BaseLanguageModel:
-        callbacks = self._build_llm_callback_handlers()
-        llm = llm_config.llm_class(
-            llm_registry=self._llm_registry,
-            callbacks=callbacks,
-            streaming=self.streaming,
-            data_set_repo=self._repositories.data_set,
-        )
-        return llm.create(self._data_set_id)
-
-    def _build_default_llm(self) -> BaseLanguageModel:
-        llm_registry_class = self._config.registry.llm.registry_class
-        data_set_repo = self._repositories.data_set
-        if providers := self._config.registry.llm.providers:
-            llm_registry = llm_registry_class(providers=providers)
-        else:
-            llm_registry = llm_registry_class(data_set_repo=data_set_repo)
-
-        llm = self._config.llm.llm_class(
-            llm_registry=llm_registry,
-            data_set_repo=data_set_repo,
-        )
-        return llm.create(self._data_set_id)
-
-    def _build_tools(self, default_llm: BaseLanguageModel, injector: BaseInjector) -> list[BaseTool]:
-        tools = []
-
-        for tool_config in self._config.tools:
-            if isinstance(tool_config, FunctionToolConfig):
-                tools.append(self._build_function_tool(config=tool_config))
-            elif isinstance(tool_config, LLMToolConfig):
-                tools.append(self._build_llm_tool(config=tool_config, injector=injector, default_llm=default_llm))
-            elif isinstance(tool_config, AgentToolConfig):
-                tools.append(self._build_agent_tool(config=tool_config))
-            elif isinstance(tool_config, FileToolConfig):
-                tools.append(self._build_file_tool(config=tool_config, injector=injector, default_llm=default_llm))
-            else:
-                continue
-        return tools
-
-    def _build_function_tool(self, config: FunctionToolConfig) -> BaseFunctionTool:
-        return config.tool_class()
-
-    def _build_llm_tool(
-        self, config: LLMToolConfig, default_llm: BaseLanguageModel, injector: BaseInjector
-    ) -> BaseLLMTool:
-        llm = default_llm
-        if config.llm:
-            llm = config.llm
-        return config.tool_class(
-            data_set_id=self._data_set_id,
-            llm=llm,
-            injector=injector,
-        )
-
-    def _build_file_tool(
-        self, config: FileToolConfig, default_llm: BaseLanguageModel, injector: BaseInjector
-    ) -> BaseFileTool:
-        llm = default_llm
-        if config.llm:
-            llm = config.llm
-        return config.tool_class(
-            data_set_id=self._data_set_id,
-            conversation_id=self.conversation_id,
-            llm_registry=self._llm_registry,
-            llm=llm,
-            injector=injector,
-        )
-
-    def _build_agent_tool(self, config: AgentToolConfig) -> BaseAgentTool:
-        # Sub-agents are built with the same builder class as their parent.
-        agent = type(self)(config.agent, self.conversation_id, self.streaming).build()
-        return config.tool_class(agent=agent)
-
-    def _build_injector(self) -> BaseInjector:
-        chat_history = self._build_chat_history()
-        memory_compactor = self._build_memory_compactor(chat_history)
-        return self._config.injector(
-            repositories=self._repositories,
-            chat_history=chat_history,
-            memory_compactor=memory_compactor,
-            tool_scratchpad=self._tool_scratchpad,
-        )
-
-    def _build_agent_callback_handler(self) -> Optional[BaseCallbackHandler]:
-        if not self._config.agent_callback_handler:
-            return None
-        if issubclass(self._config.agent_callback_handler.handler_class, ConversationCallbackHandler):
-            return self._config.agent_callback_handler.handler_class(conversation_id=self.conversation_id)
-        return self._config.agent_callback_handler.handler_class()
-
-    def _build_llm_callback_handlers(self) -> Optional[list[BaseCallbackHandler]]:
-        if not self._config.llm.callbacks:
-            return None
-        handlers = []
-        for config in self._config.llm.callbacks:
-            if issubclass(config.handler_class, ConversationCallbackHandler):
-                handler = config.handler_class(conversation_id=self.conversation_id)
-            else:
-                handler = config.handler_class()
-            handlers.append(handler)
-        return handlers
-
-    def _build_chat_history(self) -> BaseChatMessageHistory:
-        return self._config.memory.chat_history_class(self._repositories.conversation, self.conversation_id)
-
-    def _build_memory_compactor(self, chat_history: BaseChatMessageHistory) -> Optional[BaseMemoryCompactor]:
-        if not self._config.memory_compactor_enabled:
-            return None
-        llm = self._build_default_llm()
-        return self._config.memory.compactor_class(
-            self._repositories.conversation, self.conversation_id, llm, chat_history
-        )
+        """Build and return a fully wired agent for the conversation."""
