@@ -33,7 +33,7 @@ class EcommerceAgentBuilder(AgentBuilder):
     def _build_document_retriever(self) -> DocumentRetriever:
         return DocumentRetriever(
             data_set_id=self._data_set_id,
-            embeddings_registry=self._build_embeddings_registry(),
+            embeddings_registry=self._embeddings_registry,
         )
 
     def _build_ecommerce_platform_connector(self) -> Optional[ECommercePlatformConnector]:
