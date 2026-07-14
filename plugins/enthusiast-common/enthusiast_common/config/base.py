@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from typing import Any, Generic, Optional, Type, TypeVar
+from typing import Generic, Optional, Type, TypeVar
 
 from langchain_core.callbacks import BaseCallbackHandler
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
 from ..agents import BaseAgent
 from ..injectors.base import BaseInjector
@@ -20,7 +20,6 @@ from ..repositories.base import (
     BaseMessageRepository,
     BaseUserRepository,
 )
-from ..retrievers import BaseRetriever
 from ..tools import BaseAgentTool, BaseFileTool, BaseFunctionTool, BaseLLMTool
 
 InjectorT = TypeVar("InjectorT", bound=BaseInjector)
@@ -85,11 +84,6 @@ class FileToolConfig(ArbitraryTypeBaseModel):
 class AgentToolConfig(ArbitraryTypeBaseModel):
     tool_class: Type[BaseAgentTool]
     agent: AgentConfig
-
-
-class RetrieverConfig(ArbitraryTypeBaseModel):
-    retriever_class: Type[BaseRetriever]
-    extra_kwargs: dict[str, Any] = Field(default_factory=dict)
 
 
 class AgentCallbackHandlerConfig(ArbitraryTypeBaseModel):
