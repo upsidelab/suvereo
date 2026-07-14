@@ -59,10 +59,50 @@ class DataSetCreateSerializer(DataSetSerializer):
 
 
 class IntegrationSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField()
+    integration_type_name = serializers.SerializerMethodField()
+    syncable = serializers.SerializerMethodField()
+    configurable = serializers.SerializerMethodField()
+
     class Meta:
         model = Integration
-        fields = ["id", "dataset", "type", "config", "created_at", "updated_at"]
+        fields = [
+            "id",
+            "dataset",
+            "type",
+            "name",
+            "integration_type_name",
+            "syncable",
+            "configurable",
+            "config",
+            "created_at",
+            "updated_at",
+        ]
         read_only_fields = ["id", "dataset", "created_at", "updated_at"]
+
+    def _get_plugin_class(self, integration):
+        from catalog.integrations.registry import IntegrationPluginRegistry
+
+        try:
+            return IntegrationPluginRegistry().get_plugin_class_by_type(integration.type)
+        except KeyError:
+            return None
+
+    def get_name(self, integration):
+        plugin_class = self._get_plugin_class(integration)
+        return plugin_class.NAME if plugin_class else integration.type
+
+    def get_integration_type_name(self, integration):
+        plugin_class = self._get_plugin_class(integration)
+        return plugin_class.INTEGRATION_TYPE_NAME if plugin_class else None
+
+    def get_syncable(self, integration):
+        plugin_class = self._get_plugin_class(integration)
+        return plugin_class.is_syncable() if plugin_class else False
+
+    def get_configurable(self, integration):
+        plugin_class = self._get_plugin_class(integration)
+        return plugin_class is not None and plugin_class.CONFIGURATION_ARGS is not None
 
 
 class IntegrationUpdateSerializer(serializers.ModelSerializer):
@@ -75,4 +115,6 @@ class IntegrationUpdateSerializer(serializers.ModelSerializer):
 class IntegrationTypeSerializer(serializers.Serializer):
     type = serializers.CharField()
     name = serializers.CharField()
+    integration_type_name = serializers.CharField()
+    syncable = serializers.BooleanField()
     config_schema = serializers.JSONField()

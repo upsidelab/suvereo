@@ -14,6 +14,8 @@ export type EntityType = {
 export type IntegrationType = {
   type: string;
   name: string;
+  integration_type_name: string;
+  syncable: boolean;
   config_schema: unknown;
 };
 
@@ -21,6 +23,10 @@ export type Integration = {
   id: number;
   dataset: number;
   type: string;
+  name: string;
+  integration_type_name: string | null;
+  syncable: boolean;
+  configurable: boolean;
   config: Record<string, unknown>;
   created_at: string;
   updated_at: string;
@@ -47,14 +53,6 @@ export type Product = {
   price: number;
 }
 
-export type CatalogSource = {
-  id: number;
-  plugin_name: string;
-  config: string;
-  data_set_id: number;
-  corrupted: boolean;
-}
-
 export type Document = {
   id: number;
   url: string;
@@ -74,11 +72,6 @@ export type User = {
   isActive: boolean;
   isStaff: boolean;
 }
-
-export type SourcePlugin = {
-  name: string;
-  configuration_args: Record<string, ExtraArgDetail>;
-};
 
 export type Agent = {
   id: number;

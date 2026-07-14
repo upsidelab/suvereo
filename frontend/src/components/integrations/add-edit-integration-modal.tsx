@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FormModal } from "@/components/ui/form-modal.tsx";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
-import { IntegrationType } from "@/lib/types.ts";
+import { Integration, IntegrationType } from "@/lib/types.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -20,20 +20,31 @@ type ConfigSchema = {
   required?: string[];
 };
 
-interface AddIntegrationModalProps {
+interface AddEditIntegrationModalProps {
   dataSetId: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  integrationTypeName?: string;
+  integration?: Integration | null;
 }
 
-export function AddIntegrationModal({ dataSetId, open, onOpenChange, onSuccess }: AddIntegrationModalProps) {
+export function AddEditIntegrationModal({
+  dataSetId,
+  open,
+  onOpenChange,
+  onSuccess,
+  integrationTypeName,
+  integration,
+}: AddEditIntegrationModalProps) {
   const [integrationTypes, setIntegrationTypes] = useState<IntegrationType[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(true);
   const [selectedType, setSelectedType] = useState<string>("");
   const [config, setConfig] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isEditing = !!integration;
 
   useEffect(() => {
     if (!open) return;
@@ -48,8 +59,19 @@ export function AddIntegrationModal({ dataSetId, open, onOpenChange, onSuccess }
       setSelectedType("");
       setConfig({});
       setError(null);
+      return;
     }
-  }, [open]);
+    if (integration) {
+      setSelectedType(integration.type);
+      setConfig(Object.fromEntries(
+        Object.entries(integration.config).map(([key, value]) => [key, String(value ?? "")])
+      ));
+    }
+  }, [open, integration]);
+
+  const availableTypes = integrationTypeName
+    ? integrationTypes.filter(t => t.integration_type_name === integrationTypeName)
+    : integrationTypes;
 
   const selectedIntegrationType = integrationTypes.find(t => t.type === selectedType);
   const schema = selectedIntegrationType?.config_schema as ConfigSchema | undefined;
@@ -66,24 +88,30 @@ export function AddIntegrationModal({ dataSetId, open, onOpenChange, onSuccess }
     setSubmitting(true);
     setError(null);
     try {
-      await api.integrations().create(dataSetId, selectedType, config);
+      if (integration) {
+        await api.integrations().update(dataSetId, integration.id, config);
+      } else {
+        await api.integrations().create(dataSetId, selectedType, config);
+      }
       onSuccess();
       onOpenChange(false);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to create integration");
+      setError(e instanceof Error ? e.message : `Failed to ${integration ? "update" : "create"} integration`);
     } finally {
       setSubmitting(false);
     }
   };
 
+  const titleTypeName = integration?.integration_type_name ?? integrationTypeName ?? "Integration";
+
   return (
     <FormModal
       open={open}
       onOpenChange={onOpenChange}
-      title="Add Integration"
+      title={`${isEditing ? "Edit" : "Add"} ${titleTypeName}`}
       onSubmit={handleSubmit}
       onCancel={() => onOpenChange(false)}
-      submitLabel="Add"
+      submitLabel={isEditing ? "Save" : "Add"}
       submitting={submitting}
       disabled={!isValid}
       loading={loadingTypes}
@@ -101,13 +129,13 @@ export function AddIntegrationModal({ dataSetId, open, onOpenChange, onSuccess }
         <Select
           value={selectedType}
           onValueChange={setSelectedType}
-          disabled={integrationTypes.length === 0}
+          disabled={isEditing || availableTypes.length === 0}
         >
           <SelectTrigger id="integration-type">
             <SelectValue placeholder="Select integration type" />
           </SelectTrigger>
           <SelectContent>
-            {integrationTypes.map(t => (
+            {availableTypes.map(t => (
               <SelectItem key={t.type} value={t.type}>{t.name}</SelectItem>
             ))}
           </SelectContent>

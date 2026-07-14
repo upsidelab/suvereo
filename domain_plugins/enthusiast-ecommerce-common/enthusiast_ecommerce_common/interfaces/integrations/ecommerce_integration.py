@@ -10,6 +10,7 @@ from enthusiast_ecommerce_common.interfaces.integrations.product_source import P
 class ECommerceIntegrationPlugin(BaseIntegration):
     """A BaseIntegration that provides a platform connector and a product data source."""
 
+    INTEGRATION_TYPE_NAME = "E-Commerce system"
     INTEGRATION_MANAGER = BaseECommerceIntegrationManager
 
     @abstractmethod
