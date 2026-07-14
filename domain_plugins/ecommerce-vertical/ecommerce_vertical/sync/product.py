@@ -9,7 +9,7 @@ from ecommerce_vertical.models import Product
 class ProductSourceManager(BaseProductSourceManager):
     """Syncs products from a ProductSourcePlugin into the ecommerce vertical."""
 
-    def sync(self, plugin: ProductSourcePlugin, dataset_id: Any) -> None:
+    def sync(self, plugin: ProductSourcePlugin, dataset_id: Any, integration_id: Any) -> None:
         """Fetch products via the plugin and upsert + index each one."""
         from catalog.indexing.pipeline import index_entity
 
@@ -18,6 +18,7 @@ class ProductSourceManager(BaseProductSourceManager):
                 dataset_id=dataset_id,
                 entry_id=details.entry_id,
                 defaults={
+                    "integration_id": integration_id,
                     "name": details.name,
                     "slug": details.slug,
                     "sku": details.sku,
