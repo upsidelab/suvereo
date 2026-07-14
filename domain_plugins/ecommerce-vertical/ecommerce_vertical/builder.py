@@ -1,14 +1,15 @@
 from typing import Optional
 
+from enthusiast_common.builder import BaseAgentBuilder
+from enthusiast_common.config import AgentConfig
 from enthusiast_ecommerce_common.connectors import ECommercePlatformConnector
 from enthusiast_ecommerce_common.interfaces import ECommerceIntegrationPlugin
 
-from agent.core.builder import AgentBuilder
 from ecommerce_vertical.injector import EcommerceInjector
 from ecommerce_vertical.retrievers import DocumentRetriever, ProductRetriever
 
 
-class EcommerceAgentBuilder(AgentBuilder):
+class EcommerceAgentBuilder(BaseAgentBuilder[AgentConfig]):
     """AgentBuilder that wires an EcommerceInjector with product and document retrievers."""
 
     def _build_injector(self) -> EcommerceInjector:
@@ -38,14 +39,10 @@ class EcommerceAgentBuilder(AgentBuilder):
         )
 
     def _build_ecommerce_platform_connector(self) -> Optional[ECommercePlatformConnector]:
-        from catalog.integrations.registry import IntegrationPluginRegistry
-        from catalog.models import Integration
-
-        for integration in Integration.objects.filter(dataset_id=self._data_set_id):
-            plugin_class = IntegrationPluginRegistry().get_plugin_class_by_type(integration.type)
-            if issubclass(plugin_class, ECommerceIntegrationPlugin):
-                plugin: ECommerceIntegrationPlugin = plugin_class()
-                if integration.config:
-                    plugin.set_runtime_arguments({"configuration_args": integration.config})
-                return plugin.build_connector()
-        return None
+        if self._config.integration_plugin_resolver is None:
+            return None
+        resolver = self._config.integration_plugin_resolver()
+        plugin = resolver.resolve(self._data_set_id, ECommerceIntegrationPlugin)
+        if plugin is None:
+            return None
+        return plugin.build_connector()

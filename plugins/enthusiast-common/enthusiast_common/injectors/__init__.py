@@ -1,3 +1,3 @@
-from .base import BaseInjector
+from .base import BaseInjector, Injector
 
-__all__ = ["BaseInjector"]
+__all__ = ["BaseInjector", "Injector"]

@@ -1,13 +1,13 @@
 from typing import Optional
 
+from enthusiast_common.injectors import Injector
 from enthusiast_ecommerce_common.connectors import ECommercePlatformConnector
 
-from agent.core.injector import Injector
 from ecommerce_vertical.retrievers import DocumentRetriever, ProductRetriever
 
 
 class EcommerceInjector(Injector):
-    """Extends the server Injector with ecommerce-specific retrievers and the platform connector."""
+    """Extends the framework Injector with ecommerce-specific retrievers and the platform connector."""
 
     def __init__(
         self,

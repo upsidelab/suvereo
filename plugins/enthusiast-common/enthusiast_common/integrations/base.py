@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Optional
 
 from enthusiast_common.indexing import BaseEntityIndexer
 
@@ -65,3 +65,16 @@ class BaseIntegration(ABC):
         if config_class is None:
             return {}
         return config_class.model_json_schema()
+
+
+class BaseIntegrationPluginResolver(ABC):
+    """Resolves the integration plugin configured for a data set.
+
+    The framework host implements the lookup against its integration storage and
+    declares the implementation in the default agent config, so plugin packages
+    can locate integrations without knowing how the host stores them.
+    """
+
+    @abstractmethod
+    def resolve(self, data_set_id: Any, plugin_base: type) -> Optional[BaseIntegration]:
+        """Return a configured plugin instance of *plugin_base* for the data set, or None."""
