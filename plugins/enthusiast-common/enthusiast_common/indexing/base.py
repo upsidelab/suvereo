@@ -1,3 +1,6 @@
+from abc import ABC, abstractmethod
+from typing import Any
+
 from django.db import models
 from pgvector.django import VectorField
 
@@ -19,3 +22,24 @@ class BaseEmbeddingChunk(models.Model):
     def set_embedding(self, embedding_vector: list[float]) -> None:
         """Store a computed embedding vector on this chunk instance."""
         self.embedding = embedding_vector
+
+
+class BaseEntityIndexer(ABC):
+    """Indexes a domain entity's content for vector search.
+
+    Implementations chunk ``entity.get_indexable_content()``, embed each chunk,
+    and persist the vectors to the entity's chunk table (a ``BaseEmbeddingChunk``
+    subclass). The framework host provides a concrete implementation and injects
+    it into source integration managers, so plugin packages depend only on this
+    interface.
+
+    The entity must expose:
+      - ``dataset`` — the DataSet-like object holding the embedding configuration,
+      - ``get_indexable_content() -> str`` — the text to index,
+      - ``chunks`` — reverse manager to the entity's ``BaseEmbeddingChunk`` table
+        (a foreign key on the chunk model declared with ``related_name="chunks"``).
+    """
+
+    @abstractmethod
+    def index(self, entity: Any) -> None:
+        """Chunk, embed, and store the entity's indexable content."""

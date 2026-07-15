@@ -1,4 +1,3 @@
-from .base import BaseEmbeddingChunk
-from .indexer import BaseEntityIndexer
+from .base import BaseEmbeddingChunk, BaseEntityIndexer
 
 __all__ = ["BaseEmbeddingChunk", "BaseEntityIndexer"]

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-from enthusiast_common.indexing.indexer import BaseEntityIndexer
+from enthusiast_common.indexing import BaseEntityIndexer
 
 
 class BaseIntegrationManager(ABC):
