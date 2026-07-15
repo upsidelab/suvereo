@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any, Optional, TypeVar
 
 from enthusiast_common.indexing import BaseEntityIndexer
 
@@ -67,6 +67,9 @@ class BaseIntegration(ABC):
         return config_class.model_json_schema()
 
 
+IntegrationT = TypeVar("IntegrationT", bound=BaseIntegration)
+
+
 class BaseIntegrationPluginResolver(ABC):
     """Resolves the integration plugin configured for a data set.
 
@@ -76,5 +79,5 @@ class BaseIntegrationPluginResolver(ABC):
     """
 
     @abstractmethod
-    def resolve(self, data_set_id: Any, plugin_base: type) -> Optional[BaseIntegration]:
+    def resolve(self, data_set_id: Any, plugin_base: type[IntegrationT]) -> Optional[IntegrationT]:
         """Return a configured plugin instance of *plugin_base* for the data set, or None."""

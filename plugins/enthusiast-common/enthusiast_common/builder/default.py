@@ -103,7 +103,7 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
 
     def _build_embeddings_registry(self) -> BaseEmbeddingProviderRegistry:
         embeddings_registry_class = self._config.registry.embeddings.registry_class
-        if providers := self._config.registry.llm.providers:
+        if providers := self._config.registry.embeddings.providers:
             return embeddings_registry_class(providers=providers)
         return embeddings_registry_class(data_set_repo=self._repositories.data_set)
 
@@ -177,7 +177,9 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
         )
 
     def _build_agent_tool(self, config: AgentToolConfig) -> BaseAgentTool:
-        # Sub-agents are built with the same builder class as their parent.
+        # Sub-agents are built with the same builder class as their parent, so a
+        # vertical builder propagates its injector (and its build costs) to
+        # sub-agents — overriding whatever config.agent.injector declares.
         agent = type(self)(config.agent, self.conversation_id, self.streaming).build()
         return config.tool_class(agent=agent)
 
@@ -216,6 +218,11 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
     def _build_memory_compactor(self, chat_history: BaseChatMessageHistory) -> Optional[BaseMemoryCompactor]:
         if not self._config.memory_compactor_enabled:
             return None
+        if self._config.memory.compactor_class is None:
+            raise ValueError(
+                "memory_compactor_enabled is True but memory.compactor_class is not set — "
+                "declare a BaseMemoryCompactor implementation in the agent config."
+            )
         llm = self._build_default_llm()
         return self._config.memory.compactor_class(
             self._repositories.conversation, self.conversation_id, llm, chat_history

@@ -1,10 +1,10 @@
 from typing import Optional
 
-from enthusiast_common.agentic_execution import ToolScratchpad
-from enthusiast_common.memory import BaseMemoryCompactor
-from enthusiast_common.structures import RepositoriesInstances
 from langchain_core.chat_history import BaseChatMessageHistory
 
+from ..agentic_execution import ToolScratchpad
+from ..memory import BaseMemoryCompactor
+from ..structures import RepositoriesInstances
 from .base import BaseInjector
 
 
