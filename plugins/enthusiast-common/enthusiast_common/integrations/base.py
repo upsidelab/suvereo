@@ -67,6 +67,8 @@ class BaseIntegration(ABC):
         return config_class.model_json_schema()
 
 
+# Bound to BaseIntegration, defined above — kept local to its only use below
+# rather than hoisted to the top of the file with the other imports.
 IntegrationT = TypeVar("IntegrationT", bound=BaseIntegration)
 
 
