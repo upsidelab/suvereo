@@ -11,8 +11,6 @@ class ProductSourceManager(BaseProductSourceManager):
 
     def sync(self, plugin: ProductSourcePlugin, dataset_id: Any, integration_id: Any) -> None:
         """Fetch products via the plugin and upsert + index each one."""
-        from catalog.indexing.pipeline import index_entity
-
         for details in plugin.fetch():
             product, _ = Product.objects.update_or_create(
                 dataset_id=dataset_id,
@@ -28,4 +26,4 @@ class ProductSourceManager(BaseProductSourceManager):
                     "price": details.price,
                 },
             )
-            index_entity(product)
+            self._indexer.index(product)

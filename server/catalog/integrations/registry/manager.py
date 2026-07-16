@@ -2,6 +2,9 @@ from django.conf import settings
 from enthusiast_common.integrations import BaseSourceIntegrationManager
 from utils.base_registry import BaseRegistry
 
+from agent.core.registries.embeddings import EmbeddingProviderRegistry
+from catalog.indexing.pipeline import EmbeddingIndexer
+
 
 class IntegrationManagerRegistry(BaseRegistry[BaseSourceIntegrationManager]):
     """Resolves concrete integration manager classes registered in CATALOG_INTEGRATION_MANAGERS."""
@@ -15,5 +18,5 @@ class IntegrationManagerRegistry(BaseRegistry[BaseSourceIntegrationManager]):
         for path in getattr(settings, "CATALOG_INTEGRATION_MANAGERS", []):
             manager_cls = self._get_class_by_path(path, BaseSourceIntegrationManager)
             if issubclass(manager_cls, integration_manager):
-                return manager_cls()
+                return manager_cls(indexer=EmbeddingIndexer(EmbeddingProviderRegistry()))
         return None

@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
+from enthusiast_common.indexing import BaseEntityIndexer
+
 
 class BaseIntegrationManager(ABC):
     """Marker base for a category of integrations."""
@@ -8,6 +10,10 @@ class BaseIntegrationManager(ABC):
 
 class BaseSourceIntegrationManager(BaseIntegrationManager):
     """Marker for integration categories whose plugins pull data from an external source."""
+
+    def __init__(self, indexer: BaseEntityIndexer):
+        """The framework host injects the indexer used to embed synced entities."""
+        self._indexer = indexer
 
     @abstractmethod
     def sync(self, plugin: Any, dataset_id: Any, integration_id: Any) -> None:
