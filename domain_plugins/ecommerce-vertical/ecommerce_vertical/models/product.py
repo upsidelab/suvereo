@@ -3,7 +3,7 @@ from enthusiast_common.entities import DomainEntity, EntityField
 
 
 class Product(DomainEntity, models.Model):
-    """A product synced from an external source, indexed for vector search."""
+    """A product synced from an external source, searched via SQL over its attributes."""
 
     dataset = models.ForeignKey("catalog.DataSet", on_delete=models.CASCADE, related_name="products")
     integration = models.ForeignKey(
@@ -30,9 +30,6 @@ class Product(DomainEntity, models.Model):
             EntityField("sku"),
             EntityField("price"),
         ]
-
-    def get_indexable_content(self) -> str:
-        return f"{self.name} {self.description} {self.properties} {self.categories}"
 
     def __str__(self):
         return self.name
