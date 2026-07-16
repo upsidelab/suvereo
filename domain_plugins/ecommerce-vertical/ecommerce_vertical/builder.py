@@ -34,6 +34,7 @@ class EcommerceAgentBuilder(AgentBuilder):
         return DocumentRetriever(
             data_set_id=self._data_set_id,
             embeddings_registry=self._embeddings_registry,
+            searcher=self._config.similarity_searcher(),
         )
 
     def _build_ecommerce_platform_connector(self) -> Optional[ECommercePlatformConnector]:

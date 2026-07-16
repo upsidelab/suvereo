@@ -1,12 +1,11 @@
-from typing import Any, ClassVar, Generic, TypeVar
+from typing import Any, ClassVar, Generic, Iterable, TypeVar
 
-from django.db.models import Model, QuerySet
 from enthusiast_common.registry import BaseEmbeddingProviderRegistry
-from pgvector.django import CosineDistance
 
 from .base import BaseRetriever
+from .searcher import BaseSimilaritySearcher
 
-T = TypeVar("T", bound=Model)
+T = TypeVar("T")
 
 
 class BaseVectorStoreRetriever(BaseRetriever, Generic[T]):
@@ -17,32 +16,34 @@ class BaseVectorStoreRetriever(BaseRetriever, Generic[T]):
       - ``dataset_filter`` — the lookup path from the chunk to its DataSet id
         (e.g. ``"document__dataset_id"``).
 
-    The mechanics are handled here: the query is embedded with the same
-    provider/config that produced the stored vectors, and chunks are ranked by
-    cosine distance. Override ``find_content_matching_query`` when a vertical
+    The query is embedded with the same provider/config that produced the stored
+    vectors; the actual similarity search is delegated to an injected
+    ``BaseSimilaritySearcher``, so this class stays free of any database
+    technology choice. Override ``find_content_matching_query`` when a vertical
     needs a custom strategy (e.g. an extra lexical filter before the ranking).
     """
 
-    chunk_model: ClassVar[type[Model]]
+    chunk_model: ClassVar[type]
     dataset_filter: ClassVar[str]
 
     def __init__(
         self,
         data_set_id: Any,
         embeddings_registry: BaseEmbeddingProviderRegistry,
+        searcher: BaseSimilaritySearcher,
         max_objects: int = 12,
     ):
         self.data_set_id = data_set_id
         self.embeddings_registry = embeddings_registry
+        self._searcher = searcher
         self.max_objects = max_objects
 
-    def find_content_matching_query(self, query: str) -> QuerySet[T]:
+    def find_content_matching_query(self, query: str) -> Iterable[T]:
         """Return up to ``max_objects`` chunks most similar to *query*, best matches first."""
         embedding_vector = self._create_embedding_for_query(query)
-        embedding_distance = CosineDistance("embedding", embedding_vector)
-        return self.chunk_model.objects.filter(**{self.dataset_filter: self.data_set_id}).order_by(
-            embedding_distance
-        )[: self.max_objects]
+        return self._searcher.search(
+            self.chunk_model, self.dataset_filter, self.data_set_id, embedding_vector, self.max_objects
+        )
 
     def _create_embedding_for_query(self, query: str) -> list[float]:
         """Embed a query with the same provider/config that produced the stored vectors."""

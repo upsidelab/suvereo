@@ -20,6 +20,7 @@ from ..repositories.base import (
     BaseMessageRepository,
     BaseUserRepository,
 )
+from ..retrievers import BaseSimilaritySearcher
 from ..tools import BaseAgentTool, BaseFileTool, BaseFunctionTool, BaseLLMTool
 
 InjectorT = TypeVar("InjectorT", bound=BaseInjector)
@@ -100,6 +101,7 @@ class AgentConfig(ArbitraryTypeBaseModel, Generic[InjectorT]):
     tools: Optional[list[FunctionToolConfig | LLMToolConfig | AgentToolConfig | FileToolConfig]] = None
     agent_callback_handler: Optional[AgentCallbackHandlerConfig] = None
     memory_compactor_enabled: bool = False
+    similarity_searcher: Optional[Type[BaseSimilaritySearcher]] = None
 
 
 class AgentConfigWithDefaults(AgentConfig, Generic[InjectorT]):

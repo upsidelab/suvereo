@@ -11,6 +11,7 @@ from enthusiast_common.config import (
     RegistryConfig,
     RepositoriesConfig,
 )
+from enthusiast_common.retrievers import BaseSimilaritySearcher
 from pydantic import BaseModel
 
 from agent.core.callbacks import ConversationWebSocketCallbackHandler
@@ -25,6 +26,7 @@ from agent.core.repositories import (
     DjangoMessageRepository,
     DjangoUserRepository,
 )
+from catalog.retrieval.searcher import EmbeddingSimilaritySearcher
 
 
 class DefaultAgentConfig(BaseModel):
@@ -33,6 +35,7 @@ class DefaultAgentConfig(BaseModel):
     registry: RegistryConfig
     llm: LLMConfig
     agent_callback_handler: Optional[AgentCallbackHandlerConfig] = None
+    similarity_searcher: Optional[Type[BaseSimilaritySearcher]] = None
 
 
 def get_default_config() -> DefaultAgentConfig:
@@ -52,6 +55,7 @@ def get_default_config() -> DefaultAgentConfig:
         ),
         llm=LLMConfig(),
         agent_callback_handler=AgentCallbackHandlerConfig(handler_class=ConversationWebSocketCallbackHandler),
+        similarity_searcher=EmbeddingSimilaritySearcher,
     )
 
 
