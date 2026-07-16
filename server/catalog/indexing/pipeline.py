@@ -1,5 +1,5 @@
 from django.db import transaction
-from enthusiast_common.indexing import BaseEntityIndexer
+from enthusiast_common.indexing import BaseEntityIndexer, IndexableEntity
 from enthusiast_common.registry import BaseEmbeddingProviderRegistry
 from langchain_text_splitters import TokenTextSplitter
 
@@ -19,7 +19,7 @@ class EmbeddingIndexer(BaseEntityIndexer):
         """Uses registry to resolve the embedding provider configured for the entity's DataSet."""
         self._registry = registry
 
-    def index(self, entity) -> None:
+    def index(self, entity: IndexableEntity) -> None:
         """Chunk, embed, and store the entity's indexable content."""
         data_set = entity.dataset
 
