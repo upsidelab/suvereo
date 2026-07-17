@@ -51,6 +51,18 @@ class TestServiceAccountViews:
         assert listed["is_admin"] is True
         assert "is_staff" not in listed
 
+    def test_patch_omitting_is_admin_preserves_membership(self, admin_api_client):
+        payload = {"name": "sticky-bot", "is_active": True, "is_admin": True, "data_set_ids": []}
+        created = admin_api_client.post(reverse("service_account_list"), payload)
+        account_id = created.data["id"]
+
+        response = admin_api_client.patch(
+            f"/api/service_accounts/{account_id}",
+            {"name": "sticky-bot", "is_active": True, "data_set_ids": []},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert is_application_admin(User.objects.get(id=account_id)) is True
+
 
 @pytest.mark.django_db
 class TestCreateAdminServiceAccountCommand:
