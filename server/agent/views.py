@@ -15,6 +15,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from utils.functions import get_model_descriptor_from_class_field
 
+from account.authorization import is_application_admin
 from agent.conversation import ConversationManager
 from agent.core.registries.agents.agent_registry import AgentRegistry
 from agent.core.registries.language_models import LanguageModelRegistry
@@ -284,7 +285,7 @@ class AgentView(APIView):
         responses={200: AgentListSerializer(many=True)},
     )
     def get(self, request):
-        if request.user.is_staff:
+        if is_application_admin(request.user):
             queryset = Agent.objects.all().order_by("created_at")
         else:
             queryset = Agent.objects.filter(corrupted=False).order_by("created_at")

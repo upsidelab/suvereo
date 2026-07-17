@@ -3,10 +3,12 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.generics import GenericAPIView, ListCreateAPIView, RetrieveAPIView
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from account.authorization import PERM_ACCESS_ALL_DATASETS, PERM_CONFIGURE_MODELS, PERM_MANAGE_DATASETS
 from account.models import User
+from account.permissions import HasRequiredPermission
 from account.serializers import UserSerializer
 from agent.core.registries.embeddings import EmbeddingProviderRegistry
 from agent.core.registries.language_models import LanguageModelRegistry
@@ -31,7 +33,7 @@ class DataSetListView(ListCreateAPIView):
         return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
-        if self.request.user and self.request.user.is_staff:
+        if self.request.user.has_perm(PERM_ACCESS_ALL_DATASETS):
             return DataSet.objects.all()
 
         return DataSet.objects.filter(users=self.request.user)
@@ -41,7 +43,7 @@ class DataSetListView(ListCreateAPIView):
         return super().post(request, *args, **kwargs)
 
     def perform_create(self, serializer):
-        if not self.request.user.is_staff:
+        if not self.request.user.has_perm(PERM_MANAGE_DATASETS):
             self.permission_denied(self.request)
 
         with transaction.atomic():
@@ -54,7 +56,8 @@ class DataSetListView(ListCreateAPIView):
 
 class DataSetDetailView(RetrieveAPIView):
     serializer_class = DataSetSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [HasRequiredPermission]
+    required_permission = PERM_MANAGE_DATASETS
     lookup_url_kwarg = "data_set_id"
     queryset = DataSet.objects.all()
 
@@ -117,7 +120,8 @@ class DataSetDetailView(RetrieveAPIView):
 
 class DataSetUserListView(ListCreateAPIView):
     serializer_class = UserSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [HasRequiredPermission]
+    required_permission = PERM_MANAGE_DATASETS
 
     @swagger_auto_schema(
         operation_description="List users in a data set",
@@ -150,7 +154,8 @@ class DataSetUserListView(ListCreateAPIView):
 
 
 class DataSetUserView(GenericAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [HasRequiredPermission]
+    required_permission = PERM_MANAGE_DATASETS
 
     @swagger_auto_schema(
         operation_description="Remove a user from a data set",
@@ -167,7 +172,8 @@ class DataSetUserView(GenericAPIView):
 
 
 class ConfigView(GenericAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [HasRequiredPermission]
+    required_permission = PERM_CONFIGURE_MODELS
 
     @swagger_auto_schema(
         operation_description="Get catalog configuration",
@@ -206,7 +212,8 @@ class ConfigView(GenericAPIView):
 
 
 class ConfigLanguageModelView(GenericAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [HasRequiredPermission]
+    required_permission = PERM_CONFIGURE_MODELS
 
     @swagger_auto_schema(
         operation_description="Get available language models for a given provider",
@@ -228,7 +235,8 @@ class ConfigLanguageModelView(GenericAPIView):
 
 
 class ConfigEmbeddingModelView(GenericAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [HasRequiredPermission]
+    required_permission = PERM_CONFIGURE_MODELS
 
     @swagger_auto_schema(
         operation_description="Get available embedding models and vector size constraints for a given provider",

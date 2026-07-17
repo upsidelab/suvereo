@@ -11,6 +11,7 @@ from pydantic import Field
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from account.authorization import set_application_admin
 from account.models import User
 from agent.models import Conversation
 from agent.models.agent import Agent
@@ -180,8 +181,7 @@ class TestAgentView:
         assert response.data[1]["id"] == newer.id
 
     def test_get_returns_corrupted_agents_to_admin(self, user, api_client, url, dataset_instance):
-        user.is_staff = True
-        user.save()
+        set_application_admin(user, True)
         agent_1 = baker.make(Agent, dataset=dataset_instance)
         agent_2 = baker.make(Agent, dataset=dataset_instance, corrupted=True)
 
