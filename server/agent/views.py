@@ -15,7 +15,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from utils.functions import get_model_descriptor_from_class_field
 
-from account.authorization import is_application_admin
+from account.authorization import PERM_MANAGE_AGENTS, is_application_admin
 from agent.conversation import ConversationManager
 from agent.core.registries.agents.agent_registry import AgentRegistry
 from agent.core.registries.language_models import LanguageModelRegistry
@@ -225,7 +225,7 @@ class MessageFeedbackView(APIView):
     )
     def patch(self, request, id):
         try:
-            message = Message.objects.get(id=id)
+            message = Message.objects.get(id=id, conversation__user=request.user)
         except Message.DoesNotExist:
             return Response({"error": "Message not found."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -301,6 +301,8 @@ class AgentView(APIView):
         responses={201: AgentSerializer()},
     )
     def post(self, request):
+        if not request.user.has_perm(PERM_MANAGE_AGENTS):
+            self.permission_denied(request)
         serializer = AgentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
@@ -323,6 +325,8 @@ class AgentDetailsView(APIView):
         responses={200: AgentSerializer()},
     )
     def put(self, request, pk=None):
+        if not request.user.has_perm(PERM_MANAGE_AGENTS):
+            self.permission_denied(request)
         instance = get_object_or_404(Agent, pk=pk)
 
         serializer = AgentSerializer(instance, data=request.data)
@@ -334,6 +338,8 @@ class AgentDetailsView(APIView):
         operation_description="Delete a configuration by id.", responses={204: "No Content", 404: "Not Found"}
     )
     def delete(self, request, pk=None):
+        if not request.user.has_perm(PERM_MANAGE_AGENTS):
+            self.permission_denied(request)
         instance = get_object_or_404(Agent, pk=pk)
         instance.set_deleted_at()
         return Response(status=status.HTTP_204_NO_CONTENT)

@@ -13,7 +13,7 @@ from rest_framework.test import APIClient
 
 from account.authorization import set_application_admin
 from account.models import User
-from agent.models import Conversation
+from agent.models import Conversation, Message
 from agent.models.agent import Agent
 from agent.models.agentic_execution import AgenticExecution
 from catalog.models import DataSet
@@ -211,7 +211,7 @@ class TestAgentView:
         assert response.status_code == status.HTTP_200_OK
         assert response.data == []
 
-    def test_post_creates_agent(self, api_client, url, config):
+    def test_post_creates_agent(self, admin_api_client, url, config):
         dataset = baker.make(DataSet)
         config = {
             "agent_args": {
@@ -241,13 +241,13 @@ class TestAgentView:
         }
 
         with patch("agent.serializers.customs.fields.AgentRegistry.get_plugin_classes", return_value=AGENT_CLASSES):
-            response = api_client.post(url, payload, format="json")
+            response = admin_api_client.post(url, payload, format="json")
 
             assert response.status_code == status.HTTP_201_CREATED
             created = Agent.objects.get(pk=response.data["id"])
             assert created.name == "name"
 
-    def test_post_creates_agent_optional_fields_saved(self, api_client, url, config):
+    def test_post_creates_agent_optional_fields_saved(self, admin_api_client, url, config):
         dataset = baker.make(DataSet)
         config = {
             "agent_args": {
@@ -276,7 +276,7 @@ class TestAgentView:
         }
 
         with patch("agent.serializers.customs.fields.AgentRegistry.get_plugin_classes", return_value=AGENT_CLASSES):
-            response = api_client.post(url, payload, format="json")
+            response = admin_api_client.post(url, payload, format="json")
 
             assert response.status_code == status.HTTP_201_CREATED
             created = Agent.objects.get(pk=response.data["id"])
@@ -287,7 +287,7 @@ class TestAgentView:
             assert created.config["prompt_input"].get("optional_test") == "optional_test"
             assert created.config["prompt_extension"].get("optional_test") == "optional_test"
 
-    def test_post_creates_agent_do_not_save_empty_field(self, api_client, url, config):
+    def test_post_creates_agent_do_not_save_empty_field(self, admin_api_client, url, config):
         dataset = baker.make(DataSet)
         config = {
             "agent_args": {
@@ -322,7 +322,7 @@ class TestAgentView:
         with patch(
             "agent.serializers.customs.fields.AgentRegistry.get_agent_class_by_type", return_value=NoArgsDummyAgent
         ):
-            response = api_client.post(url, payload, format="json")
+            response = admin_api_client.post(url, payload, format="json")
 
             assert response.status_code == status.HTTP_201_CREATED
             created = Agent.objects.get(pk=response.data["id"])
@@ -330,6 +330,11 @@ class TestAgentView:
             assert created.config["agent_args"] == {}
             assert created.config["tools"][0] == {}
             assert created.config["tools"][1] == {"required_test": "required_test", "optional_test": "default"}
+
+    def test_post_without_manage_agents_permission_returns_403(self, api_client, url):
+        response = api_client.post(url, {"name": "nope"}, format="json")
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 class TestAgentDetailsView:
@@ -355,7 +360,7 @@ class TestAgentDetailsView:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_put_updates_agent(self, api_client, agent_instance, url, config):
+    def test_put_updates_agent(self, admin_api_client, agent_instance, url, config):
         dataset = baker.make(DataSet)
         updated_config = {
             "agent_args": {
@@ -383,14 +388,14 @@ class TestAgentDetailsView:
             "agent_type": "agent_1",
         }
         with patch("agent.serializers.customs.fields.AgentRegistry.get_plugin_classes", return_value=AGENT_CLASSES):
-            response = api_client.put(url, payload, format="json")
+            response = admin_api_client.put(url, payload, format="json")
 
             assert response.status_code == status.HTTP_200_OK
             agent_instance.refresh_from_db()
             assert agent_instance.name == "updated"
             assert agent_instance.config == updated_config
 
-    def test_put_removes_corrupted_flag_for_correct_data(self, api_client, url, config):
+    def test_put_removes_corrupted_flag_for_correct_data(self, admin_api_client, url, config):
         dataset = baker.make(DataSet)
         agent_instance = baker.make(Agent, corrupted=True, deleted_at=None, dataset=dataset)
         url = reverse("agent-details", kwargs={"pk": agent_instance.pk})
@@ -420,39 +425,83 @@ class TestAgentDetailsView:
             "agent_type": "agent_1",
         }
         with patch("agent.serializers.customs.fields.AgentRegistry.get_plugin_classes", return_value=AGENT_CLASSES):
-            response = api_client.put(url, payload, format="json")
+            response = admin_api_client.put(url, payload, format="json")
 
             assert response.status_code == status.HTTP_200_OK
             agent_instance.refresh_from_db()
             assert agent_instance.corrupted is False
 
-    def test_put_nonexistent_returns_404(self, api_client):
+    def test_put_nonexistent_returns_404(self, admin_api_client):
         url = reverse("agent-details", kwargs={"pk": 9999})
         payload = {"name": "anything", "config": {"x": "y"}}
 
-        response = api_client.put(url, payload, format="json")
+        response = admin_api_client.put(url, payload, format="json")
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_put_invalid_payload_returns_400(self, api_client, url):
+    def test_put_invalid_payload_returns_400(self, admin_api_client, url):
         payload = {"name": ""}
 
-        response = api_client.put(url, payload, format="json")
+        response = admin_api_client.put(url, payload, format="json")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "config" in response.data
 
-    def test_delete_existing_agent(self, api_client, agent_instance, url):
-        response = api_client.delete(url)
+    def test_delete_existing_agent(self, admin_api_client, agent_instance, url):
+        response = admin_api_client.delete(url)
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
         agent_instance = Agent.all_objects.get(pk=agent_instance.pk)
         assert agent_instance.deleted_at is not None
 
-    def test_delete_nonexistent_agent_returns_404(self, api_client, url):
+    def test_delete_nonexistent_agent_returns_404(self, admin_api_client, url):
         url = reverse("agent-details", kwargs={"pk": 9999})
-        response = api_client.delete(url)
+        response = admin_api_client.delete(url)
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_put_without_manage_agents_permission_returns_403(self, api_client, url):
+        response = api_client.put(url, {"name": "nope"}, format="json")
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_delete_without_manage_agents_permission_returns_403(self, api_client, agent_instance, url):
+        response = api_client.delete(url)
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert Agent.objects.filter(pk=agent_instance.pk).exists()
+
+    def test_get_does_not_require_manage_agents_permission(self, api_client, agent_instance, url):
+        response = api_client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+
+
+class TestMessageFeedbackView:
+    @pytest.fixture
+    def message(self, conversation):
+        return baker.make(Message, conversation=conversation, type=Message.MessageType.AI)
+
+    def test_conversation_owner_can_leave_feedback(self, api_client, message):
+        url = f"/api/messages/{message.id}/feedback/"
+
+        response = api_client.patch(url, {"rating": 5, "feedback": "great answer"}, format="json")
+
+        assert response.status_code == status.HTTP_200_OK
+        message.refresh_from_db()
+        assert message.rating == 5
+        assert message.feedback == "great answer"
+
+    def test_other_user_cannot_leave_feedback(self, message):
+        other_user = baker.make(User)
+        client = APIClient()
+        client.force_authenticate(user=other_user)
+        url = f"/api/messages/{message.id}/feedback/"
+
+        response = client.patch(url, {"rating": 1, "feedback": "sneaky"}, format="json")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        message.refresh_from_db()
+        assert message.rating is None
 
 
 class TestConversationView:

@@ -7,6 +7,7 @@ PERM_MANAGE_SERVICE_ACCOUNTS = "account.manage_service_accounts"
 PERM_MANAGE_DATASETS = "catalog.manage_datasets"
 PERM_ACCESS_ALL_DATASETS = "catalog.access_all_datasets"
 PERM_CONFIGURE_MODELS = "catalog.configure_models"
+PERM_MANAGE_AGENTS = "agent.manage_agents"
 
 ADMIN_GROUP_PERMISSIONS = [
     PERM_MANAGE_USERS,
@@ -14,6 +15,7 @@ ADMIN_GROUP_PERMISSIONS = [
     PERM_MANAGE_DATASETS,
     PERM_ACCESS_ALL_DATASETS,
     PERM_CONFIGURE_MODELS,
+    PERM_MANAGE_AGENTS,
 ]
 
 
