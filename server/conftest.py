@@ -5,6 +5,7 @@ from django.test import override_settings
 from model_bakery import baker
 from rest_framework.test import APIClient
 
+from account.authorization import set_application_admin
 from account.models import User
 from agent.models import Conversation
 from catalog.models import DataSet
@@ -17,7 +18,10 @@ def user():
 
 @pytest.fixture
 def admin_user():
-    return baker.make(User, is_staff=True)
+    # is_staff=True stays until every view drops IsAdminUser (removed in the final task)
+    user = baker.make(User, is_staff=True)
+    set_application_admin(user, True)
+    return user
 
 
 @pytest.fixture

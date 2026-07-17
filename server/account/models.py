@@ -2,6 +2,8 @@ from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+from account.authorization import is_application_admin
+
 
 class UserManager(BaseUserManager):
     def _create_user(self, email, password=None, **extra_fields):
@@ -41,6 +43,17 @@ class User(AbstractUser):
     is_service_account = models.BooleanField(default=False)
 
     objects = UserManager()
+
+    class Meta:
+        permissions = [
+            ("manage_users", "Can manage human users"),
+            ("manage_service_accounts", "Can manage service accounts"),
+        ]
+
+    @property
+    def is_admin(self) -> bool:
+        """Application admin flag derived from Admin group membership."""
+        return is_application_admin(self)
 
     def __str__(self):
         return self.email
