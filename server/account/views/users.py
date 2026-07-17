@@ -1,14 +1,16 @@
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import ListCreateAPIView, UpdateAPIView
-from rest_framework.permissions import IsAdminUser
 
+from account.authorization import PERM_MANAGE_USERS, set_application_admin
 from account.models import User
+from account.permissions import HasRequiredPermission
 from account.serializers import UserSerializer, UserUpdatePasswordSerializer, UserUpdateSerializer
 
 
 class UserListView(ListCreateAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [HasRequiredPermission]
+    required_permission = PERM_MANAGE_USERS
     serializer_class = UserSerializer
 
     @swagger_auto_schema(operation_description="List all users", manual_parameters=[])
@@ -17,16 +19,17 @@ class UserListView(ListCreateAPIView):
 
     @swagger_auto_schema(operation_description="Create a new user", request_body=UserSerializer)
     def perform_create(self, serializer):
-        User.objects.create_user(
+        user = User.objects.create_user(
             email=serializer.validated_data["email"],
             password=serializer.validated_data["password"],
             is_active=serializer.validated_data["is_active"],
-            is_staff=serializer.validated_data["is_staff"],
         )
+        set_application_admin(user, serializer.validated_data["is_admin"])
 
 
 class UserView(UpdateAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [HasRequiredPermission]
+    required_permission = PERM_MANAGE_USERS
     serializer_class = UserUpdateSerializer
 
     @swagger_auto_schema(
@@ -43,12 +46,13 @@ class UserView(UpdateAPIView):
         user = self.get_object()
         user.email = serializer.validated_data["email"]
         user.is_active = serializer.validated_data["is_active"]
-        user.is_staff = serializer.validated_data["is_staff"]
         user.save()
+        set_application_admin(user, serializer.validated_data["is_admin"])
 
 
 class UserPasswordView(UpdateAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [HasRequiredPermission]
+    required_permission = PERM_MANAGE_USERS
     serializer_class = UserUpdatePasswordSerializer
 
     @swagger_auto_schema(

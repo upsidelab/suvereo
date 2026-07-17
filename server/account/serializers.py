@@ -8,21 +8,21 @@ from .services import ServiceAccountNameService
 class AccountSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     email = serializers.EmailField()
-    is_staff = serializers.BooleanField()
+    is_admin = serializers.BooleanField(read_only=True)
 
 
 class UserSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     email = serializers.EmailField()
     is_active = serializers.BooleanField()
-    is_staff = serializers.BooleanField()
+    is_admin = serializers.BooleanField()
     password = serializers.CharField(write_only=True)
 
 
 class UserUpdateSerializer(serializers.Serializer):
     email = serializers.EmailField()
     is_active = serializers.BooleanField()
-    is_staff = serializers.BooleanField()
+    is_admin = serializers.BooleanField()
 
 
 class UserUpdatePasswordSerializer(serializers.Serializer):
