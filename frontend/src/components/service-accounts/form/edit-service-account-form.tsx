@@ -19,7 +19,7 @@ const formSchema = z.object({
   name: z.string().trim().min(1),
   dataSetIds: z.array(z.number()),
   isActive: z.boolean(),
-  isStaff: z.boolean(),
+  isAdmin: z.boolean(),
 }).refine(async (data) => data.name === data.oldName || await checkServiceNameAvailability(data.name), {
   message: "The name has already been taken",
   path: ["name"],
@@ -41,16 +41,16 @@ export function EditServiceAccountForm({ serviceAccount, onServiceAccountUpdated
       oldName: oldName,
       dataSetIds: serviceAccount.dataSetIds || [],
       isActive: serviceAccount.isActive,
-      isStaff: serviceAccount.isStaff || false,
+      isAdmin: serviceAccount.isAdmin || false,
     }
   });
-  const isStaff = useWatch({ control: form.control, name: "isStaff" });
+  const isAdmin = useWatch({ control: form.control, name: "isAdmin" });
 
   useEffect(() => {
-    if (isStaff) {
+    if (isAdmin) {
       form.setValue("dataSetIds", []);
     }
-  }, [isStaff, form]);
+  }, [isAdmin, form]);
 
   const handleSubmit = async (values: CreateServiceAccountFormSchema) => {
     await api.serviceAccounts().updateServiceAccount(serviceAccount.id, values);
@@ -63,7 +63,7 @@ export function EditServiceAccountForm({ serviceAccount, onServiceAccountUpdated
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
           <DetailsFields form={form}/>
           <PermissionFields form={form}/>
-          {!isStaff && <DataSetsFields form={form}/>}
+          {!isAdmin && <DataSetsFields form={form}/>}
           <Button type="submit">Update</Button>
         </form>
       </Form>

@@ -78,7 +78,7 @@ export function DataSetSelector() {
           ))
         )}
         </div>
-        {account && account.isStaff &&
+        {account && account.isAdmin &&
           <>
             <Separator className="my-2"/>
             <DropdownMenuItem

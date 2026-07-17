@@ -34,7 +34,7 @@ export function ServiceAccountsList() {
               <TableCell width="60%">{item.email}</TableCell>
               <TableCell width="10%">{new Date(item.dateCreated).toLocaleDateString()}</TableCell>
               <TableCell width="5%">{item.isActive && <Check size={16} />}</TableCell>
-              <TableCell width="5%">{item.isStaff && <Check size={16} />}</TableCell>
+              <TableCell width="5%">{item.isAdmin && <Check size={16} />}</TableCell>
               <TableCell className="flex space-x-4" width="20%">
                 <EditServiceAccountModal serviceAccount={item} onServiceAccountUpdated={() => setVersion(version + 1)} />
                 <TokenResetModal serviceAccount={item} />
