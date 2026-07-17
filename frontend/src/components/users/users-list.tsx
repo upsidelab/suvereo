@@ -26,7 +26,7 @@ export function UsersList() {
         loadItems={loadUsers}
         itemsReloadDependencies={version}
         noItemsMessage="No users"
-        tableHeaders={["Email", "Active", "Staff", "Actions"]}
+        tableHeaders={["Email", "Active", "Admin", "Actions"]}
         tableRow={(item, index) => {
           return (
             <TableRow key={index}>

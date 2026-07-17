@@ -39,10 +39,10 @@ export function PermissionFields({ form }: PermissionFieldsProps) {
           <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
             <div className="space-y-0.5">
               <FormLabel className="text-base">
-                Staff User
+                Admin
               </FormLabel>
               <FormDescription>
-                Staff users can manage data sets and users.
+                Admins can manage data sets and users.
               </FormDescription>
             </div>
             <FormControl>
