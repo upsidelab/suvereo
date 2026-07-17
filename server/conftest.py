@@ -18,8 +18,7 @@ def user():
 
 @pytest.fixture
 def admin_user():
-    # is_staff=True stays until every view drops IsAdminUser (removed in the final task)
-    user = baker.make(User, is_staff=True)
+    user = baker.make(User)
     set_application_admin(user, True)
     return user
 
