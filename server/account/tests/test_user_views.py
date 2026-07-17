@@ -4,7 +4,7 @@ from model_bakery import baker
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from account.authorization import is_application_admin, set_application_admin
+from account.authorization import is_application_admin
 from account.models import User
 
 
