@@ -1,32 +1,18 @@
+import { getCsrfToken } from "@/lib/csrf.ts";
+
 export interface AuthenticationProvider {
-  token: string | null;
-  isAuthenticated(): boolean;
-  login(token: string): boolean;
-  logout(): void;
+  logout(): Promise<void>;
 }
 
-const tokenKey = 'token';
-
 class DummyAuthenticationProvider implements AuthenticationProvider {
-  token: string | null;
-
-  constructor() {
-    this.token = localStorage.getItem(tokenKey);
-  }
-
-  isAuthenticated(): boolean {
-    return this.token !== null;
-  }
-
-  login(token: string): boolean {
-    this.token = token;
-    localStorage.setItem(tokenKey, token);
-    return true;
-  }
-
-  logout(): void {
-    localStorage.removeItem(tokenKey);
-    this.token = null;
+  async logout(): Promise<void> {
+    await fetch(`${import.meta.env.VITE_API_BASE}/api/auth/logout`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'X-CSRFToken': getCsrfToken() ?? '',
+      },
+    });
   }
 }
 

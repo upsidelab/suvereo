@@ -1,4 +1,5 @@
 import { AuthenticationProvider } from "./authentication-provider.ts";
+import { getCsrfToken } from "@/lib/csrf.ts";
 import { UsersApiClient } from "@/lib/api/users.ts";
 import { DataSetsApiClient } from "@/lib/api/data-sets.ts";
 import { ConversationsApiClient } from "@/lib/api/conversations.ts";
@@ -40,11 +41,12 @@ export class ApiClient {
     this.apiBase = import.meta.env.VITE_API_BASE;
   }
 
-  async login(email: string, password: string): Promise<Token> {
+  async login(email: string, password: string): Promise<void> {
     const response = await fetch(`${this.apiBase}/api/auth/login`, {
       headers: {
         'Content-Type': 'application/json'
       },
+      credentials: 'include',
       method: 'POST',
       body: JSON.stringify({ email, password })
     });
@@ -52,8 +54,6 @@ export class ApiClient {
     if (response.status !== 200) {
       throw 'Could not sign in';
     }
-
-    return await response.json() as Promise<Token>;
   }
 
   async getAccount(): Promise<Account> {
@@ -121,8 +121,9 @@ export class ApiClient {
 
   _requestConfiguration(): RequestInit {
     return {
+      credentials: 'include',
       headers: {
-        'Authorization': `Token ${this.authenticationProvider.token}`,
+        'X-CSRFToken': getCsrfToken() ?? '',
         "Content-Type": "application/json"
       }
     }
