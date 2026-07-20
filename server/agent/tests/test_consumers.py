@@ -71,3 +71,26 @@ class TestWebSocketOriginValidation:
             await communicator.disconnect()
 
         async_to_sync(run)()
+
+    def test_accepts_origin_matching_a_bare_hostname_pattern(self):
+        from channels.security.websocket import OriginValidator
+
+        dataset = baker.make(DataSet)
+        agent = baker.make(Agent, deleted_at=None, dataset=dataset)
+        conversation = baker.make(Conversation, agent=agent, data_set=dataset)
+        user = baker.make(User)
+        dataset.users.add(user)
+
+        async def run():
+            application = OriginValidator(URLRouter(websocket_urlpatterns), ["example.com"])
+            communicator = WebsocketCommunicator(
+                application,
+                f"/ws/chat/{conversation.id}/",
+                headers=[(b"origin", b"http://example.com")],
+            )
+            communicator.scope["user"] = user
+            connected, _ = await communicator.connect()
+            assert connected is True
+            await communicator.disconnect()
+
+        async_to_sync(run)()

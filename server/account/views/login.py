@@ -1,5 +1,7 @@
 from django.contrib.auth import authenticate, login, logout
 from django.middleware.csrf import get_token
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_protect
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.permissions import IsAuthenticated
@@ -9,6 +11,7 @@ from rest_framework.views import APIView
 from account.serializers import AccountSerializer
 
 
+@method_decorator(csrf_protect, name="dispatch")
 class LoginView(APIView):
     @swagger_auto_schema(
         operation_description="Login to establish an authenticated session",

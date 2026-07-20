@@ -27,7 +27,7 @@ if ENABLE_WEBSOCKETS:
             "http": get_asgi_application(),
             "websocket": OriginValidator(
                 AuthMiddlewareStack(URLRouter(agent.routing.websocket_urlpatterns)),
-                settings.CORS_ALLOWED_ORIGINS,
+                settings.ALLOWED_HOSTS + settings.CORS_ALLOWED_ORIGINS,
             ),
         }
     )

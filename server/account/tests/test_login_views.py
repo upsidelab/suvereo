@@ -34,6 +34,34 @@ class TestLoginView:
 
 
 @pytest.mark.django_db
+class TestLoginViewCsrf:
+    def test_login_without_csrf_token_is_rejected(self):
+        User.objects.create_user(email="jane@example.com", password="correct-horse")
+        client = APIClient(enforce_csrf_checks=True)
+
+        response = client.post(
+            reverse("login"), {"email": "jane@example.com", "password": "correct-horse"}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_login_with_csrf_token_succeeds(self):
+        User.objects.create_user(email="jane@example.com", password="correct-horse")
+        client = APIClient(enforce_csrf_checks=True)
+        csrf_response = client.get(reverse("csrf"))
+        csrf_token = csrf_response.cookies["csrftoken"].value
+
+        response = client.post(
+            reverse("login"),
+            {"email": "jane@example.com", "password": "correct-horse"},
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+
+
+@pytest.mark.django_db
 class TestLogoutView:
     def test_logout_invalidates_the_session(self):
         User.objects.create_user(email="jane@example.com", password="correct-horse")

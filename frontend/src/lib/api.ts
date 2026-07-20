@@ -44,7 +44,8 @@ export class ApiClient {
   async login(email: string, password: string): Promise<void> {
     const response = await fetch(`${this.apiBase}/api/auth/login`, {
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrfToken() ?? ''
       },
       credentials: 'include',
       method: 'POST',
