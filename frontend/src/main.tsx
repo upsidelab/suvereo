@@ -11,6 +11,7 @@ import { ApiConnectionIndex } from "@/pages/service-accounts/index.tsx";
 import { NoDataSets } from "@/pages/no-data-sets.tsx";
 import { ErrorPage } from "@/pages/error.tsx";
 import { ApiClient } from "@/lib/api.ts";
+import { primeCsrfToken } from "@/lib/csrf.ts";
 import { NewDataSet } from "@/pages/data-sets/new.tsx";
 import { DataSetsIndex } from "@/pages/data-sets";
 import { EditDataSet } from "@/pages/data-sets/(id)/edit.tsx";
@@ -27,26 +28,23 @@ import { RolesIndex } from "@/pages/roles";
 const api = new ApiClient(authenticationProviderInstance);
 
 const protectedLoginLoader = async () => {
-  if (!authenticationProviderInstance.isAuthenticated()) {
-    return redirect("/login");
-  }
-
-  const apiDataSets = await api.dataSets().getDataSets();
-  if (!apiDataSets) {
-    return redirect("/login");
-  }
-
-  if (apiDataSets.length === 0) {
-    const accountData = await api.getAccount();
-    if (accountData.isAdmin) {
-      return redirect("/onboarding");
-    } else {
-      return redirect("/no-data-sets");
+  try {
+    const apiDataSets = await api.dataSets().getDataSets();
+    if (apiDataSets.length === 0) {
+      const accountData = await api.getAccount();
+      if (accountData.isAdmin) {
+        return redirect("/onboarding");
+      } else {
+        return redirect("/no-data-sets");
+      }
     }
+    return null;
+  } catch {
+    return redirect("/login");
   }
-
-  return null;
 };
+
+void primeCsrfToken(import.meta.env.VITE_API_BASE);
 
 const router = createBrowserRouter([
   {

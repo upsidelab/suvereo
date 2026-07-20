@@ -23,8 +23,7 @@ export function LoginForm({ className, ...props }: HTMLAttributes<HTMLDivElement
     const password = (event.target as HTMLFormElement).password.value;
 
     try {
-      const { token } = await api.login(email, password);
-      authenticationProviderInstance.login(token);
+      await api.login(email, password);
 
       const dataSets = await api.dataSets().getDataSets();
       if (dataSets.length === 0) {
