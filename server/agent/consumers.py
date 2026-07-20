@@ -1,19 +1,40 @@
 import json
 
+from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
+
+from agent.models import Conversation
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.conversation_id = self.scope["url_route"]["kwargs"]["conversation_id"]
-        self.group_name = f"conversation_{self.conversation_id}"
+        user = self.scope["user"]
+        if not user.is_authenticated:
+            await self.close(code=4401)
+            return
 
-        # Join the conversation group
+        conversation_id = self.scope["url_route"]["kwargs"]["conversation_id"]
+        has_access = await self._user_has_conversation_access(user, conversation_id)
+        if not has_access:
+            await self.close(code=4403)
+            return
+
+        self.conversation_id = conversation_id
+        self.group_name = f"conversation_{self.conversation_id}"
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
 
+    @database_sync_to_async
+    def _user_has_conversation_access(self, user, conversation_id):
+        try:
+            conversation = Conversation.objects.get(id=conversation_id)
+        except Conversation.DoesNotExist:
+            return False
+        return user.has_dataset_access(conversation.data_set)
+
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(self.group_name, self.channel_name)
+        if hasattr(self, "group_name"):
+            await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
     async def chat_message(self, event):
         event_type = event.get("event")
