@@ -3,12 +3,13 @@ from asgiref.sync import async_to_sync
 from channels.routing import URLRouter
 from channels.testing import WebsocketCommunicator
 from django.contrib.auth.models import AnonymousUser
+from django.test import override_settings
 from model_bakery import baker
 
 from account.models import User
 from agent.models import Conversation
 from agent.models.agent import Agent
-from agent.routing import websocket_urlpatterns
+from agent.routing import get_websocket_trusted_origins, websocket_urlpatterns
 from catalog.models import DataSet
 
 
@@ -94,3 +95,9 @@ class TestWebSocketOriginValidation:
             await communicator.disconnect()
 
         async_to_sync(run)()
+
+
+class TestGetWebsocketTrustedOrigins:
+    @override_settings(ALLOWED_HOSTS=["*", "example.com"], CORS_ALLOWED_ORIGINS=["http://localhost:10001"])
+    def test_excludes_wildcard_allowed_host(self):
+        assert get_websocket_trusted_origins() == ["example.com", "http://localhost:10001"]
