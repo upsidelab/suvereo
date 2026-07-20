@@ -10,6 +10,8 @@ import account.views.users
 
 urlpatterns = [
     path("api/auth/login", account.views.login.LoginView.as_view(), name="login"),
+    path("api/auth/logout", account.views.login.LogoutView.as_view(), name="logout"),
+    path("api/auth/csrf", account.views.login.CsrfView.as_view(), name="csrf"),
     path("api/account", account.views.accounts.AccountView.as_view(), name="account"),
     path("api/groups", account.views.groups.GroupListView.as_view(), name="group_list"),
     path("api/groups/<int:group_id>", account.views.groups.GroupDetailView.as_view(), name="group_detail"),

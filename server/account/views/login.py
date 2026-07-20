@@ -1,16 +1,17 @@
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, login, logout
+from django.middleware.csrf import get_token
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework.authtoken.models import Token
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from account.serializers import TokenResponseSerializer
+from account.serializers import AccountSerializer
 
 
 class LoginView(APIView):
     @swagger_auto_schema(
-        operation_description="Login to obtain an authentication token",
+        operation_description="Login to establish an authenticated session",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
@@ -19,14 +20,31 @@ class LoginView(APIView):
             },
         ),
         responses={
-            200: TokenResponseSerializer,
+            200: AccountSerializer,
             403: "Forbidden",
         },
     )
     def post(self, request):
         user = authenticate(username=request.data["email"], password=request.data["password"])
         if user:
-            token, created = Token.objects.get_or_create(user=user)
-            serializer = TokenResponseSerializer({"token": token.key})
+            login(request, user)
+            get_token(request)
+            serializer = AccountSerializer(user)
             return Response(serializer.data)
         return Response({}, status=403)
+
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(operation_description="Log out and invalidate the current session")
+    def post(self, request):
+        logout(request)
+        return Response(status=204)
+
+
+class CsrfView(APIView):
+    @swagger_auto_schema(operation_description="Ensure a CSRF cookie is set for the current browser")
+    def get(self, request):
+        get_token(request)
+        return Response(status=204)
