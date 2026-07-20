@@ -44,3 +44,30 @@ class TestChatConsumerAuth:
             await communicator.disconnect()
 
         async_to_sync(run)()
+
+
+@pytest.mark.django_db
+class TestWebSocketOriginValidation:
+    def test_rejects_connection_from_untrusted_origin(self):
+        from channels.security.websocket import OriginValidator
+
+        dataset = baker.make(DataSet)
+        agent = baker.make(Agent, deleted_at=None, dataset=dataset)
+        conversation = baker.make(Conversation, agent=agent, data_set=dataset)
+        user = baker.make(User)
+
+        async def run():
+            application = OriginValidator(
+                URLRouter(websocket_urlpatterns), ["http://trusted-frontend.example"]
+            )
+            communicator = WebsocketCommunicator(
+                application,
+                f"/ws/chat/{conversation.id}/",
+                headers=[(b"origin", b"http://evil.example")],
+            )
+            communicator.scope["user"] = user
+            connected, _ = await communicator.connect()
+            assert connected is False
+            await communicator.disconnect()
+
+        async_to_sync(run)()

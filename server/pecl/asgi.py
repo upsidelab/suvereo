@@ -17,13 +17,18 @@ ENABLE_WEBSOCKETS = os.environ.get("ENABLE_WEBSOCKETS", "true").lower() == "true
 if ENABLE_WEBSOCKETS:
     from channels.auth import AuthMiddlewareStack
     from channels.routing import ProtocolTypeRouter, URLRouter
+    from channels.security.websocket import OriginValidator
+    from django.conf import settings
 
     import agent.routing
 
     application = ProtocolTypeRouter(
         {
             "http": get_asgi_application(),
-            "websocket": AuthMiddlewareStack(URLRouter(agent.routing.websocket_urlpatterns)),
+            "websocket": OriginValidator(
+                AuthMiddlewareStack(URLRouter(agent.routing.websocket_urlpatterns)),
+                settings.CORS_ALLOWED_ORIGINS,
+            ),
         }
     )
 else:
