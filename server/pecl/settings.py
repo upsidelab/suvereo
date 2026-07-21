@@ -224,14 +224,7 @@ REST_FRAMEWORK = {
 # SWAGGER
 
 SWAGGER_SETTINGS = {
-    "SECURITY_DEFINITIONS": {
-        "Token": {
-            "type": "apiKey",
-            "name": "Authorization",
-            "in": "header",
-            "description": "Service-account API token only (format: 'Token <key>'). Human users authenticate via an httpOnly auth-token cookie, not this scheme.",
-        }
-    },
+    "SECURITY_DEFINITIONS": {"Token": {"type": "apiKey", "name": "Authorization", "in": "header"}},
     "USE_SESSION_AUTH": False,
 }
 
