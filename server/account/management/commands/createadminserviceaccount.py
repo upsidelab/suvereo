@@ -1,6 +1,5 @@
 from django.core.management.base import BaseCommand
-from rest_framework.authtoken.models import Token
-
+from account.models import AuthToken
 from account.serializers import CreateUpdateServiceAccountSerializer
 
 
@@ -21,5 +20,5 @@ class Command(BaseCommand):
         )
         serializer.is_valid(raise_exception=True)
         service_account = serializer.save()
-        token, _ = Token.objects.get_or_create(user=service_account)
+        token, _ = AuthToken.objects.get_or_create(user=service_account)
         print("Service Account token:", token.key)

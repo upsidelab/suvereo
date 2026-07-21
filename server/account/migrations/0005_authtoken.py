@@ -8,7 +8,7 @@ import account.models
 class Migration(migrations.Migration):
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ("account", "0005_revoke_human_user_tokens"),
+        ("account", "0004_create_admin_group"),
     ]
 
     operations = [
