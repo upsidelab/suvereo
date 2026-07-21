@@ -33,10 +33,5 @@ class AuthTokenCookieMiddleware:
 
     @database_sync_to_async
     def _user_for_key(self, key):
-        try:
-            token = AuthToken.objects.select_related("user").get(key=key)
-        except AuthToken.DoesNotExist:
-            return AnonymousUser()
-        if token.is_expired() or not token.user.is_active:
-            return AnonymousUser()
-        return token.user
+        token = AuthToken.get_valid_token(key)
+        return token.user if token else AnonymousUser()

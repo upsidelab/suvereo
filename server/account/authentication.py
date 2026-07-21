@@ -24,16 +24,9 @@ class AuthTokenAuthentication(BaseAuthentication):
         if key is None:
             return None
 
-        try:
-            token = AuthToken.objects.select_related("user").get(key=key)
-        except AuthToken.DoesNotExist:
-            raise AuthenticationFailed("Invalid token.")
-
-        if token.is_expired():
-            raise AuthenticationFailed("Token has expired.")
-
-        if not token.user.is_active:
-            raise AuthenticationFailed("User inactive or deleted.")
+        token = AuthToken.get_valid_token(key)
+        if token is None:
+            raise AuthenticationFailed("Invalid or expired token.")
 
         if token.expires_at is not None:
             token.expires_at = timezone.now() + HUMAN_TOKEN_LIFETIME

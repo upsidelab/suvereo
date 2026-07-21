@@ -164,3 +164,14 @@ class AuthToken(models.Model):
 
     def is_expired(self) -> bool:
         return self.expires_at is not None and self.expires_at < timezone.now()
+
+    @classmethod
+    def get_valid_token(cls, key):
+        """Returns the AuthToken for key if it exists, isn't expired, and its user is active; otherwise None."""
+        try:
+            token = cls.objects.select_related("user").get(key=key)
+        except cls.DoesNotExist:
+            return None
+        if token.is_expired() or not token.user.is_active:
+            return None
+        return token
