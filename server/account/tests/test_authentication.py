@@ -1,9 +1,11 @@
 from datetime import timedelta
 
 import pytest
+from django.urls import reverse
 from django.utils import timezone
+from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed
-from rest_framework.test import APIRequestFactory
+from rest_framework.test import APIClient, APIRequestFactory
 
 from account.authentication import AuthTokenAuthentication
 from account.models import AuthToken, User
@@ -65,3 +67,37 @@ class TestAuthTokenAuthentication:
         request = APIRequestFactory().get("/")
 
         assert AuthTokenAuthentication().authenticate(request) is None
+
+
+@pytest.mark.django_db
+class TestAuthTokenAuthenticationCsrf:
+    def test_cookie_authenticated_mutating_request_without_csrf_token_is_rejected(self):
+        user = User.objects.create_user(email="jane@example.com", password="irrelevant")
+        token = AuthToken.objects.create(user=user, expires_at=timezone.now() + timedelta(minutes=5))
+        client = APIClient(enforce_csrf_checks=True)
+        client.cookies["auth_token"] = token.key
+
+        response = client.post(reverse("logout"))
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_cookie_authenticated_mutating_request_with_csrf_token_succeeds(self):
+        user = User.objects.create_user(email="jane@example.com", password="irrelevant")
+        token = AuthToken.objects.create(user=user, expires_at=timezone.now() + timedelta(minutes=5))
+        client = APIClient(enforce_csrf_checks=True)
+        client.cookies["auth_token"] = token.key
+        csrf_response = client.get(reverse("csrf"))
+        csrf_token = csrf_response.cookies["csrftoken"].value
+
+        response = client.post(reverse("logout"), HTTP_X_CSRFTOKEN=csrf_token)
+
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    def test_header_authenticated_request_is_not_subject_to_csrf_check(self):
+        user = User.objects.create_service_account(email="svc@example.com")
+        token = AuthToken.objects.create(user=user, expires_at=None)
+        client = APIClient(enforce_csrf_checks=True)
+
+        response = client.get(reverse("account"), HTTP_AUTHORIZATION=f"Token {token.key}")
+
+        assert response.status_code == status.HTTP_200_OK

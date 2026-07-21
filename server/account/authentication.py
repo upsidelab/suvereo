@@ -1,8 +1,8 @@
 from datetime import timedelta
 
 from django.utils import timezone
-from rest_framework.authentication import BaseAuthentication, get_authorization_header
-from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.authentication import BaseAuthentication, CSRFCheck, get_authorization_header
+from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
 
 from account.models import AuthToken
 
@@ -19,7 +19,8 @@ class AuthTokenAuthentication(BaseAuthentication):
     keyword = "Token"
 
     def authenticate(self, request):
-        key = self._key_from_header(request) or request.COOKIES.get(AUTH_TOKEN_COOKIE_NAME)
+        header_key = self._key_from_header(request)
+        key = header_key or request.COOKIES.get(AUTH_TOKEN_COOKIE_NAME)
         if key is None:
             return None
 
@@ -38,7 +39,23 @@ class AuthTokenAuthentication(BaseAuthentication):
             token.expires_at = timezone.now() + HUMAN_TOKEN_LIFETIME
             token.save(update_fields=["expires_at"])
 
+        # A header-presented key is a service account (per _key_from_header); a browser can
+        # never auto-attach an Authorization header to a cross-site request the way it does
+        # with cookies, so only cookie-authenticated requests need CSRF re-validation here.
+        if header_key is None:
+            self._enforce_csrf(request)
+
         return (token.user, token)
+
+    def _enforce_csrf(self, request):
+        def dummy_get_response(request):  # pragma: no cover
+            return None
+
+        check = CSRFCheck(dummy_get_response)
+        check.process_request(request)
+        reason = check.process_view(request, None, (), {})
+        if reason:
+            raise PermissionDenied(f"CSRF Failed: {reason}")
 
     def _key_from_header(self, request):
         auth = get_authorization_header(request).split()
