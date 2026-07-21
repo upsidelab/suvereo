@@ -84,7 +84,7 @@ class TestLogoutView:
 
 
 @pytest.mark.django_db
-class TestAuthTokenSlidingExpiryViaLoginFlow:
+class TestAuthTokenSlidingExpiryOnAccountEndpoint:
     def test_valid_request_extends_expiry(self):
         user = User.objects.create_user(email="jane@example.com", password="irrelevant")
         token = AuthToken.objects.create(user=user, expires_at=timezone.now() + timedelta(minutes=1))
