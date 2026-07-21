@@ -15,17 +15,17 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pecl.settings")
 ENABLE_WEBSOCKETS = os.environ.get("ENABLE_WEBSOCKETS", "true").lower() == "true"
 
 if ENABLE_WEBSOCKETS:
-    from channels.auth import AuthMiddlewareStack
     from channels.routing import ProtocolTypeRouter, URLRouter
     from channels.security.websocket import OriginValidator
 
     import agent.routing
+    from account.ws_middleware import AuthTokenCookieMiddleware
 
     application = ProtocolTypeRouter(
         {
             "http": get_asgi_application(),
             "websocket": OriginValidator(
-                AuthMiddlewareStack(URLRouter(agent.routing.websocket_urlpatterns)),
+                AuthTokenCookieMiddleware(URLRouter(agent.routing.websocket_urlpatterns)),
                 agent.routing.get_websocket_trusted_origins(),
             ),
         }

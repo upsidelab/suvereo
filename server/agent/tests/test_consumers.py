@@ -1,12 +1,16 @@
+from datetime import timedelta
+
 import pytest
 from asgiref.sync import async_to_sync
 from channels.routing import URLRouter
 from channels.testing import WebsocketCommunicator
 from django.contrib.auth.models import AnonymousUser
 from django.test import override_settings
+from django.utils import timezone
 from model_bakery import baker
 
-from account.models import User
+from account.models import AuthToken, User
+from account.ws_middleware import AuthTokenCookieMiddleware
 from agent.models import Conversation
 from agent.models.agent import Agent
 from agent.routing import get_websocket_trusted_origins, websocket_urlpatterns
@@ -101,3 +105,63 @@ class TestGetWebsocketTrustedOrigins:
     @override_settings(ALLOWED_HOSTS=["*", "example.com"], CORS_ALLOWED_ORIGINS=["http://localhost:10001"])
     def test_excludes_wildcard_allowed_host(self):
         assert get_websocket_trusted_origins() == ["example.com", "http://localhost:10001"]
+
+
+@pytest.mark.django_db
+class TestAuthTokenCookieMiddleware:
+    def test_resolves_user_from_valid_cookie(self):
+        dataset = baker.make(DataSet)
+        agent = baker.make(Agent, deleted_at=None, dataset=dataset)
+        conversation = baker.make(Conversation, agent=agent, data_set=dataset)
+        user = baker.make(User)
+        dataset.users.add(user)
+        token = AuthToken.objects.create(user=user, expires_at=timezone.now() + timedelta(minutes=5))
+
+        async def run():
+            application = AuthTokenCookieMiddleware(URLRouter(websocket_urlpatterns))
+            communicator = WebsocketCommunicator(
+                application,
+                f"/ws/chat/{conversation.id}/",
+                headers=[(b"cookie", f"auth_token={token.key}".encode())],
+            )
+            connected, _ = await communicator.connect()
+            assert connected is True
+            await communicator.disconnect()
+
+        async_to_sync(run)()
+
+    def test_anonymous_when_cookie_missing(self):
+        dataset = baker.make(DataSet)
+        agent = baker.make(Agent, deleted_at=None, dataset=dataset)
+        conversation = baker.make(Conversation, agent=agent, data_set=dataset)
+
+        async def run():
+            application = AuthTokenCookieMiddleware(URLRouter(websocket_urlpatterns))
+            communicator = WebsocketCommunicator(application, f"/ws/chat/{conversation.id}/")
+            connected, _ = await communicator.connect()
+            assert connected is False
+            await communicator.disconnect()
+
+        async_to_sync(run)()
+
+    def test_anonymous_when_token_expired(self):
+        dataset = baker.make(DataSet)
+        agent = baker.make(Agent, deleted_at=None, dataset=dataset)
+        conversation = baker.make(Conversation, agent=agent, data_set=dataset)
+        user = baker.make(User)
+        dataset.users.add(user)
+        token = AuthToken.objects.create(user=user, expires_at=timezone.now() - timedelta(minutes=1))
+
+        async def run():
+            application = AuthTokenCookieMiddleware(URLRouter(websocket_urlpatterns))
+            communicator = WebsocketCommunicator(
+                application,
+                f"/ws/chat/{conversation.id}/",
+                headers=[(b"cookie", f"auth_token={token.key}".encode())],
+            )
+            connected, _ = await communicator.connect()
+            assert connected is False
+            await communicator.disconnect()
+
+        async_to_sync(run)()
+
