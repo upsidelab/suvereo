@@ -165,3 +165,24 @@ class TestAuthTokenCookieMiddleware:
 
         async_to_sync(run)()
 
+    def test_anonymous_when_user_is_inactive(self):
+        dataset = baker.make(DataSet)
+        agent = baker.make(Agent, deleted_at=None, dataset=dataset)
+        conversation = baker.make(Conversation, agent=agent, data_set=dataset)
+        user = baker.make(User, is_active=False)
+        dataset.users.add(user)
+        token = AuthToken.objects.create(user=user, expires_at=timezone.now() + timedelta(minutes=5))
+
+        async def run():
+            application = AuthTokenCookieMiddleware(URLRouter(websocket_urlpatterns))
+            communicator = WebsocketCommunicator(
+                application,
+                f"/ws/chat/{conversation.id}/",
+                headers=[(b"cookie", f"auth_token={token.key}".encode())],
+            )
+            connected, _ = await communicator.connect()
+            assert connected is False
+            await communicator.disconnect()
+
+        async_to_sync(run)()
+
