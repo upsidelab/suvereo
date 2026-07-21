@@ -212,17 +212,11 @@ CORS_ALLOWED_ORIGINS = json.loads(os.environ.get("ECL_DJANGO_CORS_ALLOWED_ORIGIN
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
 
-SESSION_COOKIE_AGE = 60 * 60 * 24 * 14  # 2 weeks
-SESSION_SAVE_EVERY_REQUEST = True
-SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SECURE = env.bool("ECL_DJANGO_SESSION_COOKIE_SECURE", default=not DEBUG)
-SESSION_COOKIE_SAMESITE = env.str("ECL_DJANGO_SESSION_COOKIE_SAMESITE", default="Lax")
+AUTH_TOKEN_COOKIE_SECURE = env.bool("ECL_DJANGO_AUTH_TOKEN_COOKIE_SECURE", default=not DEBUG)
+AUTH_TOKEN_COOKIE_SAMESITE = env.str("ECL_DJANGO_AUTH_TOKEN_COOKIE_SAMESITE", default="Lax")
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [
-        "account.authentication.ServiceAccountTokenAuthentication",
-        "rest_framework.authentication.SessionAuthentication",
-    ],
+    "DEFAULT_AUTHENTICATION_CLASSES": ["account.authentication.AuthTokenAuthentication"],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 25,
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
