@@ -245,6 +245,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "agent.tasks.clean_uploaded_files",
         "schedule": timedelta(hours=1),
     },
+    "clean_expired_auth_tokens": {
+        "task": "account.tasks.clean_expired_auth_tokens",
+        "schedule": timedelta(hours=1),
+    },
 }
 
 CATALOG_LANGUAGE_MODEL_PROVIDERS = [
