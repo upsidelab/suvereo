@@ -93,11 +93,11 @@ class TestAuthTokenAuthenticationCsrf:
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    def test_header_authenticated_request_is_not_subject_to_csrf_check(self):
-        user = User.objects.create_service_account(email="svc@example.com")
-        token = AuthToken.objects.create(user=user, expires_at=None)
+    def test_header_authenticated_mutating_request_is_not_subject_to_csrf_check(self):
+        service_account = User.objects.create_service_account(email="svc@example.com")
+        token = AuthToken.objects.create(user=service_account, expires_at=None)
         client = APIClient(enforce_csrf_checks=True)
 
-        response = client.get(reverse("account"), HTTP_AUTHORIZATION=f"Token {token.key}")
+        response = client.post(reverse("logout"), HTTP_AUTHORIZATION=f"Token {token.key}")
 
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_204_NO_CONTENT
