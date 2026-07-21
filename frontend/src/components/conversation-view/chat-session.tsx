@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { PlusIcon } from "lucide-react";
 import { ApiClient, TaskHandle } from "@/lib/api.ts";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 
 import { PageMain } from "@/components/util/page-main.tsx";
@@ -37,7 +36,7 @@ interface ChatSessionProps {
   pendingMessage?: Message;
 }
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 const streamingEnabled = Boolean(import.meta.env.VITE_WS_BASE);
 
 export function ChatSession({ pendingMessage }: ChatSessionProps) {

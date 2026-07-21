@@ -2,10 +2,9 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ApiClient } from "@/lib/api";
-import { authenticationProviderInstance } from "@/lib/authentication-provider";
 import { DataSet } from "@/lib/types";
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 interface DeleteDataSetModalProps {
   open: boolean;

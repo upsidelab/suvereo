@@ -1,11 +1,10 @@
 import { ServiceAccount } from "@/lib/types.ts";
 import { ApiClient } from "@/lib/api.ts";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { TokenGeneratedModal } from "@/components/service-accounts/token-generated-modal.tsx";
 import { useState } from "react";
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 export interface TokenResetModalProps {
   serviceAccount: ServiceAccount;

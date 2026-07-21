@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { ApiClient } from "@/lib/api.ts";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { ApiError } from "@/lib/api-error.ts";
 import { Integration, IntegrationType } from "@/lib/types.ts";
@@ -17,7 +16,7 @@ import { Plus, RefreshCw, Settings, Trash2 } from "lucide-react";
 import { ButtonWithTooltip } from "@/components/ui/button-with-tooltip.tsx";
 import { AddEditIntegrationModal } from "@/components/integrations/add-edit-integration-modal.tsx";
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 function IntegrationTypeBadge({ typeName }: { typeName: string | null }) {
   const colors = typeName ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-500";

@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { ApiClient } from "@/lib/api";
-import { authenticationProviderInstance } from "@/lib/authentication-provider";
 import {AgentChoice} from "@/lib/api/agents.ts";
 
-const apiClient = new ApiClient(authenticationProviderInstance);
+const apiClient = new ApiClient();
 
 export function useAgentTypes() {
   const [agentTypes, setAgentTypes] = useState<AgentChoice[]>([]);

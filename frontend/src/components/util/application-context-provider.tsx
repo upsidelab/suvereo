@@ -2,10 +2,9 @@ import { ReactNode, useState, useEffect, useRef } from "react";
 import { ApplicationContext, ApplicationContextValue } from "@/lib/application-context.ts";
 import { Account, DataSet } from "@/lib/types.ts";
 import { ApiClient } from "@/lib/api.ts";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { useLocation, useNavigate } from "react-router-dom";
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 export interface ApplicationContextProviderProps {
   children: ReactNode;

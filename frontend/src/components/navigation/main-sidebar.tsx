@@ -20,10 +20,9 @@ import {
 import { UserMenu } from "@/components/navigation/user-menu.tsx";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { ApiClient } from "@/lib/api.ts";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { EntityType } from "@/lib/types.ts";
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 export function MainSidebar() {
   const { account, dataSetId, isLoadingAgents, availableAgents, hasPermission } = useApplicationContext()!;

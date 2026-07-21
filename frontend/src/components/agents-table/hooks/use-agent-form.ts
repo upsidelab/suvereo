@@ -1,12 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { ApiClient } from "@/lib/api";
-import { authenticationProviderInstance } from "@/lib/authentication-provider";
 import { Agent } from "@/lib/types";
 import {AgentChoice} from "@/lib/api/agents.ts";
 import { ApiError } from "@/lib/api-error";
 import { flattenConfigForForm, parseFieldErrors as parseFieldErrorsBase } from "@/lib/form-utils";
 
-const apiClient = new ApiClient(authenticationProviderInstance);
+const apiClient = new ApiClient();
 
 export function useAgentForm(
   agent: Agent | null,

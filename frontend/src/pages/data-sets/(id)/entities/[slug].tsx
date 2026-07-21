@@ -4,10 +4,9 @@ import { PageHeading } from "@/components/util/page-heading.tsx";
 import { PageMain } from "@/components/util/page-main.tsx";
 import { EntityTable } from "@/components/entities/entity-table.tsx";
 import { ApiClient } from "@/lib/api.ts";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { EntityType } from "@/lib/types.ts";
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 export function EntityRecordsPage() {
   const { id, slug } = useParams<{ id: string; slug: string }>();

@@ -10,11 +10,10 @@ import { Agent, PaginatedResult } from "@/lib/types";
 import { AgentFormModal } from "./agent-form-modal";
 import { PaginatedTable } from "@/components/util/paginated-table.tsx";
 import { ApiClient } from "@/lib/api.ts";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { ButtonWithTooltip } from "@/components/ui/button-with-tooltip.tsx";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip.tsx";
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 export default function AgentsTable() {
   const { dataSetId, refetchAgents, hasDatasetPermission } = useApplicationContext() ?? { dataSetId: null, refetchAgents: async () => {}, hasDatasetPermission: () => false };

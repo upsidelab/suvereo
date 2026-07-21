@@ -8,11 +8,10 @@ import { checkServiceNameAvailability } from "@/components/util/check-service-na
 import { TokenGeneratedModal } from "@/components/service-accounts/token-generated-modal.tsx";
 import { DetailsFields } from "@/components/service-accounts/form/details-fields.tsx";
 import { ApiClient } from "@/lib/api.ts";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { PermissionFields } from "@/components/service-accounts/form/permission-fields.tsx";
 import { GroupOption } from "@/lib/types.ts";
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 const formSchema = z.object({
   name: z.string().trim().min(1).refine(async (name) => {

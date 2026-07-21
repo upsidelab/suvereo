@@ -2,7 +2,6 @@ import { useState } from "react";
 import { TableCell, TableRow } from "@/components/ui/table.tsx";
 import { ApiClient } from "@/lib/api.ts";
 import { ServiceAccount } from "@/lib/types.ts";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { EditServiceAccountModal } from "./edit-service-account-modal.tsx";
 import { PaginatedTable } from "@/components/util/paginated-table.tsx";
 import { Check } from "lucide-react";
@@ -11,7 +10,7 @@ import { TokenResetModal } from "@/components/service-accounts/token-reset-modal
 import { ApiError } from "@/lib/api-error.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 export function ServiceAccountsList() {
   const { hasPermission } = useApplicationContext()!;

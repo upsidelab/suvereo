@@ -7,19 +7,18 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu.tsx";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar.tsx";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { ApiClient } from "@/lib/api.ts";
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar.tsx";
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 export function UserMenu() {
   const navigate = useNavigate();
   const logout = async () => {
-    await authenticationProviderInstance.logout();
+    await api.logout();
     navigate("/login");
   };
   const { account, setAccount } = useApplicationContext()!;

@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { ApiClient } from "@/lib/api.ts";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { PageMain } from "@/components/util/page-main.tsx";
 import { PageHeading } from "@/components/util/page-heading.tsx";
 import { ChatWindow } from "@/components/conversation-view/chat-window.tsx";
@@ -15,7 +14,7 @@ interface NewChatProps {
   onPendingMessage: OnPendingMessage;
 }
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 export function NewChat({ onPendingMessage }: NewChatProps) {
   const { availableAgents } = useApplicationContext()!;

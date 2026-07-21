@@ -1,11 +1,10 @@
 import { useCallback } from "react";
 import { TableCell, TableRow } from "@/components/ui/table.tsx";
 import { ApiClient } from "@/lib/api.ts";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { PaginatedTable } from "@/components/util/paginated-table.tsx";
 import { EntityType } from "@/lib/types.ts";
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 interface EntityTableProps {
   dataSetId: number;

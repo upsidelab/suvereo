@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { ApiClient } from "@/lib/api.ts";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { PermissionFields } from "@/components/users/form/permission-fields.tsx";
 import { DetailsFields } from "@/components/users/form/details-fields.tsx";
@@ -17,7 +16,7 @@ const formSchema = z.object({
 });
 
 type UserFormSchema = z.infer<typeof formSchema>;
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 export interface EditUserFormProps {
   user: User;

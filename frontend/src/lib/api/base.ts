@@ -1,8 +1,7 @@
-import { AuthenticationProvider } from "@/lib/authentication-provider.ts";
 import { getCsrfToken } from "@/lib/csrf.ts";
 
 export abstract class BaseApiClient {
-  constructor(protected readonly apiBase: string, protected readonly authenticationProvider: AuthenticationProvider) {}
+  constructor(protected readonly apiBase: string) {}
 
   _requestConfiguration(): RequestInit {
     return {

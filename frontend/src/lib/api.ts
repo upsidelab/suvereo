@@ -1,4 +1,3 @@
-import { AuthenticationProvider } from "./authentication-provider.ts";
 import { getCsrfToken } from "@/lib/csrf.ts";
 import { UsersApiClient } from "@/lib/api/users.ts";
 import { DataSetsApiClient } from "@/lib/api/data-sets.ts";
@@ -37,7 +36,7 @@ export type TaskHandle = {
 export class ApiClient {
   private readonly apiBase: string;
 
-  constructor(private readonly authenticationProvider: AuthenticationProvider) {
+  constructor() {
     this.apiBase = import.meta.env.VITE_API_BASE;
   }
 
@@ -57,6 +56,13 @@ export class ApiClient {
     }
   }
 
+  async logout(): Promise<void> {
+    await fetch(`${this.apiBase}/api/auth/logout`, {
+      ...this._requestConfiguration(),
+      method: 'POST',
+    });
+  }
+
   async getAccount(): Promise<Account> {
     const response = await fetch(`${this.apiBase}/api/account`, this._requestConfiguration());
     const responseJson = await response.json() as AccountResponse;
@@ -68,7 +74,7 @@ export class ApiClient {
   }
 
   users(): UsersApiClient {
-    return new UsersApiClient(this.apiBase, this.authenticationProvider);
+    return new UsersApiClient(this.apiBase);
   }
 
   async getAllUsers(): Promise<User[]> {
@@ -77,11 +83,11 @@ export class ApiClient {
   }
 
   serviceAccounts(): ServiceAccountsApiClient {
-    return new ServiceAccountsApiClient(this.apiBase, this.authenticationProvider);
+    return new ServiceAccountsApiClient(this.apiBase);
   }
 
   dataSets(): DataSetsApiClient {
-    return new DataSetsApiClient(this.apiBase, this.authenticationProvider);
+    return new DataSetsApiClient(this.apiBase);
   }
 
   groups(): GroupsApiClient {
@@ -97,27 +103,27 @@ export class ApiClient {
   }
 
   conversations(): ConversationsApiClient {
-    return new ConversationsApiClient(this.apiBase, this.authenticationProvider);
+    return new ConversationsApiClient(this.apiBase);
   }
 
   config(): ConfigApiClient {
-    return new ConfigApiClient(this.apiBase, this.authenticationProvider);
+    return new ConfigApiClient(this.apiBase);
   }
 
   agents(): AgentsApiClient {
-    return new AgentsApiClient(this.apiBase, this.authenticationProvider);
+    return new AgentsApiClient(this.apiBase);
   }
 
   agenticExecutions(): AgenticExecutionsApiClient {
-    return new AgenticExecutionsApiClient(this.apiBase, this.authenticationProvider);
+    return new AgenticExecutionsApiClient(this.apiBase);
   }
 
   integrations(): IntegrationsApiClient {
-    return new IntegrationsApiClient(this.apiBase, this.authenticationProvider);
+    return new IntegrationsApiClient(this.apiBase);
   }
 
   entities(): EntitiesApiClient {
-    return new EntitiesApiClient(this.apiBase, this.authenticationProvider);
+    return new EntitiesApiClient(this.apiBase);
   }
 
   _requestConfiguration(): RequestInit {

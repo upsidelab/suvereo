@@ -8,11 +8,10 @@ import { DEFAULT_PAGE_PARAM, PaginatedTable } from "@/components/util/paginated-
 import { ExecutionStatusBadge } from "@/components/agentic-executions/execution-status-badge.tsx";
 import { CreateExecutionModal } from "@/components/agentic-executions/create-execution-modal.tsx";
 import { ApiClient } from "@/lib/api.ts";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { AgenticExecution } from "@/lib/types.ts";
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 const STATUSES: AgenticExecution["status"][] = ["pending", "in_progress", "finished", "failed"];
 const STATUS_LABELS: Record<AgenticExecution["status"], string> = {

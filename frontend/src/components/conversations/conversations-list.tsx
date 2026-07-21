@@ -1,12 +1,11 @@
 import { TableCell, TableRow } from "@/components/ui/table.tsx";
 import { ApiClient } from "@/lib/api.ts";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { useNavigate } from "react-router-dom";
 import { PaginatedTable } from "@/components/util/paginated-table.tsx";
 import { Lock } from "lucide-react";
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 export function ConversationsList() {
   const { dataSetId } = useApplicationContext()!;

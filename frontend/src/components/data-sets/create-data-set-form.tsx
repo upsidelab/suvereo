@@ -2,11 +2,10 @@ import { useNavigate } from "react-router-dom";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { DataSet } from "@/lib/types.ts";
 import { ApiClient } from "@/lib/api.ts";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { DataSetForm } from "./data-set-form.tsx";
 import { DataSetFormSchema } from "./data-set-form-schema.ts";
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 export interface CreateDataSetFormProps {
   isOnboarding?: boolean;

@@ -7,11 +7,10 @@ import { Button } from "@/components/ui/button.tsx";
 import { checkServiceNameAvailability } from "@/components/util/check-service-name-availability.tsx";
 import { DetailsFields } from "@/components/service-accounts/form/details-fields.tsx";
 import { ApiClient } from "@/lib/api.ts";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { ServiceAccount, GroupOption } from "@/lib/types.ts";
 import { PermissionFields } from "@/components/service-accounts/form/permission-fields.tsx";
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 const formSchema = z.object({
   oldName: z.string().trim(),

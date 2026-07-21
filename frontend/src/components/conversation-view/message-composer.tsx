@@ -2,7 +2,6 @@ import { ChangeEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
 import './message-composer.css';
 import { ApiClient } from "@/lib/api.ts";
 import { cn } from '@/lib/utils';
-import { authenticationProviderInstance } from "@/lib/authentication-provider";
 import { Loader, Send } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { Button } from "@/components/ui/button.tsx";
@@ -32,7 +31,7 @@ export interface MessageComposerProps {
 }
 
 const maxHeight = 300;
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 export function MessageComposer({ onSubmit, isLoading, conversationLocked = false, conversationId, agentId, fileUploadEnabled }: MessageComposerProps) {
   const [input, setInput] = useState("");

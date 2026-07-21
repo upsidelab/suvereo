@@ -8,14 +8,13 @@ import { useEffect, useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select.tsx";
 import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 import { ApiClient } from "@/lib/api.ts";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { DataSet, EmbeddingModelsConfig, ProvidersConfig } from "@/lib/types.ts";
 import { Alert, AlertDescription } from "@/components/ui/alert.tsx";
 import { InfoIcon } from "lucide-react";
 import { formSchema, DataSetFormSchema } from "./data-set-form-schema.ts";
 import { Label } from "@/components/ui/label.tsx";
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 function formatList(items: (string | number)[]): string {
   if (items.length <= 1) return String(items[0] ?? "");

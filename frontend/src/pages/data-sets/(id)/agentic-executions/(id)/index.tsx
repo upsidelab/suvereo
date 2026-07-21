@@ -5,11 +5,10 @@ import { PageMain } from "@/components/util/page-main.tsx";
 import { PageHeading } from "@/components/util/page-heading.tsx";
 import { ExecutionStatusBadge } from "@/components/agentic-executions/execution-status-badge.tsx";
 import { ApiClient } from "@/lib/api.ts";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { AgenticExecutionDetail } from "@/lib/types.ts";
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 const TERMINAL_STATUSES: AgenticExecutionDetail["status"][] = ["finished", "failed"];
 

@@ -4,7 +4,6 @@ import { Label } from "@/components/ui/label.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx"
 import { HTMLAttributes, SyntheticEvent, useState } from "react";
 import { Spinner } from "@/components/util/spinner.tsx";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { ApiClient } from "@/lib/api.ts";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert.tsx";
 import { MessageFeedbackRating } from "@/components/message-feedback/message-feedback-rating.tsx";
@@ -13,7 +12,7 @@ interface MessageFeedbackFormProps {
   messageId: number | null;
 }
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 export function MessageFeedbackForm({ messageId }: MessageFeedbackFormProps, { className, ...props }: HTMLAttributes<HTMLDivElement>) {
   const [isLoading, setIsLoading] = useState(false);

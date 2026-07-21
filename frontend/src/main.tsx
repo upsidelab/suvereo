@@ -6,7 +6,6 @@ import { createBrowserRouter, redirect, RouterProvider } from "react-router-dom"
 import { ChatHistory } from "@/pages/data-sets/(id)/history.tsx";
 import { Chat } from "@/pages/data-sets/(id)/chat/index.tsx";
 import { LoginPage } from "@/pages/login.tsx";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { ApiConnectionIndex } from "@/pages/service-accounts/index.tsx";
 import { NoDataSets } from "@/pages/no-data-sets.tsx";
 import { ErrorPage } from "@/pages/error.tsx";
@@ -25,7 +24,7 @@ import { AgenticExecutionDetailPage } from "@/pages/data-sets/(id)/agentic-execu
 import { EntityRecordsPage } from "@/pages/data-sets/(id)/entities/[slug].tsx";
 import { RolesIndex } from "@/pages/roles";
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 const protectedLoginLoader = async () => {
   try {

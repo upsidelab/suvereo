@@ -5,12 +5,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FormModal } from "@/components/ui/form-modal";
 import { JSONEditor } from "@/components/agents-table/json-editor";
 import { ApiClient } from "@/lib/api.ts";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { AgentDetails, ExecutionDefinition } from "@/lib/types.ts";
 import { ApiError } from "@/lib/api-error.ts";
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 interface CreateExecutionModalProps {
   open: boolean;

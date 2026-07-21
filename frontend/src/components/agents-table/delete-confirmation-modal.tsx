@@ -2,11 +2,10 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ApiClient } from "@/lib/api";
-import { authenticationProviderInstance } from "@/lib/authentication-provider";
 import { Agent } from "@/lib/types";
 import { ApiError } from "@/lib/api-error";
 
-const apiClient = new ApiClient(authenticationProviderInstance);
+const apiClient = new ApiClient();
 
 interface DeleteConfirmationModalProps {
   open: boolean;

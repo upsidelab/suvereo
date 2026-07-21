@@ -2,7 +2,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { DataSet } from "@/lib/types.ts";
 import { ApiClient } from "@/lib/api.ts";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { DataSetForm } from "./data-set-form.tsx";
 import { DataSetFormSchema } from "./data-set-form-schema.ts";
 import { useEffect, useState } from "react";
@@ -11,7 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { DeleteDataSetModal } from "./delete-data-set-modal.tsx";
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 export function EditDataSetForm() {
   const { setDataSets, hasPermission } = useApplicationContext()!;

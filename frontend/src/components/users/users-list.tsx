@@ -1,5 +1,4 @@
 import { ApiClient } from "@/lib/api.ts";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { PaginatedTable } from "@/components/util/paginated-table.tsx";
 import { TableCell, TableRow } from "@/components/ui/table.tsx";
 import { useState } from "react";
@@ -11,7 +10,7 @@ import { User } from "@/lib/types.ts";
 import { ApiError } from "@/lib/api-error.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 export function UsersList() {
   const { hasPermission } = useApplicationContext()!;
