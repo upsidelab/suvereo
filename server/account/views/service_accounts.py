@@ -1,13 +1,12 @@
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
-from rest_framework.authtoken.models import Token
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from account.authorization import PERM_MANAGE_SERVICE_ACCOUNTS, PERM_VIEW_SERVICE_ACCOUNTS
-from account.models import User
+from account.models import AuthToken, User
 from account.permissions import HasRequiredPermission
 from account.serializers import (
     AvailabilityResponseSerializer,
@@ -51,8 +50,8 @@ class ResetTokenView(APIView):
     )
     def post(self, request, id):
         service_account = User.objects.get(id=id, is_service_account=True)
-        Token.objects.filter(user=service_account).delete()
-        token, created = Token.objects.get_or_create(user=service_account)
+        AuthToken.objects.filter(user=service_account).delete()
+        token, created = AuthToken.objects.get_or_create(user=service_account)
         serializer = TokenResponseSerializer({"token": token.key})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -81,7 +80,7 @@ class ServiceAccountListView(ListAPIView):
         serializer = CreateUpdateServiceAccountSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             user = serializer.save()
-            token, created = Token.objects.get_or_create(user=user)
+            token, created = AuthToken.objects.get_or_create(user=user)
             response_data = serializer.validated_data
             response_data.update({"id": user.id, "token": token.key})
             return Response(response_data, status=status.HTTP_201_CREATED)
