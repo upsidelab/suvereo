@@ -1,6 +1,9 @@
+import secrets
+
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.db import models
+from django.utils import timezone
 
 from account.authorization import PERM_CONVERSE, PERM_VIEW_DATASET, has_dataset_perm, is_application_admin
 
@@ -147,3 +150,17 @@ class PermissionDescription(models.Model):
 
     def __str__(self):
         return f"{self.permission.codename}: {self.description}"
+
+
+def generate_token_key():
+    return secrets.token_hex(20)
+
+
+class AuthToken(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="auth_tokens")
+    key = models.CharField(max_length=64, unique=True, db_index=True, default=generate_token_key)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def is_expired(self) -> bool:
+        return self.expires_at is not None and self.expires_at < timezone.now()
