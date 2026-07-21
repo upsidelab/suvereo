@@ -230,7 +230,7 @@ SWAGGER_SETTINGS = {
             "type": "apiKey",
             "name": "Authorization",
             "in": "header",
-            "description": "Service-account API token only (format: 'Token <key>'). Human users authenticate via session cookie, not this scheme.",
+            "description": "Service-account API token only (format: 'Token <key>'). Human users authenticate via an httpOnly auth-token cookie, not this scheme.",
         }
     },
     "USE_SESSION_AUTH": False,

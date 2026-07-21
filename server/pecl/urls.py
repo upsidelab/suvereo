@@ -27,10 +27,10 @@ schema_view = get_schema_view(
         default_version="v1.0",
         description=(
             "Documentation for E-Commerce LLM API. Browser clients authenticate via "
-            "session cookie (log in through POST /api/auth/login, then send the "
-            "X-CSRFToken header — read from the csrftoken cookie — on mutating "
-            "requests) and cannot use the Token security scheme below. The Token "
-            "scheme is for service accounts only."
+            "an httpOnly auth-token cookie (log in through POST /api/auth/login, then "
+            "send the X-CSRFToken header — read from the csrftoken cookie — on "
+            "mutating requests) and cannot use the Token security scheme below. The "
+            "Token scheme is for service accounts only."
         ),
     ),
     public=True,
