@@ -11,8 +11,9 @@ class AuthTokenCookieMiddleware:
     """ASGI middleware resolving scope["user"] from the auth_token cookie.
 
     Replaces channels.auth.AuthMiddlewareStack, which resolves scope["user"]
-    from Django's session framework - unused by this app's own authentication
-    since AuthToken replaced session-cookie auth.
+    from Django's session framework - this app doesn't use Django sessions
+    for its own authentication at all, so AuthMiddlewareStack would never
+    resolve a real user here.
     """
 
     def __init__(self, app):

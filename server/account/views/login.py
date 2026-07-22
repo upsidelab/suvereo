@@ -17,6 +17,8 @@ from account.serializers import AccountSerializer
 
 @method_decorator(csrf_protect, name="dispatch")
 class LoginView(APIView):
+    authentication_classes = []
+
     @swagger_auto_schema(
         operation_description="Login to obtain an authenticated auth-token cookie",
         request_body=openapi.Schema(
@@ -65,6 +67,8 @@ class LogoutView(APIView):
 
 
 class CsrfView(APIView):
+    authentication_classes = []
+
     @swagger_auto_schema(operation_description="Ensure a CSRF cookie is set for the current browser")
     def get(self, request):
         get_token(request)

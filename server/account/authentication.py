@@ -12,8 +12,10 @@ HUMAN_TOKEN_LIFETIME = timedelta(weeks=1)
 
 class AuthTokenAuthentication(BaseAuthentication):
     """Authenticates via AuthToken, presented as an Authorization header
-    (service accounts) or the auth_token cookie (human users). One model,
-    one check, regardless of caller.
+    (service accounts) or the auth_token cookie (human users). Same model
+    and lookup for both, but only cookie-presented tokens are subject to
+    CSRF re-validation, since only cookies are auto-attached to cross-site
+    requests by the browser.
     """
 
     keyword = "Token"
@@ -28,15 +30,15 @@ class AuthTokenAuthentication(BaseAuthentication):
         if token is None:
             raise AuthenticationFailed("Invalid or expired token.")
 
+        if header_key is not None and not token.user.is_service_account:
+            raise AuthenticationFailed("Invalid or expired token.")
+
+        if header_key is None:
+            self._enforce_csrf(request)
+
         if token.expires_at is not None:
             token.expires_at = timezone.now() + HUMAN_TOKEN_LIFETIME
             token.save(update_fields=["expires_at"])
-
-        # A header-presented key is a service account (per _key_from_header); a browser can
-        # never auto-attach an Authorization header to a cross-site request the way it does
-        # with cookies, so only cookie-authenticated requests need CSRF re-validation here.
-        if header_key is None:
-            self._enforce_csrf(request)
 
         return (token.user, token)
 
