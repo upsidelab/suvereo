@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate
 from django.middleware.csrf import get_token
 from django.utils import timezone
 from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.permissions import IsAuthenticated
@@ -66,10 +66,10 @@ class LogoutView(APIView):
         return response
 
 
+@method_decorator(ensure_csrf_cookie, name="dispatch")
 class CsrfView(APIView):
     authentication_classes = []
 
     @swagger_auto_schema(operation_description="Ensure a CSRF cookie is set for the current browser")
     def get(self, request):
-        get_token(request)
         return Response(status=204)
