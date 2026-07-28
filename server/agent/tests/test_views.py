@@ -11,7 +11,7 @@ from pydantic import Field
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from account.authorization import set_application_admin
+from account.authorization import assign_dataset_role, set_application_admin
 from account.models import User
 from agent.models import Conversation, Message
 from agent.models.agent import Agent
@@ -28,7 +28,9 @@ def user():
 
 @pytest.fixture
 def dataset(user):
-    return baker.make(DataSet, users=[user])
+    dataset = baker.make(DataSet)
+    assign_dataset_role(user, dataset, "viewer")
+    return dataset
 
 
 @pytest.fixture
@@ -593,7 +595,7 @@ class TestConversationView:
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_admin_can_post_to_any_conversation(self, admin_api_client, url):
-        dataset = baker.make(DataSet, users=[])
+        dataset = baker.make(DataSet)
         agent = baker.make(Agent, deleted_at=None, dataset=dataset)
         conversation = baker.make(Conversation, agent=agent)
         url = reverse("conversation-details", kwargs={"conversation_id": conversation.id})
@@ -613,7 +615,7 @@ class TestConversationView:
         mock_task.assert_called_once()
 
     def test_user_can_not_post_to_conversation_with_no_dataset_access(self, api_client, url):
-        dataset = baker.make(DataSet, users=[])
+        dataset = baker.make(DataSet)
         agent = baker.make(Agent, deleted_at=None, dataset=dataset)
         conversation = baker.make(Conversation, agent=agent)
         url = reverse("conversation-details", kwargs={"conversation_id": conversation.id})
@@ -653,7 +655,7 @@ class TestConversationListView:
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_create_conversation_throws_on_no_access_to_dataset(self, api_client, url):
-        dataset = baker.make(DataSet, users=[])
+        dataset = baker.make(DataSet)
         agent = baker.make(Agent, deleted_at=None, dataset=dataset)
         payload = {"agent_id": agent.id}
 
@@ -662,7 +664,7 @@ class TestConversationListView:
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_admin_can_create_conversation_with_any_dataset(self, admin_api_client, url):
-        dataset = baker.make(DataSet, users=[])
+        dataset = baker.make(DataSet)
         agent = baker.make(Agent, deleted_at=None, dataset=dataset)
         payload = {"agent_id": agent.id}
 
@@ -721,8 +723,8 @@ class TestConversationListView:
         assert response.data["results"][0]["id"] == user_conversation.id
 
     def test_list_conversations_filters_by_data_set_id(self, api_client, user, url):
-        dataset1 = baker.make(DataSet, users=[user])
-        dataset2 = baker.make(DataSet, users=[user])
+        dataset1 = baker.make(DataSet)
+        dataset2 = baker.make(DataSet)
         agent = baker.make(Agent, deleted_at=None, dataset=dataset1)
         conversation1 = baker.make(Conversation, user=user, agent=agent, data_set=dataset1)
         baker.make(Conversation, user=user, agent=agent, data_set=dataset2)
@@ -734,8 +736,8 @@ class TestConversationListView:
         assert response.data["results"][0]["id"] == conversation1.id
 
     def test_list_conversations_filters_by_data_set_id_and_agent_id(self, api_client, user, url):
-        dataset1 = baker.make(DataSet, users=[user])
-        dataset2 = baker.make(DataSet, users=[user])
+        dataset1 = baker.make(DataSet)
+        dataset2 = baker.make(DataSet)
         agent1 = baker.make(Agent, deleted_at=None, dataset=dataset1)
         agent2 = baker.make(Agent, deleted_at=None, dataset=dataset1)
         conversation1 = baker.make(Conversation, user=user, agent=agent1, data_set=dataset1)
@@ -750,8 +752,8 @@ class TestConversationListView:
         assert response.data["results"][0]["agent"]["id"] == agent1.id
 
     def test_list_conversations_with_data_set_id_returns_empty_when_no_matches(self, api_client, user, url):
-        dataset1 = baker.make(DataSet, users=[user])
-        dataset2 = baker.make(DataSet, users=[user])
+        dataset1 = baker.make(DataSet)
+        dataset2 = baker.make(DataSet)
         agent = baker.make(Agent, deleted_at=None, dataset=dataset1)
         baker.make(Conversation, user=user, agent=agent, data_set=dataset1)
 
@@ -762,8 +764,8 @@ class TestConversationListView:
 
     def test_list_conversations_with_data_set_id_only_returns_user_conversations(self, api_client, user, url):
         other_user = baker.make(User)
-        dataset = baker.make(DataSet, users=[user])
-        other_dataset = baker.make(DataSet, users=[other_user])
+        dataset = baker.make(DataSet)
+        other_dataset = baker.make(DataSet)
         agent = baker.make(Agent, deleted_at=None, dataset=dataset)
         user_conversation = baker.make(Conversation, user=user, agent=agent, data_set=dataset)
         baker.make(Conversation, user=other_user, agent=agent, data_set=other_dataset)

@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.db import models
 
 
@@ -11,8 +10,6 @@ class DataSet(models.Model):
     embedding_vector_dimensions = models.IntegerField(default=512)
     embedding_chunk_size = models.IntegerField(default=3000)
     embedding_chunk_overlap = models.IntegerField(default=150)
-
-    users = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="data_sets")
 
     class Meta:
         db_table_comment = (
