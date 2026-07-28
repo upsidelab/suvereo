@@ -79,6 +79,7 @@ INSTALLED_APPS = [
     "account",
     "drf_yasg",
     "django_filters",
+    "guardian",
 ]
 
 MIDDLEWARE = [
@@ -165,6 +166,11 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 AUTH_USER_MODEL = "account.User"
+
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "guardian.backends.ObjectPermissionBackend",
+]
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
