@@ -35,9 +35,6 @@ class Agent(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["dataset", "name"], name="unique_agent_name_per_dataset", condition=Q(deleted_at__isnull=True))]
-        permissions = [
-            ("manage_agents", "Can manage agents"),
-        ]
 
     def __str__(self):
         return self.name

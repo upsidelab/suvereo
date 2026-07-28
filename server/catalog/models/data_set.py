@@ -24,4 +24,5 @@ class DataSet(models.Model):
             ("access_all_datasets", "Can access all data sets"),
             ("configure_models", "Can read model provider configuration"),
             ("access_dataset", "Can access this data set"),
+            ("manage_agents", "Can manage agents in this data set"),
         ]
