@@ -195,6 +195,81 @@ class TestAgentView:
         assert agent_1.id in ids
         assert agent_2.id in ids
 
+    def test_get_returns_corrupted_agents_to_dataset_editor(self, user, api_client, url, dataset_instance):
+        assign_dataset_role(user, dataset_instance, "editor")
+        agent_1 = baker.make(Agent, dataset=dataset_instance)
+        agent_2 = baker.make(Agent, dataset=dataset_instance, corrupted=True)
+
+        response = api_client.get(f"{url}?dataset={dataset_instance.pk}")
+
+        assert response.status_code == status.HTTP_200_OK
+        ids = {item["id"] for item in response.data}
+        assert agent_1.id in ids
+        assert agent_2.id in ids
+
+    def test_editor_of_other_dataset_does_not_see_corrupted_agents_here(self, user, api_client, url, dataset_instance):
+        other_dataset = baker.make(DataSet)
+        assign_dataset_role(user, other_dataset, "editor")
+        agent_1 = baker.make(Agent, dataset=dataset_instance)
+        agent_2 = baker.make(Agent, dataset=dataset_instance, corrupted=True)
+
+        response = api_client.get(f"{url}?dataset={dataset_instance.pk}")
+
+        assert response.status_code == status.HTTP_200_OK
+        ids = {item["id"] for item in response.data}
+        assert agent_1.id in ids
+        assert agent_2.id not in ids
+
+    def test_editor_can_create_agent_on_their_dataset(self, user, api_client, url, dataset_instance, config):
+        assign_dataset_role(user, dataset_instance, "editor")
+        payload = {
+            "name": "editor-made",
+            "description": "description",
+            "config": config,
+            "dataset": dataset_instance.id,
+            "agent_type": "agent_1",
+        }
+
+        with patch("agent.serializers.customs.fields.AgentRegistry.get_plugin_classes", return_value=AGENT_CLASSES):
+            response = api_client.post(url, payload, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+
+    def test_editor_cannot_create_agent_on_another_dataset(self, user, api_client, url, dataset_instance, config):
+        other_dataset = baker.make(DataSet)
+        assign_dataset_role(user, other_dataset, "editor")
+        payload = {
+            "name": "not-allowed",
+            "description": "description",
+            "config": config,
+            "dataset": dataset_instance.id,
+            "agent_type": "agent_1",
+        }
+
+        with patch("agent.serializers.customs.fields.AgentRegistry.get_plugin_classes", return_value=AGENT_CLASSES):
+            response = api_client.post(url, payload, format="json")
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_group_member_can_create_agent_via_group_grant(self, api_client, user, dataset_instance, config, url):
+        from django.contrib.auth.models import Group
+
+        group = Group.objects.create(name="Marketing")
+        assign_dataset_role(group, dataset_instance, "editor")
+        user.groups.add(group)
+        payload = {
+            "name": "group-made",
+            "description": "description",
+            "config": config,
+            "dataset": dataset_instance.id,
+            "agent_type": "agent_1",
+        }
+
+        with patch("agent.serializers.customs.fields.AgentRegistry.get_plugin_classes", return_value=AGENT_CLASSES):
+            response = api_client.post(url, payload, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+
     def test_get_filter_out_corrupted_agents_to_user(self, api_client, url, dataset_instance):
         agent_1 = baker.make(Agent, dataset=dataset_instance)
         agent_2 = baker.make(Agent, dataset=dataset_instance, corrupted=True)
@@ -212,6 +287,11 @@ class TestAgentView:
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data == []
+
+    def test_get_with_non_numeric_dataset_param_returns_400(self, api_client, url):
+        response = api_client.get(f"{url}?dataset=abc")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_post_creates_agent(self, admin_api_client, url, config):
         dataset = baker.make(DataSet)
@@ -333,8 +413,17 @@ class TestAgentView:
             assert created.config["tools"][0] == {}
             assert created.config["tools"][1] == {"required_test": "required_test", "optional_test": "default"}
 
-    def test_post_without_manage_agents_permission_returns_403(self, api_client, url):
-        response = api_client.post(url, {"name": "nope"}, format="json")
+    def test_post_without_manage_agents_permission_returns_403(self, api_client, url, dataset_instance, config):
+        payload = {
+            "name": "nope",
+            "description": "description",
+            "config": config,
+            "dataset": dataset_instance.id,
+            "agent_type": "agent_1",
+        }
+
+        with patch("agent.serializers.customs.fields.AgentRegistry.get_plugin_classes", return_value=AGENT_CLASSES):
+            response = api_client.post(url, payload, format="json")
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
@@ -361,6 +450,51 @@ class TestAgentDetailsView:
         response = api_client.get(url)
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_editor_of_this_dataset_can_update_agent(self, user, agent_instance, url, config):
+        assign_dataset_role(user, agent_instance.dataset, "editor")
+        client = APIClient()
+        client.force_authenticate(user=user)
+        updated_config = config
+        payload = {
+            "name": "updated-by-editor",
+            "description": "description",
+            "config": updated_config,
+            "dataset": agent_instance.dataset.id,
+            "agent_type": "agent_1",
+        }
+        with patch("agent.serializers.customs.fields.AgentRegistry.get_plugin_classes", return_value=AGENT_CLASSES):
+            response = client.put(url, payload, format="json")
+
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_editor_of_another_dataset_cannot_update_agent(self, agent_instance, url, config):
+        other_dataset = baker.make(DataSet)
+        user = baker.make(User)
+        assign_dataset_role(user, other_dataset, "editor")
+        client = APIClient()
+        client.force_authenticate(user=user)
+        payload = {
+            "name": "not-allowed",
+            "description": "description",
+            "config": config,
+            "dataset": agent_instance.dataset.id,
+            "agent_type": "agent_1",
+        }
+        with patch("agent.serializers.customs.fields.AgentRegistry.get_plugin_classes", return_value=AGENT_CLASSES):
+            response = client.put(url, payload, format="json")
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_editor_of_this_dataset_can_delete_agent(self, agent_instance, url):
+        user = baker.make(User)
+        assign_dataset_role(user, agent_instance.dataset, "editor")
+        client = APIClient()
+        client.force_authenticate(user=user)
+
+        response = client.delete(url)
+
+        assert response.status_code == status.HTTP_204_NO_CONTENT
 
     def test_put_updates_agent(self, admin_api_client, agent_instance, url, config):
         dataset = baker.make(DataSet)

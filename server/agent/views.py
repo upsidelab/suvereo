@@ -15,8 +15,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from utils.functions import get_model_descriptor_from_class_field
 
-from account.authorization import PERM_MANAGE_AGENTS
-from account.permissions import HasRequiredPermission
+from account.authorization import PERM_MANAGE_AGENTS, has_dataset_perm
 from agent.conversation import ConversationManager
 from agent.core.registries.agents.agent_registry import AgentRegistry
 from agent.core.registries.language_models import LanguageModelRegistry
@@ -271,12 +270,7 @@ class AgentTypesView(APIView):
 class AgentView(APIView):
     """View to get/create agents"""
 
-    required_permission = PERM_MANAGE_AGENTS
-
-    def get_permissions(self):
-        if self.request.method == "GET":
-            return [IsAuthenticated()]
-        return [IsAuthenticated(), HasRequiredPermission()]
+    permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         operation_description="List all agents for a dataset",
@@ -292,7 +286,9 @@ class AgentView(APIView):
         responses={200: AgentListSerializer(many=True)},
     )
     def get(self, request):
-        if request.user.has_perm(PERM_MANAGE_AGENTS):
+        dataset_id = request.GET.get("dataset")
+        dataset = DataSet.objects.filter(pk=dataset_id).first() if dataset_id and dataset_id.isdigit() else None
+        if dataset is not None and has_dataset_perm(request.user, PERM_MANAGE_AGENTS, dataset):
             queryset = Agent.objects.all().order_by("created_at")
         else:
             queryset = Agent.objects.filter(corrupted=False).order_by("created_at")
@@ -310,6 +306,8 @@ class AgentView(APIView):
     def post(self, request):
         serializer = AgentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        if not has_dataset_perm(request.user, PERM_MANAGE_AGENTS, serializer.validated_data["dataset"]):
+            self.permission_denied(request)
         instance = serializer.save()
         return Response(AgentSerializer(instance).data, status=status.HTTP_201_CREATED)
 
@@ -317,12 +315,7 @@ class AgentView(APIView):
 class AgentDetailsView(APIView):
     """View to get manage agents"""
 
-    required_permission = PERM_MANAGE_AGENTS
-
-    def get_permissions(self):
-        if self.request.method == "GET":
-            return [IsAuthenticated()]
-        return [IsAuthenticated(), HasRequiredPermission()]
+    permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(operation_description="Get a single configuration by id.", responses={200: AgentSerializer()})
     def get(self, request, pk):
@@ -337,6 +330,8 @@ class AgentDetailsView(APIView):
     )
     def put(self, request, pk=None):
         instance = get_object_or_404(Agent, pk=pk)
+        if not has_dataset_perm(request.user, PERM_MANAGE_AGENTS, instance.dataset):
+            self.permission_denied(request)
 
         serializer = AgentSerializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -348,6 +343,8 @@ class AgentDetailsView(APIView):
     )
     def delete(self, request, pk=None):
         instance = get_object_or_404(Agent, pk=pk)
+        if not has_dataset_perm(request.user, PERM_MANAGE_AGENTS, instance.dataset):
+            self.permission_denied(request)
         instance.set_deleted_at()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
