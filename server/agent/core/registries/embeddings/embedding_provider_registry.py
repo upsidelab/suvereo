@@ -35,10 +35,11 @@ class EmbeddingProviderRegistry(BaseRegistry[EmbeddingProvider], BaseEmbeddingPr
         """Looks up a provider class by its ``NAME`` attribute."""
         return self._get_provider_classes_by_name()[name]
 
-    def provider_for_dataset(self, data_set_id: int) -> Type[EmbeddingProvider]:
-        """Returns the provider class configured for the given data set."""
+    def provider_instance_for_dataset(self, data_set_id: int) -> EmbeddingProvider:
+        """Returns a provider configured with the data set's embedding model and dimensions."""
         data_set = self._data_set_repo.get_by_id(data_set_id)
-        return self.provider_class_by_name(data_set.embedding_provider)
+        provider_class = self.provider_class_by_name(data_set.embedding_provider)
+        return provider_class(data_set.embedding_model, data_set.embedding_vector_dimensions)
 
     @staticmethod
     def _get_plugin_paths() -> List[str]:

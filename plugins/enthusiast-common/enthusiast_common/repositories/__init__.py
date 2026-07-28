@@ -3,7 +3,6 @@ from .base import (
     BaseConversationRepository,
     BaseDataSetRepository,
     BaseMessageRepository,
-    BaseModelChunkRepository,
     BaseRepository,
     BaseUserRepository,
 )
@@ -13,7 +12,6 @@ __all__ = [
     "BaseConversationRepository",
     "BaseDataSetRepository",
     "BaseMessageRepository",
-    "BaseModelChunkRepository",
     "BaseRepository",
     "BaseUserRepository",
 ]

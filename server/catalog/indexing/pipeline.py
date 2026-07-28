@@ -27,8 +27,7 @@ class EmbeddingIndexer(BaseEntityIndexer):
             chunk_size=data_set.embedding_chunk_size,
             chunk_overlap=data_set.embedding_chunk_overlap,
         )
-        provider_class = self._registry.provider_for_dataset(data_set.id)
-        provider = provider_class(data_set.embedding_model, data_set.embedding_vector_dimensions)
+        provider = self._registry.provider_instance_for_dataset(data_set.id)
 
         # Generate embeddings outside the transaction — API calls must not hold a DB lock.
         pieces = splitter.split_text(entity.get_indexable_content())
