@@ -1,3 +1,4 @@
+from django.contrib.auth.models import Group
 from guardian.shortcuts import get_objects_for_user
 from rest_framework import serializers
 
@@ -95,3 +96,9 @@ class TokenResponseSerializer(serializers.Serializer):
 
 class AvailabilityResponseSerializer(serializers.Serializer):
     is_available = serializers.BooleanField()
+
+
+class GroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Group
+        fields = ["id", "name"]

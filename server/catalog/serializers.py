@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from account.authorization import DATASET_ROLES
 from agent.core.registries.embeddings.embedding_provider_registry import EmbeddingProviderRegistry
 
 from .models import DataSet, Integration
@@ -118,3 +119,16 @@ class IntegrationTypeSerializer(serializers.Serializer):
     integration_type_name = serializers.CharField()
     syncable = serializers.BooleanField()
     config_schema = serializers.JSONField()
+
+
+class DataSetAccessGrantSerializer(serializers.Serializer):
+    target_type = serializers.ChoiceField(choices=["user", "group"])
+    target_id = serializers.IntegerField()
+    role = serializers.ChoiceField(choices=list(DATASET_ROLES.keys()))
+
+
+class DataSetAccessSerializer(serializers.Serializer):
+    target_type = serializers.CharField()
+    target_id = serializers.IntegerField()
+    target_label = serializers.CharField()
+    role = serializers.CharField(allow_null=True)

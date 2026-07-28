@@ -1,19 +1,24 @@
+from django.contrib.auth.models import Group
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from guardian.shortcuts import get_objects_for_user
+from guardian.shortcuts import get_groups_with_perms, get_objects_for_user, get_users_with_perms
 from rest_framework import status
 from rest_framework.generics import GenericAPIView, ListCreateAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from account.authorization import (
+    DATASET_ROLES,
     PERM_ACCESS_ALL_DATASETS,
     PERM_ACCESS_DATASET,
     PERM_CONFIGURE_MODELS,
     PERM_MANAGE_DATASETS,
     assign_dataset_role,
+    remove_all_dataset_grants,
 )
+from account.models import User
 from account.permissions import HasRequiredPermission
 from agent.core.registries.embeddings import EmbeddingProviderRegistry
 from agent.core.registries.language_models import LanguageModelRegistry
@@ -22,7 +27,12 @@ from agent.models.conversation import ConversationFile
 from agent.services import AgentPreconfigurationService
 
 from .models import DataSet
-from .serializers import DataSetCreateSerializer, DataSetSerializer
+from .serializers import (
+    DataSetAccessGrantSerializer,
+    DataSetAccessSerializer,
+    DataSetCreateSerializer,
+    DataSetSerializer,
+)
 
 
 class DataSetListView(ListCreateAPIView):
@@ -228,3 +238,78 @@ class ConfigEmbeddingModelView(GenericAPIView):
         }
 
         return Response(response_body)
+
+
+def _resolve_dataset_role(codenames):
+    """Return the highest DATASET_ROLES entry fully covered by `codenames`, or None.
+
+    `codenames` comes from guardian's `get_users_with_perms`/`get_groups_with_perms`
+    (`attach_perms=True`), which report bare codenames (e.g. ``"access_dataset"``)
+    without the ``app_label.`` prefix that `DATASET_ROLES` uses elsewhere, so the
+    prefix is stripped before comparing.
+    """
+    bare_codenames = set(codenames)
+    matches = [
+        name
+        for name, perms in DATASET_ROLES.items()
+        if {perm.split(".")[-1] for perm in perms} <= bare_codenames
+    ]
+    if not matches:
+        return None
+    return max(matches, key=lambda name: len(DATASET_ROLES[name]))
+
+
+class DataSetAccessListView(GenericAPIView):
+    permission_classes = [HasRequiredPermission]
+    required_permission = PERM_MANAGE_DATASETS
+
+    @swagger_auto_schema(operation_description="List access grants for a data set")
+    def get(self, request, data_set_id):
+        dataset = get_object_or_404(DataSet, pk=data_set_id)
+        rows = []
+        for user, codenames in get_users_with_perms(dataset, attach_perms=True, with_group_users=False).items():
+            rows.append(
+                {
+                    "target_type": "user",
+                    "target_id": user.id,
+                    "target_label": user.email,
+                    "role": _resolve_dataset_role(codenames),
+                }
+            )
+        for group, codenames in get_groups_with_perms(dataset, attach_perms=True).items():
+            rows.append(
+                {
+                    "target_type": "group",
+                    "target_id": group.id,
+                    "target_label": group.name,
+                    "role": _resolve_dataset_role(codenames),
+                }
+            )
+        serializer = DataSetAccessSerializer(rows, many=True)
+        return Response(serializer.data)
+
+    @swagger_auto_schema(
+        operation_description="Grant a user or group a role on a data set",
+        request_body=DataSetAccessGrantSerializer,
+    )
+    def post(self, request, data_set_id):
+        dataset = get_object_or_404(DataSet, pk=data_set_id)
+        serializer = DataSetAccessGrantSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        target_model = User if serializer.validated_data["target_type"] == "user" else Group
+        target = get_object_or_404(target_model, pk=serializer.validated_data["target_id"])
+        assign_dataset_role(target, dataset, serializer.validated_data["role"])
+        return Response(status=status.HTTP_201_CREATED)
+
+
+class DataSetAccessDetailView(GenericAPIView):
+    permission_classes = [HasRequiredPermission]
+    required_permission = PERM_MANAGE_DATASETS
+
+    @swagger_auto_schema(operation_description="Revoke a user's or group's access to a data set")
+    def delete(self, request, data_set_id, target_type, target_id):
+        dataset = get_object_or_404(DataSet, pk=data_set_id)
+        target_model = User if target_type == "user" else Group
+        target = get_object_or_404(target_model, pk=target_id)
+        remove_all_dataset_grants(target, dataset)
+        return Response(status=status.HTTP_204_NO_CONTENT)
