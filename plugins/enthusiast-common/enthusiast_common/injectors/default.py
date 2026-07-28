@@ -1,20 +1,22 @@
 from typing import Optional
 
-from enthusiast_common.agentic_execution.memory import ToolScratchpad
-from enthusiast_common.injectors import BaseInjector
-from enthusiast_common.structures import RepositoriesInstances
 from langchain_core.chat_history import BaseChatMessageHistory
 
-from agent.core.memory import LLMMemoryCompactor, PersistentChatHistory
+from ..agentic_execution import ToolScratchpad
+from ..memory import BaseMemoryCompactor
+from ..structures import RepositoriesInstances
+from .base import BaseInjector
 
 
 class Injector(BaseInjector):
+    """Default injector carrying repositories, chat history, and memory for agent tools."""
+
     def __init__(
         self,
         repositories: RepositoriesInstances,
-        chat_history: PersistentChatHistory,
+        chat_history: BaseChatMessageHistory,
         tool_scratchpad: Optional[ToolScratchpad] = None,
-        memory_compactor: Optional[LLMMemoryCompactor] = None,
+        memory_compactor: Optional[BaseMemoryCompactor] = None,
     ):
         super().__init__(repositories)
         self._chat_history = chat_history
@@ -26,7 +28,7 @@ class Injector(BaseInjector):
         return self._chat_history
 
     @property
-    def memory_compactor(self) -> Optional[LLMMemoryCompactor]:
+    def memory_compactor(self) -> Optional[BaseMemoryCompactor]:
         return self._memory_compactor
 
     @property

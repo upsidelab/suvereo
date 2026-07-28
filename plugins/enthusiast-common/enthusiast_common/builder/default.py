@@ -1,27 +1,71 @@
 from typing import Optional
 
-from enthusiast_common.agents import BaseAgent
-from enthusiast_common.builder import BaseAgentBuilder, RepositoriesInstances
-from enthusiast_common.callbacks import ConversationCallbackHandler
-from enthusiast_common.config import (
-    AgentConfig,
+from langchain_core.callbacks import BaseCallbackHandler
+from langchain_core.chat_history import BaseChatMessageHistory
+from langchain_core.language_models import BaseLanguageModel
+from langchain_core.tools import BaseTool
+
+from ..agents import BaseAgent
+from ..callbacks import ConversationCallbackHandler
+from ..config.base import (
     AgentToolConfig,
     FileToolConfig,
     FunctionToolConfig,
     LLMConfig,
     LLMToolConfig,
 )
-from enthusiast_common.injectors import BaseInjector
-from enthusiast_common.registry import BaseDBModelsRegistry, BaseEmbeddingProviderRegistry, BaseLanguageModelRegistry
-from enthusiast_common.tools import BaseAgentTool, BaseFileTool, BaseFunctionTool, BaseLLMTool
-from langchain_core.callbacks import BaseCallbackHandler
-from langchain_core.language_models import BaseLanguageModel
-from langchain_core.tools import BaseTool
-
-from agent.core.memory import LLMMemoryCompactor, PersistentChatHistory
+from ..injectors import BaseInjector
+from ..memory import BaseMemoryCompactor
+from ..registry import BaseDBModelsRegistry, BaseEmbeddingProviderRegistry, BaseLanguageModelRegistry
+from ..structures import RepositoriesInstances
+from ..tools import BaseAgentTool, BaseFileTool, BaseFunctionTool, BaseLLMTool
+from .base import BaseAgentBuilder, ConfigT
 
 
-class AgentBuilder(BaseAgentBuilder[AgentConfig]):
+class AgentBuilder(BaseAgentBuilder[ConfigT]):
+    """Default, config-driven implementation of :class:`BaseAgentBuilder`.
+
+    The whole build is driven by the ``AgentConfig``: every host-specific piece
+    (repositories, registries, memory classes, callback handlers, the
+    integration plugin resolver) arrives through the config, so this class
+    depends only on contracts defined in ``enthusiast-common``. The framework
+    host supplies its implementations via its default config; a vertical
+    subclasses this builder only to extend the injector with domain-specific
+    dependencies.
+    """
+
+    _repositories: RepositoriesInstances
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._llm_registry = None
+        self._llm = None
+        self._default_llm = None
+        self._embeddings_registry = None
+        self._data_set_id = None
+        self._injector = None
+
+    def build(self) -> BaseAgent:
+        """Build the agent: repositories, registries, LLMs, injector, tools, callbacks."""
+        model_registry = self._build_db_models_registry()
+        self._build_and_set_repositories(model_registry)
+        self._data_set_id = self._repositories.conversation.get_data_set_id(self.conversation_id)
+        self._llm_registry = self._build_llm_registry()
+        self._embeddings_registry = self._build_embeddings_registry()
+        self._llm = self._build_llm(self._config.llm)
+        self._default_llm = self._build_default_llm()
+        self._injector = self._build_injector()
+        tools = self._build_tools(default_llm=self._default_llm, injector=self._injector)
+        agent_callback_handler = self._build_agent_callback_handler()
+        agent_instance = self._build_agent(tools, self._llm, agent_callback_handler)
+        self._inject_additional_arguments(agent_instance)
+        return agent_instance
+
+    def _inject_additional_arguments(self, agent_instance: BaseAgent) -> None:
+        agent_configuration_id = self._repositories.conversation.get_agent_id(self.conversation_id)
+        runtime_arguments = self._repositories.agent.get_agent_configuration_by_id(agent_configuration_id)
+        agent_instance.set_runtime_arguments(runtime_arguments)
+
     def _build_agent(
         self,
         tools: list[BaseTool],
@@ -39,20 +83,15 @@ class AgentBuilder(BaseAgentBuilder[AgentConfig]):
 
     def _build_llm_registry(self) -> BaseLanguageModelRegistry:
         llm_registry_class = self._config.registry.llm.registry_class
-        data_set_repo = self._repositories.data_set
         if providers := self._config.registry.llm.providers:
-            llm_registry = llm_registry_class(providers=providers)
-        else:
-            llm_registry = llm_registry_class(data_set_repo=data_set_repo)
-        return llm_registry
+            return llm_registry_class(providers=providers)
+        return llm_registry_class(data_set_repo=self._repositories.data_set)
 
     def _build_db_models_registry(self) -> BaseDBModelsRegistry:
         db_models_registry_class = self._config.registry.model.registry_class
         if models_config := self._config.registry.model.models_config:
-            db_model_registry = db_models_registry_class(models_config=models_config)
-        else:
-            db_model_registry = db_models_registry_class()
-        return db_model_registry
+            return db_models_registry_class(models_config=models_config)
+        return db_models_registry_class()
 
     def _build_and_set_repositories(self, models_registry: BaseDBModelsRegistry) -> None:
         repositories = {}
@@ -64,21 +103,17 @@ class AgentBuilder(BaseAgentBuilder[AgentConfig]):
 
     def _build_embeddings_registry(self) -> BaseEmbeddingProviderRegistry:
         embeddings_registry_class = self._config.registry.embeddings.registry_class
-        data_set_repo = self._repositories.data_set
-        if providers := self._config.registry.llm.providers:
-            embeddings_registry = embeddings_registry_class(providers=providers)
-        else:
-            embeddings_registry = embeddings_registry_class(data_set_repo=data_set_repo)
-        return embeddings_registry
+        if providers := self._config.registry.embeddings.providers:
+            return embeddings_registry_class(providers=providers)
+        return embeddings_registry_class(data_set_repo=self._repositories.data_set)
 
     def _build_llm(self, llm_config: LLMConfig) -> BaseLanguageModel:
-        data_set_repo = self._repositories.data_set
         callbacks = self._build_llm_callback_handlers()
         llm = llm_config.llm_class(
             llm_registry=self._llm_registry,
             callbacks=callbacks,
             streaming=self.streaming,
-            data_set_repo=data_set_repo,
+            data_set_repo=self._repositories.data_set,
         )
         return llm.create(self._data_set_id)
 
@@ -142,7 +177,10 @@ class AgentBuilder(BaseAgentBuilder[AgentConfig]):
         )
 
     def _build_agent_tool(self, config: AgentToolConfig) -> BaseAgentTool:
-        agent = AgentBuilder(config.agent, self.conversation_id, self.streaming).build()
+        # Sub-agents are built with the same builder class as their parent, so a
+        # vertical builder propagates its injector (and its build costs) to
+        # sub-agents — overriding whatever config.agent.injector declares.
+        agent = type(self)(config.agent, self.conversation_id, self.streaming).build()
         return config.tool_class(agent=agent)
 
     def _build_injector(self) -> BaseInjector:
@@ -160,15 +198,13 @@ class AgentBuilder(BaseAgentBuilder[AgentConfig]):
             return None
         if issubclass(self._config.agent_callback_handler.handler_class, ConversationCallbackHandler):
             return self._config.agent_callback_handler.handler_class(conversation_id=self.conversation_id)
-        else:
-            return self._config.agent_callback_handler.handler_class()
+        return self._config.agent_callback_handler.handler_class()
 
     def _build_llm_callback_handlers(self) -> Optional[list[BaseCallbackHandler]]:
         if not self._config.llm.callbacks:
             return None
-        callbacks_config = self._config.llm.callbacks
         handlers = []
-        for config in callbacks_config:
+        for config in self._config.llm.callbacks:
             if issubclass(config.handler_class, ConversationCallbackHandler):
                 handler = config.handler_class(conversation_id=self.conversation_id)
             else:
@@ -176,12 +212,18 @@ class AgentBuilder(BaseAgentBuilder[AgentConfig]):
             handlers.append(handler)
         return handlers
 
-    def _build_chat_history(self) -> PersistentChatHistory:
-        return PersistentChatHistory(self._repositories.conversation, self.conversation_id)
+    def _build_chat_history(self) -> BaseChatMessageHistory:
+        return self._config.memory.chat_history_class(self._repositories.conversation, self.conversation_id)
 
-    def _build_memory_compactor(self, chat_history: PersistentChatHistory) -> Optional[LLMMemoryCompactor]:
+    def _build_memory_compactor(self, chat_history: BaseChatMessageHistory) -> Optional[BaseMemoryCompactor]:
         if not self._config.memory_compactor_enabled:
             return None
+        if self._config.memory.compactor_class is None:
+            raise ValueError(
+                "memory_compactor_enabled is True but memory.compactor_class is not set — "
+                "declare a BaseMemoryCompactor implementation in the agent config."
+            )
         llm = self._build_default_llm()
-        return LLMMemoryCompactor(self._repositories.conversation, self.conversation_id, llm, chat_history)
-
+        return self._config.memory.compactor_class(
+            self._repositories.conversation, self.conversation_id, llm, chat_history
+        )

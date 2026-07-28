@@ -7,15 +7,18 @@ from enthusiast_common.config import (
     EmbeddingsRegistryConfig,
     LLMConfig,
     LLMRegistryConfig,
+    MemoryConfig,
     ModelsRegistryConfig,
     RegistryConfig,
     RepositoriesConfig,
 )
+from enthusiast_common.injectors import Injector
+from enthusiast_common.integrations import BaseIntegrationPluginResolver
 from enthusiast_common.retrievers import BaseSimilaritySearcher
 from pydantic import BaseModel
 
 from agent.core.callbacks import ConversationWebSocketCallbackHandler
-from agent.core.injector import Injector
+from agent.core.memory import LLMMemoryCompactor, PersistentChatHistory
 from agent.core.registries.embeddings import EmbeddingProviderRegistry
 from agent.core.registries.language_models import LanguageModelRegistry
 from agent.core.registries.models import BaseDjangoSettingsDBModelRegistry
@@ -26,6 +29,7 @@ from agent.core.repositories import (
     DjangoMessageRepository,
     DjangoUserRepository,
 )
+from catalog.integrations.resolver import CatalogIntegrationPluginResolver
 from catalog.retrieval.searcher import EmbeddingSimilaritySearcher
 
 
@@ -34,8 +38,10 @@ class DefaultAgentConfig(BaseModel):
     injector: Type[Injector]
     registry: RegistryConfig
     llm: LLMConfig
+    memory: MemoryConfig
     agent_callback_handler: Optional[AgentCallbackHandlerConfig] = None
     similarity_searcher: Optional[Type[BaseSimilaritySearcher]] = None
+    integration_plugin_resolver: Optional[Type[BaseIntegrationPluginResolver]] = None
 
 
 def get_default_config() -> DefaultAgentConfig:
@@ -54,8 +60,13 @@ def get_default_config() -> DefaultAgentConfig:
             model=ModelsRegistryConfig(registry_class=BaseDjangoSettingsDBModelRegistry),
         ),
         llm=LLMConfig(),
+        memory=MemoryConfig(
+            chat_history_class=PersistentChatHistory,
+            compactor_class=LLMMemoryCompactor,
+        ),
         agent_callback_handler=AgentCallbackHandlerConfig(handler_class=ConversationWebSocketCallbackHandler),
         similarity_searcher=EmbeddingSimilaritySearcher,
+        integration_plugin_resolver=CatalogIntegrationPluginResolver,
     )
 
 
