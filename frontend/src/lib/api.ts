@@ -9,6 +9,7 @@ import { AgentsApiClient } from "@/lib/api/agents.ts";
 import { AgenticExecutionsApiClient } from "@/lib/api/agentic-executions.ts";
 import { IntegrationsApiClient } from "@/lib/api/integrations.ts";
 import { EntitiesApiClient } from "@/lib/api/entities.ts";
+import { GroupsApiClient } from "@/lib/api/groups.ts";
 
 export type Token = {
   token: string;
@@ -76,6 +77,10 @@ export class ApiClient {
 
   dataSets(): DataSetsApiClient {
     return new DataSetsApiClient(this.apiBase, this.authenticationProvider);
+  }
+
+  groups(): GroupsApiClient {
+    return new GroupsApiClient(this.apiBase, this.authenticationProvider);
   }
 
   conversations(): ConversationsApiClient {

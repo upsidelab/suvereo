@@ -1,5 +1,5 @@
 import { BaseApiClient } from "@/lib/api/base.ts";
-import { DataSet, User } from "@/lib/types.ts";
+import { DataSet, DataSetAccessGrant } from "@/lib/types.ts";
 
 export type DataSetResponse = {
   id: number | undefined;
@@ -61,25 +61,36 @@ export class DataSetsApiClient extends BaseApiClient {
     return responseJson.id!;
   }
 
-  async getDataSetUsers(dataSetId: number): Promise<User[]> {
-    const response = await fetch(`${this.apiBase}/api/data_sets/${dataSetId}/users`, this._requestConfiguration());
-    return (await response.json()).results as User[];
+  async getDataSetAccess(dataSetId: number): Promise<DataSetAccessGrant[]> {
+    const response = await fetch(`${this.apiBase}/api/data_sets/${dataSetId}/access`, this._requestConfiguration());
+    const data = await response.json() as {
+      target_type: "user" | "group";
+      target_id: number;
+      target_label: string;
+      role: "viewer" | "editor" | null;
+    }[];
+    return data.map((row) => ({
+      targetType: row.target_type,
+      targetId: row.target_id,
+      targetLabel: row.target_label,
+      role: row.role,
+    }));
   }
 
-  async addDataSetUser(dataSetId: number, userId: number): Promise<void> {
+  async grantDataSetAccess(dataSetId: number, targetType: "user" | "group", targetId: number, role: "viewer" | "editor"): Promise<void> {
     await fetch(
-      `${this.apiBase}/api/data_sets/${dataSetId}/users`,
+      `${this.apiBase}/api/data_sets/${dataSetId}/access`,
       {
         ...this._requestConfiguration(),
         method: "POST",
-        body: JSON.stringify({user_id: userId})
+        body: JSON.stringify({ target_type: targetType, target_id: targetId, role })
       }
     );
   }
 
-  async removeDataSetUser(dataSetId: number, userId: number): Promise<void> {
+  async revokeDataSetAccess(dataSetId: number, targetType: "user" | "group", targetId: number): Promise<void> {
     await fetch(
-      `${this.apiBase}/api/data_sets/${dataSetId}/users/${userId}`,
+      `${this.apiBase}/api/data_sets/${dataSetId}/access/${targetType}/${targetId}`,
       {
         ...this._requestConfiguration(),
         method: "DELETE"

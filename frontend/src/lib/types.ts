@@ -73,6 +73,18 @@ export type User = {
   isAdmin: boolean;
 }
 
+export type DataSetAccessGrant = {
+  targetType: "user" | "group";
+  targetId: number;
+  targetLabel: string;
+  role: "viewer" | "editor" | null;
+};
+
+export type GroupOption = {
+  id: number;
+  name: string;
+};
+
 export type Agent = {
   id: number;
   name: string;
