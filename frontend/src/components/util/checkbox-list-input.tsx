@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { Checkbox } from "@/components/ui/checkbox.tsx";
 import { ScrollArea } from "@/components/ui/scroll-area.tsx";
 
@@ -13,20 +14,24 @@ export interface CheckboxListInputProps {
 }
 
 export function CheckboxListInput({ options, selectedIds, onChange }: CheckboxListInputProps) {
+  const instanceId = useId();
+
   return (
     <ScrollArea className="h-[200px] w-full rounded-md border px-4 py-2">
       <div className="space-y-2">
         {options.map((option) => {
           const checked = selectedIds.includes(option.id);
+          const checkboxId = `${instanceId}-${option.id}`;
           return (
             <div key={option.id} className="flex flex-row items-center space-x-3 space-y-0">
               <Checkbox
+                id={checkboxId}
                 checked={checked}
                 onCheckedChange={(value) => {
                   onChange(value ? [...selectedIds, option.id] : selectedIds.filter((id) => id !== option.id));
                 }}
               />
-              <label className="text-sm font-normal">{option.label}</label>
+              <label htmlFor={checkboxId} className="text-sm font-normal">{option.label}</label>
             </div>
           );
         })}
