@@ -11,6 +11,7 @@ import { IntegrationsApiClient } from "@/lib/api/integrations.ts";
 import { EntitiesApiClient } from "@/lib/api/entities.ts";
 import { GroupsApiClient } from "@/lib/api/groups.ts";
 import { DatasetRolesApiClient } from "@/lib/api/dataset-roles.ts";
+import { PermissionsApiClient } from "@/lib/api/permissions.ts";
 
 export type Token = {
   token: string;
@@ -86,6 +87,10 @@ export class ApiClient {
 
   datasetRoles(): DatasetRolesApiClient {
     return new DatasetRolesApiClient(this.apiBase, this.authenticationProvider);
+  }
+
+  permissions(): PermissionsApiClient {
+    return new PermissionsApiClient(this.apiBase, this.authenticationProvider);
   }
 
   conversations(): ConversationsApiClient {

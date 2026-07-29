@@ -98,6 +98,19 @@ export type GroupMember = {
   isServiceAccount: boolean;
 };
 
+export type PermissionOption = {
+  id: number;
+  codename: string;
+  name: string;
+};
+
+export type GroupDetail = {
+  id: number;
+  name: string;
+  permissionIds: number[];
+  isSystem: boolean;
+};
+
 export type Agent = {
   id: number;
   name: string;
