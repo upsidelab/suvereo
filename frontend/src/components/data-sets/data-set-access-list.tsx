@@ -17,17 +17,25 @@ export function DataSetAccessList({dataSetId}: DataSetAccessListProps) {
   const [grants, setGrants] = useState<DataSetAccessGrant[]>([]);
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const [availableGroups, setAvailableGroups] = useState<GroupOption[]>([]);
+  const [usersLoadFailed, setUsersLoadFailed] = useState(false);
 
   const load = useCallback(async () => {
     const grants = await api.dataSets().getDataSetAccess(dataSetId);
     setGrants(grants);
 
-    const systemUsers = await api.getAllUsers();
     const assignedUserIds = new Set(grants.filter((g) => g.targetType === "user").map((g) => g.targetId));
-    setAvailableUsers(systemUsers.filter((u) => !assignedUserIds.has(u.id)));
+    const assignedGroupIds = new Set(grants.filter((g) => g.targetType === "group").map((g) => g.targetId));
+
+    try {
+      const systemUsers = await api.getAllUsers();
+      setAvailableUsers(systemUsers.filter((u) => !assignedUserIds.has(u.id)));
+      setUsersLoadFailed(false);
+    } catch {
+      setAvailableUsers([]);
+      setUsersLoadFailed(true);
+    }
 
     const systemGroups = await api.groups().getGroups();
-    const assignedGroupIds = new Set(grants.filter((g) => g.targetType === "group").map((g) => g.targetId));
     setAvailableGroups(systemGroups.filter((g) => !assignedGroupIds.has(g.id)));
   }, [dataSetId]);
 
@@ -47,6 +55,11 @@ export function DataSetAccessList({dataSetId}: DataSetAccessListProps) {
 
   return (
     <>
+      {usersLoadFailed &&
+        <p className="text-sm text-muted-foreground mb-4">
+          Unable to load users — you may need account.manage_users to add individual users; group access still works.
+        </p>
+      }
       <AddAccessSelector availableUsers={availableUsers} availableGroups={availableGroups} onSubmit={handleAdd}/>
       <Separator className="my-6"/>
       {grants.length > 0 &&

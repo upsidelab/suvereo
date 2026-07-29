@@ -3,6 +3,7 @@ from django.contrib.auth.models import Group
 from django.urls import reverse
 from model_bakery import baker
 from rest_framework import status
+from rest_framework.test import APIClient
 
 from account.authorization import assign_dataset_role
 from account.models import User
@@ -88,6 +89,30 @@ class TestDataSetAccessListView:
         group_rows = [row for row in response.data if row["target_type"] == "group" and row["target_id"] == group.id]
         assert len(group_rows) == 1
 
+    def test_editor_cannot_manage_access(self, data_set):
+        user = baker.make(User)
+        assign_dataset_role(user, data_set, "editor")
+        client = APIClient()
+        client.force_authenticate(user=user)
+
+        response = client.get(reverse("data_set_access_list", kwargs={"data_set_id": data_set.id}))
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_downgrading_role_actually_removes_the_higher_roles_permissions(self, admin_api_client, data_set):
+        target = baker.make(User)
+        assign_dataset_role(target, data_set, "editor")
+
+        response = admin_api_client.post(
+            reverse("data_set_access_list", kwargs={"data_set_id": data_set.id}),
+            {"target_type": "user", "target_id": target.id, "role": "viewer"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert target.has_perm("catalog.access_dataset", data_set) is True
+        assert target.has_perm("catalog.manage_agents", data_set) is False
+
 
 @pytest.mark.django_db
 class TestDataSetAccessDetailView:
@@ -134,3 +159,13 @@ class TestDataSetAccessDetailView:
         )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_invalid_target_type_returns_400(self, admin_api_client, data_set):
+        response = admin_api_client.delete(
+            reverse(
+                "data_set_access_detail",
+                kwargs={"data_set_id": data_set.id, "target_type": "bogus", "target_id": 1},
+            )
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST

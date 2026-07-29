@@ -298,6 +298,7 @@ class DataSetAccessListView(GenericAPIView):
         serializer.is_valid(raise_exception=True)
         target_model = User if serializer.validated_data["target_type"] == "user" else Group
         target = get_object_or_404(target_model, pk=serializer.validated_data["target_id"])
+        remove_all_dataset_grants(target, dataset)
         assign_dataset_role(target, dataset, serializer.validated_data["role"])
         return Response(status=status.HTTP_201_CREATED)
 
@@ -308,6 +309,8 @@ class DataSetAccessDetailView(GenericAPIView):
 
     @swagger_auto_schema(operation_description="Revoke a user's or group's access to a data set")
     def delete(self, request, data_set_id, target_type, target_id):
+        if target_type not in {"user", "group"}:
+            return Response({"target_type": "Must be 'user' or 'group'."}, status=status.HTTP_400_BAD_REQUEST)
         dataset = get_object_or_404(DataSet, pk=data_set_id)
         target_model = User if target_type == "user" else Group
         target = get_object_or_404(target_model, pk=target_id)

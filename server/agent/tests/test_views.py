@@ -251,6 +251,20 @@ class TestAgentView:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
+    def test_viewer_cannot_create_agent(self, user, api_client, url, dataset_instance, config):
+        assign_dataset_role(user, dataset_instance, "viewer")
+        payload = {
+            "name": "not-allowed",
+            "description": "description",
+            "config": config,
+            "dataset": dataset_instance.id,
+            "agent_type": "agent_1",
+        }
+        with patch("agent.serializers.customs.fields.AgentRegistry.get_plugin_classes", return_value=AGENT_CLASSES):
+            response = api_client.post(url, payload, format="json")
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
     def test_group_member_can_create_agent_via_group_grant(self, api_client, user, dataset_instance, config, url):
         from django.contrib.auth.models import Group
 
@@ -486,6 +500,54 @@ class TestAgentDetailsView:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
+    def test_editor_cannot_reassign_agent_to_a_dataset_they_have_no_rights_to(self, agent_instance, url, config):
+        original_dataset_id = agent_instance.dataset_id
+        user = baker.make(User)
+        assign_dataset_role(user, agent_instance.dataset, "editor")
+        other_dataset = baker.make(DataSet)
+        client = APIClient()
+        client.force_authenticate(user=user)
+        payload = {
+            "name": "not-allowed",
+            "description": "description",
+            "config": config,
+            "dataset": other_dataset.id,
+            "agent_type": "agent_1",
+        }
+        with patch("agent.serializers.customs.fields.AgentRegistry.get_plugin_classes", return_value=AGENT_CLASSES):
+            response = client.put(url, payload, format="json")
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        agent_instance.refresh_from_db()
+        assert agent_instance.dataset_id == original_dataset_id
+
+    def test_viewer_cannot_update_agent(self, agent_instance, url, config):
+        user = baker.make(User)
+        assign_dataset_role(user, agent_instance.dataset, "viewer")
+        client = APIClient()
+        client.force_authenticate(user=user)
+        payload = {
+            "name": "not-allowed",
+            "description": "description",
+            "config": config,
+            "dataset": agent_instance.dataset.id,
+            "agent_type": "agent_1",
+        }
+        with patch("agent.serializers.customs.fields.AgentRegistry.get_plugin_classes", return_value=AGENT_CLASSES):
+            response = client.put(url, payload, format="json")
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_viewer_cannot_delete_agent(self, agent_instance, url):
+        user = baker.make(User)
+        assign_dataset_role(user, agent_instance.dataset, "viewer")
+        client = APIClient()
+        client.force_authenticate(user=user)
+
+        response = client.delete(url)
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
     def test_editor_of_this_dataset_can_delete_agent(self, agent_instance, url):
         user = baker.make(User)
         assign_dataset_role(user, agent_instance.dataset, "editor")
@@ -595,8 +657,16 @@ class TestAgentDetailsView:
         response = admin_api_client.delete(url)
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_put_without_manage_agents_permission_returns_403(self, api_client, url):
-        response = api_client.put(url, {"name": "nope"}, format="json")
+    def test_put_without_manage_agents_permission_returns_403(self, api_client, agent_instance, url, config):
+        payload = {
+            "name": "nope",
+            "description": "description",
+            "config": config,
+            "dataset": agent_instance.dataset.id,
+            "agent_type": "agent_1",
+        }
+        with patch("agent.serializers.customs.fields.AgentRegistry.get_plugin_classes", return_value=AGENT_CLASSES):
+            response = api_client.put(url, payload, format="json")
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 

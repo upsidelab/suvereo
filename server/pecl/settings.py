@@ -172,6 +172,12 @@ AUTHENTICATION_BACKENDS = [
     "guardian.backends.ObjectPermissionBackend",
 ]
 
+# Disable guardian's anonymous-user permission support: without this, guardian creates
+# a real User row (email "AnonymousUser") via a post_migrate signal, which would surface
+# in /api/users and be selectable as a grantee in the dataset access UI. guardian's
+# check_user_support() degrades anonymous permission checks to False when this is None.
+ANONYMOUS_USER_NAME = None
+
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 

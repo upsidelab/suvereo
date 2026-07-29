@@ -71,11 +71,6 @@ class TestDataSetListView:
         response = api_client.get(reverse("data_set_list"))
         assert response.data["count"] == 1
         assert response.data["results"][0]["id"] == assigned.id
-        assert response.data["results"][0]["id"] == assigned.id
-
-    def test_creator_can_see_the_dataset_they_created(self, api_client, user):
-        response = api_client.post(reverse("data_set_list"), {"name": "nope", "preconfigure_agents": False}, format="json")
-        assert response.status_code == status.HTTP_403_FORBIDDEN  # regular user still can't create
 
     def test_regular_user_cannot_create_dataset(self, api_client):
         response = api_client.post(
