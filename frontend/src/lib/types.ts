@@ -111,6 +111,13 @@ export type GroupDetail = {
   isSystem: boolean;
 };
 
+export type DatasetRoleDetail = {
+  id: number;
+  name: string;
+  permissionIds: number[];
+  isSystem: boolean;
+};
+
 export type Agent = {
   id: number;
   name: string;
