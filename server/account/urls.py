@@ -11,6 +11,13 @@ urlpatterns = [
     path("api/auth/login", account.views.login.LoginView.as_view(), name="login"),
     path("api/account", account.views.accounts.AccountView.as_view(), name="account"),
     path("api/groups", account.views.groups.GroupListView.as_view(), name="group_list"),
+    path("api/groups/<int:group_id>", account.views.groups.GroupDetailView.as_view(), name="group_detail"),
+    path("api/groups/<int:group_id>/members", account.views.groups.GroupMembersView.as_view(), name="group_members"),
+    path(
+        "api/groups/<int:group_id>/members/<int:user_id>",
+        account.views.groups.GroupMemberDetailView.as_view(),
+        name="group_member_detail",
+    ),
     path("api/permissions", account.views.permissions.PermissionListView.as_view(), name="permission_list"),
     path("api/users", account.views.users.UserListView.as_view(), name="user_list"),
     path("api/users/<int:id>", account.views.users.UserView.as_view(), name="user_details"),

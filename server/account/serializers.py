@@ -1,8 +1,10 @@
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission
 from guardian.shortcuts import get_objects_for_user
 from rest_framework import serializers
 
 from account.authorization import (
+    ADMIN_GROUP_NAME,
+    GLOBAL_PERMISSION_CODENAMES,
     PERM_ACCESS_DATASET,
     assign_dataset_role,
     remove_all_dataset_grants,
@@ -102,6 +104,31 @@ class GroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = Group
         fields = ["id", "name"]
+
+
+_GLOBAL_PERMISSION_BARE_CODENAMES = {c.split(".")[-1] for c in GLOBAL_PERMISSION_CODENAMES}
+
+
+class GroupDetailSerializer(serializers.ModelSerializer):
+    permission_ids = serializers.PrimaryKeyRelatedField(
+        source="permissions",
+        many=True,
+        queryset=Permission.objects.filter(codename__in=_GLOBAL_PERMISSION_BARE_CODENAMES),
+    )
+    is_system = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Group
+        fields = ["id", "name", "permission_ids", "is_system"]
+
+    def get_is_system(self, obj):
+        return obj.name == ADMIN_GROUP_NAME
+
+
+class GroupMemberSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    email = serializers.EmailField()
+    is_service_account = serializers.BooleanField()
 
 
 class PermissionOptionSerializer(serializers.Serializer):
