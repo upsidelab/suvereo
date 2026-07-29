@@ -10,7 +10,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from account.authorization import (
-    DATASET_ROLES,
     PERM_ACCESS_ALL_DATASETS,
     PERM_ACCESS_DATASET,
     PERM_CONFIGURE_MODELS,
@@ -241,22 +240,22 @@ class ConfigEmbeddingModelView(GenericAPIView):
 
 
 def _resolve_dataset_role(codenames):
-    """Return the highest DATASET_ROLES entry fully covered by `codenames`, or None.
+    """Return the DatasetRole name whose full permission set is covered by `codenames`, or None.
 
     `codenames` comes from guardian's `get_users_with_perms`/`get_groups_with_perms`
-    (`attach_perms=True`), which report bare codenames (e.g. ``"access_dataset"``)
-    without the ``app_label.`` prefix that `DATASET_ROLES` uses elsewhere, so the
-    prefix is stripped before comparing.
+    (`attach_perms=True`), which report bare codenames (e.g. ``"access_dataset"``).
     """
+    from account.models import DatasetRole
+
     bare_codenames = set(codenames)
-    matches = [
-        name
-        for name, perms in DATASET_ROLES.items()
-        if {perm.split(".")[-1] for perm in perms} <= bare_codenames
-    ]
+    matches = []
+    for role in DatasetRole.objects.prefetch_related("permissions"):
+        role_codenames = {p.codename for p in role.permissions.all()}
+        if role_codenames and role_codenames <= bare_codenames:
+            matches.append((role.name, len(role_codenames)))
     if not matches:
         return None
-    return max(matches, key=lambda name: len(DATASET_ROLES[name]))
+    return max(matches, key=lambda pair: pair[1])[0]
 
 
 class DataSetAccessListView(GenericAPIView):

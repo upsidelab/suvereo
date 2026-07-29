@@ -1,6 +1,5 @@
 from rest_framework import serializers
 
-from account.authorization import DATASET_ROLES
 from agent.core.registries.embeddings.embedding_provider_registry import EmbeddingProviderRegistry
 
 from .models import DataSet, Integration
@@ -124,7 +123,14 @@ class IntegrationTypeSerializer(serializers.Serializer):
 class DataSetAccessGrantSerializer(serializers.Serializer):
     target_type = serializers.ChoiceField(choices=["user", "group"])
     target_id = serializers.IntegerField()
-    role = serializers.ChoiceField(choices=list(DATASET_ROLES.keys()))
+    role = serializers.CharField()
+
+    def validate_role(self, value):
+        from account.models import DatasetRole
+
+        if not DatasetRole.objects.filter(name=value).exists():
+            raise serializers.ValidationError("Unknown dataset role.")
+        return value
 
 
 class DataSetAccessSerializer(serializers.Serializer):

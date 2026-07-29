@@ -21,30 +21,62 @@ ADMIN_GROUP_PERMISSIONS = [
 
 PERM_ACCESS_DATASET = "catalog.access_dataset"
 
-DATASET_ROLES = {
-    "viewer": [PERM_ACCESS_DATASET],
-    "editor": [PERM_ACCESS_DATASET, PERM_MANAGE_AGENTS],
-}
+DATASET_PERMISSION_CODENAMES = [PERM_ACCESS_DATASET, PERM_MANAGE_AGENTS]
 
-ALL_DATASET_ROLE_PERMS = {codename for perms in DATASET_ROLES.values() for codename in perms}
+GLOBAL_PERMISSION_CODENAMES = ADMIN_GROUP_PERMISSIONS
+"""Same list as ADMIN_GROUP_PERMISSIONS today (Admin holds every global permission), but
+conceptually distinct: this is "what the role composer may offer", not "what Admin has"."""
 
 
 def assign_dataset_role(target, dataset, role_name: str) -> None:
     """Grant `target` (a User or Group) the named role's permission bundle on `dataset`."""
-    for codename in DATASET_ROLES[role_name]:
-        assign_perm(codename, target, dataset)
+    from account.models import DatasetRole
+
+    role = DatasetRole.objects.get(name=role_name)
+    for permission in role.permissions.all():
+        assign_perm(f"{permission.content_type.app_label}.{permission.codename}", target, dataset)
 
 
 def remove_dataset_role(target, dataset, role_name: str) -> None:
     """Revoke the named role's permission bundle from `target` on `dataset`."""
-    for codename in DATASET_ROLES[role_name]:
-        remove_perm(codename, target, dataset)
+    from account.models import DatasetRole
+
+    role = DatasetRole.objects.get(name=role_name)
+    for permission in role.permissions.all():
+        remove_perm(f"{permission.content_type.app_label}.{permission.codename}", target, dataset)
 
 
 def remove_all_dataset_grants(target, dataset) -> None:
     """Revoke every dataset-role permission this target holds on `dataset`, regardless of role."""
-    for codename in ALL_DATASET_ROLE_PERMS:
+    for codename in DATASET_PERMISSION_CODENAMES:
         remove_perm(codename, target, dataset)
+
+
+def count_datasets_using_role(role_name: str) -> int:
+    """Count (target, dataset) grants whose codename set exactly matches this role's.
+
+    guardian stores raw (target, permission, dataset) grants, not role names, so a role is
+    "in use" when some target's granted codename set on some dataset matches this role's
+    codename set exactly — the same reasoning catalog.views._resolve_dataset_role uses to
+    go the other direction (codenames -> role name).
+    """
+    from guardian.shortcuts import get_groups_with_perms, get_users_with_perms
+
+    from account.models import DatasetRole
+    from catalog.models import DataSet
+
+    role = DatasetRole.objects.get(name=role_name)
+    role_codenames = {p.codename for p in role.permissions.all()}
+
+    count = 0
+    for dataset in DataSet.objects.all():
+        for _, codenames in get_users_with_perms(dataset, attach_perms=True, with_group_users=False).items():
+            if set(codenames) == role_codenames:
+                count += 1
+        for _, codenames in get_groups_with_perms(dataset, attach_perms=True).items():
+            if set(codenames) == role_codenames:
+                count += 1
+    return count
 
 
 def has_dataset_perm(user, codename: str, dataset) -> bool:
