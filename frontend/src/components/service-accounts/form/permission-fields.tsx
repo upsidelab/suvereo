@@ -12,6 +12,7 @@ export interface PermissionFieldsProps {
 export function PermissionFields({ form, groups }: PermissionFieldsProps) {
   return (
     <>
+      <h3 className="mb-4 text-lg font-medium">Permissions</h3>
       <FormField
         control={form.control}
         name="isActive"
