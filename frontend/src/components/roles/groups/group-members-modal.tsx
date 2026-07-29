@@ -15,6 +15,7 @@ export interface GroupMembersModalProps {
 }
 
 export function GroupMembersModal({ groupId, groupName }: GroupMembersModalProps) {
+  const [open, setOpen] = useState(false);
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
@@ -28,8 +29,10 @@ export function GroupMembersModal({ groupId, groupName }: GroupMembersModalProps
   }, [groupId]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    if (open) {
+      load();
+    }
+  }, [open, load]);
 
   const handleAdd = async () => {
     if (!selectedUserId) return;
@@ -44,7 +47,7 @@ export function GroupMembersModal({ groupId, groupName }: GroupMembersModalProps
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="secondary">Members</Button>
       </DialogTrigger>

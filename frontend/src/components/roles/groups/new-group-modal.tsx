@@ -1,11 +1,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import { Input } from "@/components/ui/input.tsx";
-import { ApiClient } from "@/lib/api.ts";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
-
-const api = new ApiClient(authenticationProviderInstance);
+import { NewGroupForm } from "@/components/roles/groups/form/new-group-form.tsx";
 
 export interface NewGroupModalProps {
   onGroupCreated: () => void;
@@ -13,11 +9,8 @@ export interface NewGroupModalProps {
 
 export function NewGroupModal({ onGroupCreated }: NewGroupModalProps) {
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
 
-  const handleSubmit = async () => {
-    await api.groups().createGroup(name);
-    setName("");
+  const handleGroupCreated = () => {
     setOpen(false);
     onGroupCreated();
   };
@@ -31,10 +24,7 @@ export function NewGroupModal({ onGroupCreated }: NewGroupModalProps) {
         <DialogHeader>
           <DialogTitle>New Group</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
-          <Input placeholder="Group name" value={name} onChange={(e) => setName(e.target.value)} />
-          <Button onClick={handleSubmit} disabled={!name.trim()}>Create</Button>
-        </div>
+        <NewGroupForm onGroupCreated={handleGroupCreated} />
       </DialogContent>
     </Dialog>
   );
