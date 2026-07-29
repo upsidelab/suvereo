@@ -91,6 +91,34 @@ class TestGroupDetailView:
         response = api_client.delete(reverse("group_detail", kwargs={"group_id": group.id}))
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
+    def test_admin_group_cannot_be_renamed(self, admin_api_client):
+        admin_group = Group.objects.get(name="Admin")
+
+        response = admin_api_client.patch(
+            reverse("group_detail", kwargs={"group_id": admin_group.id}),
+            {"name": "Superusers", "permission_ids": []},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        admin_group.refresh_from_db()
+        assert admin_group.name == "Admin"
+
+    def test_admin_groups_permissions_can_still_be_updated_without_renaming(self, admin_api_client):
+        admin_group = Group.objects.get(name="Admin")
+        manage_users = Permission.objects.get(content_type__app_label="account", codename="manage_users")
+
+        response = admin_api_client.patch(
+            reverse("group_detail", kwargs={"group_id": admin_group.id}),
+            {"name": "Admin", "permission_ids": [manage_users.id]},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        admin_group.refresh_from_db()
+        assert admin_group.name == "Admin"
+        assert set(admin_group.permissions.all()) == {manage_users}
+
 
 @pytest.mark.django_db
 class TestGroupMembersView:
@@ -131,3 +159,12 @@ class TestGroupMembersView:
         group = Group.objects.create(name="Support")
         response = api_client.get(reverse("group_members", kwargs={"group_id": group.id}))
         assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_add_member_with_non_numeric_user_id_returns_400(self, admin_api_client):
+        group = Group.objects.create(name="Support")
+
+        response = admin_api_client.post(
+            reverse("group_members", kwargs={"group_id": group.id}), {"user_id": "not-a-number"}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST

@@ -70,7 +70,10 @@ class GroupMembersView(GenericAPIView):
     @swagger_auto_schema(operation_description="Add a user to a group")
     def post(self, request, group_id):
         group = get_object_or_404(Group, pk=group_id)
-        user = get_object_or_404(User, pk=request.data.get("user_id"))
+        try:
+            user = get_object_or_404(User, pk=request.data.get("user_id"))
+        except (TypeError, ValueError):
+            return Response({"detail": "user_id must be a valid integer."}, status=status.HTTP_400_BAD_REQUEST)
         user.groups.add(group)
         return Response(status=status.HTTP_201_CREATED)
 

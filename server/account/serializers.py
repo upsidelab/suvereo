@@ -124,6 +124,11 @@ class GroupDetailSerializer(serializers.ModelSerializer):
     def get_is_system(self, obj):
         return obj.name == ADMIN_GROUP_NAME
 
+    def validate_name(self, value):
+        if self.instance and self.instance.name == ADMIN_GROUP_NAME and value != ADMIN_GROUP_NAME:
+            raise serializers.ValidationError("The Admin group cannot be renamed.")
+        return value
+
 
 class GroupMemberSerializer(serializers.Serializer):
     id = serializers.IntegerField()
