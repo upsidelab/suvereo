@@ -4,13 +4,14 @@ from rest_framework import serializers
 
 from account.authorization import (
     ADMIN_GROUP_NAME,
+    DATASET_PERMISSION_CODENAMES,
     GLOBAL_PERMISSION_CODENAMES,
     PERM_ACCESS_DATASET,
     assign_dataset_role,
     remove_all_dataset_grants,
     set_application_admin,
 )
-from account.models import User
+from account.models import DatasetRole, User
 from catalog.models import DataSet
 
 from .services import ServiceAccountNameService
@@ -134,6 +135,33 @@ class GroupMemberSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     email = serializers.EmailField()
     is_service_account = serializers.BooleanField()
+
+
+_DATASET_PERMISSION_BARE_CODENAMES = {c.split(".")[-1] for c in DATASET_PERMISSION_CODENAMES}
+
+
+class DatasetRoleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DatasetRole
+        fields = ["id", "name", "is_system"]
+
+
+class DatasetRoleDetailSerializer(serializers.ModelSerializer):
+    permission_ids = serializers.PrimaryKeyRelatedField(
+        source="permissions",
+        many=True,
+        queryset=Permission.objects.filter(codename__in=_DATASET_PERMISSION_BARE_CODENAMES),
+    )
+
+    class Meta:
+        model = DatasetRole
+        fields = ["id", "name", "permission_ids", "is_system"]
+        read_only_fields = ["is_system"]
+
+    def validate_name(self, value):
+        if self.instance and self.instance.is_system and value != self.instance.name:
+            raise serializers.ValidationError("System dataset roles cannot be renamed.")
+        return value
 
 
 class PermissionOptionSerializer(serializers.Serializer):

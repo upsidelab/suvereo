@@ -1,6 +1,7 @@
 from django.urls import path
 
 import account.views.accounts
+import account.views.dataset_roles
 import account.views.groups
 import account.views.login
 import account.views.permissions
@@ -19,6 +20,12 @@ urlpatterns = [
         name="group_member_detail",
     ),
     path("api/permissions", account.views.permissions.PermissionListView.as_view(), name="permission_list"),
+    path("api/dataset-roles", account.views.dataset_roles.DatasetRoleListView.as_view(), name="dataset_role_list"),
+    path(
+        "api/dataset-roles/<int:dataset_role_id>",
+        account.views.dataset_roles.DatasetRoleDetailView.as_view(),
+        name="dataset_role_detail",
+    ),
     path("api/users", account.views.users.UserListView.as_view(), name="user_list"),
     path("api/users/<int:id>", account.views.users.UserView.as_view(), name="user_details"),
     path("api/users/<int:id>/password", account.views.users.UserPasswordView.as_view(), name="user_password"),
