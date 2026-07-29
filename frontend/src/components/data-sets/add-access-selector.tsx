@@ -11,21 +11,22 @@ import {
 } from "@/components/ui/command.tsx";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select.tsx";
 import { cn } from "@/lib/utils.ts";
-import { GroupOption, User } from "@/lib/types.ts";
+import { DatasetRoleOption, GroupOption, User } from "@/lib/types.ts";
 import { useState } from "react";
 
 export interface AddAccessSelectorProps {
   availableUsers: User[];
   availableGroups: GroupOption[];
-  onSubmit: (targetType: "user" | "group", targetId: number, role: "viewer" | "editor") => void;
+  availableRoles: DatasetRoleOption[];
+  onSubmit: (targetType: "user" | "group", targetId: number, role: string) => void;
 }
 
 type Target = { type: "user"; id: number; label: string } | { type: "group"; id: number; label: string };
 
-export function AddAccessSelector({ availableUsers, availableGroups, onSubmit }: AddAccessSelectorProps) {
+export function AddAccessSelector({ availableUsers, availableGroups, availableRoles, onSubmit }: AddAccessSelectorProps) {
   const [open, setOpen] = useState(false);
   const [selectedTarget, setSelectedTarget] = useState<Target | undefined>(undefined);
-  const [role, setRole] = useState<"viewer" | "editor">("viewer");
+  const [role, setRole] = useState<string>(availableRoles[0]?.name ?? "");
 
   const targets: Target[] = [
     ...availableUsers.map((user) => ({ type: "user" as const, id: user.id, label: user.email })),
@@ -33,7 +34,7 @@ export function AddAccessSelector({ availableUsers, availableGroups, onSubmit }:
   ];
 
   const handleSubmit = () => {
-    if (!selectedTarget) {
+    if (!selectedTarget || !role) {
       return;
     }
 
@@ -86,16 +87,19 @@ export function AddAccessSelector({ availableUsers, availableGroups, onSubmit }:
           </Command>
         </PopoverContent>
       </Popover>
-      <Select value={role} onValueChange={(value) => setRole(value as "viewer" | "editor")}>
+      <Select value={role} onValueChange={setRole}>
         <SelectTrigger className="w-[140px]">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="viewer">Viewer</SelectItem>
-          <SelectItem value="editor">Editor</SelectItem>
+          {availableRoles.map((roleOption) => (
+            <SelectItem key={roleOption.id} value={roleOption.name}>
+              {roleOption.name}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
-      <Button variant="default" onClick={handleSubmit} disabled={!selectedTarget}>Add</Button>
+      <Button variant="default" onClick={handleSubmit} disabled={!selectedTarget || !role}>Add</Button>
     </div>
   )
 }

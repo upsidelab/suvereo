@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { AddAccessSelector } from "@/components/data-sets/add-access-selector.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
-import { DataSetAccessGrant, GroupOption, User } from "@/lib/types.ts";
+import { DataSetAccessGrant, DatasetRoleOption, GroupOption, User } from "@/lib/types.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -17,6 +17,7 @@ export function DataSetAccessList({dataSetId}: DataSetAccessListProps) {
   const [grants, setGrants] = useState<DataSetAccessGrant[]>([]);
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const [availableGroups, setAvailableGroups] = useState<GroupOption[]>([]);
+  const [availableRoles, setAvailableRoles] = useState<DatasetRoleOption[]>([]);
   const [usersLoadFailed, setUsersLoadFailed] = useState(false);
 
   const load = useCallback(async () => {
@@ -37,13 +38,16 @@ export function DataSetAccessList({dataSetId}: DataSetAccessListProps) {
 
     const systemGroups = await api.groups().getGroups();
     setAvailableGroups(systemGroups.filter((g) => !assignedGroupIds.has(g.id)));
+
+    const roles = await api.datasetRoles().getDatasetRoles();
+    setAvailableRoles(roles);
   }, [dataSetId]);
 
   useEffect(() => {
     load();
   }, [load, dataSetId]);
 
-  const handleAdd = async (targetType: "user" | "group", targetId: number, role: "viewer" | "editor") => {
+  const handleAdd = async (targetType: "user" | "group", targetId: number, role: string) => {
     await api.dataSets().grantDataSetAccess(dataSetId, targetType, targetId, role);
     await load();
   }
@@ -60,7 +64,12 @@ export function DataSetAccessList({dataSetId}: DataSetAccessListProps) {
           Unable to load users — you may need account.manage_users to add individual users; group access still works.
         </p>
       }
-      <AddAccessSelector availableUsers={availableUsers} availableGroups={availableGroups} onSubmit={handleAdd}/>
+      <AddAccessSelector
+        availableUsers={availableUsers}
+        availableGroups={availableGroups}
+        availableRoles={availableRoles}
+        onSubmit={handleAdd}
+      />
       <Separator className="my-6"/>
       {grants.length > 0 &&
         <Table>

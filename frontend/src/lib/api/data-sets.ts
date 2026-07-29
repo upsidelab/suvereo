@@ -67,7 +67,7 @@ export class DataSetsApiClient extends BaseApiClient {
       target_type: "user" | "group";
       target_id: number;
       target_label: string;
-      role: "viewer" | "editor" | null;
+      role: string | null;
     }[];
     return data.map((row) => ({
       targetType: row.target_type,
@@ -77,7 +77,7 @@ export class DataSetsApiClient extends BaseApiClient {
     }));
   }
 
-  async grantDataSetAccess(dataSetId: number, targetType: "user" | "group", targetId: number, role: "viewer" | "editor"): Promise<void> {
+  async grantDataSetAccess(dataSetId: number, targetType: "user" | "group", targetId: number, role: string): Promise<void> {
     await fetch(
       `${this.apiBase}/api/data_sets/${dataSetId}/access`,
       {

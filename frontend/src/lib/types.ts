@@ -78,7 +78,13 @@ export type DataSetAccessGrant = {
   targetType: "user" | "group";
   targetId: number;
   targetLabel: string;
-  role: "viewer" | "editor" | null;
+  role: string | null;
+};
+
+export type DatasetRoleOption = {
+  id: number;
+  name: string;
+  isSystem: boolean;
 };
 
 export type GroupOption = {
