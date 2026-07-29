@@ -11,8 +11,13 @@ class Command(BaseCommand):
         parser.add_argument("-n", "--name", required=True, help="name of service account")
 
     def handle(self, *args, **options):
+        from django.contrib.auth.models import Group
+
+        from account.authorization import ADMIN_GROUP_NAME
+
+        admin_group_id = Group.objects.get(name=ADMIN_GROUP_NAME).id
         serializer = CreateUpdateServiceAccountSerializer(
-            data={"name": options["name"], "is_admin": True, "data_set_ids": []}
+            data={"name": options["name"], "group_ids": [admin_group_id], "data_set_ids": []}
         )
         serializer.is_valid(raise_exception=True)
         service_account = serializer.save()

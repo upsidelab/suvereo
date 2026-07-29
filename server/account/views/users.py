@@ -1,30 +1,35 @@
+from django.contrib.auth.models import Group
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import ListCreateAPIView, UpdateAPIView
 
-from account.authorization import PERM_MANAGE_USERS, set_application_admin
+from account.authorization import PERM_MANAGE_USERS
 from account.models import User
 from account.permissions import HasRequiredPermission
-from account.serializers import UserSerializer, UserUpdatePasswordSerializer, UserUpdateSerializer
+from account.serializers import UserCreateSerializer, UserSerializer, UserUpdatePasswordSerializer, UserUpdateSerializer
 
 
 class UserListView(ListCreateAPIView):
     permission_classes = [HasRequiredPermission]
     required_permission = PERM_MANAGE_USERS
-    serializer_class = UserSerializer
+
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return UserCreateSerializer
+        return UserSerializer
 
     @swagger_auto_schema(operation_description="List all users", manual_parameters=[])
     def get_queryset(self):
         return User.objects.filter(is_service_account=False)
 
-    @swagger_auto_schema(operation_description="Create a new user", request_body=UserSerializer)
+    @swagger_auto_schema(operation_description="Create a new user", request_body=UserCreateSerializer)
     def perform_create(self, serializer):
         user = User.objects.create_user(
             email=serializer.validated_data["email"],
             password=serializer.validated_data["password"],
             is_active=serializer.validated_data["is_active"],
         )
-        set_application_admin(user, serializer.validated_data["is_admin"])
+        user.groups.set(Group.objects.filter(pk__in=serializer.validated_data["group_ids"]))
 
 
 class UserView(UpdateAPIView):
@@ -47,7 +52,10 @@ class UserView(UpdateAPIView):
         user.email = serializer.validated_data["email"]
         user.is_active = serializer.validated_data["is_active"]
         user.save()
-        set_application_admin(user, serializer.validated_data["is_admin"])
+        user.groups.set(Group.objects.filter(pk__in=serializer.validated_data["group_ids"]))
+        # group_ids has no matching attribute on User, so representing the (required) field
+        # against the model instance would raise; fall back to representing validated_data.
+        serializer.instance = None
 
 
 class UserPasswordView(UpdateAPIView):

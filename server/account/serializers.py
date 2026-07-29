@@ -8,8 +8,8 @@ from account.authorization import (
     GLOBAL_PERMISSION_CODENAMES,
     PERM_ACCESS_DATASET,
     assign_dataset_role,
+    is_application_admin,
     remove_all_dataset_grants,
-    set_application_admin,
 )
 from account.models import DatasetRole, User
 from catalog.models import DataSet
@@ -24,17 +24,32 @@ class AccountSerializer(serializers.Serializer):
 
 
 class UserSerializer(serializers.Serializer):
+    """Read-only representation used for GET (list) responses."""
+
     id = serializers.IntegerField(read_only=True)
     email = serializers.EmailField()
     is_active = serializers.BooleanField()
-    is_admin = serializers.BooleanField()
+    is_admin = serializers.SerializerMethodField()
+    group_ids = serializers.SerializerMethodField()
+
+    def get_is_admin(self, obj):
+        return is_application_admin(obj)
+
+    def get_group_ids(self, obj):
+        return list(obj.groups.values_list("id", flat=True))
+
+
+class UserCreateSerializer(serializers.Serializer):
+    email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
+    is_active = serializers.BooleanField()
+    group_ids = serializers.ListField(child=serializers.IntegerField())
 
 
 class UserUpdateSerializer(serializers.Serializer):
     email = serializers.EmailField()
     is_active = serializers.BooleanField()
-    is_admin = serializers.BooleanField()
+    group_ids = serializers.ListField(child=serializers.IntegerField())
 
 
 class UserUpdatePasswordSerializer(serializers.Serializer):
@@ -44,7 +59,7 @@ class UserUpdatePasswordSerializer(serializers.Serializer):
 class CreateUpdateServiceAccountSerializer(serializers.Serializer):
     name = serializers.CharField(write_only=True)
     is_active = serializers.BooleanField(default=True)
-    is_admin = serializers.BooleanField(default=False)
+    group_ids = serializers.ListField(child=serializers.IntegerField(), required=False)
     data_set_ids = serializers.ListField(child=serializers.IntegerField(), required=False)
 
     def create(self, validated_data):
@@ -52,7 +67,7 @@ class CreateUpdateServiceAccountSerializer(serializers.Serializer):
         service_account = User.objects.create_service_account(
             email=email, is_active=validated_data.get("is_active")
         )
-        set_application_admin(service_account, validated_data.get("is_admin", False))
+        service_account.groups.set(Group.objects.filter(pk__in=validated_data.get("group_ids", [])))
         self._sync_data_sets(service_account, validated_data.get("data_set_ids", []))
         return service_account
 
@@ -60,7 +75,8 @@ class CreateUpdateServiceAccountSerializer(serializers.Serializer):
         instance.email = self._build_service_account_email(validated_data.get("name"))
         instance.is_active = validated_data.get("is_active")
         instance.save()
-        set_application_admin(instance, validated_data.get("is_admin", instance.is_admin))
+        if "group_ids" in validated_data:
+            instance.groups.set(Group.objects.filter(pk__in=validated_data["group_ids"]))
         self._sync_data_sets(instance, validated_data.get("data_set_ids", []))
         return instance
 
@@ -84,13 +100,17 @@ class CreateUpdateServiceAccountSerializer(serializers.Serializer):
 class ServiceAccountSerializer(serializers.ModelSerializer):
     data_set_ids = serializers.SerializerMethodField()
     is_admin = serializers.BooleanField(read_only=True)
+    group_ids = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ["id", "email", "date_joined", "data_set_ids", "is_active", "is_admin"]
+        fields = ["id", "email", "date_joined", "data_set_ids", "is_active", "is_admin", "group_ids"]
 
     def get_data_set_ids(self, obj):
         return list(get_objects_for_user(obj, PERM_ACCESS_DATASET).values_list("id", flat=True))
+
+    def get_group_ids(self, obj):
+        return list(obj.groups.values_list("id", flat=True))
 
 
 class TokenResponseSerializer(serializers.Serializer):
