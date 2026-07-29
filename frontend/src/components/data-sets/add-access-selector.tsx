@@ -12,7 +12,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select.tsx";
 import { cn } from "@/lib/utils.ts";
 import { DatasetRoleOption, GroupOption, User } from "@/lib/types.ts";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export interface AddAccessSelectorProps {
   availableUsers: User[];
@@ -27,6 +27,12 @@ export function AddAccessSelector({ availableUsers, availableGroups, availableRo
   const [open, setOpen] = useState(false);
   const [selectedTarget, setSelectedTarget] = useState<Target | undefined>(undefined);
   const [role, setRole] = useState<string>(availableRoles[0]?.name ?? "");
+
+  useEffect(() => {
+    if (!role && availableRoles.length > 0) {
+      setRole(availableRoles[0].name);
+    }
+  }, [availableRoles, role]);
 
   const targets: Target[] = [
     ...availableUsers.map((user) => ({ type: "user" as const, id: user.id, label: user.email })),

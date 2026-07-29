@@ -19,6 +19,7 @@ export function DataSetAccessList({dataSetId}: DataSetAccessListProps) {
   const [availableGroups, setAvailableGroups] = useState<GroupOption[]>([]);
   const [availableRoles, setAvailableRoles] = useState<DatasetRoleOption[]>([]);
   const [usersLoadFailed, setUsersLoadFailed] = useState(false);
+  const [rolesLoadFailed, setRolesLoadFailed] = useState(false);
 
   const load = useCallback(async () => {
     const grants = await api.dataSets().getDataSetAccess(dataSetId);
@@ -39,8 +40,14 @@ export function DataSetAccessList({dataSetId}: DataSetAccessListProps) {
     const systemGroups = await api.groups().getGroups();
     setAvailableGroups(systemGroups.filter((g) => !assignedGroupIds.has(g.id)));
 
-    const roles = await api.datasetRoles().getDatasetRoles();
-    setAvailableRoles(roles);
+    try {
+      const roles = await api.datasetRoles().getDatasetRoles();
+      setAvailableRoles(roles);
+      setRolesLoadFailed(false);
+    } catch {
+      setAvailableRoles([]);
+      setRolesLoadFailed(true);
+    }
   }, [dataSetId]);
 
   useEffect(() => {
@@ -62,6 +69,11 @@ export function DataSetAccessList({dataSetId}: DataSetAccessListProps) {
       {usersLoadFailed &&
         <p className="text-sm text-muted-foreground mb-4">
           Unable to load users — you may need account.manage_users to add individual users; group access still works.
+        </p>
+      }
+      {rolesLoadFailed &&
+        <p className="text-sm text-muted-foreground mb-4">
+          Unable to load dataset roles — you may need Admin-group membership.
         </p>
       }
       <AddAccessSelector
