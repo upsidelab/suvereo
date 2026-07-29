@@ -1,9 +1,51 @@
 import { BaseApiClient } from "@/lib/api/base.ts";
-import { GroupOption } from "@/lib/types.ts";
+import { GroupMember, GroupOption } from "@/lib/types.ts";
+
+type GroupMemberResponse = {
+  id: number;
+  email: string;
+  is_service_account: boolean;
+};
 
 export class GroupsApiClient extends BaseApiClient {
   async getGroups(): Promise<GroupOption[]> {
     const response = await fetch(`${this.apiBase}/api/groups`, this._requestConfiguration());
     return (await response.json()) as GroupOption[];
+  }
+
+  async createGroup(name: string): Promise<Response> {
+    return await fetch(`${this.apiBase}/api/groups`, {
+      ...this._requestConfiguration(),
+      method: "POST",
+      body: JSON.stringify({ name, permission_ids: [] })
+    });
+  }
+
+  async deleteGroup(groupId: number): Promise<Response> {
+    return await fetch(`${this.apiBase}/api/groups/${groupId}`, {
+      ...this._requestConfiguration(),
+      method: "DELETE"
+    });
+  }
+
+  async getGroupMembers(groupId: number): Promise<GroupMember[]> {
+    const response = await fetch(`${this.apiBase}/api/groups/${groupId}/members`, this._requestConfiguration());
+    const result = await response.json() as GroupMemberResponse[];
+    return result.map((item) => ({ id: item.id, email: item.email, isServiceAccount: item.is_service_account }));
+  }
+
+  async addGroupMember(groupId: number, userId: number): Promise<Response> {
+    return await fetch(`${this.apiBase}/api/groups/${groupId}/members`, {
+      ...this._requestConfiguration(),
+      method: "POST",
+      body: JSON.stringify({ user_id: userId })
+    });
+  }
+
+  async removeGroupMember(groupId: number, userId: number): Promise<Response> {
+    return await fetch(`${this.apiBase}/api/groups/${groupId}/members/${userId}`, {
+      ...this._requestConfiguration(),
+      method: "DELETE"
+    });
   }
 }

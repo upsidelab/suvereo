@@ -92,6 +92,12 @@ export type GroupOption = {
   name: string;
 };
 
+export type GroupMember = {
+  id: number;
+  email: string;
+  isServiceAccount: boolean;
+};
+
 export type Agent = {
   id: number;
   name: string;

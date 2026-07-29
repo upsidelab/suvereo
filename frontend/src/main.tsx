@@ -22,6 +22,7 @@ import AgentsPage from "@/pages/data-sets/(id)/agents";
 import { AgenticExecutionsPage } from "@/pages/data-sets/(id)/agentic-executions/index.tsx";
 import { AgenticExecutionDetailPage } from "@/pages/data-sets/(id)/agentic-executions/(id)/index.tsx";
 import { EntityRecordsPage } from "@/pages/data-sets/(id)/entities/[slug].tsx";
+import { RolesIndex } from "@/pages/roles";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -102,6 +103,10 @@ const router = createBrowserRouter([
       {
         path: '/users',
         element: <UsersIndex />
+      },
+      {
+        path: '/roles',
+        element: <RolesIndex />
       },
       {
         path: '/data-sets/:dataSetId/agents',

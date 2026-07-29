@@ -13,6 +13,7 @@ import {
   PlayIcon,
   PlugZapIcon,
   Settings2Icon,
+  ShieldIcon,
   SparklesIcon,
   UserIcon,
 } from "lucide-react";
@@ -82,6 +83,12 @@ export function MainSidebar() {
       link: "/service-accounts",
       key: "service-accounts",
       icon: <PlugZapIcon />
+    },
+    {
+      title: "Roles",
+      link: "/roles",
+      key: "roles",
+      icon: <ShieldIcon />
     },
     {
       title: "Help",
