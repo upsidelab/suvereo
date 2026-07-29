@@ -3,6 +3,7 @@ from django.urls import path
 import account.views.accounts
 import account.views.groups
 import account.views.login
+import account.views.permissions
 import account.views.service_accounts
 import account.views.users
 
@@ -10,6 +11,7 @@ urlpatterns = [
     path("api/auth/login", account.views.login.LoginView.as_view(), name="login"),
     path("api/account", account.views.accounts.AccountView.as_view(), name="account"),
     path("api/groups", account.views.groups.GroupListView.as_view(), name="group_list"),
+    path("api/permissions", account.views.permissions.PermissionListView.as_view(), name="permission_list"),
     path("api/users", account.views.users.UserListView.as_view(), name="user_list"),
     path("api/users/<int:id>", account.views.users.UserView.as_view(), name="user_details"),
     path("api/users/<int:id>/password", account.views.users.UserPasswordView.as_view(), name="user_password"),

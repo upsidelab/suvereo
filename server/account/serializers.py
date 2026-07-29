@@ -102,3 +102,12 @@ class GroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = Group
         fields = ["id", "name"]
+
+
+class PermissionOptionSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    codename = serializers.SerializerMethodField()
+    name = serializers.CharField()
+
+    def get_codename(self, obj):
+        return f"{obj.content_type.app_label}.{obj.codename}"
