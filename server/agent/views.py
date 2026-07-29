@@ -330,11 +330,14 @@ class AgentDetailsView(APIView):
     )
     def put(self, request, pk=None):
         instance = get_object_or_404(Agent, pk=pk)
+        if not has_dataset_perm(request.user, PERM_MANAGE_AGENTS, instance.dataset):
+            self.permission_denied(request)
+
         serializer = AgentSerializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
-        for dataset in {instance.dataset, serializer.validated_data["dataset"]}:
-            if not has_dataset_perm(request.user, PERM_MANAGE_AGENTS, dataset):
-                self.permission_denied(request)
+        if not has_dataset_perm(request.user, PERM_MANAGE_AGENTS, serializer.validated_data["dataset"]):
+            self.permission_denied(request)
+
         serializer.save(corrupted=False)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

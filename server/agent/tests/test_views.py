@@ -657,16 +657,17 @@ class TestAgentDetailsView:
         response = admin_api_client.delete(url)
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_put_without_manage_agents_permission_returns_403(self, api_client, agent_instance, url, config):
-        payload = {
-            "name": "nope",
-            "description": "description",
-            "config": config,
-            "dataset": agent_instance.dataset.id,
-            "agent_type": "agent_1",
-        }
-        with patch("agent.serializers.customs.fields.AgentRegistry.get_plugin_classes", return_value=AGENT_CLASSES):
-            response = api_client.put(url, payload, format="json")
+    def test_put_without_manage_agents_permission_returns_403(self, api_client, url):
+        response = api_client.put(url, {"name": "nope"}, format="json")
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_put_with_incomplete_payload_and_no_dataset_permission_returns_403_not_500(self, agent_instance, url):
+        user = baker.make(User)
+        client = APIClient()
+        client.force_authenticate(user=user)
+
+        response = client.put(url, {"name": "nope"}, format="json")
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
