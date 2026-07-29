@@ -12,6 +12,7 @@ import { DataSetsFields } from "@/components/service-accounts/form/data-sets-fie
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { PermissionFields } from "@/components/service-accounts/form/permission-fields.tsx";
+import { GroupOption } from "@/lib/types.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -23,7 +24,7 @@ const formSchema = z.object({
   }),
   dataSetIds: z.array(z.number()),
   isActive: z.boolean(),
-  isAdmin: z.boolean(),
+  groupIds: z.array(z.number()),
 });
 type CreateServiceAccountFormSchema = z.infer<typeof formSchema>;
 
@@ -38,18 +39,25 @@ export function NewServiceAccountForm({onServiceAccountCreated}: NewServiceAccou
       name: "",
       dataSetIds: [],
       isActive: true,
-      isAdmin: false,
+      groupIds: [],
     }
   });
   const [isTokenDialogOpen, setIsTokenDialogOpen] = useState(false);
   const [generatedToken, setGeneratedToken] = useState("");
-  const isAdmin = useWatch({ control: form.control, name: "isAdmin" });
+  const [groups, setGroups] = useState<GroupOption[]>([]);
 
   useEffect(() => {
-    if (isAdmin) {
+    api.groups().getGroups().then(setGroups);
+  }, []);
+
+  const groupIds = useWatch({ control: form.control, name: "groupIds" });
+  const isAdminGroupSelected = groups.some((g) => g.name === "Admin" && groupIds.includes(g.id));
+
+  useEffect(() => {
+    if (isAdminGroupSelected) {
       form.setValue("dataSetIds", []);
     }
-  }, [isAdmin, form]);
+  }, [isAdminGroupSelected, form]);
 
   const handleSubmit = async (values: CreateServiceAccountFormSchema) => {
     const {  token } = await api.serviceAccounts().createServiceAccount(values);
@@ -69,8 +77,8 @@ export function NewServiceAccountForm({onServiceAccountCreated}: NewServiceAccou
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
           <DetailsFields form={form}/>
-          <PermissionFields form={form}/>
-          {!isAdmin && <DataSetsFields form={form}/>}
+          <PermissionFields form={form} groups={groups}/>
+          {!isAdminGroupSelected && <DataSetsFields form={form}/>}
           <Button type="submit">Create</Button>
         </form>
       </Form>

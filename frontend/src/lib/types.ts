@@ -71,6 +71,7 @@ export type User = {
   email: string;
   isActive: boolean;
   isAdmin: boolean;
+  groupIds: number[];
 }
 
 export type DataSetAccessGrant = {
@@ -121,6 +122,7 @@ export type ServiceAccount = {
   isAdmin: boolean;
   dateCreated: string;
   dataSetIds: number[];
+  groupIds: number[];
 };
 
 export type ProvidersConfig = {

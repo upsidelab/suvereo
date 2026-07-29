@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Form } from "@/components/ui/form.tsx";
 import { z } from "zod";
 import { useForm, useWatch } from "react-hook-form";
@@ -9,7 +9,7 @@ import { DetailsFields } from "@/components/service-accounts/form/details-fields
 import { DataSetsFields } from "@/components/service-accounts/form/data-sets-fields.tsx";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
-import { ServiceAccount } from "@/lib/types.ts";
+import { ServiceAccount, GroupOption } from "@/lib/types.ts";
 import { PermissionFields } from "@/components/service-accounts/form/permission-fields.tsx";
 
 const api = new ApiClient(authenticationProviderInstance);
@@ -19,7 +19,7 @@ const formSchema = z.object({
   name: z.string().trim().min(1),
   dataSetIds: z.array(z.number()),
   isActive: z.boolean(),
-  isAdmin: z.boolean(),
+  groupIds: z.array(z.number()),
 }).refine(async (data) => data.name === data.oldName || await checkServiceNameAvailability(data.name), {
   message: "The name has already been taken",
   path: ["name"],
@@ -41,16 +41,23 @@ export function EditServiceAccountForm({ serviceAccount, onServiceAccountUpdated
       oldName: oldName,
       dataSetIds: serviceAccount.dataSetIds || [],
       isActive: serviceAccount.isActive,
-      isAdmin: serviceAccount.isAdmin || false,
+      groupIds: serviceAccount.groupIds || [],
     }
   });
-  const isAdmin = useWatch({ control: form.control, name: "isAdmin" });
+  const [groups, setGroups] = useState<GroupOption[]>([]);
 
   useEffect(() => {
-    if (isAdmin) {
+    api.groups().getGroups().then(setGroups);
+  }, []);
+
+  const groupIds = useWatch({ control: form.control, name: "groupIds" });
+  const isAdminGroupSelected = groups.some((g) => g.name === "Admin" && groupIds.includes(g.id));
+
+  useEffect(() => {
+    if (isAdminGroupSelected) {
       form.setValue("dataSetIds", []);
     }
-  }, [isAdmin, form]);
+  }, [isAdminGroupSelected, form]);
 
   const handleSubmit = async (values: CreateServiceAccountFormSchema) => {
     await api.serviceAccounts().updateServiceAccount(serviceAccount.id, values);
@@ -62,8 +69,8 @@ export function EditServiceAccountForm({ serviceAccount, onServiceAccountUpdated
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
           <DetailsFields form={form}/>
-          <PermissionFields form={form}/>
-          {!isAdmin && <DataSetsFields form={form}/>}
+          <PermissionFields form={form} groups={groups}/>
+          {!isAdminGroupSelected && <DataSetsFields form={form}/>}
           <Button type="submit">Update</Button>
         </form>
       </Form>

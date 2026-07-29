@@ -9,13 +9,14 @@ export type ServiceAccountResponse = {
   is_active: boolean;
   is_admin: boolean;
   data_set_ids: number[];
+  group_ids: number[];
 }
 
 export type CreateServiceAccountParams = {
   name: string;
   dataSetIds: number[];
   isActive: boolean;
-  isAdmin: boolean;
+  groupIds: number[];
 }
 
 export type UpdateServiceAccountParams = CreateServiceAccountParams;
@@ -24,7 +25,7 @@ export type CreateServiceAccountPayload = {
   name: string;
   data_set_ids: number[];
   is_active: boolean;
-  is_admin: boolean;
+  group_ids: number[];
 }
 
 export type UpdateServiceAccountPayload = CreateServiceAccountPayload;
@@ -42,7 +43,8 @@ export class ServiceAccountsApiClient extends BaseApiClient {
         dateCreated: item.date_joined,
         dataSetIds: item.data_set_ids,
         isActive: item.is_active,
-        isAdmin: item.is_admin
+        isAdmin: item.is_admin,
+        groupIds: item.group_ids
       }))
     };
   }
@@ -52,7 +54,7 @@ export class ServiceAccountsApiClient extends BaseApiClient {
       name: serviceAccount.name,
       data_set_ids: serviceAccount.dataSetIds,
       is_active: serviceAccount.isActive,
-      is_admin: serviceAccount.isAdmin
+      group_ids: serviceAccount.groupIds
     };
 
     const response = await fetch(`${this.apiBase}/api/service_accounts/`, {
@@ -69,7 +71,7 @@ export class ServiceAccountsApiClient extends BaseApiClient {
       name: serviceAccount.name,
       data_set_ids: serviceAccount.dataSetIds,
       is_active: serviceAccount.isActive,
-      is_admin: serviceAccount.isAdmin
+      group_ids: serviceAccount.groupIds
     };
 
     return await fetch(`${this.apiBase}/api/service_accounts/${id}`, {

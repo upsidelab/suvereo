@@ -4,26 +4,26 @@ import { PaginatedResult, User } from "@/lib/types.ts";
 export type CreateUserParams = {
   email: string;
   password: string;
-  isAdmin: boolean;
+  groupIds: number[];
   isActive: boolean;
 }
 
 export type UpdateUserParams = {
   email: string;
-  isAdmin: boolean;
+  groupIds: number[];
   isActive: boolean;
 }
 
 export type CreateUserPayload = {
   email: string;
   password: string;
-  is_admin: boolean;
+  group_ids: number[];
   is_active: boolean;
 }
 
 export type UpdateUserPayload = {
   email: string;
-  is_admin: boolean;
+  group_ids: number[];
   is_active: boolean;
 }
 
@@ -36,6 +36,7 @@ export type UserResponse = {
   email: string;
   is_admin: boolean;
   is_active: boolean;
+  group_ids: number[];
 }
 
 export class UsersApiClient extends BaseApiClient {
@@ -49,7 +50,8 @@ export class UsersApiClient extends BaseApiClient {
         id: item.id,
         email: item.email,
         isAdmin: item.is_admin,
-        isActive: item.is_active
+        isActive: item.is_active,
+        groupIds: item.group_ids
       }))
     };
   }
@@ -58,7 +60,7 @@ export class UsersApiClient extends BaseApiClient {
     const payload: CreateUserPayload = {
       email: user.email,
       password: user.password,
-      is_admin: user.isAdmin,
+      group_ids: user.groupIds,
       is_active: user.isActive
     };
 
@@ -75,7 +77,7 @@ export class UsersApiClient extends BaseApiClient {
   async updateUser(userId: number, user: UpdateUserParams) {
     const payload: UpdateUserPayload = {
       email: user.email,
-      is_admin: user.isAdmin,
+      group_ids: user.groupIds,
       is_active: user.isActive
     };
 
