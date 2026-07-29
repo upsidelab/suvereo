@@ -1,4 +1,4 @@
-import { Checkbox } from "@/components/ui/checkbox.tsx";
+import { CheckboxListInput } from "@/components/util/checkbox-list-input.tsx";
 import { PermissionOption } from "@/lib/types.ts";
 
 export interface PermissionChecklistProps {
@@ -9,22 +9,10 @@ export interface PermissionChecklistProps {
 
 export function PermissionChecklist({ options, selectedIds, onChange }: PermissionChecklistProps) {
   return (
-    <div className="space-y-2">
-      {options.map((option) => {
-        const checked = selectedIds.includes(option.id);
-        return (
-          <div key={option.id} className="flex items-center space-x-2">
-            <Checkbox
-              id={`permission-${option.id}`}
-              checked={checked}
-              onCheckedChange={(value) => {
-                onChange(value ? [...selectedIds, option.id] : selectedIds.filter((id) => id !== option.id));
-              }}
-            />
-            <label htmlFor={`permission-${option.id}`} className="text-sm">{option.name}</label>
-          </div>
-        );
-      })}
-    </div>
+    <CheckboxListInput
+      options={options.map((option) => ({ id: option.id, label: option.name }))}
+      selectedIds={selectedIds}
+      onChange={onChange}
+    />
   );
 }
