@@ -24,6 +24,18 @@ class TestDataSetAccessListView:
         assert rows[("user", viewer.id)] == "viewer"
         assert rows[("group", marketing.id)] == "editor"
 
+    def test_service_accounts_are_excluded_from_the_listing(self, admin_api_client, data_set):
+        service_account = baker.make(User, is_service_account=True)
+        assign_dataset_role(service_account, data_set, "editor")
+        regular_user = baker.make(User)
+        assign_dataset_role(regular_user, data_set, "viewer")
+
+        response = admin_api_client.get(reverse("data_set_access_list", kwargs={"data_set_id": data_set.id}))
+
+        target_ids = {(row["target_type"], row["target_id"]) for row in response.data}
+        assert ("user", service_account.id) not in target_ids
+        assert ("user", regular_user.id) in target_ids
+
     def test_non_canonical_grant_is_reported_as_none(self, admin_api_client, data_set):
         from guardian.shortcuts import assign_perm
 

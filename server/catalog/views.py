@@ -267,6 +267,13 @@ class DataSetAccessListView(GenericAPIView):
         dataset = get_object_or_404(DataSet, pk=data_set_id)
         rows = []
         for user, codenames in get_users_with_perms(dataset, attach_perms=True, with_group_users=False).items():
+            if user.is_service_account:
+                # Service accounts get dataset access exclusively via their own "Data Sets"
+                # field (CreateUpdateServiceAccountSerializer._sync_data_sets), which always
+                # assigns "editor" and re-syncs on every save. Surfacing them here too would
+                # let this screen set a different role that the next service-account save
+                # would silently overwrite — two sources of truth for the same grant.
+                continue
             rows.append(
                 {
                     "target_type": "user",
