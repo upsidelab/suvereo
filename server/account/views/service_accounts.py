@@ -98,5 +98,5 @@ class ServiceAccountView(APIView):
         service_account = User.objects.get(id=id, is_service_account=True)
         serializer = CreateUpdateServiceAccountSerializer(service_account, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        updated_account = serializer.save()
+        return Response(ServiceAccountSerializer(updated_account).data, status=status.HTTP_200_OK)

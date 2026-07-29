@@ -2,6 +2,7 @@ from django.contrib.auth.models import Group
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import ListCreateAPIView, UpdateAPIView
+from rest_framework.response import Response
 
 from account.authorization import PERM_MANAGE_USERS
 from account.models import User
@@ -47,15 +48,20 @@ class UserView(UpdateAPIView):
     def get_object(self):
         return User.objects.get(id=self.kwargs["id"], is_service_account=False)
 
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop("partial", False)
+        serializer = self.get_serializer(data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        user = self.perform_update(serializer)
+        return Response(UserSerializer(user).data)
+
     def perform_update(self, serializer):
         user = self.get_object()
         user.email = serializer.validated_data["email"]
         user.is_active = serializer.validated_data["is_active"]
         user.save()
         user.groups.set(Group.objects.filter(pk__in=serializer.validated_data["group_ids"]))
-        # group_ids has no matching attribute on User, so representing the (required) field
-        # against the model instance would raise; fall back to representing validated_data.
-        serializer.instance = None
+        return user
 
 
 class UserPasswordView(UpdateAPIView):

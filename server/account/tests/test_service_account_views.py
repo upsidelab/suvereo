@@ -73,6 +73,22 @@ class TestServiceAccountViews:
         assert response.status_code == status.HTTP_200_OK
         assert is_application_admin(User.objects.get(id=account_id)) is True
 
+    def test_patch_response_exposes_is_admin_and_group_ids(self, admin_api_client):
+        admin_group_id = Group.objects.get(name=ADMIN_GROUP_NAME).id
+        payload = {"name": "reported-bot", "is_active": True, "group_ids": [admin_group_id], "data_set_ids": []}
+        created = admin_api_client.post(reverse("service_account_list"), payload, format="json")
+        account_id = created.data["id"]
+
+        response = admin_api_client.patch(
+            f"/api/service_accounts/{account_id}",
+            {"name": "reported-bot", "is_active": True, "group_ids": [], "data_set_ids": []},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["is_admin"] is False
+        assert response.data["group_ids"] == []
+        assert response.data["id"] == account_id
+
 
 @pytest.mark.django_db
 class TestCreateAdminServiceAccountCommand:

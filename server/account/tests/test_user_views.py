@@ -77,6 +77,19 @@ class TestUserUpdateView:
         admin_api_client.put(url, {"email": user.email, "is_active": True, "group_ids": []}, format="json")
         assert User.objects.get(pk=user.pk).is_staff is False
 
+    def test_update_response_exposes_is_admin_and_group_ids(self, admin_api_client):
+        user = baker.make(User, is_service_account=False)
+        admin_group_id = Group.objects.get(name=ADMIN_GROUP_NAME).id
+        url = reverse("user_details", kwargs={"id": user.id})
+
+        response = admin_api_client.put(
+            url, {"email": user.email, "is_active": True, "group_ids": [admin_group_id]}, format="json"
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["id"] == user.id
+        assert response.data["is_admin"] is True
+        assert response.data["group_ids"] == [admin_group_id]
+
 
 @pytest.mark.django_db
 class TestAccountView:
