@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Form } from "@/components/ui/form.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -24,6 +25,7 @@ export interface EditUserFormProps {
 }
 
 export function EditUserForm({ user, onUserUpdated }: EditUserFormProps) {
+  const [error, setError] = useState<string | null>(null);
   const form = useForm<UserFormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -34,7 +36,13 @@ export function EditUserForm({ user, onUserUpdated }: EditUserFormProps) {
   });
 
   const handleSubmit = async (values: UserFormSchema) => {
-    await api.users().updateUser(user.id, values);
+    setError(null);
+    const response = await api.users().updateUser(user.id, values);
+    if (!response.ok) {
+      const body = await response.json();
+      setError(body.detail ?? body.group_ids?.[0] ?? "Could not update this user.");
+      return;
+    }
     onUserUpdated();
     form.reset();
   }
@@ -42,6 +50,7 @@ export function EditUserForm({ user, onUserUpdated }: EditUserFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        {error && <p className="text-sm text-destructive">{error}</p>}
         <DetailsFields form={form} />
         <PermissionFields form={form} />
         <Button type="submit">Update</Button>

@@ -33,6 +33,7 @@ export interface EditServiceAccountFormProps {
 }
 
 export function EditServiceAccountForm({ serviceAccount, onServiceAccountUpdated }: EditServiceAccountFormProps) {
+  const [error, setError] = useState<string | null>(null);
   const oldName = serviceAccount.email.split('@')[0];
   const form = useForm<CreateServiceAccountFormSchema>({
     resolver: zodResolver(formSchema),
@@ -60,7 +61,13 @@ export function EditServiceAccountForm({ serviceAccount, onServiceAccountUpdated
   }, [isAdminGroupSelected, form]);
 
   const handleSubmit = async (values: CreateServiceAccountFormSchema) => {
-    await api.serviceAccounts().updateServiceAccount(serviceAccount.id, values);
+    setError(null);
+    const response = await api.serviceAccounts().updateServiceAccount(serviceAccount.id, values);
+    if (!response.ok) {
+      const body = await response.json();
+      setError(body.detail ?? body.group_ids?.[0] ?? "Could not update this service account.");
+      return;
+    }
     onServiceAccountUpdated();
   };
 
@@ -68,6 +75,7 @@ export function EditServiceAccountForm({ serviceAccount, onServiceAccountUpdated
     <>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          {error && <p className="text-sm text-destructive">{error}</p>}
           <DetailsFields form={form}/>
           <PermissionFields form={form} groups={groups}/>
           {!isAdminGroupSelected && <DataSetsFields form={form}/>}
