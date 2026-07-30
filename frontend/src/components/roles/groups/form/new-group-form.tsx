@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -19,6 +20,7 @@ export interface NewGroupFormProps {
 }
 
 export function NewGroupForm({ onGroupCreated }: NewGroupFormProps) {
+  const [error, setError] = useState<string | null>(null);
   const form = useForm<NewGroupFormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -27,13 +29,20 @@ export function NewGroupForm({ onGroupCreated }: NewGroupFormProps) {
   });
 
   const handleSubmit = async (values: NewGroupFormSchema) => {
-    await api.groups().createGroup(values.name);
+    setError(null);
+    const response = await api.groups().createGroup(values.name);
+    if (!response.ok) {
+      const body = await response.json();
+      setError(body.detail ?? "Could not create this group.");
+      return;
+    }
     form.reset();
     onGroupCreated();
   };
 
   return (
     <Form {...form}>
+      {error && <p className="text-sm text-destructive mb-4">{error}</p>}
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <FormField
           control={form.control}

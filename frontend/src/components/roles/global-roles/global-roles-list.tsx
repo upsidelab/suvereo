@@ -12,6 +12,7 @@ const ADMIN_GROUP_NAME = "Admin";
 
 export function GlobalRolesList() {
   const [groups, setGroups] = useState<GroupOption[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setGroups(await api.groups().getGroups());
@@ -22,12 +23,19 @@ export function GlobalRolesList() {
   }, [load]);
 
   const handleDelete = async (group: GroupOption) => {
-    await api.groups().deleteGroup(group.id);
+    setError(null);
+    const response = await api.groups().deleteGroup(group.id);
+    if (!response.ok) {
+      const body = await response.json();
+      setError(body.detail ?? "Could not delete this role.");
+      return;
+    }
     await load();
   };
 
   return (
     <>
+      {error && <p className="text-sm text-destructive mb-4">{error}</p>}
       <div className="flex flex-col items-end mb-4">
         <GlobalRoleModal onSaved={load} />
       </div>

@@ -19,6 +19,7 @@ export function DataSetAccessList({dataSetId}: DataSetAccessListProps) {
   const [availableGroups, setAvailableGroups] = useState<GroupOption[]>([]);
   const [availableRoles, setAvailableRoles] = useState<DatasetRoleOption[]>([]);
   const [usersLoadFailed, setUsersLoadFailed] = useState(false);
+  const [groupsLoadFailed, setGroupsLoadFailed] = useState(false);
   const [rolesLoadFailed, setRolesLoadFailed] = useState(false);
 
   const load = useCallback(async () => {
@@ -37,8 +38,14 @@ export function DataSetAccessList({dataSetId}: DataSetAccessListProps) {
       setUsersLoadFailed(true);
     }
 
-    const systemGroups = await api.groups().getGroups();
-    setAvailableGroups(systemGroups.filter((g) => !assignedGroupIds.has(g.id)));
+    try {
+      const systemGroups = await api.groups().getGroups();
+      setAvailableGroups(systemGroups.filter((g) => !assignedGroupIds.has(g.id)));
+      setGroupsLoadFailed(false);
+    } catch {
+      setAvailableGroups([]);
+      setGroupsLoadFailed(true);
+    }
 
     try {
       const roles = await api.datasetRoles().getDatasetRoles();
@@ -69,6 +76,11 @@ export function DataSetAccessList({dataSetId}: DataSetAccessListProps) {
       {usersLoadFailed &&
         <p className="text-sm text-muted-foreground mb-4">
           Unable to load users — you may need account.manage_users to add individual users; group access still works.
+        </p>
+      }
+      {groupsLoadFailed &&
+        <p className="text-sm text-muted-foreground mb-4">
+          Unable to load groups — group access still works for groups already granted access.
         </p>
       }
       {rolesLoadFailed &&

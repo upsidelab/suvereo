@@ -10,6 +10,9 @@ type GroupMemberResponse = {
 export class GroupsApiClient extends BaseApiClient {
   async getGroups(): Promise<GroupOption[]> {
     const response = await fetch(`${this.apiBase}/api/groups`, this._requestConfiguration());
+    if (!response.ok) {
+      return [];
+    }
     return (await response.json()) as GroupOption[];
   }
 

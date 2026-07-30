@@ -27,6 +27,7 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
   const [open, setOpen] = useState(false);
   const [permissionOptions, setPermissionOptions] = useState<PermissionOption[]>([]);
   const [selectedPermissionIds, setSelectedPermissionIds] = useState<number[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<DatasetRoleFormSchema>({
     resolver: zodResolver(formSchema),
@@ -37,6 +38,7 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
 
   useEffect(() => {
     if (!open) return;
+    setError(null);
     api.permissions().getPermissions("dataset").then(setPermissionOptions);
     if (role) {
       api.datasetRoles().getDatasetRoleDetail(role.id).then((detail) => {
@@ -50,10 +52,14 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
   }, [open, role, form]);
 
   const handleSubmit = async (values: DatasetRoleFormSchema) => {
-    if (role) {
-      await api.datasetRoles().updateDatasetRole(role.id, values.name, selectedPermissionIds);
-    } else {
-      await api.datasetRoles().createDatasetRole(values.name, selectedPermissionIds);
+    setError(null);
+    const response = role
+      ? await api.datasetRoles().updateDatasetRole(role.id, values.name, selectedPermissionIds)
+      : await api.datasetRoles().createDatasetRole(values.name, selectedPermissionIds);
+    if (!response.ok) {
+      const body = await response.json();
+      setError(body.detail ?? "Could not save this role.");
+      return;
     }
     setOpen(false);
     onSaved();
@@ -68,6 +74,7 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
         <DialogHeader>
           <DialogTitle>{role ? `Edit ${role.name}` : "New Dataset Role"}</DialogTitle>
         </DialogHeader>
+        {error && <p className="text-sm text-destructive mb-4">{error}</p>}
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <FormField
