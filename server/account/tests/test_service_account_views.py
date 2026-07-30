@@ -1,11 +1,25 @@
 import pytest
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission
 from django.core.management import call_command
 from django.urls import reverse
+from model_bakery import baker
 from rest_framework import status
+from rest_framework.test import APIClient
 
 from account.authorization import ADMIN_GROUP_NAME, is_application_admin
 from account.models import User
+
+
+def _api_client_with_permission(codename):
+    """Build an APIClient authenticated as a plain (non-Admin-group) user holding the given
+    account-app permission directly, mirroring how a delegable permission would be granted.
+    """
+    actor = baker.make(User, is_service_account=False)
+    actor.user_permissions.add(Permission.objects.get(content_type__app_label="account", codename=codename))
+    actor = User.objects.get(pk=actor.pk)  # avoid a stale permission cache on the in-memory instance
+    client = APIClient()
+    client.force_authenticate(user=actor)
+    return client, actor
 
 
 @pytest.mark.django_db
@@ -88,6 +102,74 @@ class TestServiceAccountViews:
         assert response.data["is_admin"] is False
         assert response.data["group_ids"] == []
         assert response.data["id"] == account_id
+
+
+@pytest.mark.django_db
+class TestGroupIdsPrivilegeEscalationGuard:
+    """Regression tests: `manage_service_accounts` is a delegable permission, so holding it
+    must never be enough to grant a service account Admin-equivalent group membership (the
+    Admin group itself, or any group that grants `manage_users`/`manage_service_accounts`) —
+    only literal Admin-group members may do that.
+    """
+
+    def test_manage_service_accounts_holder_cannot_create_a_service_account_in_admin_group(self):
+        client, _actor = _api_client_with_permission("manage_service_accounts")
+        admin_group_id = Group.objects.get(name=ADMIN_GROUP_NAME).id
+
+        response = client.post(
+            reverse("service_account_list"),
+            {"name": "escalation-bot", "is_active": True, "group_ids": [admin_group_id], "data_set_ids": []},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert not User.objects.filter(email__startswith="escalation-bot@").exists()
+
+    def test_manage_service_accounts_holder_cannot_patch_a_service_account_into_admin_group(self):
+        client, _actor = _api_client_with_permission("manage_service_accounts")
+        account = baker.make(User, is_service_account=True)
+        admin_group_id = Group.objects.get(name=ADMIN_GROUP_NAME).id
+
+        response = client.patch(
+            f"/api/service_accounts/{account.id}",
+            {"name": "target-bot", "is_active": True, "group_ids": [admin_group_id], "data_set_ids": []},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert is_application_admin(User.objects.get(pk=account.pk)) is False
+
+    def test_manage_service_accounts_holder_cannot_assign_a_group_that_grants_manage_service_accounts(self):
+        client, _actor = _api_client_with_permission("manage_service_accounts")
+        sensitive_group = Group.objects.create(name="SA Managers")
+        sensitive_group.permissions.add(
+            Permission.objects.get(content_type__app_label="account", codename="manage_service_accounts")
+        )
+
+        response = client.post(
+            reverse("service_account_list"),
+            {"name": "sneaky-bot", "is_active": True, "group_ids": [sensitive_group.id], "data_set_ids": []},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert not User.objects.filter(email__startswith="sneaky-bot@").exists()
+
+    def test_admin_group_member_can_still_assign_any_group(self, admin_api_client):
+        sensitive_group = Group.objects.create(name="SA Managers")
+        sensitive_group.permissions.add(
+            Permission.objects.get(content_type__app_label="account", codename="manage_service_accounts")
+        )
+
+        response = admin_api_client.post(
+            reverse("service_account_list"),
+            {"name": "trusted-bot", "is_active": True, "group_ids": [sensitive_group.id], "data_set_ids": []},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        account = User.objects.get(id=response.data["id"])
+        assert sensitive_group in account.groups.all()
 
 
 @pytest.mark.django_db

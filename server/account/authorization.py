@@ -1,4 +1,6 @@
 from django.contrib.auth.models import Group
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db.models import Q
 from guardian.shortcuts import assign_perm, remove_perm
 
 ADMIN_GROUP_NAME = "Admin"
@@ -112,3 +114,34 @@ def set_application_admin(user, enabled: bool) -> None:
         user.groups.add(group)
     else:
         user.groups.remove(group)
+
+
+def _admin_equivalent_group_ids() -> set:
+    """IDs of every group whose membership grants Admin-equivalent power.
+
+    That's the ``Admin`` group itself, plus any group holding ``manage_users`` or
+    ``manage_service_accounts`` — holding either permission already lets its holder repeat
+    this same self-escalation by assigning a *different* group through the same code path.
+    """
+    grants_sensitive_permission = Q(
+        permissions__content_type__app_label="account", permissions__codename="manage_users"
+    ) | Q(permissions__content_type__app_label="account", permissions__codename="manage_service_accounts")
+    return set(Group.objects.filter(Q(name=ADMIN_GROUP_NAME) | grants_sensitive_permission).values_list("id", flat=True))
+
+
+def assert_group_ids_assignable(requesting_user, group_ids) -> None:
+    """Raise if `requesting_user` is a non-Admin attempting to assign an Admin-equivalent group.
+
+    Group membership is how ``is_application_admin`` decides admin status, but assigning a
+    ``group_id`` on the User/ServiceAccount write paths is only gated by the delegable
+    ``manage_users``/``manage_service_accounts`` permissions. Without this check, a non-Admin
+    holding either permission could self-promote (or promote a service account) to full
+    application admin by assigning the Admin group directly, or any other group that grants
+    one of those two permissions. Admin-group members (and superusers) may assign any group
+    freely — they already hold full authority.
+    """
+    if is_application_admin(requesting_user):
+        return
+    forbidden_ids = _admin_equivalent_group_ids() & set(group_ids)
+    if forbidden_ids:
+        raise DjangoValidationError("Only an Admin can grant Admin-equivalent group membership.")

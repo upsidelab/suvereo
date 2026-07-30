@@ -1,10 +1,12 @@
 import pytest
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission
+from django.core.exceptions import ValidationError
 from model_bakery import baker
 
 from account.authorization import (
     ADMIN_GROUP_NAME,
     ADMIN_GROUP_PERMISSIONS,
+    assert_group_ids_assignable,
     is_application_admin,
     set_application_admin,
 )
@@ -46,3 +48,46 @@ class TestApplicationAdmin:
         assert user.is_admin is False
         set_application_admin(user, True)
         assert user.is_admin is True
+
+
+@pytest.mark.django_db
+class TestAssertGroupIdsAssignable:
+    def test_admin_may_assign_the_admin_group(self):
+        admin = baker.make(User)
+        set_application_admin(admin, True)
+        admin_group_id = Group.objects.get(name=ADMIN_GROUP_NAME).id
+
+        assert_group_ids_assignable(admin, [admin_group_id])  # does not raise
+
+    def test_non_admin_cannot_assign_the_admin_group(self):
+        non_admin = baker.make(User)
+        admin_group_id = Group.objects.get(name=ADMIN_GROUP_NAME).id
+
+        with pytest.raises(ValidationError):
+            assert_group_ids_assignable(non_admin, [admin_group_id])
+
+    def test_non_admin_cannot_assign_a_group_that_grants_manage_users(self):
+        non_admin = baker.make(User)
+        sensitive_group = Group.objects.create(name="Sensitive")
+        sensitive_group.permissions.add(
+            Permission.objects.get(content_type__app_label="account", codename="manage_users")
+        )
+
+        with pytest.raises(ValidationError):
+            assert_group_ids_assignable(non_admin, [sensitive_group.id])
+
+    def test_non_admin_cannot_assign_a_group_that_grants_manage_service_accounts(self):
+        non_admin = baker.make(User)
+        sensitive_group = Group.objects.create(name="Sensitive")
+        sensitive_group.permissions.add(
+            Permission.objects.get(content_type__app_label="account", codename="manage_service_accounts")
+        )
+
+        with pytest.raises(ValidationError):
+            assert_group_ids_assignable(non_admin, [sensitive_group.id])
+
+    def test_non_admin_can_assign_an_unrelated_group(self):
+        non_admin = baker.make(User)
+        harmless_group = Group.objects.create(name="Marketing")
+
+        assert_group_ids_assignable(non_admin, [harmless_group.id])  # does not raise

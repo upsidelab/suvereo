@@ -73,7 +73,7 @@ class ServiceAccountListView(ListAPIView):
         operation_description="Create a new service account", request_body=CreateUpdateServiceAccountSerializer
     )
     def post(self, request):
-        serializer = CreateUpdateServiceAccountSerializer(data=request.data)
+        serializer = CreateUpdateServiceAccountSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             user = serializer.save()
             token, created = Token.objects.get_or_create(user=user)
@@ -96,7 +96,9 @@ class ServiceAccountView(APIView):
     )
     def patch(self, request, id):
         service_account = User.objects.get(id=id, is_service_account=True)
-        serializer = CreateUpdateServiceAccountSerializer(service_account, data=request.data, partial=True)
+        serializer = CreateUpdateServiceAccountSerializer(
+            service_account, data=request.data, partial=True, context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
         updated_account = serializer.save()
         return Response(ServiceAccountSerializer(updated_account).data, status=status.HTTP_200_OK)

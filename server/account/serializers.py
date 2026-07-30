@@ -7,6 +7,7 @@ from account.authorization import (
     DATASET_PERMISSION_CODENAMES,
     GLOBAL_PERMISSION_CODENAMES,
     PERM_ACCESS_DATASET,
+    assert_group_ids_assignable,
     assign_dataset_role,
     is_application_admin,
     remove_all_dataset_grants,
@@ -39,14 +40,32 @@ class UserSerializer(serializers.Serializer):
         return list(obj.groups.values_list("id", flat=True))
 
 
-class UserCreateSerializer(serializers.Serializer):
+class GroupAssignmentValidationMixin:
+    """Shared `validate_group_ids` guarding every write path that assigns `group_ids`.
+
+    Blocks a non-Admin requesting user from assigning a group that grants Admin-equivalent
+    power (see `account.authorization.assert_group_ids_assignable`). Requires the request in
+    `self.context["request"]` — DRF's generic views supply this automatically via
+    `get_serializer()`; call sites that instantiate the serializer directly must pass
+    `context={"request": request}` explicitly, or the check is skipped (trusted, requestless
+    contexts such as management commands).
+    """
+
+    def validate_group_ids(self, value):
+        request = self.context.get("request")
+        if request is not None:
+            assert_group_ids_assignable(request.user, value)
+        return value
+
+
+class UserCreateSerializer(GroupAssignmentValidationMixin, serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
     is_active = serializers.BooleanField()
     group_ids = serializers.ListField(child=serializers.IntegerField())
 
 
-class UserUpdateSerializer(serializers.Serializer):
+class UserUpdateSerializer(GroupAssignmentValidationMixin, serializers.Serializer):
     email = serializers.EmailField()
     is_active = serializers.BooleanField()
     group_ids = serializers.ListField(child=serializers.IntegerField())
@@ -56,7 +75,7 @@ class UserUpdatePasswordSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
 
-class CreateUpdateServiceAccountSerializer(serializers.Serializer):
+class CreateUpdateServiceAccountSerializer(GroupAssignmentValidationMixin, serializers.Serializer):
     name = serializers.CharField(write_only=True)
     is_active = serializers.BooleanField(default=True)
     group_ids = serializers.ListField(child=serializers.IntegerField(), required=False)

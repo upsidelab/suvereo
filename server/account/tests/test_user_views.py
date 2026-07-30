@@ -1,5 +1,5 @@
 import pytest
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission
 from django.urls import reverse
 from model_bakery import baker
 from rest_framework import status
@@ -7,6 +7,18 @@ from rest_framework.test import APIClient
 
 from account.authorization import ADMIN_GROUP_NAME, is_application_admin
 from account.models import User
+
+
+def _api_client_with_permission(codename):
+    """Build an APIClient authenticated as a plain (non-Admin-group) user holding the given
+    account-app permission directly, mirroring how a delegable permission would be granted.
+    """
+    actor = baker.make(User, is_service_account=False)
+    actor.user_permissions.add(Permission.objects.get(content_type__app_label="account", codename=codename))
+    actor = User.objects.get(pk=actor.pk)  # avoid a stale permission cache on the in-memory instance
+    client = APIClient()
+    client.force_authenticate(user=actor)
+    return client, actor
 
 
 @pytest.mark.django_db
@@ -89,6 +101,78 @@ class TestUserUpdateView:
         assert response.data["id"] == user.id
         assert response.data["is_admin"] is True
         assert response.data["group_ids"] == [admin_group_id]
+
+
+@pytest.mark.django_db
+class TestGroupIdsPrivilegeEscalationGuard:
+    """Regression tests: `manage_users` is a delegable permission, so holding it must never be
+    enough to grant Admin-equivalent group membership (the Admin group itself, or any group
+    that grants `manage_users`/`manage_service_accounts`) — only literal Admin-group members
+    may do that. See account.authorization.assert_group_ids_assignable.
+    """
+
+    def test_manage_users_holder_cannot_self_promote_via_group_ids(self):
+        client, actor = _api_client_with_permission("manage_users")
+        admin_group_id = Group.objects.get(name=ADMIN_GROUP_NAME).id
+
+        response = client.patch(
+            reverse("user_details", kwargs={"id": actor.id}),
+            {"email": actor.email, "is_active": True, "group_ids": [admin_group_id]},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert is_application_admin(User.objects.get(pk=actor.pk)) is False
+
+    def test_manage_users_holder_cannot_assign_a_group_that_itself_grants_manage_users(self):
+        client, actor = _api_client_with_permission("manage_users")
+        sensitive_group = Group.objects.create(name="Sensitive")
+        sensitive_group.permissions.add(
+            Permission.objects.get(content_type__app_label="account", codename="manage_users")
+        )
+
+        response = client.patch(
+            reverse("user_details", kwargs={"id": actor.id}),
+            {"email": actor.email, "is_active": True, "group_ids": [sensitive_group.id]},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert sensitive_group not in User.objects.get(pk=actor.pk).groups.all()
+
+    def test_manage_users_holder_cannot_create_a_user_in_the_admin_group(self):
+        client, _actor = _api_client_with_permission("manage_users")
+        admin_group_id = Group.objects.get(name=ADMIN_GROUP_NAME).id
+
+        response = client.post(
+            reverse("user_list"),
+            {
+                "email": "escalated@example.com",
+                "password": "s3cret!",
+                "is_active": True,
+                "group_ids": [admin_group_id],
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert not User.objects.filter(email="escalated@example.com").exists()
+
+    def test_admin_group_member_can_still_assign_any_group(self, admin_api_client):
+        target = baker.make(User, is_service_account=False)
+        sensitive_group = Group.objects.create(name="Sensitive")
+        sensitive_group.permissions.add(
+            Permission.objects.get(content_type__app_label="account", codename="manage_users")
+        )
+
+        response = admin_api_client.patch(
+            reverse("user_details", kwargs={"id": target.id}),
+            {"email": target.email, "is_active": True, "group_ids": [sensitive_group.id]},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert sensitive_group in User.objects.get(pk=target.pk).groups.all()
 
 
 @pytest.mark.django_db
