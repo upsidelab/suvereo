@@ -259,12 +259,6 @@ def _resolve_dataset_role(codenames):
 
 
 class DataSetAccessListView(GenericAPIView):
-    # Admin-only, not just PERM_MANAGE_DATASETS: granting dataset access is meta-level
-    # authority over who can reach a dataset at all, the same class of capability that
-    # every other role/group-composition endpoint in this app gates on literal Admin-group
-    # membership rather than a delegable permission (see IsApplicationAdmin's docstring).
-    # A role composed with only catalog.manage_datasets must not be able to self-grant
-    # editor access to every dataset in the system through this endpoint.
     permission_classes = [IsApplicationAdmin]
 
     @swagger_auto_schema(operation_description="List access grants for a data set")
