@@ -13,7 +13,7 @@ from enthusiast_common.repositories import (
 from enthusiast_common.structures import LLMFile
 from guardian.shortcuts import get_objects_for_user
 
-from account.authorization import PERM_ACCESS_DATASET
+from account.authorization import PERM_VIEW_DATASET
 from account.models import User
 from agent.models import Conversation, Message
 from agent.models.agent import Agent
@@ -64,7 +64,7 @@ class DjangoUserRepository(
 ):
     def get_user_dataset(self, user_id: int, data_set_id: int) -> DataSet:
         user = self.model.objects.get(pk=user_id)
-        return get_objects_for_user(user, PERM_ACCESS_DATASET).get(pk=data_set_id)
+        return get_objects_for_user(user, PERM_VIEW_DATASET).get(pk=data_set_id)
 
 
 class DjangoMessageRepository(BaseDjangoRepository[Message], BaseMessageRepository[Message]):

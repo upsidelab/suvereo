@@ -8,7 +8,7 @@ ADMIN_GROUP_NAME = "Admin"
 PERM_MANAGE_USERS = "account.manage_users"
 PERM_MANAGE_SERVICE_ACCOUNTS = "account.manage_service_accounts"
 PERM_MANAGE_DATASETS = "catalog.manage_datasets"
-PERM_ACCESS_ALL_DATASETS = "catalog.access_all_datasets"
+PERM_VIEW_ALL_DATASETS = "catalog.view_all_datasets"
 PERM_CONFIGURE_MODELS = "catalog.configure_models"
 PERM_MANAGE_AGENTS = "catalog.manage_agents"
 
@@ -16,14 +16,14 @@ ADMIN_GROUP_PERMISSIONS = [
     PERM_MANAGE_USERS,
     PERM_MANAGE_SERVICE_ACCOUNTS,
     PERM_MANAGE_DATASETS,
-    PERM_ACCESS_ALL_DATASETS,
+    PERM_VIEW_ALL_DATASETS,
     PERM_CONFIGURE_MODELS,
     PERM_MANAGE_AGENTS,
 ]
 
-PERM_ACCESS_DATASET = "catalog.access_dataset"
+PERM_VIEW_DATASET = "catalog.view_dataset"
 
-DATASET_PERMISSION_CODENAMES = [PERM_ACCESS_DATASET, PERM_MANAGE_AGENTS]
+DATASET_PERMISSION_CODENAMES = [PERM_VIEW_DATASET, PERM_MANAGE_AGENTS]
 
 GLOBAL_PERMISSION_CODENAMES = ADMIN_GROUP_PERMISSIONS
 """Same list as ADMIN_GROUP_PERMISSIONS today (Admin holds every global permission), but
@@ -87,7 +87,7 @@ def has_dataset_perm(user, codename: str, dataset) -> bool:
     The only sanctioned way to check a dataset-scoped capability — a bare
     ``user.has_perm(codename)`` silently excludes every per-dataset grantee.
     Must only be called with a codename whose Permission.content_type is
-    DataSet (today: access_dataset or manage_agents) — never a permission
+    DataSet (today: view_dataset or manage_agents) — never a permission
     defined on a different model, or guardian raises WrongAppError.
     """
     return user.has_perm(codename) or user.has_perm(codename, dataset)

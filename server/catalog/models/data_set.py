@@ -16,10 +16,11 @@ class DataSet(models.Model):
             "List of various data sets. One data set may be the whole company's content such as blog "
             "posts, or some part of it: a data set may be represent a brand or department."
         )
+        default_permissions = ("add", "change", "delete")
         permissions = [
             ("manage_datasets", "Can manage data sets"),
-            ("access_all_datasets", "Can access all data sets"),
+            ("view_all_datasets", "Can view all data sets"),
             ("configure_models", "Can read model provider configuration"),
-            ("access_dataset", "Can access this data set"),
+            ("view_dataset", "Can view this data set"),
             ("manage_agents", "Can manage agents in this data set"),
         ]

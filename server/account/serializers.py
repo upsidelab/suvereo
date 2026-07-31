@@ -6,7 +6,7 @@ from account.authorization import (
     ADMIN_GROUP_NAME,
     DATASET_PERMISSION_CODENAMES,
     GLOBAL_PERMISSION_CODENAMES,
-    PERM_ACCESS_DATASET,
+    PERM_VIEW_DATASET,
     assert_group_ids_assignable,
     assign_dataset_role,
     is_application_admin,
@@ -110,7 +110,7 @@ class CreateUpdateServiceAccountSerializer(GroupAssignmentValidationMixin, seria
         is (re)granted the editor role, preserving the full-access semantics of the retired
         `DataSet.users` M2M, consistent with how the data migration grants regular users.
         """
-        for dataset in get_objects_for_user(service_account, PERM_ACCESS_DATASET):
+        for dataset in get_objects_for_user(service_account, PERM_VIEW_DATASET):
             remove_all_dataset_grants(service_account, dataset)
         for dataset in DataSet.objects.filter(pk__in=data_set_ids):
             assign_dataset_role(service_account, dataset, "editor")
@@ -126,7 +126,7 @@ class ServiceAccountSerializer(serializers.ModelSerializer):
         fields = ["id", "email", "date_joined", "data_set_ids", "is_active", "is_admin", "group_ids"]
 
     def get_data_set_ids(self, obj):
-        return list(get_objects_for_user(obj, PERM_ACCESS_DATASET).values_list("id", flat=True))
+        return list(get_objects_for_user(obj, PERM_VIEW_DATASET).values_list("id", flat=True))
 
     def get_group_ids(self, obj):
         return list(obj.groups.values_list("id", flat=True))

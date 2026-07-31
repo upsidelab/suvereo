@@ -10,10 +10,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from account.authorization import (
-    PERM_ACCESS_ALL_DATASETS,
-    PERM_ACCESS_DATASET,
     PERM_CONFIGURE_MODELS,
     PERM_MANAGE_DATASETS,
+    PERM_VIEW_ALL_DATASETS,
+    PERM_VIEW_DATASET,
     assign_dataset_role,
     remove_all_dataset_grants,
 )
@@ -47,10 +47,10 @@ class DataSetListView(ListCreateAPIView):
         return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
-        if self.request.user.has_perm(PERM_ACCESS_ALL_DATASETS):
+        if self.request.user.has_perm(PERM_VIEW_ALL_DATASETS):
             return DataSet.objects.all()
 
-        return get_objects_for_user(self.request.user, PERM_ACCESS_DATASET)
+        return get_objects_for_user(self.request.user, PERM_VIEW_DATASET)
 
     @swagger_auto_schema(operation_description="Create a new data set", request_body=DataSetCreateSerializer)
     def post(self, request, *args, **kwargs):
@@ -243,7 +243,7 @@ def _resolve_dataset_role(codenames):
     """Return the DatasetRole name whose full permission set is covered by `codenames`, or None.
 
     `codenames` comes from guardian's `get_users_with_perms`/`get_groups_with_perms`
-    (`attach_perms=True`), which report bare codenames (e.g. ``"access_dataset"``).
+    (`attach_perms=True`), which report bare codenames (e.g. ``"view_dataset"``).
     """
     from account.models import DatasetRole
 

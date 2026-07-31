@@ -2,7 +2,7 @@ from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser, Permission
 from django.db import models
 
-from account.authorization import PERM_ACCESS_ALL_DATASETS, PERM_ACCESS_DATASET, has_dataset_perm, is_application_admin
+from account.authorization import PERM_VIEW_ALL_DATASETS, PERM_VIEW_DATASET, has_dataset_perm, is_application_admin
 
 
 class UserManager(BaseUserManager):
@@ -59,8 +59,8 @@ class User(AbstractUser):
         return self.email
 
     def has_dataset_access(self, dataset):
-        """True when the user holds catalog.access_all_datasets or a role on this dataset."""
-        return self.has_perm(PERM_ACCESS_ALL_DATASETS) or has_dataset_perm(self, PERM_ACCESS_DATASET, dataset)
+        """True when the user holds catalog.view_all_datasets or a role on this dataset."""
+        return self.has_perm(PERM_VIEW_ALL_DATASETS) or has_dataset_perm(self, PERM_VIEW_DATASET, dataset)
 
 
 class DatasetRole(models.Model):
