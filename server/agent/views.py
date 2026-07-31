@@ -15,7 +15,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from utils.functions import get_model_descriptor_from_class_field
 
-from account.authorization import PERM_MANAGE_AGENTS, has_dataset_perm
+from account.authorization import PERM_MANAGE_AGENTS, PERM_VIEW_ALL_CONVERSATIONS, has_dataset_perm
 from agent.conversation import ConversationManager
 from agent.core.registries.agents.agent_registry import AgentRegistry
 from agent.core.registries.language_models import LanguageModelRegistry
@@ -87,16 +87,16 @@ class ConversationView(APIView):
         responses={200: ConversationContentSerializer()},
     )
     def get(self, request, conversation_id):
-        conversation = get_object_or_404(
-            Conversation.objects.select_related("agent").prefetch_related(
-                Prefetch(
-                    "messages",
-                    queryset=Message.objects.exclude(type__in=Message.internal_message_types()).order_by("id"),
-                )
-            ),
-            id=conversation_id,
-            user=request.user,
+        base_queryset = Conversation.objects.select_related("agent").prefetch_related(
+            Prefetch(
+                "messages",
+                queryset=Message.objects.exclude(type__in=Message.internal_message_types()).order_by("id"),
+            )
         )
+        if request.user.has_perm(PERM_VIEW_ALL_CONVERSATIONS):
+            conversation = get_object_or_404(base_queryset, id=conversation_id)
+        else:
+            conversation = get_object_or_404(base_queryset, id=conversation_id, user=request.user)
         serializer = ConversationContentSerializer(conversation)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -170,7 +170,10 @@ class ConversationListView(ListAPIView):
         data_set_id = self.request.query_params.get("data_set_id")
         agent_id = self.request.query_params.get("agent_id")
 
-        qs = Conversation.objects.filter(user=user).exclude(agentic_execution__isnull=False)
+        if user.has_perm(PERM_VIEW_ALL_CONVERSATIONS):
+            qs = Conversation.objects.exclude(agentic_execution__isnull=False)
+        else:
+            qs = Conversation.objects.filter(user=user).exclude(agentic_execution__isnull=False)
 
         if data_set_id:
             qs = qs.filter(data_set_id=data_set_id)

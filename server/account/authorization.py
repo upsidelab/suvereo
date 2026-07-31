@@ -13,6 +13,9 @@ PERM_MANAGE_DATASETS = "catalog.manage_datasets"
 PERM_VIEW_ALL_DATASETS = "catalog.view_all_datasets"
 PERM_CONFIGURE_MODELS = "catalog.configure_models"
 PERM_MANAGE_AGENTS = "catalog.manage_agents"
+PERM_VIEW_INTEGRATIONS = "catalog.view_integrations"
+PERM_MANAGE_INTEGRATIONS = "catalog.manage_integrations"
+PERM_VIEW_ALL_CONVERSATIONS = "agent.view_all_conversations"
 
 ADMIN_GROUP_PERMISSIONS = [
     PERM_MANAGE_USERS,
@@ -23,12 +26,11 @@ ADMIN_GROUP_PERMISSIONS = [
     PERM_VIEW_ALL_DATASETS,
     PERM_CONFIGURE_MODELS,
     PERM_MANAGE_AGENTS,
+    PERM_VIEW_ALL_CONVERSATIONS,
 ]
 
 PERM_VIEW_DATASET = "catalog.view_dataset"
 PERM_CONVERSE = "catalog.converse"
-PERM_VIEW_INTEGRATIONS = "catalog.view_integrations"
-PERM_MANAGE_INTEGRATIONS = "catalog.manage_integrations"
 
 DATASET_PERMISSION_CODENAMES = [
     PERM_VIEW_DATASET,
