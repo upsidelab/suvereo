@@ -23,4 +23,5 @@ class DataSet(models.Model):
             ("configure_models", "Can read model provider configuration"),
             ("view_dataset", "Can view this data set"),
             ("manage_agents", "Can manage agents in this data set"),
+            ("converse", "Can converse with this data set's agents"),
         ]

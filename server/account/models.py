@@ -2,7 +2,13 @@ from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser, Permission
 from django.db import models
 
-from account.authorization import PERM_VIEW_ALL_DATASETS, PERM_VIEW_DATASET, has_dataset_perm, is_application_admin
+from account.authorization import (
+    PERM_CONVERSE,
+    PERM_VIEW_ALL_DATASETS,
+    PERM_VIEW_DATASET,
+    has_dataset_perm,
+    is_application_admin,
+)
 
 
 class UserManager(BaseUserManager):
@@ -61,6 +67,14 @@ class User(AbstractUser):
     def has_dataset_access(self, dataset):
         """True when the user holds catalog.view_all_datasets or a role on this dataset."""
         return self.has_perm(PERM_VIEW_ALL_DATASETS) or has_dataset_perm(self, PERM_VIEW_DATASET, dataset)
+
+    def can_converse(self, dataset):
+        """True when the user holds catalog.converse on this dataset (globally or per-object).
+
+        Distinct from has_dataset_access: view_dataset lets you see a dataset exists/browse
+        its catalog content, converse is specifically the ability to chat with its agents.
+        """
+        return has_dataset_perm(self, PERM_CONVERSE, dataset)
 
 
 class DatasetRole(models.Model):
