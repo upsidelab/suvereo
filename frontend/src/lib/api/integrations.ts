@@ -13,6 +13,13 @@ export class IntegrationsApiClient extends BaseApiClient {
       `${this.apiBase}/api/data_sets/${dataSetId}/integrations/`,
       this._requestConfiguration()
     );
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new ApiError(`Failed to list integrations: ${response.statusText}`, {
+        data: errorData,
+        status: response.status,
+      });
+    }
     return await response.json() as Integration[];
   }
 

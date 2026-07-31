@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
+import { ApiError } from "@/lib/api-error.ts";
 import { Integration, IntegrationType } from "@/lib/types.ts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table.tsx";
 import { Button } from "@/components/ui/button.tsx";
@@ -38,10 +39,20 @@ export function IntegrationList({ dataSetId }: IntegrationListProps) {
   const [integrationToEdit, setIntegrationToEdit] = useState<Integration | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [integrationToDelete, setIntegrationToDelete] = useState<Integration | null>(null);
+  const [accessDenied, setAccessDenied] = useState(false);
 
   const loadIntegrations = useCallback(async () => {
-    const result = await api.integrations().list(dataSetId);
-    setIntegrations(result);
+    try {
+      const result = await api.integrations().list(dataSetId);
+      setIntegrations(result);
+      setAccessDenied(false);
+    } catch (err) {
+      if (err instanceof ApiError && err.response.status === 403) {
+        setAccessDenied(true);
+      } else {
+        throw err;
+      }
+    }
   }, [dataSetId]);
 
   useEffect(() => {
@@ -102,6 +113,16 @@ export function IntegrationList({ dataSetId }: IntegrationListProps) {
       </DropdownMenuContent>
     </DropdownMenu>
   );
+
+  if (accessDenied) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-lg font-medium text-gray-500">
+          You don't have permission to view this data set's integrations.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

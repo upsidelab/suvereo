@@ -111,7 +111,7 @@ class ConversationView(APIView):
         ),
     )
     def post(self, request, conversation_id):
-        conversation = get_object_or_404(Conversation, id=conversation_id)
+        conversation = get_object_or_404(Conversation, id=conversation_id, user=request.user)
         serializer = AskQuestionSerializer(data=request.data, context={"conversation_id": conversation_id})
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -160,6 +160,15 @@ class ConversationListView(ListAPIView):
                 "data_set_id", openapi.IN_QUERY, description="ID of the data set", type=openapi.TYPE_INTEGER
             ),
             openapi.Parameter("agent_id", openapi.IN_QUERY, description="ID of the agent", type=openapi.TYPE_INTEGER),
+            openapi.Parameter(
+                "all",
+                openapi.IN_QUERY,
+                description=(
+                    'If "true" and the requester holds agent.view_all_conversations, return every '
+                    "user's conversations instead of only the requester's own"
+                ),
+                type=openapi.TYPE_STRING,
+            ),
         ],
     )
     def get(self, request, *args, **kwargs):
@@ -169,8 +178,9 @@ class ConversationListView(ListAPIView):
         user = self.request.user
         data_set_id = self.request.query_params.get("data_set_id")
         agent_id = self.request.query_params.get("agent_id")
+        show_all = self.request.query_params.get("all") == "true"
 
-        if user.has_perm(PERM_VIEW_ALL_CONVERSATIONS):
+        if show_all and user.has_perm(PERM_VIEW_ALL_CONVERSATIONS):
             qs = Conversation.objects.exclude(agentic_execution__isnull=False)
         else:
             qs = Conversation.objects.filter(user=user).exclude(agentic_execution__isnull=False)
