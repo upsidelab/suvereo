@@ -24,4 +24,6 @@ class DataSet(models.Model):
             ("view_dataset", "Can view this data set"),
             ("manage_agents", "Can manage agents in this data set"),
             ("converse", "Can converse with this data set's agents"),
+            ("view_integrations", "Can view this data set's integrations"),
+            ("manage_integrations", "Can manage this data set's integrations"),
         ]
