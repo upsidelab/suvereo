@@ -6,7 +6,7 @@ from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from account.authorization import PERM_MANAGE_SERVICE_ACCOUNTS
+from account.authorization import PERM_MANAGE_SERVICE_ACCOUNTS, PERM_VIEW_SERVICE_ACCOUNTS
 from account.models import User
 from account.permissions import HasRequiredPermission
 from account.serializers import (
@@ -59,9 +59,14 @@ class ResetTokenView(APIView):
 
 class ServiceAccountListView(ListAPIView):
     permission_classes = [HasRequiredPermission]
-    required_permission = PERM_MANAGE_SERVICE_ACCOUNTS
     serializer_class = ServiceAccountSerializer
     queryset = User.objects.filter(is_service_account=True).order_by("-date_joined")
+
+    def get_permissions(self):
+        self.required_permission = (
+            PERM_MANAGE_SERVICE_ACCOUNTS if self.request.method == "POST" else PERM_VIEW_SERVICE_ACCOUNTS
+        )
+        return super().get_permissions()
 
     @swagger_auto_schema(
         operation_description="Get list of service accounts",

@@ -53,7 +53,9 @@ class User(AbstractUser):
     class Meta:
         permissions = [
             ("manage_users", "Can manage human users"),
+            ("view_users", "Can view human users"),
             ("manage_service_accounts", "Can manage service accounts"),
+            ("view_service_accounts", "Can view service accounts"),
         ]
 
     @property

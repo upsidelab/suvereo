@@ -6,7 +6,9 @@ from guardian.shortcuts import assign_perm, remove_perm
 ADMIN_GROUP_NAME = "Admin"
 
 PERM_MANAGE_USERS = "account.manage_users"
+PERM_VIEW_USERS = "account.view_users"
 PERM_MANAGE_SERVICE_ACCOUNTS = "account.manage_service_accounts"
+PERM_VIEW_SERVICE_ACCOUNTS = "account.view_service_accounts"
 PERM_MANAGE_DATASETS = "catalog.manage_datasets"
 PERM_VIEW_ALL_DATASETS = "catalog.view_all_datasets"
 PERM_CONFIGURE_MODELS = "catalog.configure_models"
@@ -14,7 +16,9 @@ PERM_MANAGE_AGENTS = "catalog.manage_agents"
 
 ADMIN_GROUP_PERMISSIONS = [
     PERM_MANAGE_USERS,
+    PERM_VIEW_USERS,
     PERM_MANAGE_SERVICE_ACCOUNTS,
+    PERM_VIEW_SERVICE_ACCOUNTS,
     PERM_MANAGE_DATASETS,
     PERM_VIEW_ALL_DATASETS,
     PERM_CONFIGURE_MODELS,

@@ -4,7 +4,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import ListCreateAPIView, UpdateAPIView
 from rest_framework.response import Response
 
-from account.authorization import PERM_MANAGE_USERS
+from account.authorization import PERM_MANAGE_USERS, PERM_VIEW_USERS
 from account.models import User
 from account.permissions import HasRequiredPermission
 from account.serializers import UserCreateSerializer, UserSerializer, UserUpdatePasswordSerializer, UserUpdateSerializer
@@ -12,7 +12,10 @@ from account.serializers import UserCreateSerializer, UserSerializer, UserUpdate
 
 class UserListView(ListCreateAPIView):
     permission_classes = [HasRequiredPermission]
-    required_permission = PERM_MANAGE_USERS
+
+    def get_permissions(self):
+        self.required_permission = PERM_MANAGE_USERS if self.request.method == "POST" else PERM_VIEW_USERS
+        return super().get_permissions()
 
     def get_serializer_class(self):
         if self.request.method == "POST":
