@@ -799,25 +799,16 @@ class TestConversationView:
         response = api_client.post(url, payload, format="json")
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_admin_can_post_to_any_conversation(self, admin_api_client, url):
+    def test_admin_can_not_post_to_conversation_they_do_not_own(self, admin_api_client, url):
         dataset = baker.make(DataSet)
         agent = baker.make(Agent, deleted_at=None, dataset=dataset)
         conversation = baker.make(Conversation, agent=agent)
         url = reverse("conversation-details", kwargs={"conversation_id": conversation.id})
         payload = {"data_set_id": dataset.id, "question_message": "How are you?", "streaming": False}
 
-        with (
-            patch(
-                "agent.views.respond_to_user_message_task.apply_async",
-                return_value=type("obj", (), {"id": "fake-task-id"}),
-            ) as mock_task,
-            patch("agent.views.LanguageModelRegistry.provider_for_dataset") as mock_provider,
-        ):
-            mock_provider.return_value = type("obj", (), {"STREAMING_AVAILABLE": True})
-            response = admin_api_client.post(url, payload, format="json")
+        response = admin_api_client.post(url, payload, format="json")
 
-        assert response.status_code == status.HTTP_202_ACCEPTED
-        mock_task.assert_called_once()
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_user_can_not_post_to_conversation_with_no_dataset_access(self, api_client, url):
         dataset = baker.make(DataSet)
@@ -828,7 +819,7 @@ class TestConversationView:
 
         response = api_client.post(url, payload, format="json")
 
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 class TestConversationListView:
