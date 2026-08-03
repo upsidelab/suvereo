@@ -1,11 +1,10 @@
 import { Button } from "@/components/ui/button.tsx";
 
-export type RolesTab = "global-roles" | "dataset-roles" | "groups";
+export type RolesTab = "groups" | "dataset-roles";
 
 const TABS: { key: RolesTab; label: string }[] = [
-  { key: "global-roles", label: "Global Roles" },
-  { key: "dataset-roles", label: "Dataset Roles" },
   { key: "groups", label: "Groups" },
+  { key: "dataset-roles", label: "Dataset Roles" },
 ];
 
 export interface RolesTabsProps {

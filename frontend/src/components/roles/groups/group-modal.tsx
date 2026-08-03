@@ -10,26 +10,30 @@ import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { GroupOption, PermissionOption } from "@/lib/types.ts";
 import { PermissionChecklist } from "@/components/roles/permission-checklist.tsx";
+import { GroupMembersPanel } from "@/components/roles/groups/group-members-panel.tsx";
 
 const formSchema = z.object({
   name: z.string().trim().min(1),
 });
-type GlobalRoleFormSchema = z.infer<typeof formSchema>;
+type GroupFormSchema = z.infer<typeof formSchema>;
 
 const api = new ApiClient(authenticationProviderInstance);
 
-export interface GlobalRoleModalProps {
+type Section = "permissions" | "members";
+
+export interface GroupModalProps {
   group?: GroupOption;
   onSaved: () => void;
 }
 
-export function GlobalRoleModal({ group, onSaved }: GlobalRoleModalProps) {
+export function GroupModal({ group, onSaved }: GroupModalProps) {
   const [open, setOpen] = useState(false);
+  const [section, setSection] = useState<Section>("permissions");
   const [permissionOptions, setPermissionOptions] = useState<PermissionOption[]>([]);
   const [selectedPermissionIds, setSelectedPermissionIds] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const form = useForm<GlobalRoleFormSchema>({
+  const form = useForm<GroupFormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: group?.name ?? ""
@@ -39,6 +43,7 @@ export function GlobalRoleModal({ group, onSaved }: GlobalRoleModalProps) {
   useEffect(() => {
     if (!open) return;
     setError(null);
+    setSection("permissions");
     api.permissions().getPermissions("global").then(setPermissionOptions);
     if (group) {
       api.groups().getGroupDetail(group.id).then((detail) => {
@@ -51,14 +56,14 @@ export function GlobalRoleModal({ group, onSaved }: GlobalRoleModalProps) {
     }
   }, [open, group, form]);
 
-  const handleSubmit = async (values: GlobalRoleFormSchema) => {
+  const handleSubmit = async (values: GroupFormSchema) => {
     setError(null);
     const response = group
       ? await api.groups().updateGroup(group.id, values.name, selectedPermissionIds)
       : await api.groups().createGroup(values.name, selectedPermissionIds);
     if (!response.ok) {
       const body = await response.json();
-      setError(body.detail ?? "Could not save this role.");
+      setError(body.detail ?? "Could not save this group.");
       return;
     }
     setOpen(false);
@@ -68,36 +73,57 @@ export function GlobalRoleModal({ group, onSaved }: GlobalRoleModalProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant={group ? "secondary" : "default"}>{group ? "Edit" : "New Role"}</Button>
+        <Button variant={group ? "secondary" : "default"}>{group ? "Edit" : "New Group"}</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{group ? `Edit ${group.name}` : "New Global Role"}</DialogTitle>
+          <DialogTitle>{group ? `Edit ${group.name}` : "New Group"}</DialogTitle>
         </DialogHeader>
         {error && <p className="text-sm text-destructive mb-4">{error}</p>}
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Role name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <PermissionChecklist
-              options={permissionOptions}
-              selectedIds={selectedPermissionIds}
-              onChange={setSelectedPermissionIds}
-            />
-            <Button type="submit">Save</Button>
-          </form>
-        </Form>
+        <div className="flex space-x-2 border-b pb-2 mb-4">
+          <Button
+            type="button"
+            variant={section === "permissions" ? "default" : "ghost"}
+            onClick={() => setSection("permissions")}
+          >
+            Permissions
+          </Button>
+          <Button
+            type="button"
+            variant={section === "members" ? "default" : "ghost"}
+            onClick={() => setSection("members")}
+            disabled={!group}
+            title={group ? undefined : "Save the group first to add members"}
+          >
+            Members
+          </Button>
+        </div>
+        {section === "permissions" && (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Group name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <PermissionChecklist
+                options={permissionOptions}
+                selectedIds={selectedPermissionIds}
+                onChange={setSelectedPermissionIds}
+              />
+              <Button type="submit">Save</Button>
+            </form>
+          </Form>
+        )}
+        {section === "members" && group && <GroupMembersPanel groupId={group.id} />}
       </DialogContent>
     </Dialog>
   );
