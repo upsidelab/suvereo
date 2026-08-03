@@ -89,3 +89,11 @@ class DatasetRole(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class PermissionDescription(models.Model):
+    permission = models.OneToOneField(Permission, on_delete=models.CASCADE, related_name="description_entry")
+    description = models.TextField()
+
+    def __str__(self):
+        return f"{self.permission.codename}: {self.description}"

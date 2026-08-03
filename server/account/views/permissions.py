@@ -39,4 +39,8 @@ class PermissionListView(ListAPIView):
         else:
             return Permission.objects.none()
         bare_codenames = {c.split(".")[-1] for c in codenames}
-        return Permission.objects.filter(codename__in=bare_codenames).select_related("content_type").order_by("codename")
+        return (
+            Permission.objects.filter(codename__in=bare_codenames)
+            .select_related("content_type", "description_entry")
+            .order_by("codename")
+        )
