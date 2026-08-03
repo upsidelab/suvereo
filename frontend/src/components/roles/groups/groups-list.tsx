@@ -2,12 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { ApiClient } from "@/lib/api.ts";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { GroupMember, GroupOption } from "@/lib/types.ts";
 import { GroupModal } from "@/components/roles/groups/group-modal.tsx";
 import { RevokeConfirmDialog } from "@/components/roles/revoke-confirm-dialog.tsx";
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 const ADMIN_GROUP_NAME = "Admin";
 
 export function GroupsList() {

@@ -1,4 +1,5 @@
 from django.core.management.base import BaseCommand
+
 from account.models import AuthToken
 from account.serializers import CreateUpdateServiceAccountSerializer
 

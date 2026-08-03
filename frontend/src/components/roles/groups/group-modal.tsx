@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form.tsx";
 import { ApiClient } from "@/lib/api.ts";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { GroupOption, PermissionOption } from "@/lib/types.ts";
 import { PermissionChecklist } from "@/components/roles/permission-checklist.tsx";
 import { GroupMembersPanel } from "@/components/roles/groups/group-members-panel.tsx";
@@ -17,7 +16,7 @@ const formSchema = z.object({
 });
 type GroupFormSchema = z.infer<typeof formSchema>;
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 type Section = "permissions" | "members";
 

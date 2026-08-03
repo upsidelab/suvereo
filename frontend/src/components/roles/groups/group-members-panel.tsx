@@ -3,10 +3,9 @@ import { Button } from "@/components/ui/button.tsx";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table.tsx";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select.tsx";
 import { ApiClient } from "@/lib/api.ts";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { GroupMember, User } from "@/lib/types.ts";
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 export interface GroupMembersPanelProps {
   groupId: number;

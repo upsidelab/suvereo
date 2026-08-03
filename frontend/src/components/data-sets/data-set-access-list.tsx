@@ -2,13 +2,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button.tsx";
 import { ApiClient } from "@/lib/api.ts";
 import { useCallback, useEffect, useState } from "react";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { AddAccessSelector } from "@/components/data-sets/add-access-selector.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
 import { DataSetAccessGrant, DatasetRoleOption, GroupOption, User } from "@/lib/types.ts";
 import { ApiError } from "@/lib/api-error.ts";
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 export interface DataSetAccessListProps {
   dataSetId: number;

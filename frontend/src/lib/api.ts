@@ -91,15 +91,15 @@ export class ApiClient {
   }
 
   groups(): GroupsApiClient {
-    return new GroupsApiClient(this.apiBase, this.authenticationProvider);
+    return new GroupsApiClient(this.apiBase);
   }
 
   datasetRoles(): DatasetRolesApiClient {
-    return new DatasetRolesApiClient(this.apiBase, this.authenticationProvider);
+    return new DatasetRolesApiClient(this.apiBase);
   }
 
   permissions(): PermissionsApiClient {
-    return new PermissionsApiClient(this.apiBase, this.authenticationProvider);
+    return new PermissionsApiClient(this.apiBase);
   }
 
   conversations(): ConversationsApiClient {

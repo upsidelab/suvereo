@@ -2,12 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { ApiClient } from "@/lib/api.ts";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { DatasetRoleOption } from "@/lib/types.ts";
 import { DatasetRoleModal } from "@/components/roles/dataset-roles/dataset-role-modal.tsx";
 import { RevokeConfirmDialog } from "@/components/roles/revoke-confirm-dialog.tsx";
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 export function DatasetRolesList() {
   const [roles, setRoles] = useState<DatasetRoleOption[]>([]);

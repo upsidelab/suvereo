@@ -3,11 +3,10 @@ import { Switch } from "@/components/ui/switch.tsx";
 import { UseFormReturn } from "react-hook-form";
 import { useEffect, useState } from "react";
 import { ApiClient } from "@/lib/api.ts";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { GroupOption } from "@/lib/types.ts";
 import { GroupSelectionFields } from "@/components/util/group-selection-fields.tsx";
 
-const api = new ApiClient(authenticationProviderInstance);
+const api = new ApiClient();
 
 export interface PermissionFieldsProps {
   form: UseFormReturn<any, any, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
