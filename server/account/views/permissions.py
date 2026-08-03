@@ -1,4 +1,5 @@
 from django.contrib.auth.models import Permission
+from django.db.models import Q
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import ListAPIView
@@ -38,9 +39,16 @@ class PermissionListView(ListAPIView):
             codenames = DATASET_PERMISSION_CODENAMES
         else:
             return Permission.objects.none()
-        bare_codenames = {c.split(".")[-1] for c in codenames}
+        # Match on (app_label, codename) pairs, not bare codename alone -- a bare-codename
+        # match would also return any unrelated permission on a different model that happens
+        # to share the same codename (e.g. a stale/orphaned row left over from an abandoned
+        # Meta.permissions declaration elsewhere).
+        query = Q()
+        for codename in codenames:
+            app_label, bare_codename = codename.split(".", 1)
+            query |= Q(content_type__app_label=app_label, codename=bare_codename)
         return (
-            Permission.objects.filter(codename__in=bare_codenames)
+            Permission.objects.filter(query)
             .select_related("content_type", "description_entry")
             .order_by("codename")
         )
