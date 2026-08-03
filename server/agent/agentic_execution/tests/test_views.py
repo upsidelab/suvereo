@@ -8,6 +8,7 @@ from model_bakery import baker
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from account.authorization import assign_dataset_role
 from account.models import User
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
 from agent.agentic_execution.services import FileUploadNotSupportedError, UnsupportedFileTypeError
@@ -184,6 +185,10 @@ class TestAgenticExecutionDefinitionTypesView:
         return reverse("agentic-execution-definitions", kwargs={"agent_id": agent.pk})
 
     @pytest.fixture(autouse=True)
+    def grant_dataset_access(self, user, dataset):
+        assign_dataset_role(user, dataset, "viewer")
+
+    @pytest.fixture(autouse=True)
     def mock_registry(self):
         with patch(
             "agent.agentic_execution.services.AgenticExecutionDefinitionRegistry.get_by_agent_type",
@@ -231,6 +236,10 @@ class TestStartAgenticExecutionView:
     @pytest.fixture
     def url(self, agent):
         return reverse("agentic-execution-start", kwargs={"agent_id": agent.pk})
+
+    @pytest.fixture(autouse=True)
+    def grant_dataset_access(self, user, dataset):
+        assign_dataset_role(user, dataset, "viewer")
 
     @pytest.fixture(autouse=True)
     def mock_registry(self):

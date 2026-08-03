@@ -451,7 +451,9 @@ class TestAgentDetailsView:
     def url(self, agent_instance):
         return reverse("agent-details", kwargs={"pk": agent_instance.pk})
 
-    def test_get_existing_agent(self, api_client, agent_instance, url):
+    def test_get_existing_agent(self, user, api_client, agent_instance, url):
+        assign_dataset_role(user, agent_instance.dataset, "viewer")
+
         response = api_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
@@ -677,7 +679,9 @@ class TestAgentDetailsView:
         assert response.status_code == status.HTTP_403_FORBIDDEN
         assert Agent.objects.filter(pk=agent_instance.pk).exists()
 
-    def test_get_does_not_require_manage_agents_permission(self, api_client, agent_instance, url):
+    def test_get_does_not_require_manage_agents_permission(self, user, api_client, agent_instance, url):
+        assign_dataset_role(user, agent_instance.dataset, "viewer")
+
         response = api_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK

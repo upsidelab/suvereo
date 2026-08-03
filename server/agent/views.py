@@ -15,7 +15,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from utils.functions import get_model_descriptor_from_class_field
 
-from account.authorization import PERM_MANAGE_AGENTS, PERM_VIEW_ALL_CONVERSATIONS, has_dataset_perm
+from account.authorization import PERM_MANAGE_AGENTS, PERM_VIEW_ALL_CONVERSATIONS, PERM_VIEW_DATASET, has_dataset_perm
 from agent.conversation import ConversationManager
 from agent.core.registries.agents.agent_registry import AgentRegistry
 from agent.core.registries.language_models import LanguageModelRegistry
@@ -327,6 +327,8 @@ class AgentDetailsView(APIView):
     @swagger_auto_schema(operation_description="Get a single configuration by id.", responses={200: AgentSerializer()})
     def get(self, request, pk):
         instance = get_object_or_404(Agent, pk=pk)
+        if not has_dataset_perm(request.user, PERM_VIEW_DATASET, instance.dataset):
+            self.permission_denied(request)
         serializer = AgentSerializer(instance)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

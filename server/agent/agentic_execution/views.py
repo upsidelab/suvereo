@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from account.authorization import PERM_VIEW_ALL_CONVERSATIONS
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
 from agent.agentic_execution.services import (
     AgenticExecutionService,
@@ -40,6 +41,8 @@ class AgenticExecutionDefinitionTypesView(APIView):
             agent = Agent.objects.get(pk=agent_id)
         except Agent.DoesNotExist:
             return Response({"detail": "Agent not found."}, status=status.HTTP_404_NOT_FOUND)
+        if not request.user.can_converse(agent.dataset):
+            return Response({"detail": "No dataset access."}, status=status.HTTP_403_FORBIDDEN)
 
         execution_classes = AgenticExecutionService().get_execution_types(agent)
         data = [
@@ -74,6 +77,8 @@ class StartAgenticExecutionView(APIView):
             agent = Agent.objects.get(pk=agent_id)
         except Agent.DoesNotExist:
             return Response({"detail": "Agent not found."}, status=status.HTTP_404_NOT_FOUND)
+        if not request.user.can_converse(agent.dataset):
+            return Response({"detail": "No dataset access."}, status=status.HTTP_403_FORBIDDEN)
 
         execution_key = request.data.get("execution_key", "")
         try:
@@ -137,7 +142,9 @@ class AgenticExecutionListView(ListAPIView):
         return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
-        qs = AgenticExecution.objects.select_related("agent").filter(conversation__user=self.request.user)
+        qs = AgenticExecution.objects.select_related("agent")
+        if not self.request.user.has_perm(PERM_VIEW_ALL_CONVERSATIONS):
+            qs = qs.filter(conversation__user=self.request.user)
         dataset_id = self.request.query_params.get("dataset_id")
         if dataset_id:
             qs = qs.filter(agent__dataset_id=dataset_id)
@@ -167,6 +174,7 @@ class AgenticExecutionDetailView(RetrieveAPIView):
         return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
-        return AgenticExecution.objects.select_related("agent", "conversation").filter(
-            conversation__user=self.request.user
-        )
+        qs = AgenticExecution.objects.select_related("agent", "conversation")
+        if not self.request.user.has_perm(PERM_VIEW_ALL_CONVERSATIONS):
+            qs = qs.filter(conversation__user=self.request.user)
+        return qs
