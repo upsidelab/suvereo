@@ -102,6 +102,7 @@ export type PermissionOption = {
   id: number;
   codename: string;
   name: string;
+  description: string;
 };
 
 export type GroupDetail = {

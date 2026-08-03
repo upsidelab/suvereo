@@ -5,6 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area.tsx";
 export interface CheckboxListOption {
   id: number;
   label: string;
+  description?: string;
 }
 
 export interface CheckboxListInputProps {
@@ -23,15 +24,19 @@ export function CheckboxListInput({ options, selectedIds, onChange }: CheckboxLi
           const checked = selectedIds.includes(option.id);
           const checkboxId = `${instanceId}-${option.id}`;
           return (
-            <div key={option.id} className="flex flex-row items-center space-x-3 space-y-0">
+            <div key={option.id} className="flex flex-row items-start space-x-3 space-y-0">
               <Checkbox
                 id={checkboxId}
                 checked={checked}
                 onCheckedChange={(value) => {
                   onChange(value ? [...selectedIds, option.id] : selectedIds.filter((id) => id !== option.id));
                 }}
+                className="mt-0.5"
               />
-              <label htmlFor={checkboxId} className="text-sm font-normal">{option.label}</label>
+              <div>
+                <label htmlFor={checkboxId} className="text-sm font-normal">{option.label}</label>
+                {option.description && <p className="text-xs text-muted-foreground">{option.description}</p>}
+              </div>
             </div>
           );
         })}

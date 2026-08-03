@@ -47,7 +47,7 @@ export function PermissionChecklist({ options, selectedIds, onChange }: Permissi
 
   return (
     <CheckboxListInput
-      options={options.map((option) => ({ id: option.id, label: option.name }))}
+      options={options.map((option) => ({ id: option.id, label: option.name, description: option.description }))}
       selectedIds={selectedIds}
       onChange={handleChange}
     />
