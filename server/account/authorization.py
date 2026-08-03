@@ -17,6 +17,11 @@ PERM_VIEW_INTEGRATIONS = "catalog.view_integrations"
 PERM_MANAGE_INTEGRATIONS = "catalog.manage_integrations"
 PERM_VIEW_ALL_CONVERSATIONS = "agent.view_all_conversations"
 
+PERM_CONVERSE_ALL_DATASETS = "catalog.converse_all_datasets"
+PERM_MANAGE_ALL_AGENTS = "catalog.manage_all_agents"
+PERM_VIEW_ALL_INTEGRATIONS = "catalog.view_all_integrations"
+PERM_MANAGE_ALL_INTEGRATIONS = "catalog.manage_all_integrations"
+
 ADMIN_GROUP_PERMISSIONS = [
     PERM_MANAGE_USERS,
     PERM_VIEW_USERS,
@@ -26,12 +31,11 @@ ADMIN_GROUP_PERMISSIONS = [
     PERM_VIEW_ALL_DATASETS,
     PERM_CONFIGURE_MODELS,
     PERM_VIEW_ALL_CONVERSATIONS,
+    PERM_CONVERSE_ALL_DATASETS,
+    PERM_MANAGE_ALL_AGENTS,
+    PERM_VIEW_ALL_INTEGRATIONS,
+    PERM_MANAGE_ALL_INTEGRATIONS,
 ]
-"""catalog.manage_agents is deliberately absent here: it's dataset-scoped-only, like
-converse/view_integrations/manage_integrations, composable only via a DatasetRole -- never
-via the global composer, even though Admin holds it globally too (granted directly to the
-Admin group in catalog/migrations/0015_dataset_permissions_and_access_grants.py, independent
-of this list)."""
 
 PERM_VIEW_DATASET = "catalog.view_dataset"
 PERM_CONVERSE = "catalog.converse"
@@ -43,6 +47,17 @@ DATASET_PERMISSION_CODENAMES = [
     PERM_VIEW_INTEGRATIONS,
     PERM_MANAGE_INTEGRATIONS,
 ]
+
+DATASET_PERMISSION_GLOBAL_COUNTERPART = {
+    PERM_VIEW_DATASET: PERM_VIEW_ALL_DATASETS,
+    PERM_MANAGE_AGENTS: PERM_MANAGE_ALL_AGENTS,
+    PERM_CONVERSE: PERM_CONVERSE_ALL_DATASETS,
+    PERM_VIEW_INTEGRATIONS: PERM_VIEW_ALL_INTEGRATIONS,
+    PERM_MANAGE_INTEGRATIONS: PERM_MANAGE_ALL_INTEGRATIONS,
+}
+"""Every dataset-scoped permission has a global "_all_datasets"-style counterpart, mirroring
+catalog.view_dataset/catalog.view_all_datasets -- checked by has_dataset_perm below, so every
+existing call site benefits automatically without touching each one individually."""
 
 GLOBAL_PERMISSION_CODENAMES = ADMIN_GROUP_PERMISSIONS
 """Same list as ADMIN_GROUP_PERMISSIONS today (Admin holds every global permission), but
@@ -101,14 +116,19 @@ def count_datasets_using_role(role_name: str) -> int:
 
 
 def has_dataset_perm(user, codename: str, dataset) -> bool:
-    """True if user holds `codename` globally, or scoped to this dataset.
+    """True if user holds `codename`'s global "_all_datasets" counterpart (if it has one, see
+    DATASET_PERMISSION_GLOBAL_COUNTERPART), holds `codename` itself globally, or holds it
+    scoped to this dataset.
 
     The only sanctioned way to check a dataset-scoped capability — a bare
     ``user.has_perm(codename)`` silently excludes every per-dataset grantee.
     Must only be called with a codename whose Permission.content_type is
-    DataSet (today: view_dataset or manage_agents) — never a permission
-    defined on a different model, or guardian raises WrongAppError.
+    DataSet — never a permission defined on a different model, or guardian
+    raises WrongAppError.
     """
+    global_counterpart = DATASET_PERMISSION_GLOBAL_COUNTERPART.get(codename)
+    if global_counterpart and user.has_perm(global_counterpart):
+        return True
     return user.has_perm(codename) or user.has_perm(codename, dataset)
 
 

@@ -862,6 +862,7 @@ class TestConversationListView:
         response = api_client.post(url, payload, format="json")
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert not Conversation.objects.filter(agent=agent).exists()
 
     def test_admin_can_create_conversation_with_any_dataset(self, admin_api_client, url):
         dataset = baker.make(DataSet)

@@ -198,17 +198,17 @@ class ConversationListView(ListAPIView):
         input_serializer = ConversationCreationSerializer(data=request.data)
         if not input_serializer.is_valid():
             return Response(input_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        agent_id = input_serializer.validated_data.get("agent_id")
         try:
-            conversation = manager.create_conversation(
-                user_id=request.user.id,
-                agent_id=input_serializer.validated_data.get("agent_id"),
-            )
+            agent = Agent.objects.get(id=agent_id)
         except Agent.DoesNotExist:
             raise NotFound("Agent not found.")
-
-        conversation = Conversation.objects.select_related("agent").prefetch_related("messages").get(pk=conversation.pk)
-        if not request.user.can_converse(conversation.data_set):
+        if not request.user.can_converse(agent.dataset):
             return Response({"detail": "No dataset access."}, status=status.HTTP_403_FORBIDDEN)
+
+        conversation = manager.create_conversation(user_id=request.user.id, agent_id=agent_id)
+        conversation = Conversation.objects.select_related("agent").prefetch_related("messages").get(pk=conversation.pk)
         serializer = ConversationContentSerializer(conversation)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 

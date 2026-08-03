@@ -16,6 +16,8 @@ const MANAGE_IMPLIES_VIEW: Record<string, string> = {
   "catalog.manage_datasets": "catalog.view_all_datasets",
   "catalog.manage_agents": "catalog.view_dataset",
   "catalog.manage_integrations": "catalog.view_integrations",
+  "catalog.manage_all_agents": "catalog.view_all_datasets",
+  "catalog.manage_all_integrations": "catalog.view_all_integrations",
 };
 
 export function PermissionChecklist({ options, selectedIds, onChange }: PermissionChecklistProps) {
