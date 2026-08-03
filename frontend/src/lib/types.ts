@@ -40,6 +40,7 @@ export type DataSet = {
   embeddingProvider: string;
   embeddingModel: string;
   embeddingVectorSize: number;
+  permissions: string[];
 }
 
 export type Product = {

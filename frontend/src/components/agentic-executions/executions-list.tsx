@@ -23,7 +23,9 @@ const STATUS_LABELS: Record<AgenticExecution["status"], string> = {
 };
 
 export function ExecutionsList() {
-  const { availableAgents, dataSetId } = useApplicationContext()!;
+  const { availableAgents, dataSetId, dataSets } = useApplicationContext()!;
+  const currentDataSet = dataSets.find(ds => ds.id === dataSetId);
+  const canConverse = !!currentDataSet?.permissions.includes("catalog.converse");
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -96,9 +98,11 @@ export function ExecutionsList() {
           </>
         )}
 
-        <Button className="ml-auto shrink-0" onClick={() => setModalOpen(true)}>
-          <Plus className="h-4 w-4" />New execution
-        </Button>
+        {canConverse && (
+          <Button className="ml-auto shrink-0" onClick={() => setModalOpen(true)}>
+            <Plus className="h-4 w-4" />New execution
+          </Button>
+        )}
       </div>
 
       <PaginatedTable

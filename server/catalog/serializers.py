@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from account.authorization import DATASET_PERMISSION_CODENAMES, has_dataset_perm
 from agent.core.registries.embeddings.embedding_provider_registry import EmbeddingProviderRegistry
 
 from .models import DataSet, Integration
@@ -14,14 +15,26 @@ DATASET_FIELDS = [
     "embedding_vector_dimensions",
     "embedding_chunk_size",
     "embedding_chunk_overlap",
+    "permissions",
 ]
 
 
 class DataSetSerializer(serializers.ModelSerializer):
+    permissions = serializers.SerializerMethodField()
+
     class Meta:
         model = DataSet
         fields = DATASET_FIELDS
-        read_only_fields = ["id"]
+        read_only_fields = ["id", "permissions"]
+
+    def get_permissions(self, obj):
+        """The subset of DATASET_PERMISSION_CODENAMES the requesting user holds on this
+        specific dataset -- lets the frontend show/hide dataset-scoped manage controls
+        (Agents, Integrations) per-permission instead of relying solely on a backend 403."""
+        request = self.context.get("request")
+        if request is None or not request.user.is_authenticated:
+            return []
+        return [codename for codename in DATASET_PERMISSION_CODENAMES if has_dataset_perm(request.user, codename, obj)]
 
 
 class DataSetCreateSerializer(DataSetSerializer):

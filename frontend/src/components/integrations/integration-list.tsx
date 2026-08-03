@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
+import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { ApiError } from "@/lib/api-error.ts";
 import { Integration, IntegrationType } from "@/lib/types.ts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table.tsx";
@@ -32,6 +33,9 @@ interface IntegrationListProps {
 }
 
 export function IntegrationList({ dataSetId }: IntegrationListProps) {
+  const { dataSets } = useApplicationContext()!;
+  const currentDataSet = dataSets.find(ds => ds.id === dataSetId);
+  const canManageIntegrations = !!currentDataSet?.permissions.includes("catalog.manage_integrations");
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [integrationTypes, setIntegrationTypes] = useState<IntegrationType[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -126,7 +130,7 @@ export function IntegrationList({ dataSetId }: IntegrationListProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">{addIntegrationButton}</div>
+      {canManageIntegrations && <div className="flex justify-end">{addIntegrationButton}</div>}
 
       {integrations.length > 0 ? (
         <Table>
@@ -134,7 +138,7 @@ export function IntegrationList({ dataSetId }: IntegrationListProps) {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Type</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              {canManageIntegrations && <TableHead className="text-right">Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -144,38 +148,40 @@ export function IntegrationList({ dataSetId }: IntegrationListProps) {
                 <TableCell>
                   <IntegrationTypeBadge typeName={integration.integration_type_name} />
                 </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end space-x-2">
-                    {integration.configurable && (
+                {canManageIntegrations && (
+                  <TableCell className="text-right">
+                    <div className="flex justify-end space-x-2">
+                      {integration.configurable && (
+                        <ButtonWithTooltip
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(integration)}
+                          tooltip="Edit configuration"
+                        >
+                          <Settings className="h-4 w-4" />
+                        </ButtonWithTooltip>
+                      )}
+                      {integration.syncable && (
+                        <ButtonWithTooltip
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleSync(integration)}
+                          tooltip="Synchronize data"
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                        </ButtonWithTooltip>
+                      )}
                       <ButtonWithTooltip
                         variant="outline"
                         size="sm"
-                        onClick={() => handleEdit(integration)}
-                        tooltip="Edit configuration"
+                        onClick={() => handleDeleteClick(integration)}
+                        tooltip="Delete"
                       >
-                        <Settings className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4" />
                       </ButtonWithTooltip>
-                    )}
-                    {integration.syncable && (
-                      <ButtonWithTooltip
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleSync(integration)}
-                        tooltip="Synchronize data"
-                      >
-                        <RefreshCw className="h-4 w-4" />
-                      </ButtonWithTooltip>
-                    )}
-                    <ButtonWithTooltip
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteClick(integration)}
-                      tooltip="Delete"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </ButtonWithTooltip>
-                  </div>
-                </TableCell>
+                    </div>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>
@@ -186,7 +192,7 @@ export function IntegrationList({ dataSetId }: IntegrationListProps) {
             <p className="text-lg font-medium">No integrations configured</p>
             <p className="text-sm">Add an integration to start importing data</p>
           </div>
-          {addIntegrationButton}
+          {canManageIntegrations && addIntegrationButton}
         </div>
       )}
 

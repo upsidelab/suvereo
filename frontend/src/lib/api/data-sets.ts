@@ -138,6 +138,7 @@ export class DataSetsApiClient extends BaseApiClient {
       embeddingProvider: data.embedding_provider,
       embeddingModel: data.embedding_model,
       embeddingVectorSize: data.embedding_vector_dimensions,
+      permissions: data.permissions,
     } as DataSet;
   }
 

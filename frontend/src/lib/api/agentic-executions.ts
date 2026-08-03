@@ -9,16 +9,37 @@ export class AgenticExecutionsApiClient extends BaseApiClient {
     if (filters?.agentId) params.set("agent_id", filters.agentId.toString());
     if (filters?.status) params.set("status", filters.status);
     const response = await fetch(`${this.apiBase}/api/agentic-executions/?${params}`, this._requestConfiguration());
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new ApiError(`Failed to list agentic executions: ${response.statusText}`, {
+        data: errorData,
+        status: response.status,
+      });
+    }
     return await response.json() as PaginatedResult<AgenticExecution>;
   }
 
   async get(id: number): Promise<AgenticExecutionDetail> {
     const response = await fetch(`${this.apiBase}/api/agentic-executions/${id}/`, this._requestConfiguration());
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new ApiError(`Failed to fetch agentic execution: ${response.statusText}`, {
+        data: errorData,
+        status: response.status,
+      });
+    }
     return await response.json() as AgenticExecutionDetail;
   }
 
   async getDefinitions(agentId: number): Promise<ExecutionDefinition[]> {
     const response = await fetch(`${this.apiBase}/api/agents/${agentId}/agentic-execution-definitions/`, this._requestConfiguration());
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new ApiError(`Failed to fetch execution definitions: ${response.statusText}`, {
+        data: errorData,
+        status: response.status,
+      });
+    }
     return await response.json() as ExecutionDefinition[];
   }
 

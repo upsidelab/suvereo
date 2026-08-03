@@ -17,7 +17,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 const api = new ApiClient(authenticationProviderInstance);
 
 export default function AgentsTable() {
-  const { dataSetId, refetchAgents } = useApplicationContext() ?? { dataSetId: null, refetchAgents: async () => {} };
+  const { dataSetId, refetchAgents, dataSets } = useApplicationContext() ?? { dataSetId: null, refetchAgents: async () => {}, dataSets: [] };
+  const currentDataSet = dataSets.find(ds => ds.id === dataSetId);
+  const canManageAgents = !!currentDataSet?.permissions.includes("catalog.manage_agents");
   const { agentTypes, loadingTypes } = useAgentTypes();
   
   const [formModalOpen, setFormModalOpen] = useState(false);
@@ -72,9 +74,11 @@ export default function AgentsTable() {
 
   return (
     <>
-      <div className="flex items-center justify-end mb-6">
-        <Button onClick={openNew}><Plus className="h-4 w-4"/>New agent</Button>
-      </div>
+      {canManageAgents && (
+        <div className="flex items-center justify-end mb-6">
+          <Button onClick={openNew}><Plus className="h-4 w-4"/>New agent</Button>
+        </div>
+      )}
 
       <PaginatedTable
         loadItems={fetchAgents}
@@ -113,24 +117,26 @@ export default function AgentsTable() {
               {agentTypes.find(t => t.key === item.agent_type)?.name || item.agent_type || 'Unknown'}
             </TableCell>
             <TableCell className="text-right w-1">
-              <div className="flex justify-end space-x-2">
-                <ButtonWithTooltip
-                  variant="outline"
-                  size="sm"
-                  onClick={() => openEdit(item)}
-                  tooltip="Settings"
-                >
-                  <Settings className="h-4 w-4"/>
-                </ButtonWithTooltip>
-                <ButtonWithTooltip
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDelete(item)}
-                  tooltip="Delete"
-                >
-                  <Trash2 className="h-4 w-4"/>
-                </ButtonWithTooltip>
-              </div>
+              {canManageAgents && (
+                <div className="flex justify-end space-x-2">
+                  <ButtonWithTooltip
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openEdit(item)}
+                    tooltip="Settings"
+                  >
+                    <Settings className="h-4 w-4"/>
+                  </ButtonWithTooltip>
+                  <ButtonWithTooltip
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDelete(item)}
+                    tooltip="Delete"
+                  >
+                    <Trash2 className="h-4 w-4"/>
+                  </ButtonWithTooltip>
+                </div>
+              )}
             </TableCell>
           </TableRow>)
         }}
