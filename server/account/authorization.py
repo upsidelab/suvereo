@@ -25,9 +25,13 @@ ADMIN_GROUP_PERMISSIONS = [
     PERM_MANAGE_DATASETS,
     PERM_VIEW_ALL_DATASETS,
     PERM_CONFIGURE_MODELS,
-    PERM_MANAGE_AGENTS,
     PERM_VIEW_ALL_CONVERSATIONS,
 ]
+"""catalog.manage_agents is deliberately absent here: it's dataset-scoped-only, like
+converse/view_integrations/manage_integrations, composable only via a DatasetRole -- never
+via the global composer, even though Admin holds it globally too (granted directly to the
+Admin group in catalog/migrations/0015_dataset_permissions_and_access_grants.py, independent
+of this list)."""
 
 PERM_VIEW_DATASET = "catalog.view_dataset"
 PERM_CONVERSE = "catalog.converse"
