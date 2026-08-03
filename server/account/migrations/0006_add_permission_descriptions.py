@@ -79,7 +79,7 @@ class Migration(migrations.Migration):
     dependencies = [
         ("account", "0005_reseed_dataset_roles"),
         ("catalog", "0018_add_integration_permissions"),
-        ("agent", "0033_add_view_all_conversations_permission"),
+        ("agent", "0031_add_view_all_conversations_permission"),
     ]
 
     operations = [
