@@ -139,6 +139,7 @@ export type Conversation = {
   agent: Agent;
   history?: Message[];
   is_execution_conversation: boolean;
+  user_email: string;
 }
 
 export type Message = {

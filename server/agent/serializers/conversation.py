@@ -64,10 +64,11 @@ class ConversationCreationSerializer(serializers.Serializer):
 
 class ConversationSerializer(serializers.ModelSerializer):
     agent = AgentListSerializer()
+    user_email = serializers.EmailField(source="user.email", read_only=True)
 
     class Meta:
         model = Conversation
-        fields = ["id", "started_at", "summary", "agent"]
+        fields = ["id", "started_at", "summary", "agent", "user_email"]
 
 
 class MessageFeedbackSerializer(serializers.ModelSerializer):

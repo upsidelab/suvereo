@@ -36,7 +36,7 @@ export function ConversationsList() {
       loadItems={loadConversations}
       itemsReloadDependencies={dataSetId}
       noItemsMessage="You don't have any conversations yet"
-      tableHeaders={["Conversation", "Agent", "Time"]}
+      tableHeaders={["Conversation", "Agent", "Owner", "Time"]}
       tableRow={(item, index) => {
         const isAgentDeleted = !!item.agent.deleted_at;
         const isAgentCorrupted = !!item.agent.corrupted;
@@ -53,6 +53,7 @@ export function ConversationsList() {
             <TableCell className="w-1/4">
               {item.agent.name}
             </TableCell>
+            <TableCell className="w-1/4">{item.user_email}</TableCell>
             <TableCell className="w-1/4">{new Date(item.started_at).toLocaleString('en-US')}</TableCell>
           </TableRow>
         )
