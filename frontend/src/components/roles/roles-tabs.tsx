@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button.tsx";
 export type RolesTab = "groups" | "dataset-roles";
 
 const TABS: { key: RolesTab; label: string }[] = [
-  { key: "groups", label: "Groups" },
+  { key: "groups", label: "Global Roles" },
   { key: "dataset-roles", label: "Dataset Roles" },
 ];
 
