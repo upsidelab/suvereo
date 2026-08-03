@@ -6,6 +6,7 @@ import { authenticationProviderInstance } from "@/lib/authentication-provider.ts
 import { AddAccessSelector } from "@/components/data-sets/add-access-selector.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
 import { DataSetAccessGrant, DatasetRoleOption, GroupOption, User } from "@/lib/types.ts";
+import { ApiError } from "@/lib/api-error.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -21,9 +22,20 @@ export function DataSetAccessList({dataSetId}: DataSetAccessListProps) {
   const [usersLoadFailed, setUsersLoadFailed] = useState(false);
   const [groupsLoadFailed, setGroupsLoadFailed] = useState(false);
   const [rolesLoadFailed, setRolesLoadFailed] = useState(false);
+  const [accessDenied, setAccessDenied] = useState(false);
 
   const load = useCallback(async () => {
-    const grants = await api.dataSets().getDataSetAccess(dataSetId);
+    let grants: DataSetAccessGrant[];
+    try {
+      grants = await api.dataSets().getDataSetAccess(dataSetId);
+      setAccessDenied(false);
+    } catch (err) {
+      if (err instanceof ApiError && err.response.status === 403) {
+        setAccessDenied(true);
+        return;
+      }
+      throw err;
+    }
     setGrants(grants);
 
     const assignedUserIds = new Set(grants.filter((g) => g.targetType === "user").map((g) => g.targetId));
@@ -69,6 +81,14 @@ export function DataSetAccessList({dataSetId}: DataSetAccessListProps) {
   const handleRemove = async (grant: DataSetAccessGrant) => {
     await api.dataSets().revokeDataSetAccess(dataSetId, grant.targetType, grant.targetId);
     await load();
+  }
+
+  if (accessDenied) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-lg font-medium text-gray-500">You don't have permission to manage this data set's access.</p>
+      </div>
+    );
   }
 
   return (

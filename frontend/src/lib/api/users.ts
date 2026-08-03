@@ -1,4 +1,5 @@
 import { BaseApiClient } from "@/lib/api/base.ts";
+import { ApiError } from "@/lib/api-error.ts";
 import { PaginatedResult, User } from "@/lib/types.ts";
 
 export type CreateUserParams = {
@@ -42,6 +43,10 @@ export type UserResponse = {
 export class UsersApiClient extends BaseApiClient {
   async getUsers(page: number): Promise<PaginatedResult<User>> {
     const response = await fetch(`${this.apiBase}/api/users?page=${page}`, this._requestConfiguration());
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new ApiError(`Failed to list users: ${response.statusText}`, { data: errorData, status: response.status });
+    }
     const result = await response.json() as PaginatedResult<UserResponse>;
 
     return {

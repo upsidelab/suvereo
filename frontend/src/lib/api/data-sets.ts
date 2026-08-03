@@ -1,4 +1,5 @@
 import { BaseApiClient } from "@/lib/api/base.ts";
+import { ApiError } from "@/lib/api-error.ts";
 import { DataSet, DataSetAccessGrant } from "@/lib/types.ts";
 
 export type DataSetResponse = {
@@ -63,6 +64,13 @@ export class DataSetsApiClient extends BaseApiClient {
 
   async getDataSetAccess(dataSetId: number): Promise<DataSetAccessGrant[]> {
     const response = await fetch(`${this.apiBase}/api/data_sets/${dataSetId}/access`, this._requestConfiguration());
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new ApiError(`Failed to list data set access: ${response.statusText}`, {
+        data: errorData,
+        status: response.status,
+      });
+    }
     const data = await response.json() as {
       target_type: "user" | "group";
       target_id: number;

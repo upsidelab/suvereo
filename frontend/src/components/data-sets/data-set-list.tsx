@@ -9,8 +9,10 @@ import { DataSet } from "@/lib/types.ts";
 const api = new ApiClient(authenticationProviderInstance);
 
 export function DataSetList() {
-  const {dataSets} = useApplicationContext()!;
+  const {dataSets, account} = useApplicationContext()!;
   const navigate = useNavigate();
+  const canManageDatasets = !!account?.isAdmin || !!account?.permissions.includes("catalog.manage_datasets");
+  const canManageAccess = !!account?.isAdmin;
 
   const handleSyncAllSources = async () => {
     await api.dataSets().syncAllSources();
@@ -22,10 +24,12 @@ export function DataSetList() {
 
   return (
     <>
-      <div className="flex flex-row justify-end items-center space-x-4 mb-4">
-        <Button variant="default" onClick={() => navigate('/data-sets/new') }>New Data Set</Button>
-        <Button variant="default" onClick={() => handleSyncAllSources() }>Sync All</Button>
-      </div>
+      {canManageDatasets && (
+        <div className="flex flex-row justify-end items-center space-x-4 mb-4">
+          <Button variant="default" onClick={() => navigate('/data-sets/new') }>New Data Set</Button>
+          <Button variant="default" onClick={() => handleSyncAllSources() }>Sync All</Button>
+        </div>
+      )}
       <Table>
         <TableHeader>
           <TableRow>
@@ -40,9 +44,11 @@ export function DataSetList() {
                 {item.name}
               </TableCell>
               <TableCell className="flex space-x-4" width="25%">
-                <Button onClick={() => {
-                  navigate(`/data-sets/${item.id}/users`)
-                }} variant="secondary">Manage Access</Button>
+                {canManageAccess && (
+                  <Button onClick={() => {
+                    navigate(`/data-sets/${item.id}/users`)
+                  }} variant="secondary">Manage Access</Button>
+                )}
               </TableCell>
               <TableCell>
                 <Button onClick={() => {
@@ -50,14 +56,18 @@ export function DataSetList() {
                 }} variant="secondary">Sources</Button>
               </TableCell>
               <TableCell>
-                <Button onClick={() => {
-                  handleSyncDataSetAllSources(item)
-                }} variant="secondary">Sync</Button>
+                {canManageDatasets && (
+                  <Button onClick={() => {
+                    handleSyncDataSetAllSources(item)
+                  }} variant="secondary">Sync</Button>
+                )}
               </TableCell>
               <TableCell>
-                <Button onClick={() => {
-                  navigate(`/data-sets/${item.id}/edit`)
-                }} variant="secondary">Edit</Button>
+                {canManageDatasets && (
+                  <Button onClick={() => {
+                    navigate(`/data-sets/${item.id}/edit`)
+                  }} variant="secondary">Edit</Button>
+                )}
               </TableCell>
              </TableRow>
           ))}

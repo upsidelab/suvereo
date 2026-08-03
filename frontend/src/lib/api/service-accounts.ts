@@ -1,4 +1,5 @@
 import { BaseApiClient } from "@/lib/api/base.ts";
+import { ApiError } from "@/lib/api-error.ts";
 import { PaginatedResult, ServiceAccount } from "@/lib/types.ts";
 import { Token } from "@/lib/api.ts";
 
@@ -33,6 +34,13 @@ export type UpdateServiceAccountPayload = CreateServiceAccountPayload;
 export class ServiceAccountsApiClient extends BaseApiClient {
   async getServiceAccounts(page: number): Promise<PaginatedResult<ServiceAccount>> {
     const response = await fetch(`${this.apiBase}/api/service_accounts?page=${page}`, this._requestConfiguration());
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new ApiError(`Failed to list service accounts: ${response.statusText}`, {
+        data: errorData,
+        status: response.status,
+      });
+    }
     const result = await response.json() as PaginatedResult<ServiceAccountResponse>;
 
     return {
