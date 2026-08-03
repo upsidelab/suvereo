@@ -42,7 +42,7 @@ const streamingEnabled = Boolean(import.meta.env.VITE_WS_BASE);
 
 export function ChatSession({ pendingMessage }: ChatSessionProps) {
   const { chatId } = useParams();
-  const { dataSetId } = useApplicationContext()!;
+  const { dataSetId, account } = useApplicationContext()!;
   const navigate = useNavigate();
 
   const [conversation, setConversation] = useState<ConversationSchema | null>(null);
@@ -62,6 +62,7 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
   const isAgentDeleted = !!conversation?.agent.deleted_at;
   const isAgentCorrupted = !!conversation?.agent.corrupted;
   const isExecutionConversation = !!conversation?.is_execution_conversation;
+  const isOwnConversation = !conversation || conversation.user_email === account?.email;
 
   const scrollToLastMessage = (timeout = 0) => {
     setTimeout(() => {
@@ -274,7 +275,18 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
     addFileMessages(message.files);
     addUserMessage(message.text);
 
-    const taskHandle = await api.conversations().sendMessage(conversationId, dataSetId!, message.text, streamingEnabled, message.files.map(f => f.id));
+    let taskHandle: TaskHandle;
+    try {
+      taskHandle = await api.conversations().sendMessage(conversationId, dataSetId!, message.text, streamingEnabled, message.files.map(f => f.id));
+    } catch {
+      setIsLoading(false);
+      setIsAgentLoading(false);
+      setMessages((prev) => [
+        ...prev,
+        { type: "system", text: "Failed to send this message. You may not have permission to converse in this data set.", id: null },
+      ]);
+      return;
+    }
     usePolling.current = !taskHandle.streaming;
 
     if (taskHandle.streaming) {
@@ -314,7 +326,7 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
             className="pt-16"
             onSubmit={onMessageComposerSubmit}
             isLoading={isLoading}
-            conversationLocked={isAgentDeleted || isAgentCorrupted || isExecutionConversation}
+            conversationLocked={isAgentDeleted || isAgentCorrupted || isExecutionConversation || !isOwnConversation}
             conversationId={conversationId}
             agentId={agentId}
             fileUploadEnabled={agentDetails?.file_upload}

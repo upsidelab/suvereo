@@ -20,7 +20,7 @@ export interface Message {
   text: string;
   files: MessageFile[];
 }
-export type OnSubmit = (message: Message, createdConversationId?: number) => void;
+export type OnSubmit = (message: Message, createdConversationId?: number) => Promise<void>;
 
 export interface MessageComposerProps {
   onSubmit: OnSubmit;
@@ -144,14 +144,18 @@ export function MessageComposer({ onSubmit, isLoading, conversationLocked = fals
     }
 
     if (!uploadedFiles.length) {
-      onSubmit({ text: input, files: [] }, createdConversationIdRef.current || undefined);
-      resetComposer();
+      try {
+        await onSubmit({ text: input, files: [] }, createdConversationIdRef.current || undefined);
+        resetComposer();
+      } catch {
+        setUploadError('Failed to send message. You may not have permission to converse in this data set.');
+      }
       return;
     }
 
     try {
       setUploadingFiles(true);
-      
+
       const message = {
         text: input,
         files: uploadedFiles.filter(f => f.uploaded && f.fileId).map(f => ({
@@ -161,7 +165,7 @@ export function MessageComposer({ onSubmit, isLoading, conversationLocked = fals
         }))
       } as Message;
 
-      onSubmit(message, createdConversationIdRef.current || undefined);
+      await onSubmit(message, createdConversationIdRef.current || undefined);
       resetComposer();
     } catch {
       setUploadError('Failed to send message. Please try again.');
