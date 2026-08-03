@@ -22,6 +22,13 @@ class AccountSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     email = serializers.EmailField()
     is_admin = serializers.BooleanField(read_only=True)
+    permissions = serializers.SerializerMethodField()
+
+    def get_permissions(self, obj):
+        """The subset of GLOBAL_PERMISSION_CODENAMES this user actually holds -- lets the
+        frontend show/hide global management nav entries per-permission instead of only
+        by is_admin."""
+        return [codename for codename in GLOBAL_PERMISSION_CODENAMES if obj.has_perm(codename)]
 
 
 class UserSerializer(serializers.Serializer):

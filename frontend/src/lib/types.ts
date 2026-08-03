@@ -64,6 +64,7 @@ export type Document = {
 export type Account = {
   email: string;
   isAdmin: boolean;
+  permissions: string[];
 }
 
 export type User = {

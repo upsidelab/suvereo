@@ -65,31 +65,39 @@ export function MainSidebar() {
     }
   ];
 
+  const isAdmin = !!account?.isAdmin;
+  const permissions = account?.permissions ?? [];
+  const canManageDatasets = isAdmin || permissions.includes("catalog.manage_datasets");
+  const canSeeUsers = isAdmin || permissions.includes("account.manage_users") || permissions.includes("account.view_users");
+  const canSeeServiceAccounts = isAdmin || permissions.includes("account.manage_service_accounts") || permissions.includes("account.view_service_accounts");
+  const canManageRoles = isAdmin;
+  const hasManageAccess = canManageDatasets || canSeeUsers || canSeeServiceAccounts || canManageRoles;
+
   const manageItems: SidebarSectionItemProps[] = [
-    {
+    ...(canManageDatasets ? [{
       title: "Data Sets",
       link: "/data-sets",
       key: "data-sets",
       icon: <DatabaseIcon />
-    },
-    {
+    }] : []),
+    ...(canSeeUsers ? [{
       title: "Users",
       link: "/users",
       key: "users",
       icon: <UserIcon />
-    },
-    {
+    }] : []),
+    ...(canSeeServiceAccounts ? [{
       title: "Service Accounts",
       link: "/service-accounts",
       key: "service-accounts",
       icon: <PlugZapIcon />
-    },
-    {
+    }] : []),
+    ...(canManageRoles ? [{
       title: "Roles",
       link: "/roles",
       key: "roles",
       icon: <ShieldIcon />
-    },
+    }] : []),
     {
       title: "Help",
       link: "https://upsidelab.io/tools/enthusiast/docs",
@@ -153,10 +161,8 @@ export function MainSidebar() {
         {catalogItems.length > 0 && (
           <MainSidebarSection title="Catalog" items={catalogItems} />
         )}
-        {account && account.isAdmin && (
-          <>
-            <MainSidebarSection className="mt-auto" title="Manage" items={manageItems} />
-          </>
+        {account && hasManageAccess && (
+          <MainSidebarSection className="mt-auto" title="Manage" items={manageItems} />
         )}
       </SidebarContent>
       <SidebarFooter>

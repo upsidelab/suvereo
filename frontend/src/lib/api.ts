@@ -20,6 +20,7 @@ export type Token = {
 type AccountResponse = {
   email: string;
   is_admin: boolean;
+  permissions: string[];
 }
 
 export type FeedbackData = {
@@ -60,7 +61,8 @@ export class ApiClient {
     const responseJson = await response.json() as AccountResponse;
     return {
       email: responseJson.email,
-      isAdmin: responseJson.is_admin
+      isAdmin: responseJson.is_admin,
+      permissions: responseJson.permissions
     };
   }
 
