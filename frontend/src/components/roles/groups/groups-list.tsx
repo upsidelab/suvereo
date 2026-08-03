@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table.tsx";
 import { Button } from "@/components/ui/button.tsx";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog.tsx";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { GroupOption } from "@/lib/types.ts";
@@ -12,6 +13,9 @@ const ADMIN_GROUP_NAME = "Admin";
 export function GroupsList() {
   const [groups, setGroups] = useState<GroupOption[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [groupToDelete, setGroupToDelete] = useState<GroupOption | null>(null);
+  const [memberCountToDelete, setMemberCountToDelete] = useState(0);
 
   const load = useCallback(async () => {
     setGroups(await api.groups().getGroups());
@@ -21,15 +25,30 @@ export function GroupsList() {
     load();
   }, [load]);
 
-  const handleDelete = async (group: GroupOption) => {
+  const handleDeleteClick = async (group: GroupOption) => {
     setError(null);
-    const response = await api.groups().deleteGroup(group.id);
+    const members = await api.groups().getGroupMembers(group.id);
+    setGroupToDelete(group);
+    setMemberCountToDelete(members.length);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!groupToDelete) return;
+    const response = await api.groups().deleteGroup(groupToDelete.id);
+    setIsDeleteDialogOpen(false);
+    setGroupToDelete(null);
     if (!response.ok) {
       const body = await response.json();
       setError(body.detail ?? "Could not delete this group.");
       return;
     }
     await load();
+  };
+
+  const cancelDelete = () => {
+    setIsDeleteDialogOpen(false);
+    setGroupToDelete(null);
   };
 
   return (
@@ -52,13 +71,32 @@ export function GroupsList() {
               <TableCell className="flex space-x-4">
                 <GroupModal group={group} onSaved={load} />
                 {group.name !== ADMIN_GROUP_NAME &&
-                  <Button variant="secondary" onClick={() => handleDelete(group)}>Delete</Button>
+                  <Button variant="secondary" onClick={() => handleDeleteClick(group)}>Delete</Button>
                 }
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete group{groupToDelete ? ` "${groupToDelete.name}"` : ""}</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-gray-600">
+              {memberCountToDelete > 0
+                ? `This will revoke access for ${memberCountToDelete} member${memberCountToDelete === 1 ? "" : "s"}. This action cannot be undone.`
+                : "This action cannot be undone."}
+            </p>
+          </div>
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={cancelDelete}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmDelete}>Delete</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
