@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button.tsx";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog.tsx";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
-import { GroupOption } from "@/lib/types.ts";
+import { GroupMember, GroupOption } from "@/lib/types.ts";
 import { GroupModal } from "@/components/roles/groups/group-modal.tsx";
 
 const api = new ApiClient(authenticationProviderInstance);
@@ -27,7 +27,13 @@ export function GroupsList() {
 
   const handleDeleteClick = async (group: GroupOption) => {
     setError(null);
-    const members = await api.groups().getGroupMembers(group.id);
+    let members: GroupMember[];
+    try {
+      members = await api.groups().getGroupMembers(group.id);
+    } catch {
+      setError("Could not load this group's members.");
+      return;
+    }
     setGroupToDelete(group);
     setMemberCountToDelete(members.length);
     setIsDeleteDialogOpen(true);

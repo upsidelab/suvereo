@@ -1,6 +1,17 @@
 import django.db.models.deletion
 from django.db import migrations, models
 
+# This migration seeds a `PermissionDescription` row for every permission that existed at the time it was written.
+#
+# Any FUTURE migration that creates a new permission must seed its own `PermissionDescription` row in that same
+# migration -- do not add it here.
+#
+# `seed_permission_descriptions` below looks up each permission with strict `Permission.objects.get(...)`, not
+# `get_or_create`. That only works because `Migration.dependencies` (below) lists every migration that creates one
+# of the permissions in `DESCRIPTIONS`. If a future migration follows this pattern for a new permission, its
+# `dependencies` must likewise include whichever migration creates that permission, or `Permission.objects.get(...)`
+# will raise `Permission.DoesNotExist` on a fresh database.
+
 DESCRIPTIONS = [
     ("account", "user", "manage_users", "Can create, edit, and delete user accounts, and change their roles."),
     ("account", "user", "view_users", "Can see the list of users and their roles, without editing."),

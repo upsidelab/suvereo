@@ -80,7 +80,7 @@ export function GroupModal({ group, onSaved }: GroupModalProps) {
           <DialogTitle>{group ? `Edit ${group.name}` : "New Group"}</DialogTitle>
         </DialogHeader>
         {error && <p className="text-sm text-destructive mb-4">{error}</p>}
-        <div className="flex space-x-2 border-b pb-2 mb-4">
+        <div className="flex items-center space-x-2 border-b pb-2 mb-4">
           <Button
             type="button"
             variant={section === "permissions" ? "default" : "ghost"}
@@ -93,10 +93,10 @@ export function GroupModal({ group, onSaved }: GroupModalProps) {
             variant={section === "members" ? "default" : "ghost"}
             onClick={() => setSection("members")}
             disabled={!group}
-            title={group ? undefined : "Save the group first to add members"}
           >
             Members
           </Button>
+          {!group && <span className="text-xs text-muted-foreground">Save the group first to add members</span>}
         </div>
         {section === "permissions" && (
           <Form {...form}>
