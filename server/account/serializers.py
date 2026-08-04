@@ -227,6 +227,7 @@ class PermissionOptionSerializer(serializers.Serializer):
     codename = serializers.SerializerMethodField()
     name = serializers.CharField()
     description = serializers.SerializerMethodField()
+    implies = serializers.SerializerMethodField()
 
     def get_codename(self, obj):
         return f"{obj.content_type.app_label}.{obj.codename}"
@@ -234,3 +235,11 @@ class PermissionOptionSerializer(serializers.Serializer):
     def get_description(self, obj):
         entry = getattr(obj, "description_entry", None)
         return entry.description if entry else ""
+
+    def get_implies(self, obj):
+        """The codename of the view permission this one implies (e.g. manage_users implies
+        view_users), or None -- the single source of truth for the composer's auto-check
+        behavior, set via PermissionDescription.implied_view_permission."""
+        entry = getattr(obj, "description_entry", None)
+        implied = entry.implied_view_permission if entry else None
+        return f"{implied.content_type.app_label}.{implied.codename}" if implied else None

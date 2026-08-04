@@ -104,6 +104,7 @@ export type PermissionOption = {
   codename: string;
   name: string;
   description: string;
+  implies: string | null;
 };
 
 export type GroupDetail = {

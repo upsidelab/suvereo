@@ -135,6 +135,16 @@ class PermissionDescription(models.Model):
 
     permission = models.OneToOneField(Permission, on_delete=models.CASCADE, related_name="description_entry")
     description = models.TextField()
+    implied_view_permission = models.ForeignKey(
+        Permission,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        help_text="Set on a manage_X permission's own row when checking it should also check a view_X "
+        "permission in the composer -- the single source of truth the frontend checklist reads instead "
+        "of hardcoding the pairing.",
+    )
 
     def __str__(self):
         return f"{self.permission.codename}: {self.description}"

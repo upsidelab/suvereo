@@ -23,8 +23,7 @@ class IsApplicationAdmin(BasePermission):
 
     Used for role/permission management endpoints instead of HasRequiredPermission — a
     delegable "manage_roles" permission would let its holder grant themselves any other
-    permission, including effectively promoting themselves to Admin. See the design doc's
-    Requirement 2 (docs/superpowers/specs/2026-07-29-role-management-ui-design.md).
+    permission, including effectively promoting themselves to Admin.
     """
 
     def has_permission(self, request, view):

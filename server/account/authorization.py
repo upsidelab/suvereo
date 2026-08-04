@@ -22,6 +22,11 @@ PERM_MANAGE_ALL_AGENTS = "catalog.manage_all_agents"
 PERM_VIEW_ALL_INTEGRATIONS = "catalog.view_all_integrations"
 PERM_MANAGE_ALL_INTEGRATIONS = "catalog.manage_all_integrations"
 
+# Order here is also display order (PermissionListView preserves it) -- each manage_X sits
+# right before the view_X it implies, per PermissionDescription.implied_view_permission, so the
+# composer checklist never auto-checks something out of sight. manage_datasets/view_all_datasets
+# additionally sandwiches manage_all_agents, since manage_all_agents borrows view_all_datasets as
+# its own implied view tier (there's no separate view_all_agents).
 GLOBAL_PERMISSION_CODENAMES = [
     PERM_MANAGE_USERS,
     PERM_VIEW_USERS,
@@ -29,12 +34,12 @@ GLOBAL_PERMISSION_CODENAMES = [
     PERM_VIEW_SERVICE_ACCOUNTS,
     PERM_MANAGE_DATASETS,
     PERM_VIEW_ALL_DATASETS,
-    PERM_CONFIGURE_MODELS,
-    PERM_VIEW_ALL_CONVERSATIONS,
-    PERM_CONVERSE_ALL_DATASETS,
     PERM_MANAGE_ALL_AGENTS,
-    PERM_VIEW_ALL_INTEGRATIONS,
     PERM_MANAGE_ALL_INTEGRATIONS,
+    PERM_VIEW_ALL_INTEGRATIONS,
+    PERM_CONFIGURE_MODELS,
+    PERM_CONVERSE_ALL_DATASETS,
+    PERM_VIEW_ALL_CONVERSATIONS,
 ]
 """Every permission a Group can hold globally -- what the Global Role composer may offer, and
 what Admin ends up holding in full."""
@@ -42,12 +47,14 @@ what Admin ends up holding in full."""
 PERM_VIEW_DATASET = "catalog.view_dataset"
 PERM_CONVERSE = "catalog.converse"
 
+# Same display-order note as GLOBAL_PERMISSION_CODENAMES above: manage_agents sits right before
+# the view_dataset it implies.
 DATASET_PERMISSION_GLOBAL_COUNTERPART = {
-    PERM_VIEW_DATASET: PERM_VIEW_ALL_DATASETS,
     PERM_MANAGE_AGENTS: PERM_MANAGE_ALL_AGENTS,
+    PERM_VIEW_DATASET: PERM_VIEW_ALL_DATASETS,
     PERM_CONVERSE: PERM_CONVERSE_ALL_DATASETS,
-    PERM_VIEW_INTEGRATIONS: PERM_VIEW_ALL_INTEGRATIONS,
     PERM_MANAGE_INTEGRATIONS: PERM_MANAGE_ALL_INTEGRATIONS,
+    PERM_VIEW_INTEGRATIONS: PERM_VIEW_ALL_INTEGRATIONS,
 }
 """Every dataset-scoped permission, mapped to its global "_all_datasets"-style counterpart --
 checked by has_dataset_perm below, so every existing call site benefits automatically without
