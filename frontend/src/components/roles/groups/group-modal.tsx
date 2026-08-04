@@ -92,11 +92,9 @@ export function GroupModal({ group, onSaved }: GroupModalProps) {
             type="button"
             variant={section === "members" ? "default" : "ghost"}
             onClick={() => setSection("members")}
-            disabled={!group}
           >
             Members
           </Button>
-          {!group && <span className="text-xs text-muted-foreground">Save the group first to add members</span>}
         </div>
         {section === "permissions" && (
           <Form {...form}>
@@ -123,7 +121,11 @@ export function GroupModal({ group, onSaved }: GroupModalProps) {
             </form>
           </Form>
         )}
-        {section === "members" && group && <GroupMembersPanel groupId={group.id} />}
+        {section === "members" && (
+          group
+            ? <GroupMembersPanel groupId={group.id} />
+            : <p className="text-sm text-muted-foreground">Save the group first to add members.</p>
+        )}
       </DialogContent>
     </Dialog>
   );
