@@ -162,8 +162,12 @@ class ConfigView(GenericAPIView):
     )
     def get(self, request, *args, **kwargs):
         response_body = {
-            "language_model_providers": [cls.NAME for cls in LanguageModelRegistry().get_provider_classes()],
-            "embedding_providers": [cls.NAME for cls in EmbeddingProviderRegistry().get_provider_classes()],
+            "language_model_providers": [
+                cls.NAME for cls in LanguageModelRegistry().get_provider_classes()
+            ],
+            "embedding_providers": [
+                cls.NAME for cls in EmbeddingProviderRegistry().get_provider_classes()
+            ],
         }
 
         return Response(response_body)
@@ -212,7 +216,8 @@ class ConfigEmbeddingModelView(GenericAPIView):
                         "vector_size_constraints": openapi.Schema(
                             type=openapi.TYPE_OBJECT,
                             description=(
-                                "Map of model name to allowed vector sizes. Empty object means no constraints."
+                                "Map of model name to allowed vector sizes. "
+                                "Empty object means no constraints."
                             ),
                             additional_properties=openapi.Schema(
                                 type=openapi.TYPE_ARRAY,
