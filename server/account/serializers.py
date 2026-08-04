@@ -8,6 +8,7 @@ from account.authorization import (
     GLOBAL_PERMISSION_CODENAMES,
     PERM_VIEW_DATASET,
     assert_group_ids_assignable,
+    assert_not_self_removing_from_admin,
     assert_user_deactivatable,
     grant_full_dataset_access,
     is_application_admin,
@@ -63,6 +64,8 @@ class GroupAssignmentValidationMixin:
         request = self.context.get("request")
         if request is not None:
             assert_group_ids_assignable(request.user, value)
+            if self.instance is not None:
+                assert_not_self_removing_from_admin(request.user, self.instance, value)
         return value
 
 

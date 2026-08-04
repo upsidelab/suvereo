@@ -201,6 +201,27 @@ def assert_group_ids_assignable(requesting_user, group_ids) -> None:
         raise DjangoValidationError("Only an Admin can grant Admin-equivalent group membership.")
 
 
+def assert_not_self_removing_from_admin(requesting_user, target_user, new_group_ids) -> None:
+    """Raise if `requesting_user` is editing their own account and the submitted `group_ids`
+    would drop them out of the Admin group.
+
+    `assert_group_ids_assignable` doesn't catch this: an Admin editing themselves already
+    passes its early-return (they're already Admin, so assigning is unrestricted), but removing
+    is a different action than assigning, and self-removal is the one case a "some other Admin
+    fixes it" recovery path doesn't apply to if they're the only Admin left. Blocking it
+    outright is simpler than counting remaining Admins, and never a real loss -- another Admin
+    (or the person themself, later) can always remove them from an *other* account.
+    """
+    if requesting_user.id != target_user.id:
+        return
+    admin_group = Group.objects.filter(name=ADMIN_GROUP_NAME).first()
+    if admin_group is None:
+        return
+    currently_admin = target_user.groups.filter(pk=admin_group.pk).exists()
+    if currently_admin and admin_group.pk not in new_group_ids:
+        raise DjangoValidationError("You cannot remove yourself from the Admin group.")
+
+
 def is_admin_equivalent(user) -> bool:
     """True if `user` is a superuser or belongs to any Admin-equivalent group -- see
     _admin_equivalent_group_ids for exactly what counts and why."""
