@@ -59,10 +59,10 @@ def create_admin_group_and_dataset_roles(apps, schema_editor):
         )
         dataset_permissions[codename] = permission
 
-    viewer, _ = DatasetRole.objects.get_or_create(name="viewer", defaults={"is_system": True})
+    viewer, _ = DatasetRole.objects.get_or_create(name="Viewer", defaults={"is_system": True})
     viewer.permissions.set([dataset_permissions[codename] for codename in VIEWER_CODENAMES])
 
-    editor, _ = DatasetRole.objects.get_or_create(name="editor", defaults={"is_system": True})
+    editor, _ = DatasetRole.objects.get_or_create(name="Editor", defaults={"is_system": True})
     editor.permissions.set([dataset_permissions[codename] for codename in EDITOR_CODENAMES])
 
 

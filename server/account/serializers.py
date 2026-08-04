@@ -205,11 +205,6 @@ class DatasetRoleDetailSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "permission_ids", "is_system"]
         read_only_fields = ["is_system"]
 
-    def validate_name(self, value):
-        if self.instance and self.instance.is_system and value != self.instance.name:
-            raise serializers.ValidationError("System dataset roles cannot be renamed.")
-        return value
-
 
 class PermissionOptionSerializer(serializers.Serializer):
     id = serializers.IntegerField()

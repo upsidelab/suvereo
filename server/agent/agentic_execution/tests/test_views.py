@@ -186,7 +186,7 @@ class TestAgenticExecutionDefinitionTypesView:
 
     @pytest.fixture(autouse=True)
     def grant_dataset_access(self, user, dataset):
-        assign_dataset_role(user, dataset, "viewer")
+        assign_dataset_role(user, dataset, "Viewer")
 
     @pytest.fixture(autouse=True)
     def mock_registry(self):
@@ -239,7 +239,7 @@ class TestStartAgenticExecutionView:
 
     @pytest.fixture(autouse=True)
     def grant_dataset_access(self, user, dataset):
-        assign_dataset_role(user, dataset, "viewer")
+        assign_dataset_role(user, dataset, "Viewer")
 
     @pytest.fixture(autouse=True)
     def mock_registry(self):

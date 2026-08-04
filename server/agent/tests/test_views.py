@@ -29,7 +29,7 @@ def user():
 @pytest.fixture
 def dataset(user):
     dataset = baker.make(DataSet)
-    assign_dataset_role(user, dataset, "viewer")
+    assign_dataset_role(user, dataset, "Viewer")
     return dataset
 
 
@@ -196,7 +196,7 @@ class TestAgentView:
         assert agent_2.id in ids
 
     def test_get_returns_corrupted_agents_to_dataset_editor(self, user, api_client, url, dataset_instance):
-        assign_dataset_role(user, dataset_instance, "editor")
+        assign_dataset_role(user, dataset_instance, "Editor")
         agent_1 = baker.make(Agent, dataset=dataset_instance)
         agent_2 = baker.make(Agent, dataset=dataset_instance, corrupted=True)
 
@@ -209,7 +209,7 @@ class TestAgentView:
 
     def test_editor_of_other_dataset_does_not_see_corrupted_agents_here(self, user, api_client, url, dataset_instance):
         other_dataset = baker.make(DataSet)
-        assign_dataset_role(user, other_dataset, "editor")
+        assign_dataset_role(user, other_dataset, "Editor")
         agent_1 = baker.make(Agent, dataset=dataset_instance)
         agent_2 = baker.make(Agent, dataset=dataset_instance, corrupted=True)
 
@@ -221,7 +221,7 @@ class TestAgentView:
         assert agent_2.id not in ids
 
     def test_editor_can_create_agent_on_their_dataset(self, user, api_client, url, dataset_instance, config):
-        assign_dataset_role(user, dataset_instance, "editor")
+        assign_dataset_role(user, dataset_instance, "Editor")
         payload = {
             "name": "editor-made",
             "description": "description",
@@ -237,7 +237,7 @@ class TestAgentView:
 
     def test_editor_cannot_create_agent_on_another_dataset(self, user, api_client, url, dataset_instance, config):
         other_dataset = baker.make(DataSet)
-        assign_dataset_role(user, other_dataset, "editor")
+        assign_dataset_role(user, other_dataset, "Editor")
         payload = {
             "name": "not-allowed",
             "description": "description",
@@ -252,7 +252,7 @@ class TestAgentView:
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_viewer_cannot_create_agent(self, user, api_client, url, dataset_instance, config):
-        assign_dataset_role(user, dataset_instance, "viewer")
+        assign_dataset_role(user, dataset_instance, "Viewer")
         payload = {
             "name": "not-allowed",
             "description": "description",
@@ -269,7 +269,7 @@ class TestAgentView:
         from django.contrib.auth.models import Group
 
         group = Group.objects.create(name="Marketing")
-        assign_dataset_role(group, dataset_instance, "editor")
+        assign_dataset_role(group, dataset_instance, "Editor")
         user.groups.add(group)
         payload = {
             "name": "group-made",
@@ -452,7 +452,7 @@ class TestAgentDetailsView:
         return reverse("agent-details", kwargs={"pk": agent_instance.pk})
 
     def test_get_existing_agent(self, user, api_client, agent_instance, url):
-        assign_dataset_role(user, agent_instance.dataset, "viewer")
+        assign_dataset_role(user, agent_instance.dataset, "Viewer")
 
         response = api_client.get(url)
 
@@ -468,7 +468,7 @@ class TestAgentDetailsView:
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_editor_of_this_dataset_can_update_agent(self, user, agent_instance, url, config):
-        assign_dataset_role(user, agent_instance.dataset, "editor")
+        assign_dataset_role(user, agent_instance.dataset, "Editor")
         client = APIClient()
         client.force_authenticate(user=user)
         updated_config = config
@@ -487,7 +487,7 @@ class TestAgentDetailsView:
     def test_editor_of_another_dataset_cannot_update_agent(self, agent_instance, url, config):
         other_dataset = baker.make(DataSet)
         user = baker.make(User)
-        assign_dataset_role(user, other_dataset, "editor")
+        assign_dataset_role(user, other_dataset, "Editor")
         client = APIClient()
         client.force_authenticate(user=user)
         payload = {
@@ -505,7 +505,7 @@ class TestAgentDetailsView:
     def test_editor_cannot_reassign_agent_to_a_dataset_they_have_no_rights_to(self, agent_instance, url, config):
         original_dataset_id = agent_instance.dataset_id
         user = baker.make(User)
-        assign_dataset_role(user, agent_instance.dataset, "editor")
+        assign_dataset_role(user, agent_instance.dataset, "Editor")
         other_dataset = baker.make(DataSet)
         client = APIClient()
         client.force_authenticate(user=user)
@@ -525,7 +525,7 @@ class TestAgentDetailsView:
 
     def test_viewer_cannot_update_agent(self, agent_instance, url, config):
         user = baker.make(User)
-        assign_dataset_role(user, agent_instance.dataset, "viewer")
+        assign_dataset_role(user, agent_instance.dataset, "Viewer")
         client = APIClient()
         client.force_authenticate(user=user)
         payload = {
@@ -542,7 +542,7 @@ class TestAgentDetailsView:
 
     def test_viewer_cannot_delete_agent(self, agent_instance, url):
         user = baker.make(User)
-        assign_dataset_role(user, agent_instance.dataset, "viewer")
+        assign_dataset_role(user, agent_instance.dataset, "Viewer")
         client = APIClient()
         client.force_authenticate(user=user)
 
@@ -552,7 +552,7 @@ class TestAgentDetailsView:
 
     def test_editor_of_this_dataset_can_delete_agent(self, agent_instance, url):
         user = baker.make(User)
-        assign_dataset_role(user, agent_instance.dataset, "editor")
+        assign_dataset_role(user, agent_instance.dataset, "Editor")
         client = APIClient()
         client.force_authenticate(user=user)
 
@@ -680,7 +680,7 @@ class TestAgentDetailsView:
         assert Agent.objects.filter(pk=agent_instance.pk).exists()
 
     def test_get_does_not_require_manage_agents_permission(self, user, api_client, agent_instance, url):
-        assign_dataset_role(user, agent_instance.dataset, "viewer")
+        assign_dataset_role(user, agent_instance.dataset, "Viewer")
 
         response = api_client.get(url)
 

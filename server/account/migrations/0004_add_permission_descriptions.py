@@ -38,22 +38,22 @@ DESCRIPTIONS = [
         "catalog",
         "dataset",
         "view_dataset",
-        "Can browse this data set's catalog (products, documents) -- does not include chatting with its agents.",
+        "Can browse this data set's catalog. Does not include chatting with its agents.",
     ),
     ("catalog", "dataset", "converse", "Can chat with this data set's agents and see their own message history."),
     ("catalog", "dataset", "manage_agents", "Can create, configure, and delete this data set's agents."),
-    ("catalog", "dataset", "view_integrations", "Can see this data set's configured e-commerce integrations."),
+    ("catalog", "dataset", "view_integrations", "Can see this data set's configured integrations."),
     (
         "catalog",
         "dataset",
         "manage_integrations",
-        "Can add, edit, delete, and sync this data set's e-commerce integrations.",
+        "Can add, edit, delete, and sync this data set's integrations.",
     ),
     (
         "agent",
         "conversation",
         "view_all_conversations",
-        "Can read (view-only) every user's conversations across every data set -- not just their own.",
+        "Can view every user's conversations across every data set, not just their own.",
     ),
     (
         "catalog",
@@ -66,13 +66,13 @@ DESCRIPTIONS = [
         "catalog",
         "dataset",
         "view_all_integrations",
-        "Can see every data set's configured e-commerce integrations.",
+        "Can see every data set's configured integrations.",
     ),
     (
         "catalog",
         "dataset",
         "manage_all_integrations",
-        "Can add, edit, delete, and sync e-commerce integrations in every data set.",
+        "Can add, edit, delete, and sync integrations in every data set.",
     ),
 ]
 
