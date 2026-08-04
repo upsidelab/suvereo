@@ -50,8 +50,6 @@ class PermissionListView(ListAPIView):
         permissions = Permission.objects.filter(query).select_related(
             "content_type", "description_entry", "description_entry__implied_view_permission__content_type"
         )
-        # codenames' own order is the intended display order (manage_X right before the view_X
-        # it implies) -- .order_by("codename") would instead cluster every manage_* together and
-        # every view_* together alphabetically, exactly the layout that hides the auto-check.
+        # codenames' own order is the intended display order (manage_X right before the view_X it implies)
         order_index = {codename: position for position, codename in enumerate(codenames)}
         return sorted(permissions, key=lambda p: order_index[f"{p.content_type.app_label}.{p.codename}"])

@@ -142,8 +142,7 @@ class PermissionDescription(models.Model):
         on_delete=models.SET_NULL,
         related_name="+",
         help_text="Set on a manage_X permission's own row when checking it should also check a view_X "
-        "permission in the composer -- the single source of truth the frontend checklist reads instead "
-        "of hardcoding the pairing.",
+        "permission in the composer, the single source of truth the frontend checklist reads"
     )
 
     def __str__(self):

@@ -15,9 +15,8 @@ class Migration(migrations.Migration):
             name="implied_view_permission",
             field=models.ForeignKey(
                 blank=True,
-                help_text="Set on a manage_X permission's own row when checking it should also check a "
-                "view_X permission in the composer -- the single source of truth the frontend checklist "
-                "reads instead of hardcoding the pairing.",
+                help_text="Set on a manage_X permission's own row when checking it should also check a view_X "
+                "permission in the composer, the single source of truth the frontend checklist reads",
                 null=True,
                 on_delete=django.db.models.deletion.SET_NULL,
                 related_name="+",

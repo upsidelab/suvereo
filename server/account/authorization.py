@@ -22,11 +22,6 @@ PERM_MANAGE_ALL_AGENTS = "catalog.manage_all_agents"
 PERM_VIEW_ALL_INTEGRATIONS = "catalog.view_all_integrations"
 PERM_MANAGE_ALL_INTEGRATIONS = "catalog.manage_all_integrations"
 
-# Order here is also display order (PermissionListView preserves it) -- each manage_X sits
-# right before the view_X it implies, per PermissionDescription.implied_view_permission, so the
-# composer checklist never auto-checks something out of sight. manage_datasets/view_all_datasets
-# additionally sandwiches manage_all_agents, since manage_all_agents borrows view_all_datasets as
-# its own implied view tier (there's no separate view_all_agents).
 GLOBAL_PERMISSION_CODENAMES = [
     PERM_MANAGE_USERS,
     PERM_VIEW_USERS,
@@ -47,8 +42,6 @@ what Admin ends up holding in full."""
 PERM_VIEW_DATASET = "catalog.view_dataset"
 PERM_CONVERSE = "catalog.converse"
 
-# Same display-order note as GLOBAL_PERMISSION_CODENAMES above: manage_agents sits right before
-# the view_dataset it implies.
 DATASET_PERMISSION_GLOBAL_COUNTERPART = {
     PERM_MANAGE_AGENTS: PERM_MANAGE_ALL_AGENTS,
     PERM_VIEW_DATASET: PERM_VIEW_ALL_DATASETS,
@@ -206,6 +199,18 @@ def assert_group_ids_assignable(requesting_user, group_ids) -> None:
     forbidden_ids = _admin_equivalent_group_ids() & set(group_ids)
     if forbidden_ids:
         raise DjangoValidationError("Only an Admin can grant Admin-equivalent group membership.")
+
+
+def assert_service_account_admin_assignable(requesting_user, is_admin: bool) -> None:
+    """Raise if a non-Admin `requesting_user` is trying to grant Admin-equivalent access to a
+    service account.
+
+    Service accounts don't have group_ids at all -- they're granted Admin directly via a single
+    `is_admin` flag (see CreateUpdateServiceAccountSerializer), so assert_group_ids_assignable's
+    check doesn't apply to them; this is its equivalent for that one flag.
+    """
+    if is_admin and not is_application_admin(requesting_user):
+        raise DjangoValidationError("Only an Admin can grant Admin-equivalent access to a service account.")
 
 
 def assert_not_self_removing_from_admin(requesting_user, target_user, new_group_ids) -> None:

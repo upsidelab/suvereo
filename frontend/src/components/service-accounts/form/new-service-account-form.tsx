@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Form } from "@/components/ui/form.tsx";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -12,7 +12,6 @@ import { DataSetsFields } from "@/components/service-accounts/form/data-sets-fie
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { PermissionFields } from "@/components/service-accounts/form/permission-fields.tsx";
-import { GroupOption } from "@/lib/types.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -24,7 +23,8 @@ const formSchema = z.object({
   }),
   dataSetIds: z.array(z.number()),
   isActive: z.boolean(),
-  groupIds: z.array(z.number()),
+  isAdmin: z.boolean(),
+  permissionIds: z.array(z.number()),
 });
 type CreateServiceAccountFormSchema = z.infer<typeof formSchema>;
 
@@ -39,25 +39,21 @@ export function NewServiceAccountForm({onServiceAccountCreated}: NewServiceAccou
       name: "",
       dataSetIds: [],
       isActive: true,
-      groupIds: [],
+      isAdmin: false,
+      permissionIds: [],
     }
   });
   const [isTokenDialogOpen, setIsTokenDialogOpen] = useState(false);
   const [generatedToken, setGeneratedToken] = useState("");
-  const [groups, setGroups] = useState<GroupOption[]>([]);
+
+  const isAdmin = useWatch({ control: form.control, name: "isAdmin" });
 
   useEffect(() => {
-    api.groups().getGroups().then(setGroups);
-  }, []);
-
-  const groupIds = useWatch({ control: form.control, name: "groupIds" });
-  const isAdminGroupSelected = groups.some((g) => g.name === "Admin" && groupIds.includes(g.id));
-
-  useEffect(() => {
-    if (isAdminGroupSelected) {
+    if (isAdmin) {
       form.setValue("dataSetIds", []);
+      form.setValue("permissionIds", []);
     }
-  }, [isAdminGroupSelected, form]);
+  }, [isAdmin, form]);
 
   const handleSubmit = async (values: CreateServiceAccountFormSchema) => {
     const {  token } = await api.serviceAccounts().createServiceAccount(values);
@@ -77,8 +73,8 @@ export function NewServiceAccountForm({onServiceAccountCreated}: NewServiceAccou
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
           <DetailsFields form={form}/>
-          <PermissionFields form={form} groups={groups}/>
-          {!isAdminGroupSelected && <DataSetsFields form={form}/>}
+          <PermissionFields form={form}/>
+          {!isAdmin && <DataSetsFields form={form}/>}
           <Button type="submit">Create</Button>
         </form>
       </Form>

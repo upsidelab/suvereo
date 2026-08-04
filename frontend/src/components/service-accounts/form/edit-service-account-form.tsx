@@ -9,7 +9,7 @@ import { DetailsFields } from "@/components/service-accounts/form/details-fields
 import { DataSetsFields } from "@/components/service-accounts/form/data-sets-fields.tsx";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
-import { ServiceAccount, GroupOption } from "@/lib/types.ts";
+import { ServiceAccount } from "@/lib/types.ts";
 import { PermissionFields } from "@/components/service-accounts/form/permission-fields.tsx";
 
 const api = new ApiClient(authenticationProviderInstance);
@@ -19,7 +19,8 @@ const formSchema = z.object({
   name: z.string().trim().min(1),
   dataSetIds: z.array(z.number()),
   isActive: z.boolean(),
-  groupIds: z.array(z.number()),
+  isAdmin: z.boolean(),
+  permissionIds: z.array(z.number()),
 }).refine(async (data) => data.name === data.oldName || await checkServiceNameAvailability(data.name), {
   message: "The name has already been taken",
   path: ["name"],
@@ -42,30 +43,26 @@ export function EditServiceAccountForm({ serviceAccount, onServiceAccountUpdated
       oldName: oldName,
       dataSetIds: serviceAccount.dataSetIds || [],
       isActive: serviceAccount.isActive,
-      groupIds: serviceAccount.groupIds || [],
+      isAdmin: serviceAccount.isAdmin,
+      permissionIds: serviceAccount.permissionIds || [],
     }
   });
-  const [groups, setGroups] = useState<GroupOption[]>([]);
+
+  const isAdmin = useWatch({ control: form.control, name: "isAdmin" });
 
   useEffect(() => {
-    api.groups().getGroups().then(setGroups);
-  }, []);
-
-  const groupIds = useWatch({ control: form.control, name: "groupIds" });
-  const isAdminGroupSelected = groups.some((g) => g.name === "Admin" && groupIds.includes(g.id));
-
-  useEffect(() => {
-    if (isAdminGroupSelected) {
+    if (isAdmin) {
       form.setValue("dataSetIds", []);
+      form.setValue("permissionIds", []);
     }
-  }, [isAdminGroupSelected, form]);
+  }, [isAdmin, form]);
 
   const handleSubmit = async (values: CreateServiceAccountFormSchema) => {
     setError(null);
     const response = await api.serviceAccounts().updateServiceAccount(serviceAccount.id, values);
     if (!response.ok) {
       const body = await response.json();
-      setError(body.detail ?? body.group_ids?.[0] ?? "Could not update this service account.");
+      setError(body.detail ?? body.non_field_errors?.[0] ?? "Could not update this service account.");
       return;
     }
     onServiceAccountUpdated();
@@ -77,8 +74,8 @@ export function EditServiceAccountForm({ serviceAccount, onServiceAccountUpdated
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
           {error && <p className="text-sm text-destructive">{error}</p>}
           <DetailsFields form={form}/>
-          <PermissionFields form={form} groups={groups}/>
-          {!isAdminGroupSelected && <DataSetsFields form={form}/>}
+          <PermissionFields form={form}/>
+          {!isAdmin && <DataSetsFields form={form}/>}
           <Button type="submit">Update</Button>
         </form>
       </Form>
