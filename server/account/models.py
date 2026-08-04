@@ -1,5 +1,5 @@
 from django.contrib.auth.base_user import BaseUserManager
-from django.contrib.auth.models import AbstractUser, Permission
+from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.db import models
 
 from account.authorization import PERM_CONVERSE, PERM_VIEW_DATASET, has_dataset_perm, is_application_admin
@@ -83,6 +83,47 @@ class DatasetRole(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class DatasetUserRoleAssignment(models.Model):
+    """Records which DatasetRole a user's dataset grant was made through.
+
+    guardian's UserObjectPermission stores only the resulting permission grants, not which
+    named role produced them -- reconstructing "what role does this user have on this dataset"
+    from the permission set alone is ambiguous whenever one role's permissions are a subset of
+    another's, or two roles happen to grant the same set. This table is the source of truth
+    instead; the actual access enforcement still goes entirely through guardian's grants.
+    """
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="dataset_role_assignments")
+    dataset = models.ForeignKey("catalog.DataSet", on_delete=models.CASCADE, related_name="user_role_assignments")
+    role = models.ForeignKey(DatasetRole, on_delete=models.CASCADE, related_name="user_assignments")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "dataset"], name="unique_dataset_user_role_assignment"),
+        ]
+
+    def __str__(self):
+        return f"{self.user.email} -> {self.role.name} on dataset {self.dataset_id}"
+
+
+class DatasetGroupRoleAssignment(models.Model):
+    """Records which DatasetRole a group's dataset grant was made through -- see
+    DatasetUserRoleAssignment for why this is tracked separately from the guardian grants
+    themselves."""
+
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name="dataset_role_assignments")
+    dataset = models.ForeignKey("catalog.DataSet", on_delete=models.CASCADE, related_name="group_role_assignments")
+    role = models.ForeignKey(DatasetRole, on_delete=models.CASCADE, related_name="group_assignments")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["group", "dataset"], name="unique_dataset_group_role_assignment"),
+        ]
+
+    def __str__(self):
+        return f"{self.group.name} -> {self.role.name} on dataset {self.dataset_id}"
 
 
 class PermissionDescription(models.Model):

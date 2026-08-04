@@ -162,12 +162,8 @@ class ConfigView(GenericAPIView):
     )
     def get(self, request, *args, **kwargs):
         response_body = {
-            "language_model_providers": [
-                cls.NAME for cls in LanguageModelRegistry().get_provider_classes()
-            ],
-            "embedding_providers": [
-                cls.NAME for cls in EmbeddingProviderRegistry().get_provider_classes()
-            ],
+            "language_model_providers": [cls.NAME for cls in LanguageModelRegistry().get_provider_classes()],
+            "embedding_providers": [cls.NAME for cls in EmbeddingProviderRegistry().get_provider_classes()],
         }
 
         return Response(response_body)
@@ -216,8 +212,7 @@ class ConfigEmbeddingModelView(GenericAPIView):
                         "vector_size_constraints": openapi.Schema(
                             type=openapi.TYPE_OBJECT,
                             description=(
-                                "Map of model name to allowed vector sizes. "
-                                "Empty object means no constraints."
+                                "Map of model name to allowed vector sizes. Empty object means no constraints."
                             ),
                             additional_properties=openapi.Schema(
                                 type=openapi.TYPE_ARRAY,
@@ -240,23 +235,18 @@ class ConfigEmbeddingModelView(GenericAPIView):
         return Response(response_body)
 
 
-def _resolve_dataset_role(codenames):
-    """Return the DatasetRole name whose full permission set is covered by `codenames`, or None.
-
-    `codenames` comes from guardian's `get_users_with_perms`/`get_groups_with_perms`
-    (`attach_perms=True`), which report bare codenames (e.g. ``"view_dataset"``).
+def _resolve_dataset_role(target, dataset):
+    """Return the DatasetRole name assigned to `target` (a User or Group) on `dataset`, or None
+    if the grant wasn't made through a tracked role (e.g. a direct grant like the dataset
+    creator's own access).
     """
-    from account.models import DatasetRole
+    from account.models import DatasetGroupRoleAssignment, DatasetUserRoleAssignment
 
-    bare_codenames = set(codenames)
-    matches = []
-    for role in DatasetRole.objects.prefetch_related("permissions"):
-        role_codenames = {p.codename for p in role.permissions.all()}
-        if role_codenames and role_codenames <= bare_codenames:
-            matches.append((role.name, len(role_codenames)))
-    if not matches:
-        return None
-    return max(matches, key=lambda pair: pair[1])[0]
+    if isinstance(target, Group):
+        assignment = DatasetGroupRoleAssignment.objects.filter(group=target, dataset=dataset).first()
+    else:
+        assignment = DatasetUserRoleAssignment.objects.filter(user=target, dataset=dataset).first()
+    return assignment.role.name if assignment else None
 
 
 class DataSetAccessListView(GenericAPIView):
@@ -266,7 +256,7 @@ class DataSetAccessListView(GenericAPIView):
     def get(self, request, data_set_id):
         dataset = get_object_or_404(DataSet, pk=data_set_id)
         rows = []
-        for user, codenames in get_users_with_perms(dataset, attach_perms=True, with_group_users=False).items():
+        for user, _ in get_users_with_perms(dataset, attach_perms=True, with_group_users=False).items():
             if user.is_service_account:
                 # Service accounts get dataset access exclusively via their own "Data Sets"
                 # field (CreateUpdateServiceAccountSerializer._sync_data_sets), which always
@@ -279,16 +269,16 @@ class DataSetAccessListView(GenericAPIView):
                     "target_type": "user",
                     "target_id": user.id,
                     "target_label": user.email,
-                    "role": _resolve_dataset_role(codenames),
+                    "role": _resolve_dataset_role(user, dataset),
                 }
             )
-        for group, codenames in get_groups_with_perms(dataset, attach_perms=True).items():
+        for group, _ in get_groups_with_perms(dataset, attach_perms=True).items():
             rows.append(
                 {
                     "target_type": "group",
                     "target_id": group.id,
                     "target_label": group.name,
-                    "role": _resolve_dataset_role(codenames),
+                    "role": _resolve_dataset_role(group, dataset),
                 }
             )
         serializer = DataSetAccessSerializer(rows, many=True)

@@ -58,18 +58,32 @@ DATASET_PERMISSION_CODENAMES = list(DATASET_PERMISSION_GLOBAL_COUNTERPART)
 
 
 def assign_dataset_role(target, dataset, role_name: str) -> None:
-    """Grant `target` (a User or Group) the named role's permission bundle on `dataset`."""
-    from account.models import DatasetRole
+    """Grant `target` (a User or Group) the named role's permission bundle on `dataset`, and
+    record that this role produced the grant -- see DatasetUserRoleAssignment for why."""
+    from account.models import DatasetGroupRoleAssignment, DatasetRole, DatasetUserRoleAssignment
 
     role = DatasetRole.objects.get(name=role_name)
     for permission in role.permissions.all():
         assign_perm(f"{permission.content_type.app_label}.{permission.codename}", target, dataset)
 
+    if isinstance(target, Group):
+        DatasetGroupRoleAssignment.objects.update_or_create(group=target, dataset=dataset, defaults={"role": role})
+    else:
+        DatasetUserRoleAssignment.objects.update_or_create(user=target, dataset=dataset, defaults={"role": role})
+
 
 def remove_all_dataset_grants(target, dataset) -> None:
-    """Revoke every dataset-role permission this target holds on `dataset`, regardless of role."""
+    """Revoke every dataset-role permission this target holds on `dataset`, regardless of role,
+    and clear any recorded role assignment for it."""
+    from account.models import DatasetGroupRoleAssignment, DatasetUserRoleAssignment
+
     for codename in DATASET_PERMISSION_CODENAMES:
         remove_perm(codename, target, dataset)
+
+    if isinstance(target, Group):
+        DatasetGroupRoleAssignment.objects.filter(group=target, dataset=dataset).delete()
+    else:
+        DatasetUserRoleAssignment.objects.filter(user=target, dataset=dataset).delete()
 
 
 def grant_full_dataset_access(target, dataset) -> None:
@@ -84,59 +98,33 @@ def grant_full_dataset_access(target, dataset) -> None:
 
 
 def count_datasets_using_role(role_name: str) -> int:
-    """Count (target, dataset) grants whose codename set exactly matches this role's.
-
-    guardian stores raw (target, permission, dataset) grants, not role names, so a role is
-    "in use" when some target's granted codename set on some dataset matches this role's
-    codename set exactly — the same reasoning catalog.views._resolve_dataset_role uses to
-    go the other direction (codenames -> role name).
-    """
-    from guardian.shortcuts import get_groups_with_perms, get_users_with_perms
-
-    from account.models import DatasetRole
-    from catalog.models import DataSet
+    """Count (target, dataset) grants currently assigned this role."""
+    from account.models import DatasetGroupRoleAssignment, DatasetRole, DatasetUserRoleAssignment
 
     role = DatasetRole.objects.get(name=role_name)
-    role_codenames = {p.codename for p in role.permissions.all()}
-
-    count = 0
-    for dataset in DataSet.objects.all():
-        for _, codenames in get_users_with_perms(dataset, attach_perms=True, with_group_users=False).items():
-            if set(codenames) == role_codenames:
-                count += 1
-        for _, codenames in get_groups_with_perms(dataset, attach_perms=True).items():
-            if set(codenames) == role_codenames:
-                count += 1
-    return count
+    return (
+        DatasetUserRoleAssignment.objects.filter(role=role).count()
+        + DatasetGroupRoleAssignment.objects.filter(role=role).count()
+    )
 
 
 def revoke_dataset_role_everywhere(role_name: str) -> int:
-    """Revoke every (target, dataset) grant currently matching this role's exact permission set.
+    """Revoke this role from every (target, dataset) grant currently assigned it.
 
     Called just before deleting a DatasetRole so no orphaned guardian grants survive the role
     definition disappearing -- mirrors how deleting a Group cascades its GroupObjectPermission
-    rows, except DatasetRole grants aren't stored via a foreign key to DatasetRole, so this has
-    to walk the same (target, dataset) search count_datasets_using_role uses and revoke instead
-    of counting. Returns how many (target, dataset) pairs were revoked.
+    rows. Returns how many (target, dataset) pairs were revoked.
     """
-    from guardian.shortcuts import get_groups_with_perms, get_users_with_perms
-
-    from account.models import DatasetRole
-    from catalog.models import DataSet
+    from account.models import DatasetGroupRoleAssignment, DatasetRole, DatasetUserRoleAssignment
 
     role = DatasetRole.objects.get(name=role_name)
-    role_codenames = {p.codename for p in role.permissions.all()}
-
     count = 0
-    for dataset in DataSet.objects.all():
-        for user, codenames in get_users_with_perms(dataset, attach_perms=True, with_group_users=False).items():
-            if set(codenames) == role_codenames:
-                remove_all_dataset_grants(user, dataset)
-                count += 1
-        for group, codenames in get_groups_with_perms(dataset, attach_perms=True).items():
-            if set(codenames) == role_codenames:
-                remove_all_dataset_grants(group, dataset)
-                count += 1
+    for assignment in DatasetUserRoleAssignment.objects.filter(role=role).select_related("dataset"):
+        remove_all_dataset_grants(assignment.user, assignment.dataset)
+        count += 1
+    for assignment in DatasetGroupRoleAssignment.objects.filter(role=role).select_related("dataset"):
+        remove_all_dataset_grants(assignment.group, assignment.dataset)
+        count += 1
     return count
 
 
