@@ -26,8 +26,8 @@ export class GroupsApiClient extends BaseApiClient {
 
   async getGroupDetail(groupId: number): Promise<GroupDetail> {
     const response = await fetch(`${this.apiBase}/api/groups/${groupId}`, this._requestConfiguration());
-    const result = await response.json() as { id: number; name: string; permission_ids: number[]; is_system: boolean };
-    return { id: result.id, name: result.name, permissionIds: result.permission_ids, isSystem: result.is_system };
+    const result = await response.json() as { id: number; name: string; permission_ids: number[] };
+    return { id: result.id, name: result.name, permissionIds: result.permission_ids };
   }
 
   async updateGroup(groupId: number, name: string, permissionIds: number[]): Promise<Response> {

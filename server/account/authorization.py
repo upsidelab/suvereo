@@ -73,15 +73,6 @@ def assign_dataset_role(target, dataset, role_name: str) -> None:
         assign_perm(f"{permission.content_type.app_label}.{permission.codename}", target, dataset)
 
 
-def remove_dataset_role(target, dataset, role_name: str) -> None:
-    """Revoke the named role's permission bundle from `target` on `dataset`."""
-    from account.models import DatasetRole
-
-    role = DatasetRole.objects.get(name=role_name)
-    for permission in role.permissions.all():
-        remove_perm(f"{permission.content_type.app_label}.{permission.codename}", target, dataset)
-
-
 def remove_all_dataset_grants(target, dataset) -> None:
     """Revoke every dataset-role permission this target holds on `dataset`, regardless of role."""
     for codename in DATASET_PERMISSION_CODENAMES:

@@ -86,7 +86,6 @@ export type DataSetAccessGrant = {
 export type DatasetRoleOption = {
   id: number;
   name: string;
-  isSystem: boolean;
 };
 
 export type GroupOption = {
@@ -111,14 +110,12 @@ export type GroupDetail = {
   id: number;
   name: string;
   permissionIds: number[];
-  isSystem: boolean;
 };
 
 export type DatasetRoleDetail = {
   id: number;
   name: string;
   permissionIds: number[];
-  isSystem: boolean;
 };
 
 export type Agent = {

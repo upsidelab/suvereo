@@ -75,6 +75,9 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
         <DialogHeader>
           <DialogTitle>{role ? `Edit ${capitalize(role.name)}` : "New Dataset Role"}</DialogTitle>
         </DialogHeader>
+        <p className="text-sm text-muted-foreground -mt-2 mb-2">
+          This only defines the role. To grant it to a user or group, go to Data Sets → Manage Access for that data set.
+        </p>
         {error && <p className="text-sm text-destructive mb-4">{error}</p>}
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
