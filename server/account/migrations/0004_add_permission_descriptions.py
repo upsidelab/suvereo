@@ -1,4 +1,3 @@
-import django.db.models.deletion
 from django.db import migrations, models
 
 # This migration seeds a `PermissionDescription` row for every permission that existed at the time it was written.
@@ -56,6 +55,25 @@ DESCRIPTIONS = [
         "view_all_conversations",
         "Can read (view-only) every user's conversations across every data set -- not just their own.",
     ),
+    (
+        "catalog",
+        "dataset",
+        "converse_all_datasets",
+        "Can chat with every data set's agents and see their own message history.",
+    ),
+    ("catalog", "dataset", "manage_all_agents", "Can create, configure, and delete agents in every data set."),
+    (
+        "catalog",
+        "dataset",
+        "view_all_integrations",
+        "Can see every data set's configured e-commerce integrations.",
+    ),
+    (
+        "catalog",
+        "dataset",
+        "manage_all_integrations",
+        "Can add, edit, delete, and sync e-commerce integrations in every data set.",
+    ),
 ]
 
 
@@ -77,8 +95,8 @@ def reverse_seed_permission_descriptions(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("account", "0005_reseed_dataset_roles"),
-        ("catalog", "0018_add_integration_permissions"),
+        ("account", "0003_admin_group_and_dataset_role"),
+        ("catalog", "0015_dataset_permissions_and_roles"),
         ("agent", "0031_add_view_all_conversations_permission"),
     ]
 
@@ -91,7 +109,7 @@ class Migration(migrations.Migration):
                 (
                     "permission",
                     models.OneToOneField(
-                        on_delete=django.db.models.deletion.CASCADE,
+                        on_delete=models.CASCADE,
                         related_name="description_entry",
                         to="auth.permission",
                     ),

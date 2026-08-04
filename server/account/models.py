@@ -89,7 +89,7 @@ class PermissionDescription(models.Model):
     """Attaches a human-readable description to a `Permission`.
 
     Every migration that creates a new permission must also seed a `PermissionDescription` row for it, in that
-    same migration, following the pattern in `0006_add_permission_descriptions.py`.
+    same migration, following the pattern in `0004_add_permission_descriptions.py`.
     """
 
     permission = models.OneToOneField(Permission, on_delete=models.CASCADE, related_name="description_entry")
