@@ -6,7 +6,6 @@ import { authenticationProviderInstance } from "@/lib/authentication-provider.ts
 import { DatasetRoleOption } from "@/lib/types.ts";
 import { DatasetRoleModal } from "@/components/roles/dataset-roles/dataset-role-modal.tsx";
 import { RevokeConfirmDialog } from "@/components/roles/revoke-confirm-dialog.tsx";
-import { capitalize } from "@/lib/utils.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -73,8 +72,8 @@ export function DatasetRolesList() {
         <TableBody>
           {roles.map((role) => (
             <TableRow key={role.id}>
-              <TableCell>{capitalize(role.name)}</TableCell>
-              <TableCell className="flex space-x-4">
+              <TableCell>{role.name}</TableCell>
+              <TableCell width="20%" className="flex space-x-4">
                 <DatasetRoleModal role={role} onSaved={load} />
                 <Button variant="secondary" onClick={() => handleDeleteClick(role)}>Delete</Button>
               </TableCell>
@@ -85,7 +84,7 @@ export function DatasetRolesList() {
 
       <RevokeConfirmDialog
         open={isDeleteDialogOpen}
-        title={`Delete role${roleToDelete ? ` "${capitalize(roleToDelete.name)}"` : ""}`}
+        title={`Delete role${roleToDelete ? ` "${roleToDelete.name}"` : ""}`}
         count={usageCountToDelete}
         unitLabel="grant"
         onConfirm={confirmDelete}

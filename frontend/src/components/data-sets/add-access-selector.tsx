@@ -10,7 +10,7 @@ import {
   CommandList
 } from "@/components/ui/command.tsx";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select.tsx";
-import { capitalize, cn } from "@/lib/utils.ts";
+import { cn } from "@/lib/utils.ts";
 import { DatasetRoleOption, GroupOption, User } from "@/lib/types.ts";
 import { useEffect, useState } from "react";
 
@@ -36,7 +36,7 @@ export function AddAccessSelector({ availableUsers, availableGroups, availableRo
 
   const targets: Target[] = [
     ...availableUsers.map((user) => ({ type: "user" as const, id: user.id, label: user.email })),
-    ...availableGroups.map((group) => ({ type: "group" as const, id: group.id, label: capitalize(group.name) })),
+    ...availableGroups.map((group) => ({ type: "group" as const, id: group.id, label: group.name })),
   ];
 
   const handleSubmit = () => {
@@ -100,7 +100,7 @@ export function AddAccessSelector({ availableUsers, availableGroups, availableRo
         <SelectContent>
           {availableRoles.map((roleOption) => (
             <SelectItem key={roleOption.id} value={roleOption.name}>
-              {capitalize(roleOption.name)}
+              {roleOption.name}
             </SelectItem>
           ))}
         </SelectContent>

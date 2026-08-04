@@ -6,7 +6,6 @@ import { authenticationProviderInstance } from "@/lib/authentication-provider.ts
 import { GroupMember, GroupOption } from "@/lib/types.ts";
 import { GroupModal } from "@/components/roles/groups/group-modal.tsx";
 import { RevokeConfirmDialog } from "@/components/roles/revoke-confirm-dialog.tsx";
-import { capitalize } from "@/lib/utils.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 const ADMIN_GROUP_NAME = "Admin";
@@ -74,8 +73,8 @@ export function GroupsList() {
         <TableBody>
           {groups.map((group) => (
             <TableRow key={group.id}>
-              <TableCell>{capitalize(group.name)}</TableCell>
-              <TableCell className="flex space-x-4">
+              <TableCell>{group.name}</TableCell>
+              <TableCell width="20%" className="flex space-x-4">
                 <GroupModal group={group} onSaved={load} />
                 {group.name !== ADMIN_GROUP_NAME &&
                   <Button variant="secondary" onClick={() => handleDeleteClick(group)}>Delete</Button>
@@ -88,7 +87,7 @@ export function GroupsList() {
 
       <RevokeConfirmDialog
         open={isDeleteDialogOpen}
-        title={`Delete group${groupToDelete ? ` "${capitalize(groupToDelete.name)}"` : ""}`}
+        title={`Delete group${groupToDelete ? ` "${groupToDelete.name}"` : ""}`}
         count={memberCountToDelete}
         unitLabel="member"
         onConfirm={confirmDelete}

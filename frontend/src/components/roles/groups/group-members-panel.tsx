@@ -56,24 +56,28 @@ export function GroupMembersPanel({ groupId }: GroupMembersPanelProps) {
         </Select>
         <Button onClick={handleAdd} disabled={!selectedUserId}>Add</Button>
       </div>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Email</TableHead>
-            <TableHead>Action</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {members.map((member) => (
-            <TableRow key={member.id}>
-              <TableCell>{member.email}</TableCell>
-              <TableCell>
-                <Button variant="secondary" onClick={() => handleRemove(member.id)}>Remove</Button>
-              </TableCell>
+      {members.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No members yet.</p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Email</TableHead>
+              <TableHead>Action</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {members.map((member) => (
+              <TableRow key={member.id}>
+                <TableCell>{member.email}</TableCell>
+                <TableCell>
+                  <Button variant="secondary" onClick={() => handleRemove(member.id)}>Remove</Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
     </div>
   );
 }

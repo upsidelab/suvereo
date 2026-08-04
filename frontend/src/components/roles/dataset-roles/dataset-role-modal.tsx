@@ -10,7 +10,6 @@ import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { DatasetRoleOption, PermissionOption } from "@/lib/types.ts";
 import { PermissionChecklist } from "@/components/roles/permission-checklist.tsx";
-import { capitalize } from "@/lib/utils.ts";
 
 const formSchema = z.object({
   name: z.string().trim().min(1),
@@ -73,7 +72,7 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{role ? `Edit ${capitalize(role.name)}` : "New Dataset Role"}</DialogTitle>
+          <DialogTitle>{role ? `Edit role ${role.name}` : "New Dataset Role"}</DialogTitle>
         </DialogHeader>
         <p className="text-sm text-muted-foreground -mt-2 mb-2">
           This only defines the role. To grant it to a user or group, go to Data Sets → Manage Access for that data set.

@@ -11,7 +11,6 @@ import { authenticationProviderInstance } from "@/lib/authentication-provider.ts
 import { GroupOption, PermissionOption } from "@/lib/types.ts";
 import { PermissionChecklist } from "@/components/roles/permission-checklist.tsx";
 import { GroupMembersPanel } from "@/components/roles/groups/group-members-panel.tsx";
-import { capitalize } from "@/lib/utils.ts";
 
 const formSchema = z.object({
   name: z.string().trim().min(1),
@@ -74,11 +73,11 @@ export function GroupModal({ group, onSaved }: GroupModalProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant={group ? "secondary" : "default"}>{group ? "Edit" : "New Group"}</Button>
+        <Button variant={group ? "secondary" : "default"}>{group ? "Edit" : "New Role"}</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{group ? `Edit ${capitalize(group.name)}` : "New Group"}</DialogTitle>
+          <DialogTitle>{group ? `Edit role ${group.name}` : "New Role"}</DialogTitle>
         </DialogHeader>
         {error && <p className="text-sm text-destructive mb-4">{error}</p>}
         <div className="flex items-center space-x-2 border-b pb-2 mb-4">

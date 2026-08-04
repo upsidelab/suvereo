@@ -7,7 +7,6 @@ import { AddAccessSelector } from "@/components/data-sets/add-access-selector.ts
 import { Separator } from "@/components/ui/separator.tsx";
 import { DataSetAccessGrant, DatasetRoleOption, GroupOption, User } from "@/lib/types.ts";
 import { ApiError } from "@/lib/api-error.ts";
-import { capitalize } from "@/lib/utils.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -136,7 +135,7 @@ export function DataSetAccessList({dataSetId}: DataSetAccessListProps) {
                   {grant.targetLabel}
                 </TableCell>
                 <TableCell width="20%">
-                  {grant.role ? capitalize(grant.role) : "Custom"}
+                  {grant.role ?? "Custom"}
                 </TableCell>
                 <TableCell className="flex space-x-4" width="20%">
                   <Button onClick={() => {
