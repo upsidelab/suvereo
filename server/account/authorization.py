@@ -22,7 +22,7 @@ PERM_MANAGE_ALL_AGENTS = "catalog.manage_all_agents"
 PERM_VIEW_ALL_INTEGRATIONS = "catalog.view_all_integrations"
 PERM_MANAGE_ALL_INTEGRATIONS = "catalog.manage_all_integrations"
 
-ADMIN_GROUP_PERMISSIONS = [
+GLOBAL_PERMISSION_CODENAMES = [
     PERM_MANAGE_USERS,
     PERM_VIEW_USERS,
     PERM_MANAGE_SERVICE_ACCOUNTS,
@@ -36,17 +36,11 @@ ADMIN_GROUP_PERMISSIONS = [
     PERM_VIEW_ALL_INTEGRATIONS,
     PERM_MANAGE_ALL_INTEGRATIONS,
 ]
+"""Every permission a Group can hold globally -- what the Global Role composer may offer, and
+what Admin ends up holding in full."""
 
 PERM_VIEW_DATASET = "catalog.view_dataset"
 PERM_CONVERSE = "catalog.converse"
-
-DATASET_PERMISSION_CODENAMES = [
-    PERM_VIEW_DATASET,
-    PERM_MANAGE_AGENTS,
-    PERM_CONVERSE,
-    PERM_VIEW_INTEGRATIONS,
-    PERM_MANAGE_INTEGRATIONS,
-]
 
 DATASET_PERMISSION_GLOBAL_COUNTERPART = {
     PERM_VIEW_DATASET: PERM_VIEW_ALL_DATASETS,
@@ -55,13 +49,12 @@ DATASET_PERMISSION_GLOBAL_COUNTERPART = {
     PERM_VIEW_INTEGRATIONS: PERM_VIEW_ALL_INTEGRATIONS,
     PERM_MANAGE_INTEGRATIONS: PERM_MANAGE_ALL_INTEGRATIONS,
 }
-"""Every dataset-scoped permission has a global "_all_datasets"-style counterpart, mirroring
-catalog.view_dataset/catalog.view_all_datasets -- checked by has_dataset_perm below, so every
-existing call site benefits automatically without touching each one individually."""
+"""Every dataset-scoped permission, mapped to its global "_all_datasets"-style counterpart --
+checked by has_dataset_perm below, so every existing call site benefits automatically without
+touching each one individually. DATASET_PERMISSION_CODENAMES is just this dict's keys, so the
+two can't drift out of sync."""
 
-GLOBAL_PERMISSION_CODENAMES = ADMIN_GROUP_PERMISSIONS
-"""Same list as ADMIN_GROUP_PERMISSIONS today (Admin holds every global permission), but
-conceptually distinct: this is "what the role composer may offer", not "what Admin has"."""
+DATASET_PERMISSION_CODENAMES = list(DATASET_PERMISSION_GLOBAL_COUNTERPART)
 
 
 def assign_dataset_role(target, dataset, role_name: str) -> None:
@@ -195,9 +188,11 @@ def _admin_equivalent_group_ids() -> set:
     this same self-escalation by assigning a *different* group through the same code path.
     """
     grants_sensitive_permission = Q(
-        permissions__content_type__app_label="account", permissions__codename="manage_users"
-    ) | Q(permissions__content_type__app_label="account", permissions__codename="manage_service_accounts")
-    return set(Group.objects.filter(Q(name=ADMIN_GROUP_NAME) | grants_sensitive_permission).values_list("id", flat=True))
+        permissions__content_type__app_label="account",
+        permissions__codename__in=["manage_users", "manage_service_accounts"],
+    )
+    admin_equivalent_groups = Group.objects.filter(Q(name=ADMIN_GROUP_NAME) | grants_sensitive_permission)
+    return set(admin_equivalent_groups.values_list("id", flat=True))
 
 
 def assert_group_ids_assignable(requesting_user, group_ids) -> None:
