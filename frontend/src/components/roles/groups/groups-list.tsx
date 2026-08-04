@@ -63,18 +63,18 @@ export function GroupsList() {
       <div className="flex flex-col items-end mb-4">
         <GroupModal onSaved={load} />
       </div>
-      <Table>
+      <Table className="table-fixed">
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
-            <TableHead>Action</TableHead>
+            <TableHead className="w-48">Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {groups.map((group) => (
             <TableRow key={group.id}>
               <TableCell>{group.name}</TableCell>
-              <TableCell width="20%" className="flex space-x-4">
+              <TableCell className="flex space-x-4">
                 <GroupModal group={group} onSaved={load} />
                 {group.name !== ADMIN_GROUP_NAME &&
                   <Button variant="secondary" onClick={() => handleDeleteClick(group)}>Delete</Button>

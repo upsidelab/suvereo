@@ -62,18 +62,18 @@ export function DatasetRolesList() {
       <div className="flex flex-col items-end mb-4">
         <DatasetRoleModal onSaved={load} />
       </div>
-      <Table>
+      <Table className="table-fixed">
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
-            <TableHead>Action</TableHead>
+            <TableHead className="w-48">Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {roles.map((role) => (
             <TableRow key={role.id}>
               <TableCell>{role.name}</TableCell>
-              <TableCell width="20%" className="flex space-x-4">
+              <TableCell className="flex space-x-4">
                 <DatasetRoleModal role={role} onSaved={load} />
                 <Button variant="secondary" onClick={() => handleDeleteClick(role)}>Delete</Button>
               </TableCell>
