@@ -17,9 +17,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 const api = new ApiClient(authenticationProviderInstance);
 
 export default function AgentsTable() {
-  const { dataSetId, refetchAgents, dataSets } = useApplicationContext() ?? { dataSetId: null, refetchAgents: async () => {}, dataSets: [] };
-  const currentDataSet = dataSets.find(ds => ds.id === dataSetId);
-  const canManageAgents = !!currentDataSet?.permissions.includes("catalog.manage_agents");
+  const { dataSetId, refetchAgents, hasDatasetPermission } = useApplicationContext() ?? { dataSetId: null, refetchAgents: async () => {}, hasDatasetPermission: () => false };
+  const canManageAgents = hasDatasetPermission("catalog.manage_agents");
   const { agentTypes, loadingTypes } = useAgentTypes();
   
   const [formModalOpen, setFormModalOpen] = useState(false);

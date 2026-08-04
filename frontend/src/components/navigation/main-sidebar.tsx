@@ -26,9 +26,7 @@ import { EntityType } from "@/lib/types.ts";
 const api = new ApiClient(authenticationProviderInstance);
 
 export function MainSidebar() {
-  const { account, dataSetId } = useApplicationContext()!;
-  const { isLoadingAgents } = useApplicationContext()!;
-  const { availableAgents } = useApplicationContext()!;
+  const { account, dataSetId, isLoadingAgents, availableAgents, hasPermission } = useApplicationContext()!;
   const [entityTypes, setEntityTypes] = useState<EntityType[]>([]);
 
   useEffect(() => {
@@ -66,10 +64,9 @@ export function MainSidebar() {
   ];
 
   const isAdmin = !!account?.isAdmin;
-  const permissions = account?.permissions ?? [];
-  const canManageDatasets = isAdmin || permissions.includes("catalog.manage_datasets");
-  const canSeeUsers = isAdmin || permissions.includes("account.manage_users") || permissions.includes("account.view_users");
-  const canSeeServiceAccounts = isAdmin || permissions.includes("account.manage_service_accounts") || permissions.includes("account.view_service_accounts");
+  const canManageDatasets = hasPermission("catalog.manage_datasets");
+  const canSeeUsers = hasPermission("account.manage_users") || hasPermission("account.view_users");
+  const canSeeServiceAccounts = hasPermission("account.manage_service_accounts") || hasPermission("account.view_service_accounts");
   const canManageRoles = isAdmin;
   const hasManageAccess = canManageDatasets || canSeeUsers || canSeeServiceAccounts || canManageRoles;
 

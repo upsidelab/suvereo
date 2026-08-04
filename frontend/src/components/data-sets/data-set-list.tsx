@@ -9,9 +9,9 @@ import { DataSet } from "@/lib/types.ts";
 const api = new ApiClient(authenticationProviderInstance);
 
 export function DataSetList() {
-  const {dataSets, account} = useApplicationContext()!;
+  const {dataSets, account, hasPermission} = useApplicationContext()!;
   const navigate = useNavigate();
-  const canManageDatasets = !!account?.isAdmin || !!account?.permissions.includes("catalog.manage_datasets");
+  const canManageDatasets = hasPermission("catalog.manage_datasets");
   const canManageAccess = !!account?.isAdmin;
 
   const handleSyncAllSources = async () => {

@@ -23,9 +23,8 @@ const STATUS_LABELS: Record<AgenticExecution["status"], string> = {
 };
 
 export function ExecutionsList() {
-  const { availableAgents, dataSetId, dataSets } = useApplicationContext()!;
-  const currentDataSet = dataSets.find(ds => ds.id === dataSetId);
-  const canConverse = !!currentDataSet?.permissions.includes("catalog.converse");
+  const { availableAgents, dataSetId, hasDatasetPermission } = useApplicationContext()!;
+  const canConverse = hasDatasetPermission("catalog.converse");
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 

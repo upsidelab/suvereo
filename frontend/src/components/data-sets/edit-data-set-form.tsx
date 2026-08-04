@@ -14,8 +14,8 @@ import { DeleteDataSetModal } from "./delete-data-set-modal.tsx";
 const api = new ApiClient(authenticationProviderInstance);
 
 export function EditDataSetForm() {
-  const { setDataSets, account } = useApplicationContext()!;
-  const canManageDatasets = !!account?.isAdmin || !!account?.permissions.includes("catalog.manage_datasets");
+  const { setDataSets, hasPermission } = useApplicationContext()!;
+  const canManageDatasets = hasPermission("catalog.manage_datasets");
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [dataSet, setDataSet] = useState<DataSet | undefined>(undefined);

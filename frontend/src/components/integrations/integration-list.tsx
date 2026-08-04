@@ -33,9 +33,8 @@ interface IntegrationListProps {
 }
 
 export function IntegrationList({ dataSetId }: IntegrationListProps) {
-  const { dataSets } = useApplicationContext()!;
-  const currentDataSet = dataSets.find(ds => ds.id === dataSetId);
-  const canManageIntegrations = !!currentDataSet?.permissions.includes("catalog.manage_integrations");
+  const { hasDatasetPermission } = useApplicationContext()!;
+  const canManageIntegrations = hasDatasetPermission("catalog.manage_integrations", dataSetId);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [integrationTypes, setIntegrationTypes] = useState<IntegrationType[]>([]);
   const [modalOpen, setModalOpen] = useState(false);

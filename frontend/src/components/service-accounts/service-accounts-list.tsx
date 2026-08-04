@@ -14,10 +14,10 @@ import { useApplicationContext } from "@/lib/use-application-context.ts";
 const api = new ApiClient(authenticationProviderInstance);
 
 export function ServiceAccountsList() {
-  const { account } = useApplicationContext()!;
+  const { hasPermission } = useApplicationContext()!;
   const [version, setVersion] = useState(0);
   const [accessDenied, setAccessDenied] = useState(false);
-  const canManageServiceAccounts = !!account?.isAdmin || !!account?.permissions.includes("account.manage_service_accounts");
+  const canManageServiceAccounts = hasPermission("account.manage_service_accounts");
 
   const loadServiceAccounts = async (page: number) => {
     try {
