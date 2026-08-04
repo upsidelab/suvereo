@@ -8,6 +8,7 @@ from account.authorization import (
     GLOBAL_PERMISSION_CODENAMES,
     PERM_VIEW_DATASET,
     assert_group_ids_assignable,
+    assert_user_deactivatable,
     grant_full_dataset_access,
     is_application_admin,
     remove_all_dataset_grants,
@@ -77,6 +78,12 @@ class UserUpdateSerializer(GroupAssignmentValidationMixin, serializers.Serialize
     is_active = serializers.BooleanField()
     group_ids = serializers.ListField(child=serializers.IntegerField())
 
+    def validate(self, attrs):
+        request = self.context.get("request")
+        if request is not None and self.instance is not None and attrs.get("is_active") is False:
+            assert_user_deactivatable(request.user, self.instance)
+        return attrs
+
 
 class UserUpdatePasswordSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
@@ -87,6 +94,12 @@ class CreateUpdateServiceAccountSerializer(GroupAssignmentValidationMixin, seria
     is_active = serializers.BooleanField(default=True)
     group_ids = serializers.ListField(child=serializers.IntegerField(), required=False)
     data_set_ids = serializers.ListField(child=serializers.IntegerField(), required=False)
+
+    def validate(self, attrs):
+        request = self.context.get("request")
+        if request is not None and self.instance is not None and attrs.get("is_active") is False:
+            assert_user_deactivatable(request.user, self.instance)
+        return attrs
 
     def create(self, validated_data):
         email = self._build_service_account_email(validated_data.get("name"))

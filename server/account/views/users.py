@@ -53,13 +53,14 @@ class UserView(UpdateAPIView):
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop("partial", False)
-        serializer = self.get_serializer(data=request.data, partial=partial)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         user = self.perform_update(serializer)
         return Response(UserSerializer(user).data)
 
     def perform_update(self, serializer):
-        user = self.get_object()
+        user = serializer.instance
         user.email = serializer.validated_data["email"]
         user.is_active = serializer.validated_data["is_active"]
         user.save()

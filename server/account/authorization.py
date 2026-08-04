@@ -199,3 +199,25 @@ def assert_group_ids_assignable(requesting_user, group_ids) -> None:
     forbidden_ids = _admin_equivalent_group_ids() & set(group_ids)
     if forbidden_ids:
         raise DjangoValidationError("Only an Admin can grant Admin-equivalent group membership.")
+
+
+def is_admin_equivalent(user) -> bool:
+    """True if `user` is a superuser or belongs to any Admin-equivalent group -- see
+    _admin_equivalent_group_ids for exactly what counts and why."""
+    return user.is_superuser or user.groups.filter(id__in=_admin_equivalent_group_ids()).exists()
+
+
+def assert_user_deactivatable(requesting_user, target_user) -> None:
+    """Raise if `requesting_user` is a non-Admin attempting to deactivate an Admin-equivalent
+    account.
+
+    Mirrors assert_group_ids_assignable's threat model from the other direction: a
+    manage_users/manage_service_accounts holder who isn't actually an Admin could otherwise lock
+    out a real Admin (or another manage_users holder) by flipping is_active to False, without
+    ever touching group membership at all. Admin-group members (and superusers) may deactivate
+    anyone freely — they already hold full authority.
+    """
+    if is_application_admin(requesting_user):
+        return
+    if is_admin_equivalent(target_user):
+        raise DjangoValidationError("Only an Admin can deactivate an Admin-equivalent account.")
