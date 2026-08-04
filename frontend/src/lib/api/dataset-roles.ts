@@ -42,4 +42,10 @@ export class DatasetRolesApiClient extends BaseApiClient {
       method: "DELETE"
     });
   }
+
+  async getDatasetRoleUsageCount(roleId: number): Promise<number> {
+    const response = await fetch(`${this.apiBase}/api/dataset-roles/${roleId}/usage`, this._requestConfiguration());
+    const result = await response.json() as { count: number };
+    return result.count;
+  }
 }

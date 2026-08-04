@@ -5,12 +5,17 @@ import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { DatasetRoleOption } from "@/lib/types.ts";
 import { DatasetRoleModal } from "@/components/roles/dataset-roles/dataset-role-modal.tsx";
+import { RevokeConfirmDialog } from "@/components/roles/revoke-confirm-dialog.tsx";
+import { capitalize } from "@/lib/utils.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 
 export function DatasetRolesList() {
   const [roles, setRoles] = useState<DatasetRoleOption[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [roleToDelete, setRoleToDelete] = useState<DatasetRoleOption | null>(null);
+  const [usageCountToDelete, setUsageCountToDelete] = useState(0);
 
   const load = useCallback(async () => {
     setRoles(await api.datasetRoles().getDatasetRoles());
@@ -20,15 +25,36 @@ export function DatasetRolesList() {
     load();
   }, [load]);
 
-  const handleDelete = async (role: DatasetRoleOption) => {
+  const handleDeleteClick = async (role: DatasetRoleOption) => {
     setError(null);
-    const response = await api.datasetRoles().deleteDatasetRole(role.id);
+    let usageCount: number;
+    try {
+      usageCount = await api.datasetRoles().getDatasetRoleUsageCount(role.id);
+    } catch {
+      setError("Could not check how many grants use this role.");
+      return;
+    }
+    setRoleToDelete(role);
+    setUsageCountToDelete(usageCount);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!roleToDelete) return;
+    const response = await api.datasetRoles().deleteDatasetRole(roleToDelete.id);
+    setIsDeleteDialogOpen(false);
+    setRoleToDelete(null);
     if (!response.ok) {
       const body = await response.json();
       setError(body.detail ?? "Could not delete this role.");
       return;
     }
     await load();
+  };
+
+  const cancelDelete = () => {
+    setIsDeleteDialogOpen(false);
+    setRoleToDelete(null);
   };
 
   return (
@@ -47,17 +73,24 @@ export function DatasetRolesList() {
         <TableBody>
           {roles.map((role) => (
             <TableRow key={role.id}>
-              <TableCell>{role.name}</TableCell>
+              <TableCell>{capitalize(role.name)}</TableCell>
               <TableCell className="flex space-x-4">
                 <DatasetRoleModal role={role} onSaved={load} />
-                {!role.isSystem &&
-                  <Button variant="secondary" onClick={() => handleDelete(role)}>Delete</Button>
-                }
+                <Button variant="secondary" onClick={() => handleDeleteClick(role)}>Delete</Button>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+
+      <RevokeConfirmDialog
+        open={isDeleteDialogOpen}
+        title={`Delete role${roleToDelete ? ` "${capitalize(roleToDelete.name)}"` : ""}`}
+        count={usageCountToDelete}
+        unitLabel="grant"
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
     </>
   );
 }

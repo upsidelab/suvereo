@@ -88,6 +88,17 @@ def remove_all_dataset_grants(target, dataset) -> None:
         remove_perm(codename, target, dataset)
 
 
+def grant_full_dataset_access(target, dataset) -> None:
+    """Grant `target` (a User or Group) every dataset-scoped permission on `dataset` directly.
+
+    Used where full access must be granted unconditionally (dataset creation, service-account
+    provisioning) -- these call sites must not depend on a "editor"-named DatasetRole still
+    existing, since DatasetRole rows (including the seeded ones) are user-deletable.
+    """
+    for codename in DATASET_PERMISSION_CODENAMES:
+        assign_perm(codename, target, dataset)
+
+
 def count_datasets_using_role(role_name: str) -> int:
     """Count (target, dataset) grants whose codename set exactly matches this role's.
 
@@ -111,6 +122,36 @@ def count_datasets_using_role(role_name: str) -> int:
                 count += 1
         for _, codenames in get_groups_with_perms(dataset, attach_perms=True).items():
             if set(codenames) == role_codenames:
+                count += 1
+    return count
+
+
+def revoke_dataset_role_everywhere(role_name: str) -> int:
+    """Revoke every (target, dataset) grant currently matching this role's exact permission set.
+
+    Called just before deleting a DatasetRole so no orphaned guardian grants survive the role
+    definition disappearing -- mirrors how deleting a Group cascades its GroupObjectPermission
+    rows, except DatasetRole grants aren't stored via a foreign key to DatasetRole, so this has
+    to walk the same (target, dataset) search count_datasets_using_role uses and revoke instead
+    of counting. Returns how many (target, dataset) pairs were revoked.
+    """
+    from guardian.shortcuts import get_groups_with_perms, get_users_with_perms
+
+    from account.models import DatasetRole
+    from catalog.models import DataSet
+
+    role = DatasetRole.objects.get(name=role_name)
+    role_codenames = {p.codename for p in role.permissions.all()}
+
+    count = 0
+    for dataset in DataSet.objects.all():
+        for user, codenames in get_users_with_perms(dataset, attach_perms=True, with_group_users=False).items():
+            if set(codenames) == role_codenames:
+                remove_all_dataset_grants(user, dataset)
+                count += 1
+        for group, codenames in get_groups_with_perms(dataset, attach_perms=True).items():
+            if set(codenames) == role_codenames:
+                remove_all_dataset_grants(group, dataset)
                 count += 1
     return count
 

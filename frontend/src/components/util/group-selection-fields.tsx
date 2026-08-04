@@ -4,6 +4,7 @@ import { Switch } from "@/components/ui/switch.tsx";
 import { UseFormReturn, useWatch } from "react-hook-form";
 import { GroupOption } from "@/lib/types.ts";
 import { CheckboxListInput } from "@/components/util/checkbox-list-input.tsx";
+import { capitalize } from "@/lib/utils.ts";
 
 const ADMIN_GROUP_NAME = "Admin";
 
@@ -57,7 +58,7 @@ export function GroupSelectionFields({ form, groups }: GroupSelectionFieldsProps
             render={({ field }) => (
               <FormControl>
                 <CheckboxListInput
-                  options={otherGroups.map((group) => ({ id: group.id, label: group.name }))}
+                  options={otherGroups.map((group) => ({ id: group.id, label: capitalize(group.name) }))}
                   selectedIds={field.value as number[]}
                   onChange={field.onChange}
                 />

@@ -10,6 +10,7 @@ import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { DatasetRoleOption, PermissionOption } from "@/lib/types.ts";
 import { PermissionChecklist } from "@/components/roles/permission-checklist.tsx";
+import { capitalize } from "@/lib/utils.ts";
 
 const formSchema = z.object({
   name: z.string().trim().min(1),
@@ -72,7 +73,7 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{role ? `Edit ${role.name}` : "New Dataset Role"}</DialogTitle>
+          <DialogTitle>{role ? `Edit ${capitalize(role.name)}` : "New Dataset Role"}</DialogTitle>
         </DialogHeader>
         {error && <p className="text-sm text-destructive mb-4">{error}</p>}
         <Form {...form}>

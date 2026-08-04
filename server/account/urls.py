@@ -26,6 +26,11 @@ urlpatterns = [
         account.views.dataset_roles.DatasetRoleDetailView.as_view(),
         name="dataset_role_detail",
     ),
+    path(
+        "api/dataset-roles/<int:dataset_role_id>/usage",
+        account.views.dataset_roles.DatasetRoleUsageView.as_view(),
+        name="dataset_role_usage",
+    ),
     path("api/users", account.views.users.UserListView.as_view(), name="user_list"),
     path("api/users/<int:id>", account.views.users.UserView.as_view(), name="user_details"),
     path("api/users/<int:id>/password", account.views.users.UserPasswordView.as_view(), name="user_password"),

@@ -15,6 +15,7 @@ from account.authorization import (
     PERM_VIEW_ALL_DATASETS,
     PERM_VIEW_DATASET,
     assign_dataset_role,
+    grant_full_dataset_access,
     remove_all_dataset_grants,
 )
 from account.models import User
@@ -63,7 +64,7 @@ class DataSetListView(ListCreateAPIView):
         with transaction.atomic():
             preconfigure_agents = serializer.validated_data.pop("preconfigure_agents")
             data_set = serializer.save()
-            assign_dataset_role(self.request.user, data_set, "editor")
+            grant_full_dataset_access(self.request.user, data_set)
             if preconfigure_agents:
                 AgentPreconfigurationService.preconfigure_available_agents(data_set)
 

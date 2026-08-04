@@ -8,7 +8,7 @@ from account.authorization import (
     GLOBAL_PERMISSION_CODENAMES,
     PERM_VIEW_DATASET,
     assert_group_ids_assignable,
-    assign_dataset_role,
+    grant_full_dataset_access,
     is_application_admin,
     remove_all_dataset_grants,
 )
@@ -114,13 +114,14 @@ class CreateUpdateServiceAccountSerializer(GroupAssignmentValidationMixin, seria
         """Replace every dataset-access grant this service account holds with exactly `data_set_ids`.
 
         Datasets no longer covered lose all access-role permissions; each requested dataset
-        is (re)granted the editor role, preserving the full-access semantics of the retired
-        `DataSet.users` M2M, consistent with how the data migration grants regular users.
+        is (re)granted full dataset access directly, preserving the full-access semantics of
+        the retired `DataSet.users` M2M, consistent with how the data migration grants regular
+        users.
         """
         for dataset in get_objects_for_user(service_account, PERM_VIEW_DATASET):
             remove_all_dataset_grants(service_account, dataset)
         for dataset in DataSet.objects.filter(pk__in=data_set_ids):
-            assign_dataset_role(service_account, dataset, "editor")
+            grant_full_dataset_access(service_account, dataset)
 
 
 class ServiceAccountSerializer(serializers.ModelSerializer):
