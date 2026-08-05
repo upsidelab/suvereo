@@ -4,7 +4,7 @@ ADMIN_GROUP_NAME = "Admin"
 
 # Every catalog.dataset permission, final state. The dataset-scoped ones (view_dataset,
 # manage_agents, converse, view_integrations, manage_integrations) are granted per-object via a
-# DatasetRole (see account.0003) rather than to Admin directly -- Admin instead holds each one's
+# DatasetRole (see account.0003) rather than to Admin directly. Admin instead holds each one's
 # global "_all_datasets" counterpart, checked by account.authorization.has_dataset_perm.
 PERMISSIONS = [
     ("manage_datasets", "Can manage data sets"),

@@ -31,7 +31,6 @@ def remove_view_all_conversations_permission(apps, schema_editor):
 class Migration(migrations.Migration):
     dependencies = [
         ("agent", "0030_conversation_ai_summary"),
-        ("account", "0003_admin_group_and_dataset_role"),
     ]
 
     operations = [
