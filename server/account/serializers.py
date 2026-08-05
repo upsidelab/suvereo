@@ -49,8 +49,8 @@ class UserSerializer(serializers.Serializer):
 class GroupAssignmentValidationMixin:
     """Shared `validate_group_ids` guarding every write path that assigns `group_ids`.
 
-    Blocks a non-Admin requesting user from assigning a group that grants Admin-equivalent
-    power (see `account.authorization.assert_group_ids_assignable`). Requires the request in
+    Blocks a non-Admin requesting user from assigning the Admin group itself (see
+    `account.authorization.assert_group_ids_assignable`). Requires the request in
     `self.context["request"]` — DRF's generic views supply this automatically via
     `get_serializer()`; call sites that instantiate the serializer directly must pass
     `context={"request": request}` explicitly, or the check is skipped (trusted, requestless

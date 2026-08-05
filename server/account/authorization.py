@@ -1,6 +1,5 @@
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.db.models import Q
 from guardian.shortcuts import assign_perm, remove_perm
 
 ADMIN_GROUP_NAME = "Admin"
@@ -148,11 +147,9 @@ def has_dataset_perm(user, codename: str, dataset) -> bool:
 def is_application_admin(user) -> bool:
     """Return True when the user is an application administrator.
 
-    Application admin means membership in the ``Admin`` group or being a Django
-    superuser. Intentionally independent from ``is_staff``, which is reserved
-    for Django admin-site access.
+    Application admin means membership in the ``Admin`` group.
     """
-    return user.is_superuser or user.groups.filter(name=ADMIN_GROUP_NAME).exists()
+    return user.groups.filter(name=ADMIN_GROUP_NAME).exists()
 
 
 def set_application_admin(user, enabled: bool) -> None:
@@ -168,37 +165,21 @@ def set_application_admin(user, enabled: bool) -> None:
         user.groups.remove(group)
 
 
-def _admin_equivalent_group_ids() -> set:
-    """IDs of every group whose membership grants Admin-equivalent power.
-
-    That's the ``Admin`` group itself, plus any group holding ``manage_users`` or
-    ``manage_service_accounts`` — holding either permission already lets its holder repeat
-    this same self-escalation by assigning a *different* group through the same code path.
-    """
-    grants_sensitive_permission = Q(
-        permissions__content_type__app_label="account",
-        permissions__codename__in=["manage_users", "manage_service_accounts"],
-    )
-    admin_equivalent_groups = Group.objects.filter(Q(name=ADMIN_GROUP_NAME) | grants_sensitive_permission)
-    return set(admin_equivalent_groups.values_list("id", flat=True))
-
-
 def assert_group_ids_assignable(requesting_user, group_ids) -> None:
-    """Raise if `requesting_user` is a non-Admin attempting to assign an Admin-equivalent group.
+    """Raise if `requesting_user` is a non-Admin attempting to assign the Admin group.
 
     Group membership is how ``is_application_admin`` decides admin status, but assigning a
     ``group_id`` on the User/ServiceAccount write paths is only gated by the delegable
     ``manage_users``/``manage_service_accounts`` permissions. Without this check, a non-Admin
     holding either permission could self-promote (or promote a service account) to full
-    application admin by assigning the Admin group directly, or any other group that grants
-    one of those two permissions. Admin-group members (and superusers) may assign any group
-    freely — they already hold full authority.
+    application admin by assigning the Admin group directly. Admin-group members may assign
+    any group freely: they already hold full authority.
     """
     if is_application_admin(requesting_user):
         return
-    forbidden_ids = _admin_equivalent_group_ids() & set(group_ids)
-    if forbidden_ids:
-        raise DjangoValidationError("Only an Admin can grant Admin-equivalent group membership.")
+    admin_group = Group.objects.filter(name=ADMIN_GROUP_NAME).first()
+    if admin_group is not None and admin_group.pk in set(group_ids):
+        raise DjangoValidationError("Only an Admin can grant Admin group membership.")
 
 
 def assert_not_self_removing_from_group(requesting_user, target_user, group) -> None:
@@ -215,23 +196,15 @@ def assert_not_self_removing_from_group(requesting_user, target_user, group) -> 
         raise DjangoValidationError("You cannot remove yourself from the Admin group.")
 
 
-def is_admin_equivalent(user) -> bool:
-    """True if `user` is a superuser or belongs to any Admin-equivalent group. See
-    _admin_equivalent_group_ids for exactly what counts and why."""
-    return user.is_superuser or user.groups.filter(id__in=_admin_equivalent_group_ids()).exists()
-
-
 def assert_user_deactivatable(requesting_user, target_user) -> None:
-    """Raise if `requesting_user` is a non-Admin attempting to deactivate an Admin-equivalent
-    account.
+    """Raise if `requesting_user` is a non-Admin attempting to deactivate an Admin.
 
     Mirrors assert_group_ids_assignable's threat model from the other direction: a
     manage_users/manage_service_accounts holder who isn't actually an Admin could otherwise lock
-    out a real Admin (or another manage_users holder) by flipping is_active to False, without
-    ever touching group membership at all. Admin-group members (and superusers) may deactivate
-    anyone freely — they already hold full authority.
+    out a real Admin by flipping is_active to False, without ever touching group membership at
+    all. Admin-group members may deactivate anyone freely: they already hold full authority.
     """
     if is_application_admin(requesting_user):
         return
-    if is_admin_equivalent(target_user):
-        raise DjangoValidationError("Only an Admin can deactivate an Admin-equivalent account.")
+    if is_application_admin(target_user):
+        raise DjangoValidationError("Only an Admin can deactivate an Admin account.")
