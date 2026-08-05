@@ -6,7 +6,7 @@ from account.authorization import (
     DATASET_PERMISSION_CODENAMES,
     GLOBAL_PERMISSION_CODENAMES,
     assert_group_ids_assignable,
-    assert_not_self_removing_admin_via_group_ids,
+    assert_not_self_removing_from_group,
     assert_user_deactivatable,
     is_application_admin,
 )
@@ -62,7 +62,13 @@ class GroupAssignmentValidationMixin:
         if request is not None:
             assert_group_ids_assignable(request.user, value)
             if self.instance is not None:
-                assert_not_self_removing_admin_via_group_ids(request.user, self.instance, value)
+                admin_group = Group.objects.filter(name=ADMIN_GROUP_NAME).first()
+                if (
+                    admin_group is not None
+                    and admin_group.pk not in value
+                    and self.instance.groups.filter(pk=admin_group.pk).exists()
+                ):
+                    assert_not_self_removing_from_group(request.user, self.instance, admin_group)
         return value
 
 
