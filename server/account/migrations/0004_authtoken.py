@@ -8,7 +8,7 @@ import account.models
 class Migration(migrations.Migration):
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ("account", "0005_datasetgrouproleassignment_datasetuserroleassignment"),
+        ("account", "0003_permissions_admin_group_and_roles"),
     ]
 
     operations = [
