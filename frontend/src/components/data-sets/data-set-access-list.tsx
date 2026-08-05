@@ -42,8 +42,24 @@ export function DataSetAccessList({dataSetId}: DataSetAccessListProps) {
     const assignedGroupIds = new Set(grants.filter((g) => g.targetType === "group").map((g) => g.targetId));
 
     try {
-      const systemUsers = await api.getAllUsers();
-      setAvailableUsers(systemUsers.filter((u) => !assignedUserIds.has(u.id)));
+      const [systemUsers, serviceAccounts] = await Promise.all([
+        api.getAllUsers(),
+        api.serviceAccounts().getAllServiceAccounts(),
+      ]);
+      // Service accounts are Users for permission purposes -- they can hold dataset access the
+      // same way a human user does. Labeled distinctly here only so this picker doesn't read as
+      // if a person named e.g. "sa-embed-widget" exists.
+      const allTargets: User[] = [
+        ...systemUsers,
+        ...serviceAccounts.map((sa) => ({
+          id: sa.id,
+          email: `${sa.email} (service account)`,
+          isActive: sa.isActive,
+          isAdmin: sa.isAdmin,
+          groupIds: sa.groupIds,
+        })),
+      ];
+      setAvailableUsers(allTargets.filter((u) => !assignedUserIds.has(u.id)));
       setUsersLoadFailed(false);
     } catch {
       setAvailableUsers([]);

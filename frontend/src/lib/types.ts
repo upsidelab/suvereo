@@ -155,8 +155,7 @@ export type ServiceAccount = {
   isActive: boolean;
   isAdmin: boolean;
   dateCreated: string;
-  dataSetIds: number[];
-  permissionIds: number[];
+  groupIds: number[];
 };
 
 export type ProvidersConfig = {

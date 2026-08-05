@@ -9,26 +9,21 @@ export type ServiceAccountResponse = {
   date_joined: string;
   is_active: boolean;
   is_admin: boolean;
-  data_set_ids: number[];
-  permission_ids: number[];
+  group_ids: number[];
 }
 
 export type CreateServiceAccountParams = {
   name: string;
-  dataSetIds: number[];
   isActive: boolean;
-  isAdmin: boolean;
-  permissionIds: number[];
+  groupIds: number[];
 }
 
 export type UpdateServiceAccountParams = CreateServiceAccountParams;
 
 export type CreateServiceAccountPayload = {
   name: string;
-  data_set_ids: number[];
   is_active: boolean;
-  is_admin: boolean;
-  permission_ids: number[];
+  group_ids: number[];
 }
 
 export type UpdateServiceAccountPayload = CreateServiceAccountPayload;
@@ -51,21 +46,40 @@ export class ServiceAccountsApiClient extends BaseApiClient {
         id: item.id,
         email: item.email,
         dateCreated: item.date_joined,
-        dataSetIds: item.data_set_ids,
         isActive: item.is_active,
         isAdmin: item.is_admin,
-        permissionIds: item.permission_ids
+        groupIds: item.group_ids
       }))
     };
+  }
+
+  async getAllServiceAccounts(): Promise<ServiceAccount[]> {
+    const response = await fetch(
+      `${this.apiBase}/api/service_accounts?page_size=1000`, this._requestConfiguration()
+    );
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new ApiError(`Failed to list service accounts: ${response.statusText}`, {
+        data: errorData,
+        status: response.status,
+      });
+    }
+    const result = await response.json() as PaginatedResult<ServiceAccountResponse>;
+    return result.results.map((item) => ({
+      id: item.id,
+      email: item.email,
+      dateCreated: item.date_joined,
+      isActive: item.is_active,
+      isAdmin: item.is_admin,
+      groupIds: item.group_ids
+    }));
   }
 
   async createServiceAccount(serviceAccount: CreateServiceAccountParams): Promise<Token> {
     const payload: CreateServiceAccountPayload = {
       name: serviceAccount.name,
-      data_set_ids: serviceAccount.dataSetIds,
       is_active: serviceAccount.isActive,
-      is_admin: serviceAccount.isAdmin,
-      permission_ids: serviceAccount.permissionIds
+      group_ids: serviceAccount.groupIds
     };
 
     const response = await fetch(`${this.apiBase}/api/service_accounts/`, {
@@ -80,10 +94,8 @@ export class ServiceAccountsApiClient extends BaseApiClient {
   async updateServiceAccount(id: number, serviceAccount: UpdateServiceAccountParams): Promise<Response> {
     const payload: UpdateServiceAccountPayload = {
       name: serviceAccount.name,
-      data_set_ids: serviceAccount.dataSetIds,
       is_active: serviceAccount.isActive,
-      is_admin: serviceAccount.isAdmin,
-      permission_ids: serviceAccount.permissionIds
+      group_ids: serviceAccount.groupIds
     };
 
     return await fetch(`${this.apiBase}/api/service_accounts/${id}`, {

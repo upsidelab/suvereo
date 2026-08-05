@@ -201,18 +201,6 @@ def assert_group_ids_assignable(requesting_user, group_ids) -> None:
         raise DjangoValidationError("Only an Admin can grant Admin-equivalent group membership.")
 
 
-def assert_service_account_admin_assignable(requesting_user, is_admin: bool) -> None:
-    """Raise if a non-Admin `requesting_user` is trying to grant Admin-equivalent access to a
-    service account.
-
-    Service accounts don't have group_ids at all -- they're granted Admin directly via a single
-    `is_admin` flag (see CreateUpdateServiceAccountSerializer), so assert_group_ids_assignable's
-    check doesn't apply to them; this is its equivalent for that one flag.
-    """
-    if is_admin and not is_application_admin(requesting_user):
-        raise DjangoValidationError("Only an Admin can grant Admin-equivalent access to a service account.")
-
-
 def assert_not_self_removing_from_admin(requesting_user, target_user, new_group_ids) -> None:
     """Raise if `requesting_user` is editing their own account and the submitted `group_ids`
     would drop them out of the Admin group.
