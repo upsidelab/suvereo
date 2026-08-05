@@ -64,12 +64,7 @@ class GroupMembersView(GenericAPIView):
     @swagger_auto_schema(operation_description="List a group's members")
     def get(self, request, group_id):
         group = get_object_or_404(Group, pk=group_id)
-        # Service accounts get their group membership exclusively through their own edit form
-        # (CreateUpdateServiceAccountSerializer) -- they're excluded here the same way
-        # DataSetAccessListView excludes them, so this panel doesn't become a second place
-        # that can (mis)manage the same membership.
-        members = group.user_set.filter(is_service_account=False).order_by("email")
-        serializer = GroupMemberSerializer(members, many=True)
+        serializer = GroupMemberSerializer(group.user_set.order_by("email"), many=True)
         return Response(serializer.data)
 
     @swagger_auto_schema(operation_description="Add a user to a group")

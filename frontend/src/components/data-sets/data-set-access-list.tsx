@@ -46,9 +46,6 @@ export function DataSetAccessList({dataSetId}: DataSetAccessListProps) {
         api.getAllUsers(),
         api.serviceAccounts().getAllServiceAccounts(),
       ]);
-      // Service accounts are Users for permission purposes -- they can hold dataset access the
-      // same way a human user does. Labeled distinctly here only so this picker doesn't read as
-      // if a person named e.g. "sa-embed-widget" exists.
       const allTargets: User[] = [
         ...systemUsers,
         ...serviceAccounts.map((sa) => ({

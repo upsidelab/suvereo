@@ -20,9 +20,22 @@ export function GroupMembersPanel({ groupId }: GroupMembersPanelProps) {
   const load = useCallback(async () => {
     const currentMembers = await api.groups().getGroupMembers(groupId);
     setMembers(currentMembers);
-    const allUsers = await api.getAllUsers();
+    const [allUsers, serviceAccounts] = await Promise.all([
+      api.getAllUsers(),
+      api.serviceAccounts().getAllServiceAccounts(),
+    ]);
+    const allTargets: User[] = [
+      ...allUsers,
+      ...serviceAccounts.map((sa) => ({
+        id: sa.id,
+        email: `${sa.email} (service account)`,
+        isActive: sa.isActive,
+        isAdmin: sa.isAdmin,
+        groupIds: sa.groupIds,
+      })),
+    ];
     const memberIds = new Set(currentMembers.map((m) => m.id));
-    setAvailableUsers(allUsers.filter((u) => !memberIds.has(u.id)));
+    setAvailableUsers(allTargets.filter((u) => !memberIds.has(u.id)));
   }, [groupId]);
 
   useEffect(() => {
@@ -69,7 +82,7 @@ export function GroupMembersPanel({ groupId }: GroupMembersPanelProps) {
           <TableBody>
             {members.map((member) => (
               <TableRow key={member.id}>
-                <TableCell>{member.email}</TableCell>
+                <TableCell>{member.email}{member.isServiceAccount && " (service account)"}</TableCell>
                 <TableCell>
                   <Button variant="secondary" onClick={() => handleRemove(member.id)}>Remove</Button>
                 </TableCell>
