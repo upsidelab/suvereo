@@ -12,9 +12,10 @@ export interface CheckboxListInputProps {
   options: CheckboxListOption[];
   selectedIds: number[];
   onChange: (ids: number[]) => void;
+  disabled?: boolean;
 }
 
-export function CheckboxListInput({ options, selectedIds, onChange }: CheckboxListInputProps) {
+export function CheckboxListInput({ options, selectedIds, onChange, disabled }: CheckboxListInputProps) {
   const instanceId = useId();
 
   return (
@@ -28,6 +29,7 @@ export function CheckboxListInput({ options, selectedIds, onChange }: CheckboxLi
               <Checkbox
                 id={checkboxId}
                 checked={checked}
+                disabled={disabled}
                 onCheckedChange={(value) => {
                   onChange(value ? [...selectedIds, option.id] : selectedIds.filter((id) => id !== option.id));
                 }}

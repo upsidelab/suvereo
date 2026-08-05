@@ -201,25 +201,34 @@ def assert_group_ids_assignable(requesting_user, group_ids) -> None:
         raise DjangoValidationError("Only an Admin can grant Admin-equivalent group membership.")
 
 
-def assert_not_self_removing_from_admin(requesting_user, target_user, new_group_ids) -> None:
-    """Raise if `requesting_user` is editing their own account and the submitted `group_ids`
-    would drop them out of the Admin group.
+def assert_not_self_removing_from_group(requesting_user, target_user, group) -> None:
+    """Raise if `requesting_user` is removing themselves specifically from the Admin group.
 
-    `assert_group_ids_assignable` doesn't catch this: an Admin editing themselves already
-    passes its early-return (they're already Admin, so assigning is unrestricted), but removing
-    is a different action than assigning, and self-removal is the one case a "some other Admin
-    fixes it" recovery path doesn't apply to if they're the only Admin left. Blocking it
-    outright is simpler than counting remaining Admins, and never a real loss -- another Admin
-    (or the person themself, later) can always remove them from an *other* account.
+    Editing roles/groups is Admin-only to begin with (IsApplicationAdmin), so the only person
+    who could ever remove themselves from Admin is another Admin -- and self-removal is the one
+    case a "some other Admin fixes it" recovery path doesn't help if they're the only one left.
+    Blocking it outright is simpler than counting remaining Admins, and never a real loss:
+    another Admin (or the same person, from a different account) can always do it. Any group
+    other than Admin, removing yourself is fine -- editing roles isn't the same as holding one.
     """
-    if requesting_user.id != target_user.id:
-        return
-    admin_group = Group.objects.filter(name=ADMIN_GROUP_NAME).first()
-    if admin_group is None:
-        return
-    currently_admin = target_user.groups.filter(pk=admin_group.pk).exists()
-    if currently_admin and admin_group.pk not in new_group_ids:
+    if requesting_user.id == target_user.id and group.name == ADMIN_GROUP_NAME:
         raise DjangoValidationError("You cannot remove yourself from the Admin group.")
+
+
+def assert_not_self_removing_admin_via_group_ids(requesting_user, target_user, new_group_ids) -> None:
+    """Raise if replacing `target_user`'s full group_ids list with `new_group_ids` would drop
+    `requesting_user`'s own Admin membership.
+
+    Wraps assert_not_self_removing_from_group for the group_ids-replacement path (User/
+    ServiceAccount edit forms), which has to diff the current membership against the proposed
+    list first -- the Group Members panel's single-removal path doesn't need this, it's always
+    removing a membership that exists by construction.
+    """
+    admin_group = Group.objects.filter(name=ADMIN_GROUP_NAME).first()
+    if admin_group is None or admin_group.pk in new_group_ids:
+        return
+    if target_user.groups.filter(pk=admin_group.pk).exists():
+        assert_not_self_removing_from_group(requesting_user, target_user, admin_group)
 
 
 def is_admin_equivalent(user) -> bool:

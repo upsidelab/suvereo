@@ -1,4 +1,5 @@
 from django.contrib.auth.models import Group
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
@@ -6,7 +7,7 @@ from rest_framework.generics import GenericAPIView, ListCreateAPIView, RetrieveU
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from account.authorization import ADMIN_GROUP_NAME
+from account.authorization import ADMIN_GROUP_NAME, assert_not_self_removing_from_group
 from account.models import User
 from account.permissions import IsApplicationAdmin
 from account.serializers import GroupDetailSerializer, GroupMemberSerializer, GroupSerializer
@@ -85,5 +86,9 @@ class GroupMemberDetailView(APIView):
     def delete(self, request, group_id, user_id):
         group = get_object_or_404(Group, pk=group_id)
         user = get_object_or_404(User, pk=user_id)
+        try:
+            assert_not_self_removing_from_group(request.user, user, group)
+        except DjangoValidationError as exc:
+            return Response({"detail": exc.message}, status=status.HTTP_400_BAD_REQUEST)
         user.groups.remove(group)
         return Response(status=status.HTTP_204_NO_CONTENT)

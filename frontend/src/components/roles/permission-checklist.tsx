@@ -5,9 +5,10 @@ export interface PermissionChecklistProps {
   options: PermissionOption[];
   selectedIds: number[];
   onChange: (ids: number[]) => void;
+  disabled?: boolean;
 }
 
-export function PermissionChecklist({ options, selectedIds, onChange }: PermissionChecklistProps) {
+export function PermissionChecklist({ options, selectedIds, onChange, disabled }: PermissionChecklistProps) {
   const byCodename = new Map(options.map((option) => [option.codename, option]));
 
   const handleChange = (nextIds: number[]) => {
@@ -42,6 +43,7 @@ export function PermissionChecklist({ options, selectedIds, onChange }: Permissi
       options={options.map((option) => ({ id: option.id, label: option.name, description: option.description }))}
       selectedIds={selectedIds}
       onChange={handleChange}
+      disabled={disabled}
     />
   );
 }

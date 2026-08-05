@@ -6,7 +6,7 @@ from account.authorization import (
     DATASET_PERMISSION_CODENAMES,
     GLOBAL_PERMISSION_CODENAMES,
     assert_group_ids_assignable,
-    assert_not_self_removing_from_admin,
+    assert_not_self_removing_admin_via_group_ids,
     assert_user_deactivatable,
     is_application_admin,
 )
@@ -62,7 +62,7 @@ class GroupAssignmentValidationMixin:
         if request is not None:
             assert_group_ids_assignable(request.user, value)
             if self.instance is not None:
-                assert_not_self_removing_from_admin(request.user, self.instance, value)
+                assert_not_self_removing_admin_via_group_ids(request.user, self.instance, value)
         return value
 
 
@@ -174,6 +174,13 @@ class GroupDetailSerializer(serializers.ModelSerializer):
     def validate_name(self, value):
         if self.instance and self.instance.name == ADMIN_GROUP_NAME and value != ADMIN_GROUP_NAME:
             raise serializers.ValidationError("The Admin group cannot be renamed.")
+        return value
+
+    def validate_permission_ids(self, value):
+        if self.instance and self.instance.name == ADMIN_GROUP_NAME:
+            current_ids = set(self.instance.permissions.values_list("id", flat=True))
+            if {permission.id for permission in value} != current_ids:
+                raise serializers.ValidationError("The Admin group's permissions cannot be edited.")
         return value
 
 

@@ -18,6 +18,7 @@ const formSchema = z.object({
 type GroupFormSchema = z.infer<typeof formSchema>;
 
 const api = new ApiClient(authenticationProviderInstance);
+const ADMIN_GROUP_NAME = "Admin";
 
 type Section = "permissions" | "members";
 
@@ -27,6 +28,7 @@ export interface GroupModalProps {
 }
 
 export function GroupModal({ group, onSaved }: GroupModalProps) {
+  const isAdminGroup = group?.name === ADMIN_GROUP_NAME;
   const [open, setOpen] = useState(false);
   const [section, setSection] = useState<Section>("permissions");
   const [permissionOptions, setPermissionOptions] = useState<PermissionOption[]>([]);
@@ -112,10 +114,16 @@ export function GroupModal({ group, onSaved }: GroupModalProps) {
                   </FormItem>
                 )}
               />
+              {isAdminGroup && (
+                <p className="text-sm text-muted-foreground">
+                  Admin always holds every permission -- this can't be changed here.
+                </p>
+              )}
               <PermissionChecklist
                 options={permissionOptions}
                 selectedIds={selectedPermissionIds}
                 onChange={setSelectedPermissionIds}
+                disabled={isAdminGroup}
               />
               <Button type="submit">Save</Button>
             </form>
@@ -123,7 +131,7 @@ export function GroupModal({ group, onSaved }: GroupModalProps) {
         )}
         {section === "members" && (
           group
-            ? <GroupMembersPanel groupId={group.id} />
+            ? <GroupMembersPanel groupId={group.id} isAdminGroup={isAdminGroup} />
             : <p className="text-sm text-muted-foreground">Save the group first to add members.</p>
         )}
       </DialogContent>

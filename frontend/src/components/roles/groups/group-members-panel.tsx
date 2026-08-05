@@ -5,14 +5,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { GroupMember, User } from "@/lib/types.ts";
+import { useApplicationContext } from "@/lib/use-application-context.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 
 export interface GroupMembersPanelProps {
   groupId: number;
+  isAdminGroup?: boolean;
 }
 
-export function GroupMembersPanel({ groupId }: GroupMembersPanelProps) {
+export function GroupMembersPanel({ groupId, isAdminGroup }: GroupMembersPanelProps) {
+  const { account } = useApplicationContext() ?? { account: null };
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
@@ -80,14 +83,25 @@ export function GroupMembersPanel({ groupId }: GroupMembersPanelProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {members.map((member) => (
-              <TableRow key={member.id}>
-                <TableCell>{member.email}{member.isServiceAccount && " (service account)"}</TableCell>
-                <TableCell>
-                  <Button variant="secondary" onClick={() => handleRemove(member.id)}>Remove</Button>
-                </TableCell>
-              </TableRow>
-            ))}
+            {members.map((member) => {
+              const isSelf = account?.email === member.email;
+              const removeDisabled = isAdminGroup && isSelf;
+              return (
+                <TableRow key={member.id}>
+                  <TableCell>{member.email}{member.isServiceAccount && " (service account)"}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="secondary"
+                      onClick={() => handleRemove(member.id)}
+                      disabled={removeDisabled}
+                      title={removeDisabled ? "You cannot remove yourself from the Admin group." : undefined}
+                    >
+                      Remove
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       )}
