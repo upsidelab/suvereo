@@ -89,7 +89,7 @@ class DatasetUserRoleAssignment(models.Model):
     """Records which DatasetRole a user's dataset grant was made through.
 
     guardian's UserObjectPermission stores only the resulting permission grants, not which
-    named role produced them -- reconstructing "what role does this user have on this dataset"
+    named role produced them. Reconstructing "what role does this user have on this dataset"
     from the permission set alone is ambiguous whenever one role's permissions are a subset of
     another's, or two roles happen to grant the same set. This table is the source of truth
     instead; the actual access enforcement still goes entirely through guardian's grants.
@@ -109,7 +109,7 @@ class DatasetUserRoleAssignment(models.Model):
 
 
 class DatasetGroupRoleAssignment(models.Model):
-    """Records which DatasetRole a group's dataset grant was made through -- see
+    """Records which DatasetRole a group's dataset grant was made through. See
     DatasetUserRoleAssignment for why this is tracked separately from the guardian grants
     themselves."""
 

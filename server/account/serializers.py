@@ -24,7 +24,7 @@ class AccountSerializer(serializers.Serializer):
     permissions = serializers.SerializerMethodField()
 
     def get_permissions(self, obj):
-        """The subset of GLOBAL_PERMISSION_CODENAMES this user actually holds -- lets the
+        """The subset of GLOBAL_PERMISSION_CODENAMES this user actually holds. Lets the
         frontend show/hide global management nav entries per-permission instead of only
         by is_admin."""
         return [codename for codename in GLOBAL_PERMISSION_CODENAMES if obj.has_perm(codename)]
@@ -96,8 +96,8 @@ class UserUpdatePasswordSerializer(serializers.Serializer):
 
 
 class CreateUpdateServiceAccountSerializer(GroupAssignmentValidationMixin, serializers.Serializer):
-    """Service accounts are Users in every permission-relevant sense -- Global Roles via
-    group_ids, exactly like a human user. Dataset access is granted the same way too: through
+    """Service accounts are Users in every permission-relevant sense: Global Roles via
+    group_ids, exactly like a human user. Dataset access is granted the same way too, through
     the Manage Access screen (DataSetAccessListView), not through anything on this form. A
     service account is just a User whose login is a token instead of a password.
     """
@@ -231,7 +231,7 @@ class PermissionOptionSerializer(serializers.Serializer):
 
     def get_implies(self, obj):
         """The codename of the view permission this one implies (e.g. manage_users implies
-        view_users), or None -- the single source of truth for the composer's auto-check
+        view_users), or None. The single source of truth for the composer's auto-check
         behavior, set via PermissionDescription.implied_view_permission."""
         entry = getattr(obj, "description_entry", None)
         implied = entry.implied_view_permission if entry else None

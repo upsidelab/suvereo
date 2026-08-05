@@ -16,9 +16,7 @@ class Command(BaseCommand):
         from account.authorization import ADMIN_GROUP_NAME
 
         admin_group_id = Group.objects.get(name=ADMIN_GROUP_NAME).id
-        serializer = CreateUpdateServiceAccountSerializer(
-            data={"name": options["name"], "group_ids": [admin_group_id], "data_set_ids": []}
-        )
+        serializer = CreateUpdateServiceAccountSerializer(data={"name": options["name"], "group_ids": [admin_group_id]})
         serializer.is_valid(raise_exception=True)
         service_account = serializer.save()
         token, _ = Token.objects.get_or_create(user=service_account)

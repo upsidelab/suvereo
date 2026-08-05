@@ -39,7 +39,7 @@ class PermissionListView(ListAPIView):
             codenames = DATASET_PERMISSION_CODENAMES
         else:
             return Permission.objects.none()
-        # Match on (app_label, codename) pairs, not bare codename alone -- a bare-codename
+        # Match on (app_label, codename) pairs, not bare codename alone. A bare-codename
         # match would also return any unrelated permission on a different model that happens
         # to share the same codename (e.g. a stale/orphaned row left over from an abandoned
         # Meta.permissions declaration elsewhere).

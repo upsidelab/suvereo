@@ -15,7 +15,7 @@ export function PermissionChecklist({ options, selectedIds, onChange, disabled }
     const currentSet = new Set(selectedIds);
     const nextSet = new Set(nextIds);
 
-    // manage_X implies view_X -- backend-driven (option.implies), not hardcoded here. An option
+    // manage_X implies view_X. Backend-driven (option.implies), not hardcoded here. An option
     // without an implied pair, or whose implied codename isn't in this scope's options, is
     // simply skipped.
     for (const manageOption of options) {

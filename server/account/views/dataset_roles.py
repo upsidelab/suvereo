@@ -34,7 +34,7 @@ class DatasetRoleListView(ListCreateAPIView):
 
 class DatasetRoleDetailView(RetrieveUpdateDestroyAPIView):
     """Retrieve/update a dataset role's name and permissions; delete it (revokes it from every
-    grant currently using it -- see DatasetRoleUsageView for the count shown before deleting)."""
+    grant currently using it. See DatasetRoleUsageView for the count shown before deleting)."""
 
     permission_classes = [IsApplicationAdmin]
     serializer_class = DatasetRoleDetailSerializer
@@ -62,7 +62,7 @@ class DatasetRoleDetailView(RetrieveUpdateDestroyAPIView):
 
 
 class DatasetRoleUsageView(GenericAPIView):
-    """Read-only: how many (user/group, dataset) grants currently use this role -- lets the
+    """Read-only: how many (user/group, dataset) grants currently use this role. Lets the
     frontend warn before a delete revokes access, the same way GroupMembersView does for Groups.
     """
 

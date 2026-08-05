@@ -36,7 +36,7 @@ GLOBAL_PERMISSION_CODENAMES = [
     PERM_CONVERSE_ALL_DATASETS,
     PERM_VIEW_ALL_CONVERSATIONS,
 ]
-"""Every permission a Group can hold globally -- what the Global Role composer may offer, and
+"""Every permission a Group can hold globally: what the Global Role composer may offer, and
 what Admin ends up holding in full."""
 
 PERM_VIEW_DATASET = "catalog.view_dataset"
@@ -49,8 +49,8 @@ DATASET_PERMISSION_GLOBAL_COUNTERPART = {
     PERM_MANAGE_INTEGRATIONS: PERM_MANAGE_ALL_INTEGRATIONS,
     PERM_VIEW_INTEGRATIONS: PERM_VIEW_ALL_INTEGRATIONS,
 }
-"""Every dataset-scoped permission, mapped to its global "_all_datasets"-style counterpart --
-checked by has_dataset_perm below, so every existing call site benefits automatically without
+"""Every dataset-scoped permission, mapped to its global "_all_datasets"-style counterpart.
+Checked by has_dataset_perm below, so every existing call site benefits automatically without
 touching each one individually. DATASET_PERMISSION_CODENAMES is just this dict's keys, so the
 two can't drift out of sync."""
 
@@ -59,7 +59,7 @@ DATASET_PERMISSION_CODENAMES = list(DATASET_PERMISSION_GLOBAL_COUNTERPART)
 
 def assign_dataset_role(target, dataset, role_name: str) -> None:
     """Grant `target` (a User or Group) the named role's permission bundle on `dataset`, and
-    record that this role produced the grant -- see DatasetUserRoleAssignment for why."""
+    record that this role produced the grant. See DatasetUserRoleAssignment for why."""
     from account.models import DatasetGroupRoleAssignment, DatasetRole, DatasetUserRoleAssignment
 
     role = DatasetRole.objects.get(name=role_name)
@@ -90,7 +90,7 @@ def grant_full_dataset_access(target, dataset) -> None:
     """Grant `target` (a User or Group) every dataset-scoped permission on `dataset` directly.
 
     Used where full access must be granted unconditionally (dataset creation, service-account
-    provisioning) -- these call sites must not depend on a "editor"-named DatasetRole still
+    provisioning). These call sites must not depend on a "editor"-named DatasetRole still
     existing, since DatasetRole rows (including the seeded ones) are user-deletable.
     """
     for codename in DATASET_PERMISSION_CODENAMES:
@@ -112,7 +112,7 @@ def revoke_dataset_role_everywhere(role_name: str) -> int:
     """Revoke this role from every (target, dataset) grant currently assigned it.
 
     Called just before deleting a DatasetRole so no orphaned guardian grants survive the role
-    definition disappearing -- mirrors how deleting a Group cascades its GroupObjectPermission
+    definition disappearing. Mirrors how deleting a Group cascades its GroupObjectPermission
     rows. Returns how many (target, dataset) pairs were revoked.
     """
     from account.models import DatasetGroupRoleAssignment, DatasetRole, DatasetUserRoleAssignment
@@ -205,18 +205,18 @@ def assert_not_self_removing_from_group(requesting_user, target_user, group) -> 
     """Raise if `requesting_user` is removing themselves specifically from the Admin group.
 
     Editing roles/groups is Admin-only to begin with (IsApplicationAdmin), so the only person
-    who could ever remove themselves from Admin is another Admin -- and self-removal is the one
+    who could ever remove themselves from Admin is another Admin, and self-removal is the one
     case a "some other Admin fixes it" recovery path doesn't help if they're the only one left.
     Blocking it outright is simpler than counting remaining Admins, and never a real loss:
-    another Admin (or the same person, from a different account) can always do it. Any group
-    other than Admin, removing yourself is fine -- editing roles isn't the same as holding one.
+    another Admin (or the same person, from a different account) can always do it. For any
+    group other than Admin, removing yourself is fine: editing roles isn't the same as holding one.
     """
     if requesting_user.id == target_user.id and group.name == ADMIN_GROUP_NAME:
         raise DjangoValidationError("You cannot remove yourself from the Admin group.")
 
 
 def is_admin_equivalent(user) -> bool:
-    """True if `user` is a superuser or belongs to any Admin-equivalent group -- see
+    """True if `user` is a superuser or belongs to any Admin-equivalent group. See
     _admin_equivalent_group_ids for exactly what counts and why."""
     return user.is_superuser or user.groups.filter(id__in=_admin_equivalent_group_ids()).exists()
 

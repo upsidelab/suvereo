@@ -29,7 +29,7 @@ class DataSetSerializer(serializers.ModelSerializer):
 
     def get_permissions(self, obj):
         """The subset of DATASET_PERMISSION_CODENAMES the requesting user holds on this
-        specific dataset -- lets the frontend show/hide dataset-scoped manage controls
+        specific dataset. Lets the frontend show/hide dataset-scoped manage controls
         (Agents, Integrations) per-permission instead of relying solely on a backend 403."""
         request = self.context.get("request")
         if request is None or not request.user.is_authenticated:

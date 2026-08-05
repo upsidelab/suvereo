@@ -116,7 +116,7 @@ export function GroupModal({ group, onSaved }: GroupModalProps) {
               />
               {isAdminGroup && (
                 <p className="text-sm text-muted-foreground">
-                  Admin always holds every permission -- this can't be changed here.
+                  Admin always holds every permission. This can't be changed here.
                 </p>
               )}
               <PermissionChecklist
