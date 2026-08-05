@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Form } from "@/components/ui/form.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -27,6 +28,7 @@ export interface NewUserFormProps {
 }
 
 export function NewUserForm({ onUserCreated }: NewUserFormProps) {
+  const [error, setError] = useState<string | null>(null);
   const form = useForm<UserFormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -38,7 +40,13 @@ export function NewUserForm({ onUserCreated }: NewUserFormProps) {
   });
 
   const handleSubmit = async (values: UserFormSchema) => {
-    await api.users().createUser(values);
+    setError(null);
+    const response = await api.users().createUser(values);
+    if (!response.ok) {
+      const body = await response.json();
+      setError(body.email?.[0] ?? body.detail ?? "Could not create this user.");
+      return;
+    }
     onUserCreated();
     form.reset();
   }
@@ -46,6 +54,7 @@ export function NewUserForm({ onUserCreated }: NewUserFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        {error && <p className="text-sm text-destructive">{error}</p>}
         <DetailsFields form={form} />
         <PasswordFields form={form} />
         <PermissionFields form={form} />

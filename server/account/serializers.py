@@ -72,6 +72,11 @@ class UserCreateSerializer(GroupAssignmentValidationMixin, serializers.Serialize
     is_active = serializers.BooleanField()
     group_ids = serializers.ListField(child=serializers.IntegerField())
 
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("A user with this email already exists.")
+        return value
+
 
 class UserUpdateSerializer(GroupAssignmentValidationMixin, serializers.Serializer):
     email = serializers.EmailField()
