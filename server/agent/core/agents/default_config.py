@@ -29,7 +29,7 @@ from agent.core.repositories import (
     DjangoMessageRepository,
     DjangoUserRepository,
 )
-from catalog.integrations.resolver import CatalogIntegrationPluginResolver
+from catalog.integrations.resolver import IntegrationPluginResolver
 from catalog.retrieval.searcher import EmbeddingSimilaritySearcher
 
 
@@ -66,7 +66,7 @@ def get_default_config() -> DefaultAgentConfig:
         ),
         agent_callback_handler=AgentCallbackHandlerConfig(handler_class=ConversationWebSocketCallbackHandler),
         similarity_searcher=EmbeddingSimilaritySearcher,
-        integration_plugin_resolver=CatalogIntegrationPluginResolver,
+        integration_plugin_resolver=IntegrationPluginResolver,
     )
 
 
