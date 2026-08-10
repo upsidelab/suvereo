@@ -19,6 +19,7 @@ class _DummyPlugin:
     NAME = "Dummy Integration"
     INTEGRATION_TYPE_NAME = "Dummy"
     CONFIGURATION_ARGS = None
+    ALLOWS_MULTIPLE_INSTANCES = False
 
     @classmethod
     def is_syncable(cls):

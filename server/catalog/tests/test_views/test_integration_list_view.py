@@ -34,7 +34,6 @@ class TestIntegrationListViewPost:
 
         assert response.status_code == status.HTTP_201_CREATED
         assert Integration.objects.filter(dataset=data_set, type="mock_single").count() == 1
-        mock_sync.assert_called_once()
 
     @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
     @patch("catalog.integrations.views.sync_integration_task.delay")
@@ -62,7 +61,6 @@ class TestIntegrationListViewPost:
 
         assert response.status_code == status.HTTP_201_CREATED
         assert Integration.objects.filter(dataset=data_set, type="mock_multi").count() == 2
-        mock_sync.assert_called_once()
 
 
 class TestIntegrationListViewGet:

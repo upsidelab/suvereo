@@ -5,7 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("catalog", "0014_drop_domain_tables_add_integration"),
+        ("catalog", "0016_integration_sync_permission"),
     ]
 
     operations = [
