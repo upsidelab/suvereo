@@ -5,7 +5,7 @@ from django.db import IntegrityError
 from model_bakery import baker
 
 from catalog.integrations.registry import IntegrationPluginRegistry
-from catalog.integrations.resolver import CatalogIntegrationPluginResolver
+from catalog.integrations.resolver import IntegrationPluginResolver
 from catalog.models import Integration
 from catalog.tests.integration_mocks import MockMultiInstanceIntegration
 
@@ -27,7 +27,7 @@ class TestIntegrationUniqueConstraint:
         assert Integration.objects.filter(dataset=data_set, type="mock_multi").count() == 2
 
 
-class TestCatalogIntegrationPluginResolver:
+class TestIntegrationPluginResolver:
     @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
     def test_resolve_returns_only_the_latest_added_match(self, mock_get_plugin_class, data_set):
         mock_get_plugin_class.return_value = MockMultiInstanceIntegration
@@ -35,7 +35,7 @@ class TestCatalogIntegrationPluginResolver:
         baker.make(Integration, **integration_kwargs, config={"marker": "first"})
         baker.make(Integration, **integration_kwargs, config={"marker": "second"})
 
-        result = CatalogIntegrationPluginResolver().resolve(data_set.id, MockMultiInstanceIntegration)
+        result = IntegrationPluginResolver().resolve(data_set.id, MockMultiInstanceIntegration)
 
         assert result.CONFIGURATION_ARGS.marker == "second"
 
@@ -46,6 +46,6 @@ class TestCatalogIntegrationPluginResolver:
         baker.make(Integration, **integration_kwargs, config={"marker": "first"})
         baker.make(Integration, **integration_kwargs, config={"marker": "second"})
 
-        result = CatalogIntegrationPluginResolver().resolve_all(data_set.id, MockMultiInstanceIntegration)
+        result = IntegrationPluginResolver().resolve_all(data_set.id, MockMultiInstanceIntegration)
 
         assert {instance.CONFIGURATION_ARGS.marker for instance in result} == {"first", "second"}

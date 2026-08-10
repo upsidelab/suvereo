@@ -15,10 +15,6 @@ class Integration(models.Model):
     dataset = models.ForeignKey(DataSet, on_delete=models.CASCADE, related_name="integrations")
     type = models.CharField(max_length=128)
     config = models.JSONField(default=dict, blank=True)
-    # Snapshot of the plugin's BaseIntegration.ALLOWS_MULTIPLE_INSTANCES at creation time, so the
-    # DB constraint below can stay conditional without referencing the plugin registry. If a
-    # plugin's declared value ever changes after integrations of that type already exist, those
-    # rows need a manual data migration to reconcile.
     allows_multiple_instances = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
