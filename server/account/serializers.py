@@ -39,9 +39,9 @@ class CreateUpdateServiceAccountSerializer(serializers.Serializer):
         email = self._build_service_account_email(validated_data.get("name"))
         is_active = validated_data.get("is_active")
         is_staff = validated_data.get("is_staff")
-        dataset_ids = validated_data.get("data_set_ids", [])
+        # NOTE: data_set_ids is accepted but not persisted — DataSet.users is gone and no replacement
+        # backing store is seeded yet (see "Migration strategy" in permissions-implementation-plan.md).
         service_account = User.objects.create_service_account(email=email, is_active=is_active, is_staff=is_staff)
-        service_account.data_sets.add(*dataset_ids)
         return service_account
 
     def update(self, instance, validated_data):
@@ -49,8 +49,7 @@ class CreateUpdateServiceAccountSerializer(serializers.Serializer):
         instance.is_active = validated_data.get("is_active")
         instance.is_staff = validated_data.get("is_staff")
         instance.save()
-        data_set_ids = validated_data.get("data_set_ids", [])
-        instance.data_sets.set(data_set_ids)
+        # NOTE: data_set_ids is accepted but not persisted — see create() above.
         return instance
 
     def _build_service_account_email(self, name):
@@ -66,7 +65,9 @@ class ServiceAccountSerializer(serializers.ModelSerializer):
         fields = ["id", "email", "date_joined", "data_set_ids", "is_active", "is_staff"]
 
     def get_data_set_ids(self, obj):
-        return list(obj.data_sets.values_list("id", flat=True))
+        # NOTE: Stubbed: DataSet.users is gone and no replacement backing store is seeded yet
+        # (see "Migration strategy" in specs/permissions-implementation-plan.md).
+        return []
 
 
 class TokenResponseSerializer(serializers.Serializer):

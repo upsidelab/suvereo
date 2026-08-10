@@ -71,7 +71,6 @@ Not a permission codename at all: **"only admin can give admin, or deactivate ad
 ```
 DatasetRole
   name            CharField, unique
-  is_system       BooleanField, default=False   # UI hint only: seeded rows can't be renamed/deleted
   permissions     ManyToManyField(Permission)
 
 DatasetUserRoleAssignment
@@ -87,7 +86,15 @@ DatasetGroupRoleAssignment
   unique_together = ("group", "dataset")
 ```
 
+No `created_at`/`updated_at` on any of these three, deliberately — Django's own `auth.Group` and `auth.Permission` (and the M2M/through tables binding them) carry no timestamps either, and these three tables are modeled as peers of that machinery, not as a different tier with its own conventions. See "Deferred: timestamps + `granted_by`" below.
+
 `on_delete=CASCADE` on `dataset` closes the guardian-style leak by construction — deleting a `DataSet` removes its role assignments as a DB-level cascade, not an app-code cleanup call. `role` is `PROTECT` so a role can't be deleted while still assigned anywhere (surfaced as a "N datasets/groups use this role" check in Phase 8).
+
+### Deferred: timestamps + `granted_by`
+
+Raised and reverted during Phase 0 implementation: `created_at`/`updated_at` on `DatasetRole`, `created_at` on the two assignment models. Reverted because Django's own permission-assignment plumbing (`Group`, `Permission`, `User.groups`, `User.user_permissions`, and `Group.permissions`) has none of this, and these three tables sit at that same layer — adding it selectively here would make our tables inconsistent with the primitives they extend, not more consistent.
+
+If auditability (when a role was created/modified, when a grant was made, *who* made it) becomes a real requirement, it should land as **one uniform pass across both our tables and Django's built-ins** — not bolted onto just the new models. That likely means a separate, generic mechanism (e.g. a lightweight audit-log model recording actor/action/target/timestamp) rather than ad hoc `created_at`/`granted_by` columns scattered per table, since `auth.Group`/`auth.Permission` can't be altered to carry new columns without forking Django's own migrations. TBD, own task, not scoped to this plan.
 
 `Group` (global bundling — the note's "general" groups) needs no model changes — it's Django's stock model, already installed, just unused. `DatasetRole` is the note's "dataset-specific" group.
 

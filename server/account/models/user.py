@@ -46,4 +46,9 @@ class User(AbstractUser):
         return self.email
 
     def has_dataset_access(self, dataset):
-        return self.is_staff or getattr(self, "data_sets").filter(pk=dataset.pk).exists()
+        """Temporary stub: dataset access is granted unconditionally until each entity's own phase
+        replaces this call site with a real has_dataset_perm(...) (or is_dataset_member(...)) check
+        (see specs/permissions-implementation-plan.md, Phase 0). Delete this method once its last
+        caller is gone — do not add new callers.
+        """
+        return True

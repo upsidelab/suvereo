@@ -31,10 +31,10 @@ class DataSetListView(ListCreateAPIView):
         return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
-        if self.request.user and self.request.user.is_staff:
-            return DataSet.objects.all()
-
-        return DataSet.objects.filter(users=self.request.user)
+        # TODO(Phase 1): scope this to datasets_visible_to(self.request.user). DataSet.users is gone
+        # and nothing seeds per-dataset access yet (see specs/permissions-implementation-plan.md,
+        # Phase 0), so every authenticated user sees every dataset for now.
+        return DataSet.objects.all()
 
     @swagger_auto_schema(operation_description="Create a new data set", request_body=DataSetCreateSerializer)
     def post(self, request, *args, **kwargs):
@@ -47,7 +47,9 @@ class DataSetListView(ListCreateAPIView):
         with transaction.atomic():
             preconfigure_agents = serializer.validated_data.pop("preconfigure_agents")
             data_set = serializer.save()
-            data_set.users.add(self.request.user)
+            # NOTE: no membership is recorded here anymore — DataSet.users is gone and no
+            # replacement role assignment is seeded yet (see "Migration strategy" in
+            # specs/permissions-implementation-plan.md). Revisit once Phase 1/8 land.
             if preconfigure_agents:
                 AgentPreconfigurationService.preconfigure_available_agents(data_set)
 
@@ -131,7 +133,9 @@ class DataSetUserListView(ListCreateAPIView):
         return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
-        return DataSet.objects.get(id=self.kwargs["data_set_id"]).users.all()
+        # NOTE: Stubbed: DataSet.users is gone and no replacement backing store exists yet — this endpoint
+        # is replaced for real in Phase 8 by dataset_access.py (see permissions-implementation-plan.md).
+        return User.objects.none()
 
     @swagger_auto_schema(
         operation_description="Add a user to a data set",
@@ -144,8 +148,7 @@ class DataSetUserListView(ListCreateAPIView):
         return super().post(request, *args, **kwargs)
 
     def create(self, *args, **kwargs):
-        user = User.objects.get(id=self.request.data["user_id"])
-        DataSet.objects.get(id=self.kwargs["data_set_id"]).users.add(user)
+        # NOTE: Stubbed no-op — see get_queryset above.
         return Response({}, status=status.HTTP_201_CREATED)
 
 
@@ -162,7 +165,7 @@ class DataSetUserView(GenericAPIView):
         ],
     )
     def delete(self, *args, **kwargs):
-        DataSet.objects.get(id=self.kwargs["data_set_id"]).users.remove(self.kwargs["user_id"])
+        # NOTE: Stubbed no-op — see DataSetUserListView.get_queryset above.
         return Response({}, status=status.HTTP_204_NO_CONTENT)
 
 
