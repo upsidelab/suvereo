@@ -284,7 +284,7 @@ class AgentView(APIView):
         responses={200: AgentListSerializer(many=True)},
     )
     def get(self, request):
-        if request.user.is_staff:
+        if request.user.is_superuser:
             queryset = Agent.objects.all().order_by("created_at")
         else:
             queryset = Agent.objects.filter(corrupted=False).order_by("created_at")

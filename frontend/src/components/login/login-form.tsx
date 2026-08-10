@@ -29,7 +29,7 @@ export function LoginForm({ className, ...props }: HTMLAttributes<HTMLDivElement
       const dataSets = await api.dataSets().getDataSets();
       if (dataSets.length === 0) {
         const account = await api.getAccount();
-        if (account.isStaff) {
+        if (account.isAdmin) {
           navigate('/onboarding');
         } else {
           navigate('/no-data-sets');

@@ -12,7 +12,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         serializer = CreateUpdateServiceAccountSerializer(
-            data={"name": options["name"], "is_staff": True, "data_set_ids": []}
+            data={"name": options["name"], "is_admin": True, "data_set_ids": []}
         )
         serializer.is_valid(raise_exception=True)
         service_account = serializer.save()

@@ -25,7 +25,7 @@ The note (full text at the bottom) groups capabilities by entity — Dataset, Ag
 
 ### Confirmed design decisions
 
-1. **Dataset permissions are global-only.** The note's closing line names exactly four entities as having a dataset-specific counterpart — Dataset isn't one of them. So `add_dataset`/`change_dataset`/`delete_dataset`/`view_dataset` are only ever checked globally (`user.has_perm(...)` or `is_staff`); there's no per-dataset grant of these codenames. An ordinary member's ability to see *their* dataset's config/catalog comes for free from simply **holding any role assignment on that dataset** (`DatasetUserRoleAssignment`/`DatasetGroupRoleAssignment` row exists), not from a separately-scoped `view_dataset` grant. A global `view_dataset` grantee is an oversight role that can see every dataset's config/catalog, member or not. This is a simplification of the earlier plan's `datasets_visible_to`, not an addition.
+1. **Dataset permissions are global-only.** The note's closing line names exactly four entities as having a dataset-specific counterpart — Dataset isn't one of them. So `add_dataset`/`change_dataset`/`delete_dataset`/`view_dataset` are only ever checked globally (`user.has_perm(...)`, which already covers the admin bypass — see the reversed decision below); there's no per-dataset grant of these codenames. An ordinary member's ability to see *their* dataset's config/catalog comes for free from simply **holding any role assignment on that dataset** (`DatasetUserRoleAssignment`/`DatasetGroupRoleAssignment` row exists), not from a separately-scoped `view_dataset` grant. A global `view_dataset` grantee is an oversight role that can see every dataset's config/catalog, member or not. This is a simplification of the earlier plan's `datasets_visible_to`, not an addition.
 2. **Service Account gets its own CRUD codenames, separate from User**, reversing decision #3 below. There's no separate `ServiceAccount` model on `main` (confirmed — no proxy models exist anywhere in the codebase) and introducing one is out of scope here, so `add_serviceaccount`/`change_serviceaccount`/`delete_serviceaccount`/`view_serviceaccount` are declared as bespoke entries in `User.Meta.permissions`, alongside (not replacing) the Django-default `add_user`/`change_user`/`delete_user`/`view_user` the same model already carries. Same table, same model, two independently-grantable permission sets — granting one says nothing about the other.
 3. **Conversation and Agentic Execution "view all" need no new codenames.** Both models already carry an unused, Django-default `view_conversation` / `view_agenticexecution` permission (neither model sets `default_permissions = ()`). Rather than invent `view_all_conversations` from scratch, this plan repurposes those existing defaults as exactly that oversight permission — same "already exists, just put it to use" idiom the rest of this doc leans on. This reverses decision #4 below (which rejected a "view all" conversations feature outright; the note asks for it explicitly, for both entities).
 4. **Integration's "Sync" is its own codename, not folded into `change_integration`.** The note lists CRUD and Sync as separate bullets under Integration. Bespoke `sync_integration`, declared in `Integration.Meta.permissions`, dual-scope like the rest of Integration's codenames.
@@ -33,7 +33,7 @@ The note (full text at the bottom) groups capabilities by entity — Dataset, Ag
 
 ### Decisions from the original draft that still stand
 
-1. **Admin flag stays `is_staff`, not `is_superuser`.** `permissions-rewrite-plan.md` argued for `is_superuser`, but `main` already hand-rolls the bypass everywhere (`self.is_staff or ...`) and threads `is_staff` through the frontend with zero abstraction layer. Keep `is_staff`; generalize the existing pattern into one shared helper instead of hand-rolling it per call site.
+1. ~~**Admin flag stays `is_staff`, not `is_superuser`.**~~ **Reversed during Phase 1 implementation.** `is_superuser` is what Django actually built for "bypass every permission check": `PermissionsMixin.has_perm()` shortcuts to `True` for an active superuser *before* it ever consults `user_permissions`/`groups`. That means every helper below gets the bypass for free just by calling `has_perm(...)` — no hand-rolled `is_staff or ...` (nor `is_superuser or ...`) at any call site, which is a genuine simplification, not just a relabeling. `is_staff` reverts to Django's own native meaning (can open `/admin`) and carries zero authorization weight anywhere in this app; DRF's built-in `IsAdminUser` (which checks `is_staff`) is replaced by a bespoke `IsAdmin` (checks `is_superuser` directly) at every admin-of-admin surface that doesn't go through `has_perm`. Externally, neither Django flag is named directly: the API and frontend only ever expose `is_admin` / `isAdmin` — every serializer field is declared as `is_admin = serializers.BooleanField(source="is_superuser")`, so the wire contract doesn't hint that this is backed by Django's own `is_superuser` field (which would otherwise leak an implementation detail — e.g. "they're on Django" — to API consumers) while internal code (`validated_data`, `instance.is_superuser = ...`) keeps reading/writing the real model attribute unchanged.
 2. **No `configure_models` permission.** `ConfigView`/`ConfigLanguageModelView`/`ConfigEmbeddingModelView` are read-only catalogs of available provider/model names, not a mutation on any resource. `IsAuthenticated`-only, dropped from `IsAdminUser`.
 3. ~~**`manage_users`/`manage_service_accounts` collapse into one.**~~ **Reversed by decision #2 above** — the note treats them as separate entities, so they get separate codenames after all.
 4. ~~**No `view_all_conversations`.**~~ **Reversed by decision #3 above** — the note asks for it explicitly (and its Agentic Executions twin), satisfied by repurposing the existing default `view_*` codenames rather than inventing a new one.
@@ -62,7 +62,7 @@ Dual-scope (global **or** per-dataset, via `has_dataset_perm`):
 | `agent.add_agenticexecution` | already exists (Django default) — doubles as "Create" (own-history access implied) |
 | `agent.view_agenticexecution` | already exists (Django default) — **repurposed** as "view all executions" |
 
-Not a permission codename at all: **"only admin can give admin, or deactivate admin"** is a hardcoded `request.user.is_staff` gate plus the self-lockout guard (see Phase 8) — deliberately not delegable, same reasoning as the admin-of-admin surfaces below.
+Not a permission codename at all: **"only admin can give admin, or deactivate admin"** is a hardcoded `request.user.is_superuser` gate plus the self-lockout guard (see Phase 8) — deliberately not delegable, same reasoning as the admin-of-admin surfaces below. Externally this flag is never called `is_superuser`; the API/frontend name is `is_admin`/`isAdmin` (see the reversed decision above).
 
 `default_permissions` is left alone (not set to `()`) on every model — the unused Django-default rows are being put to work, not pruned.
 
@@ -100,13 +100,15 @@ If auditability (when a role was created/modified, when a grant was made, *who* 
 
 ## Enforcement helpers (`account/authorization.py`, new file — built incrementally, see phases)
 
+No `user.is_staff or ...` / `user.is_superuser or ...` bypass appears anywhere below — `has_perm(...)` already returns `True` unconditionally for an active superuser, for free (see the reversed decision above), so every helper just calls it directly:
+
 ```python
 def is_dataset_member(user, dataset) -> bool:
     """True if `user` has ANY role assignment on `dataset` (directly or via a group),
-    or holds global `catalog.view_dataset` / is staff. Backs Dataset visibility only —
-    Dataset permissions are global-only, so per-dataset "can I see this one" is presence-based,
-    not tied to a specific codename."""
-    if user.is_staff or user.has_perm("catalog.view_dataset"):
+    or holds global `catalog.view_dataset` (superusers included, for free). Backs Dataset
+    visibility only — Dataset permissions are global-only, so per-dataset "can I see this
+    one" is presence-based, not tied to a specific codename."""
+    if user.has_perm("catalog.view_dataset"):
         return True
     if DatasetUserRoleAssignment.objects.filter(user=user, dataset=dataset).exists():
         return True
@@ -114,7 +116,7 @@ def is_dataset_member(user, dataset) -> bool:
 
 
 def datasets_visible_to(user):
-    if user.is_staff or user.has_perm("catalog.view_dataset"):
+    if user.has_perm("catalog.view_dataset"):
         return DataSet.objects.all()
     return DataSet.objects.filter(
         Q(datasetuserroleassignment__user=user) | Q(datasetgrouproleassignment__group__in=user.groups.all())
@@ -123,7 +125,7 @@ def datasets_visible_to(user):
 
 def has_dataset_perm(user, codename: str, dataset) -> bool:
     """For the four dual-scope entities (Agent/Integration/Conversation/AgenticExecution) only."""
-    if user.is_staff or user.has_perm(codename):
+    if user.has_perm(codename):
         return True
     bare = codename.split(".")[-1]
     if DatasetUserRoleAssignment.objects.filter(
@@ -135,16 +137,31 @@ def has_dataset_perm(user, codename: str, dataset) -> bool:
     ).exists()
 ```
 
-One small DRF permission class alongside it, for pure-global-gated views:
+Phase 1 shipped the global-only case as a method decorator rather than the permission class originally sketched here, since several call sites (e.g. `DataSetDetailView`) need a different codename per HTTP method on the same view:
 
 ```python
-class HasPermission(BasePermission):
-    def has_permission(self, request, view):
-        required = getattr(view, "required_permission", None)  # or a {method: codename} dict
-        return bool(request.user and (request.user.is_staff or request.user.has_perm(required)))
+def required_permission(codename: str):
+    def decorator(view_method):
+        @wraps(view_method)
+        def wrapper(self, *args, **kwargs):
+            if not self.request.user.has_perm(codename):
+                self.permission_denied(self.request)
+            return view_method(self, *args, **kwargs)
+        return wrapper
+    return decorator
 ```
 
-Global admin-of-admin surfaces (Groups CRUD, DatasetRoles CRUD, the permission listing endpoint, dataset-role-assignment endpoints) stay `IsAdminUser`-only — a delegable "manage roles" permission would let its holder grant themselves anything. Their Django-default codenames still exist in `auth_permission` (same "unused row, hardcoded gate" idiom as `is_staff` itself), they're just never checked via `has_perm`.
+`HasPermission` (the class form) may still be worth introducing in Phase 6/7 for the views that *are* uniformly one-codename-per-method — not decided yet, not blocking.
+
+Separately, one small DRF permission class for the admin-of-admin surfaces, which deliberately check `is_superuser` directly rather than `has_perm(...)`:
+
+```python
+class IsAdmin(BasePermission):
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_superuser)
+```
+
+Global admin-of-admin surfaces (Groups CRUD, DatasetRoles CRUD, the permission listing endpoint, dataset-role-assignment endpoints) stay `IsAdmin`-only — a delegable "manage roles" permission would let its holder grant themselves anything. Their Django-default codenames still exist in `auth_permission` (same "unused row, hardcoded gate" idiom as `is_superuser` itself here), they're just never checked via `has_perm`.
 
 ## `DataSetUserListView`/`DataSetUserView` during the transition
 
@@ -252,17 +269,17 @@ Closes baseline gaps #2, #6 (execution half). No new permission declarations —
 
 ### Phase 6 — Users CRUD
 
-- `account/views/users.py` — swap `IsAdminUser` for `HasPermission` with per-method `required_permission` (`GET`→`account.view_user`, `POST`→`account.add_user`, `PATCH`→`account.change_user`, `DELETE`→`account.delete_user`).
-- `account/serializers.py`: `AccountSerializer` — add `permissions` (`SerializerMethodField`, list of codenames the user holds globally), so the frontend has something to gate on beyond `isStaff` once Phase 9 lands.
+- `account/views/users.py` — swap `IsAdminUser` for `HasPermission` with per-method `required_permission` (`GET`→`account.view_user`, `POST`→`account.add_user`, `PATCH`→`account.change_user`, `DELETE`→`account.delete_user`). `IsAdminUser` itself was already replaced by a bespoke `IsAdmin` (checks `is_superuser`, not `is_staff` — see the reversed decision above) ahead of this phase, as part of a repo-wide sweep; that swap isn't this phase's remaining scope — the fine-grained per-method codename split above still is.
+- `account/serializers.py`: `AccountSerializer` — add `permissions` (`SerializerMethodField`, list of codenames the user holds globally), so the frontend has something to gate on beyond `isAdmin` once Phase 9 lands.
 
-**Test:** a user granted only `account.view_user` can list/view users but can't create, edit, or delete them; a user with no `account.*_user` permission and no `is_staff` gets 403 on all of `/api/users`.
+**Test:** a user granted only `account.view_user` can list/view users but can't create, edit, or delete them; a user with no `account.*_user` permission who also isn't an admin (`is_superuser`) gets 403 on all of `/api/users`.
 
 ---
 
 ### Phase 7 — Service Account CRUD
 
 - `account/0009_serviceaccount_permissions.py` — `AlterModelOptions(User)` adding `permissions = [("add_serviceaccount", ...), ("change_serviceaccount", ...), ("delete_serviceaccount", ...), ("view_serviceaccount", ...)]`.
-- `account/views/service_accounts.py` — swap `IsAdminUser` for `HasPermission` keyed off the new bespoke codenames (`GET`→`view_serviceaccount`, `POST`→`add_serviceaccount`, `PATCH`→`change_serviceaccount`, `DELETE`→`delete_serviceaccount`), fully independent of Phase 6's `*_user` codenames.
+- `account/views/service_accounts.py` — swap `IsAdminUser` for `HasPermission` keyed off the new bespoke codenames (`GET`→`view_serviceaccount`, `POST`→`add_serviceaccount`, `PATCH`→`change_serviceaccount`, `DELETE`→`delete_serviceaccount`), fully independent of Phase 6's `*_user` codenames. Same note as Phase 6: `IsAdminUser` here is already `IsAdmin` post-sweep; the codename split is this phase's remaining scope.
 
 **Test:** a user granted `account.view_user`/`change_user` (Phase 6) has **no** access to `/api/service_accounts/` unless separately granted the matching `*_serviceaccount` codenames, and vice versa — the two entities are confirmed independently grantable.
 
@@ -270,15 +287,15 @@ Closes baseline gaps #2, #6 (execution half). No new permission declarations —
 
 ### Phase 8 — Permission Management (admin lockout, Groups CRUD, Dataset Roles CRUD, role assignment)
 
-- **Self-lockout guard** (`account/authorization.py`) — block demoting (`is_staff=False`) or deactivating (`is_active=False`) **the last remaining `is_staff=True` user** (ports the pattern from `feature/ent-333-...`'s `assert_user_deactivatable`, retargeted from group membership to the `is_staff` flag). Wired into the Users/Service-Account update serializers' `validate()`.
-- **"Only admin can give admin"** — flipping another user's `is_staff` requires `request.user.is_staff` itself; hardcoded, not a delegable permission (same reasoning as the admin-of-admin surfaces below — a "grant admin" permission would let its holder grant themselves admin).
-- `account/views/groups.py` (new) — `GroupListView`/`GroupDetailView`, CRUD on `Group` + its `permissions` M2M — the note's "general" groups. `IsAdminUser`.
-- `account/views/dataset_roles.py` (new) — `DatasetRoleListView`/`DatasetRoleDetailView` — the note's "dataset-specific" groups. `IsAdminUser`. Delete blocked while `DatasetUserRoleAssignment.objects.filter(role=role).count() + DatasetGroupRoleAssignment.objects.filter(role=role).count()` is nonzero (surface the count in the response body).
-- `account/views/permissions.py` (new) — `GET /api/permissions?scope=global|dataset`, `IsAdminUser`. `scope=global` returns all 23; `scope=dataset` returns the 11 dual-scope ones only.
-- `account/views/dataset_access.py` (new) — assign/revoke a `DatasetRole` to a user or group on a dataset (`POST`/`DELETE` under `/api/data_sets/<id>/roles/`). **Replaces** `DataSetUserListView`/`DataSetUserView` for real — delete them now, straightforward since Phase 0 already stubbed them to no-ops and nothing has depended on them since. `IsAdminUser`.
+- **Self-lockout guard** (`account/authorization.py`) — block demoting (`is_superuser=False`) or deactivating (`is_active=False`) **the last remaining `is_superuser=True` user** (ports the pattern from `feature/ent-333-...`'s `assert_user_deactivatable`, retargeted from group membership to the `is_superuser` flag — see the reversed decision above; exposed to the API/frontend as `is_admin`/`isAdmin`, never as `is_superuser`). Wired into the Users/Service-Account update serializers' `validate()`.
+- **"Only admin can give admin"** — flipping another user's `is_superuser` (`is_admin` on the wire) requires `request.user.is_superuser` itself; hardcoded, not a delegable permission (same reasoning as the admin-of-admin surfaces below — a "grant admin" permission would let its holder grant themselves admin).
+- `account/views/groups.py` (new) — `GroupListView`/`GroupDetailView`, CRUD on `Group` + its `permissions` M2M — the note's "general" groups. `IsAdmin`.
+- `account/views/dataset_roles.py` (new) — `DatasetRoleListView`/`DatasetRoleDetailView` — the note's "dataset-specific" groups. `IsAdmin`. Delete blocked while `DatasetUserRoleAssignment.objects.filter(role=role).count() + DatasetGroupRoleAssignment.objects.filter(role=role).count()` is nonzero (surface the count in the response body).
+- `account/views/permissions.py` (new) — `GET /api/permissions?scope=global|dataset`, `IsAdmin`. `scope=global` returns all 23; `scope=dataset` returns the 11 dual-scope ones only.
+- `account/views/dataset_access.py` (new) — assign/revoke a `DatasetRole` to a user or group on a dataset (`POST`/`DELETE` under `/api/data_sets/<id>/roles/`). **Replaces** `DataSetUserListView`/`DataSetUserView` for real — delete them now, straightforward since Phase 0 already stubbed them to no-ops and nothing has depended on them since. `IsAdmin`.
 - `account/admin.py`, `catalog/admin.py`, `pecl/urls.py`: deregister `UserAdmin`/`DataSet`/`Integration`, drop the `/admin` URL include (per checklist — predates this refactor, unrelated cleanup bundled in since it's low-risk and already flagged).
 
-**Test:** cannot demote/deactivate the last `is_staff` user, whether acting on self or via another admin; a non-admin can never grant `is_staff` to anyone, including themselves; role-in-use delete guard fires on both `DatasetRole` and `Group`; assigning a Group a `DatasetRole` on a dataset grants its members dataset-scoped access resolved through current group membership (no per-member row materialized); `/admin` is unreachable.
+**Test:** cannot demote/deactivate the last admin (`is_superuser`) user, whether acting on self or via another admin; a non-admin can never grant admin to anyone, including themselves; role-in-use delete guard fires on both `DatasetRole` and `Group`; assigning a Group a `DatasetRole` on a dataset grants its members dataset-scoped access resolved through current group membership (no per-member row materialized); `/admin` is unreachable.
 
 ---
 
@@ -289,7 +306,7 @@ Deliberately last and deliberately isolated — starts once Phases 0–8 are mer
 - `/roles` page, tabbed **Global Roles** (Group CRUD + members panel) / **Dataset Roles** (DatasetRole CRUD) — port `group-modal.tsx`, `group-members-panel.tsx`, dataset-role list/detail pages, `PermissionChecklist`/`CheckboxListInput`. No `implied_view_permission` concept — every checkbox is independent.
 - Dataset detail → **Access** tab: replace the current plain add/remove-user table (`data-set-user-list.tsx`) with a role-assignment table (user or group → role, add/remove), calling `dataset_access.py`.
 - `Account`/`User` types gain `permissions: string[]`; `lib/types.ts` `DataSet` type unchanged.
-- Nav gating (`main-sidebar.tsx`, `data-set-selector.tsx`, `main.tsx` route loader, `login-form.tsx`) — keep `account.isStaff` where it means "sees the whole admin surface"; gate the new Roles nav item and the Users/Service Accounts nav entries on `account.permissions.includes(...)` where a finer grain now exists. Add one `hasPermission(account, codename)` helper — none exists on `main` today.
+- Nav gating (`main-sidebar.tsx`, `data-set-selector.tsx`, `main.tsx` route loader, `login-form.tsx`) — keep `account.isAdmin` where it means "sees the whole admin surface" (already wired end-to-end ahead of this phase, as part of the `is_staff`→`is_superuser`/`is_admin` sweep); gate the new Roles nav item and the Users/Service Accounts nav entries on `account.permissions.includes(...)` where a finer grain now exists. Add one `hasPermission(account, codename)` helper — none exists on `main` today.
 
 **Test:** full manual pass — create a Group with `add_dataset`, create a DatasetRole with `converse` only, verify both grant exactly what's expected and nothing more; Users, Service Accounts, Groups, Roles screens all round-trip against the new backend.
 

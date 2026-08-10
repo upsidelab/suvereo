@@ -23,7 +23,7 @@ const formSchema = z.object({
   }),
   dataSetIds: z.array(z.number()),
   isActive: z.boolean(),
-  isStaff: z.boolean(),
+  isAdmin: z.boolean(),
 });
 type CreateServiceAccountFormSchema = z.infer<typeof formSchema>;
 
@@ -38,18 +38,18 @@ export function NewServiceAccountForm({onServiceAccountCreated}: NewServiceAccou
       name: "",
       dataSetIds: [],
       isActive: true,
-      isStaff: false,
+      isAdmin: false,
     }
   });
   const [isTokenDialogOpen, setIsTokenDialogOpen] = useState(false);
   const [generatedToken, setGeneratedToken] = useState("");
-  const isStaff = useWatch({ control: form.control, name: "isStaff" });
+  const isAdmin = useWatch({ control: form.control, name: "isAdmin" });
 
   useEffect(() => {
-    if (isStaff) {
+    if (isAdmin) {
       form.setValue("dataSetIds", []);
     }
-  }, [isStaff, form]);
+  }, [isAdmin, form]);
 
   const handleSubmit = async (values: CreateServiceAccountFormSchema) => {
     const {  token } = await api.serviceAccounts().createServiceAccount(values);
@@ -70,7 +70,7 @@ export function NewServiceAccountForm({onServiceAccountCreated}: NewServiceAccou
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
           <DetailsFields form={form}/>
           <PermissionFields form={form}/>
-          {!isStaff && <DataSetsFields form={form}/>}
+          {!isAdmin && <DataSetsFields form={form}/>}
           <Button type="submit">Create</Button>
         </form>
       </Form>

@@ -3,10 +3,10 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.generics import ListAPIView
-from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from account.authorization import IsAdmin
 from account.models import User
 from account.serializers import (
     AvailabilityResponseSerializer,
@@ -18,7 +18,7 @@ from account.services import ServiceAccountNameService
 
 
 class CheckServiceNameView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdmin]
 
     @swagger_auto_schema(
         operation_description="Check if a service account name is available",
@@ -37,7 +37,7 @@ class CheckServiceNameView(APIView):
 
 
 class ResetTokenView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdmin]
 
     @swagger_auto_schema(
         operation_description="Revoke and regenerate a token for a service account",
@@ -55,7 +55,7 @@ class ResetTokenView(APIView):
 
 
 class ServiceAccountListView(ListAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdmin]
     serializer_class = ServiceAccountSerializer
     queryset = User.objects.filter(is_service_account=True).order_by("-date_joined")
 
@@ -80,7 +80,7 @@ class ServiceAccountListView(ListAPIView):
 
 
 class ServiceAccountView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdmin]
 
     @swagger_auto_schema(
         operation_description="Update a service account",

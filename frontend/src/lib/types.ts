@@ -63,14 +63,14 @@ export type Document = {
 
 export type Account = {
   email: string;
-  isStaff: boolean;
+  isAdmin: boolean;
 }
 
 export type User = {
   id: number;
   email: string;
   isActive: boolean;
-  isStaff: boolean;
+  isAdmin: boolean;
 }
 
 export type Agent = {
@@ -106,7 +106,7 @@ export type ServiceAccount = {
   id: number;
   email: string;
   isActive: boolean;
-  isStaff: boolean;
+  isAdmin: boolean;
   dateCreated: string;
   dataSetIds: number[];
 };

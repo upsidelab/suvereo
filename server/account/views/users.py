@@ -1,14 +1,14 @@
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import ListCreateAPIView, UpdateAPIView
-from rest_framework.permissions import IsAdminUser
 
+from account.authorization import IsAdmin
 from account.models import User
 from account.serializers import UserSerializer, UserUpdatePasswordSerializer, UserUpdateSerializer
 
 
 class UserListView(ListCreateAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdmin]
     serializer_class = UserSerializer
 
     @swagger_auto_schema(operation_description="List all users", manual_parameters=[])
@@ -21,12 +21,12 @@ class UserListView(ListCreateAPIView):
             email=serializer.validated_data["email"],
             password=serializer.validated_data["password"],
             is_active=serializer.validated_data["is_active"],
-            is_staff=serializer.validated_data["is_staff"],
+            is_superuser=serializer.validated_data["is_superuser"],
         )
 
 
 class UserView(UpdateAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdmin]
     serializer_class = UserUpdateSerializer
 
     @swagger_auto_schema(
@@ -43,12 +43,12 @@ class UserView(UpdateAPIView):
         user = self.get_object()
         user.email = serializer.validated_data["email"]
         user.is_active = serializer.validated_data["is_active"]
-        user.is_staff = serializer.validated_data["is_staff"]
+        user.is_superuser = serializer.validated_data["is_superuser"]
         user.save()
 
 
 class UserPasswordView(UpdateAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdmin]
     serializer_class = UserUpdatePasswordSerializer
 
     @swagger_auto_schema(

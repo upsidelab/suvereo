@@ -26,13 +26,13 @@ export function UsersList() {
         loadItems={loadUsers}
         itemsReloadDependencies={version}
         noItemsMessage="No users"
-        tableHeaders={["Email", "Active", "Staff", "Actions"]}
+        tableHeaders={["Email", "Active", "Admin", "Actions"]}
         tableRow={(item, index) => {
           return (
             <TableRow key={index}>
               <TableCell width="70%">{item.email}</TableCell>
               <TableCell width="5%">{item.isActive && <Check size={16} />}</TableCell>
-              <TableCell width="5%">{item.isStaff && <Check size={16} />}</TableCell>
+              <TableCell width="5%">{item.isAdmin && <Check size={16} />}</TableCell>
               <TableCell className="flex space-x-4" width="20%">
                 <EditUserModal user={item} onUserUpdated={() => setVersion(version + 1)} />
                 <ChangePasswordModal user={item} onUserUpdated={() => setVersion(version + 1)} />

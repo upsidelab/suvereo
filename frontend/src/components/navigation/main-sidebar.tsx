@@ -146,7 +146,7 @@ export function MainSidebar() {
         {catalogItems.length > 0 && (
           <MainSidebarSection title="Catalog" items={catalogItems} />
         )}
-        {account && account.isStaff && (
+        {account && account.isAdmin && (
           <>
             <MainSidebarSection className="mt-auto" title="Manage" items={manageItems} />
           </>

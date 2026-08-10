@@ -22,7 +22,7 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def user():
-    return baker.make(User, is_staff=False)
+    return baker.make(User, is_superuser=False)
 
 
 @pytest.fixture
@@ -180,7 +180,7 @@ class TestAgentView:
         assert response.data[1]["id"] == newer.id
 
     def test_get_returns_corrupted_agents_to_admin(self, user, api_client, url, dataset_instance):
-        user.is_staff = True
+        user.is_superuser = True
         user.save()
         agent_1 = baker.make(Agent, dataset=dataset_instance)
         agent_2 = baker.make(Agent, dataset=dataset_instance, corrupted=True)
