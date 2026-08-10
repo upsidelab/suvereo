@@ -8,7 +8,7 @@ from catalog.models import Integration
 IntegrationT = TypeVar("IntegrationT", bound=BaseIntegration)
 
 
-class CatalogIntegrationPluginResolver(BaseIntegrationPluginResolver):
+class IntegrationPluginResolver(BaseIntegrationPluginResolver):
     """Resolves a data set's integration plugin from the catalog Integration records."""
 
     def resolve(self, data_set_id: Any, plugin_base: type[IntegrationT]) -> Optional[IntegrationT]:
