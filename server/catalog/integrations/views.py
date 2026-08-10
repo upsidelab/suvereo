@@ -1,3 +1,4 @@
+from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
@@ -47,7 +48,7 @@ class _DataSetScopedView(APIView):
 class IntegrationListView(_DataSetScopedView):
     def get(self, request, data_set_id):
         self._get_dataset_or_raise(request, data_set_id)
-        qs = Integration.objects.filter(dataset_id=data_set_id).order_by("type")
+        qs = Integration.objects.filter(dataset_id=data_set_id).order_by("type", "id")
         return Response(IntegrationSerializer(qs, many=True).data)
 
     def post(self, request, data_set_id):
@@ -58,19 +59,22 @@ class IntegrationListView(_DataSetScopedView):
         integration_type = serializer.validated_data["type"]
 
         try:
-            IntegrationPluginRegistry().get_plugin_class_by_type(integration_type)
+            plugin_class = IntegrationPluginRegistry().get_plugin_class_by_type(integration_type)
         except KeyError:
             return Response(
                 {"detail": f"No integration plugin registered with TYPE='{integration_type}'."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        if Integration.objects.filter(dataset=data_set, type=integration_type).exists():
+        try:
+            with transaction.atomic():
+                integration = serializer.save(
+                    dataset=data_set, allows_multiple_instances=plugin_class.ALLOWS_MULTIPLE_INSTANCES
+                )
+        except IntegrityError:
             return Response(
                 {"detail": f"This dataset already has a '{integration_type}' integration."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        integration = serializer.save(dataset=data_set)
         sync_integration_task.delay(integration.id)
         return Response(IntegrationSerializer(integration).data, status=status.HTTP_201_CREATED)
 

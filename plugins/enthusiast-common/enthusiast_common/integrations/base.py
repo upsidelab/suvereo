@@ -25,11 +25,12 @@ class BaseIntegration(ABC):
 
     The framework stores the integration's configuration and instantiates the
     plugin with that config before use. A DataSet holds at most one integration
-    of a given ``TYPE``. A vertical may add further capabilities in its own
-    subclass; the base only covers config and connection testing.
+    of a given ``TYPE``, unless the type opts into ``ALLOWS_MULTIPLE_INSTANCES``.
+    A vertical may add further capabilities in its own subclass; the base only
+    covers config and connection testing.
     """
 
-    #: Stable identifier for this integration type. Unique per DataSet.
+    #: Stable identifier for this integration type. Unique per DataSet unless ALLOWS_MULTIPLE_INSTANCES is True.
     TYPE: str
     #: Human-readable name shown in the UI.
     NAME: str
@@ -39,6 +40,9 @@ class BaseIntegration(ABC):
     INTEGRATION_MANAGER: type[BaseIntegrationManager] | None = None
     #: Pydantic model class describing the configuration fields. Set to None when no config is required.
     CONFIGURATION_ARGS = None
+    #: When True, a DataSet may hold more than one integration of this TYPE. Defaults to False so
+    #: every existing plugin stays capped at one; a type opts in by overriding this.
+    ALLOWS_MULTIPLE_INSTANCES: bool = False
 
     @classmethod
     def is_syncable(cls) -> bool:
@@ -83,3 +87,7 @@ class BaseIntegrationPluginResolver(ABC):
     @abstractmethod
     def resolve(self, data_set_id: Any, plugin_base: type[IntegrationT]) -> Optional[IntegrationT]:
         """Return a configured plugin instance of *plugin_base* for the data set, or None."""
+
+    @abstractmethod
+    def resolve_all(self, data_set_id: Any, plugin_base: type[IntegrationT]) -> list[IntegrationT]:
+        """Return every configured plugin instance of *plugin_base* for the data set."""
