@@ -15,6 +15,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from utils.functions import get_model_descriptor_from_class_field
 
+from account.authorization import PERMISSIONS, any_permission_on_any_dataset_required, enforce_dataset_scoped_permission
 from agent.conversation import ConversationManager
 from agent.core.registries.agents.agent_registry import AgentRegistry
 from agent.core.registries.language_models import LanguageModelRegistry
@@ -243,6 +244,7 @@ class AgentTypesView(APIView):
     @swagger_auto_schema(
         operation_description="Get available Agents", responses={200: AvailableAgentsResponseSerializer()}
     )
+    @any_permission_on_any_dataset_required(PERMISSIONS.AGENT.ADD, PERMISSIONS.AGENT.CHANGE)
     def get(self, request):
         agent_registry = AgentRegistry()
         choices = []
@@ -291,6 +293,10 @@ class AgentView(APIView):
         filterset = AgentFilter(request.GET, queryset=queryset)
         if not filterset.is_valid():
             return Response(filterset.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        dataset = get_object_or_404(DataSet, pk=filterset.form.cleaned_data["dataset"])
+        enforce_dataset_scoped_permission(self, PERMISSIONS.AGENT.VIEW, dataset)
+
         serializer = AgentListSerializer(filterset.qs, many=True)
         return Response(serializer.data, status=200)
 
@@ -300,6 +306,12 @@ class AgentView(APIView):
         responses={201: AgentSerializer()},
     )
     def post(self, request):
+        try:
+            dataset = DataSet.objects.get(pk=request.data.get("dataset"))
+        except (DataSet.DoesNotExist, ValueError, TypeError):
+            return Response({"dataset": ["Invalid data set."]}, status=status.HTTP_400_BAD_REQUEST)
+        enforce_dataset_scoped_permission(self, PERMISSIONS.AGENT.ADD, dataset)
+
         serializer = AgentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
@@ -313,6 +325,8 @@ class AgentDetailsView(APIView):
     @swagger_auto_schema(operation_description="Get a single configuration by id.", responses={200: AgentSerializer()})
     def get(self, request, pk):
         instance = get_object_or_404(Agent, pk=pk)
+        enforce_dataset_scoped_permission(self, PERMISSIONS.AGENT.VIEW, instance.dataset)
+
         serializer = AgentSerializer(instance)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -323,6 +337,7 @@ class AgentDetailsView(APIView):
     )
     def put(self, request, pk=None):
         instance = get_object_or_404(Agent, pk=pk)
+        enforce_dataset_scoped_permission(self, PERMISSIONS.AGENT.CHANGE, instance.dataset)
 
         serializer = AgentSerializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -334,6 +349,8 @@ class AgentDetailsView(APIView):
     )
     def delete(self, request, pk=None):
         instance = get_object_or_404(Agent, pk=pk)
+        enforce_dataset_scoped_permission(self, PERMISSIONS.AGENT.DELETE, instance.dataset)
+
         instance.set_deleted_at()
         return Response(status=status.HTTP_204_NO_CONTENT)
 

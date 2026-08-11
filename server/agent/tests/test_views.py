@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 import pytest
+from django.contrib.auth.models import Permission
 from django.urls import reverse
 from django.utils import timezone
 from enthusiast_common.config import FunctionToolConfig
@@ -11,13 +12,26 @@ from pydantic import Field
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from account.models import User
+from account.authorization import PERMISSIONS
+from account.models import DatasetRole, DatasetUserRoleAssignment, User
 from agent.models import Conversation
 from agent.models.agent import Agent
 from agent.models.agentic_execution import AgenticExecution
 from catalog.models import DataSet
 
 pytestmark = pytest.mark.django_db
+
+
+def _permission(codename: str) -> Permission:
+    app_label, name = codename.split(".")
+    return Permission.objects.get(codename=name, content_type__app_label=app_label)
+
+
+def _grant_dataset_permission(user, dataset, *codenames: str) -> DatasetRole:
+    role = baker.make(DatasetRole)
+    role.permissions.set([_permission(codename) for codename in codenames])
+    baker.make(DatasetUserRoleAssignment, user=user, dataset=dataset, role=role)
+    return role
 
 
 @pytest.fixture
@@ -123,7 +137,31 @@ def config():
 
 
 class TestAgentTypesView:
-    def test_get_agent_types_returns_200(self, api_client):
+    def test_get_agent_types_returns_401(self):
+        response = APIClient().get(reverse("agent-types"))
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_outsider_with_no_add_or_change_agent_anywhere_is_denied(self, api_client):
+        url = reverse("agent-types")
+
+        response = api_client.get(url)
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_dataset_member_holding_only_add_agent_is_allowed(self, api_client, user):
+        dataset = baker.make(DataSet)
+        _grant_dataset_permission(user, dataset, PERMISSIONS.AGENT.ADD)
+        url = reverse("agent-types")
+
+        with patch("agent.views.AgentRegistry.get_plugin_classes", return_value=AGENT_CLASSES):
+            response = api_client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_get_agent_types_returns_200(self, api_client, user):
+        dataset = baker.make(DataSet)
+        _grant_dataset_permission(user, dataset, PERMISSIONS.AGENT.ADD)
         url = reverse("agent-types")
         with patch("agent.views.AgentRegistry.get_plugin_classes", return_value=AGENT_CLASSES):
             response = api_client.get(url)
@@ -136,11 +174,6 @@ class TestAgentTypesView:
             assert len(response.data["choices"][1]["tools"]) == 2
             assert list(response.data["choices"][0]["tools"][0].keys()) == ["required_test", "optional_test"]
 
-    def test_get_agent_types_returns_401(self):
-        response = APIClient().get(reverse("agent-types"))
-
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
-
 
 class TestAgentView:
     @pytest.fixture
@@ -151,13 +184,31 @@ class TestAgentView:
     def dataset_instance(self):
         return baker.make(DataSet)
 
-    def test_get_empty_list(self, api_client, url, dataset_instance):
+    def test_get_outsider_gets_not_found(self, api_client, url, dataset_instance):
+        response = api_client.get(f"{url}?dataset={dataset_instance.pk}")
+
+        # Obscured as 404, not 403 - a non-member shouldn't be able to tell this dataset
+        # apart from one that doesn't exist.
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_get_dataset_member_without_view_agent_gets_forbidden(self, api_client, user, url, dataset_instance):
+        # A member of the dataset, but the role grants nothing agent-related.
+        _grant_dataset_permission(user, dataset_instance)
+
+        response = api_client.get(f"{url}?dataset={dataset_instance.pk}")
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_get_empty_list(self, api_client, user, url, dataset_instance):
+        _grant_dataset_permission(user, dataset_instance, PERMISSIONS.AGENT.VIEW)
+
         response = api_client.get(f"{url}?dataset={dataset_instance.pk}")
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data == []
 
-    def test_get_multiple_agents(self, api_client, url, dataset_instance):
+    def test_get_multiple_agents(self, api_client, user, url, dataset_instance):
+        _grant_dataset_permission(user, dataset_instance, PERMISSIONS.AGENT.VIEW)
         config_1 = baker.make(Agent, name="cfg1", config={"a": 1}, dataset=dataset_instance)
         config_2 = baker.make(Agent, name="cfg2", config={"b": 2}, dataset=dataset_instance)
 
@@ -169,7 +220,8 @@ class TestAgentView:
         assert config_1.id in ids
         assert config_2.id in ids
 
-    def test_get_returns_ordered_by_created_at(self, api_client, url, dataset_instance):
+    def test_get_returns_ordered_by_created_at(self, api_client, user, url, dataset_instance):
+        _grant_dataset_permission(user, dataset_instance, PERMISSIONS.AGENT.VIEW)
         older = baker.make(Agent, name="older", dataset=dataset_instance)
         newer = baker.make(Agent, name="newer", dataset=dataset_instance)
 
@@ -193,7 +245,8 @@ class TestAgentView:
         assert agent_1.id in ids
         assert agent_2.id in ids
 
-    def test_get_filter_out_corrupted_agents_to_user(self, api_client, url, dataset_instance):
+    def test_get_filter_out_corrupted_agents_to_user(self, api_client, user, url, dataset_instance):
+        _grant_dataset_permission(user, dataset_instance, PERMISSIONS.AGENT.VIEW)
         agent_1 = baker.make(Agent, dataset=dataset_instance)
         agent_2 = baker.make(Agent, dataset=dataset_instance, corrupted=True)
 
@@ -208,11 +261,26 @@ class TestAgentView:
     def test_dataset_not_found(self, api_client, url):
         response = api_client.get(f"{url}?dataset=9999")
 
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data == []
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_post_creates_agent(self, api_client, url, config):
+    def test_post_outsider_gets_not_found(self, api_client, url):
         dataset = baker.make(DataSet)
+
+        response = api_client.post(url, {"dataset": dataset.id}, format="json")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_post_dataset_member_without_add_agent_gets_forbidden(self, api_client, user, url):
+        dataset = baker.make(DataSet)
+        _grant_dataset_permission(user, dataset)
+
+        response = api_client.post(url, {"dataset": dataset.id}, format="json")
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_post_creates_agent(self, api_client, user, url, config):
+        dataset = baker.make(DataSet)
+        _grant_dataset_permission(user, dataset, PERMISSIONS.AGENT.ADD)
         config = {
             "agent_args": {
                 "required_test": "required_test",
@@ -247,8 +315,9 @@ class TestAgentView:
             created = Agent.objects.get(pk=response.data["id"])
             assert created.name == "name"
 
-    def test_post_creates_agent_optional_fields_saved(self, api_client, url, config):
+    def test_post_creates_agent_optional_fields_saved(self, api_client, user, url, config):
         dataset = baker.make(DataSet)
+        _grant_dataset_permission(user, dataset, PERMISSIONS.AGENT.ADD)
         config = {
             "agent_args": {
                 "required_test": "required_test",
@@ -287,8 +356,9 @@ class TestAgentView:
             assert created.config["prompt_input"].get("optional_test") == "optional_test"
             assert created.config["prompt_extension"].get("optional_test") == "optional_test"
 
-    def test_post_creates_agent_do_not_save_empty_field(self, api_client, url, config):
+    def test_post_creates_agent_do_not_save_empty_field(self, api_client, user, url, config):
         dataset = baker.make(DataSet)
+        _grant_dataset_permission(user, dataset, PERMISSIONS.AGENT.ADD)
         config = {
             "agent_args": {
                 "required_test": "required_test",
@@ -341,7 +411,24 @@ class TestAgentDetailsView:
     def url(self, agent_instance):
         return reverse("agent-details", kwargs={"pk": agent_instance.pk})
 
-    def test_get_existing_agent(self, api_client, agent_instance, url):
+    def test_get_outsider_gets_not_found(self, api_client, agent_instance, url):
+        response = api_client.get(url)
+
+        # Obscured as 404, not 403 - a non-member shouldn't be able to tell this dataset
+        # apart from one that doesn't exist.
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_get_dataset_member_without_view_agent_gets_forbidden(self, api_client, user, agent_instance, url):
+        # A member of the agent's dataset, but the role grants nothing agent-related.
+        _grant_dataset_permission(user, agent_instance.dataset)
+
+        response = api_client.get(url)
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_get_existing_agent(self, api_client, user, agent_instance, url):
+        _grant_dataset_permission(user, agent_instance.dataset, PERMISSIONS.AGENT.VIEW)
+
         response = api_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
@@ -355,7 +442,20 @@ class TestAgentDetailsView:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_put_updates_agent(self, api_client, agent_instance, url, config):
+    def test_put_outsider_gets_not_found(self, api_client, agent_instance, url):
+        response = api_client.put(url, {"name": "updated"}, format="json")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_put_dataset_member_without_change_agent_gets_forbidden(self, api_client, user, agent_instance, url):
+        _grant_dataset_permission(user, agent_instance.dataset)
+
+        response = api_client.put(url, {"name": "updated"}, format="json")
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_put_updates_agent(self, api_client, user, agent_instance, url, config):
+        _grant_dataset_permission(user, agent_instance.dataset, PERMISSIONS.AGENT.CHANGE)
         dataset = baker.make(DataSet)
         updated_config = {
             "agent_args": {
@@ -390,8 +490,9 @@ class TestAgentDetailsView:
             assert agent_instance.name == "updated"
             assert agent_instance.config == updated_config
 
-    def test_put_removes_corrupted_flag_for_correct_data(self, api_client, url, config):
+    def test_put_removes_corrupted_flag_for_correct_data(self, api_client, user, url, config):
         dataset = baker.make(DataSet)
+        _grant_dataset_permission(user, dataset, PERMISSIONS.AGENT.CHANGE)
         agent_instance = baker.make(Agent, corrupted=True, deleted_at=None, dataset=dataset)
         url = reverse("agent-details", kwargs={"pk": agent_instance.pk})
         updated_config = {
@@ -434,7 +535,8 @@ class TestAgentDetailsView:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_put_invalid_payload_returns_400(self, api_client, url):
+    def test_put_invalid_payload_returns_400(self, api_client, user, agent_instance, url):
+        _grant_dataset_permission(user, agent_instance.dataset, PERMISSIONS.AGENT.CHANGE)
         payload = {"name": ""}
 
         response = api_client.put(url, payload, format="json")
@@ -442,7 +544,21 @@ class TestAgentDetailsView:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "config" in response.data
 
-    def test_delete_existing_agent(self, api_client, agent_instance, url):
+    def test_delete_outsider_gets_not_found(self, api_client, agent_instance, url):
+        response = api_client.delete(url)
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_delete_dataset_member_without_delete_agent_gets_forbidden(self, api_client, user, agent_instance, url):
+        _grant_dataset_permission(user, agent_instance.dataset)
+
+        response = api_client.delete(url)
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_delete_existing_agent(self, api_client, user, agent_instance, url):
+        _grant_dataset_permission(user, agent_instance.dataset, PERMISSIONS.AGENT.DELETE)
+
         response = api_client.delete(url)
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
