@@ -6,8 +6,13 @@ from rest_framework.generics import GenericAPIView, ListCreateAPIView, RetrieveA
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from account.authorization import any_permission_required, datasets_visible_to, is_dataset_member, permission_required
-from account.permission_codenames import PERMISSIONS
+from account.authorization import (
+    PERMISSIONS,
+    any_permission_required,
+    datasets_visible_to,
+    is_dataset_member,
+    permission_required,
+)
 from agent.core.registries.embeddings import EmbeddingProviderRegistry
 from agent.core.registries.language_models import LanguageModelRegistry
 from agent.models import AgenticExecution, Message

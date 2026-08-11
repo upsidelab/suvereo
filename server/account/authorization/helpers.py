@@ -1,8 +1,9 @@
 from django.db.models import Q, QuerySet
 
 from account.models import DatasetGroupRoleAssignment, DatasetUserRoleAssignment, User
-from account.permission_codenames import PERMISSIONS
 from catalog.models import DataSet
+
+from .permission_codenames import PERMISSIONS
 
 
 def is_dataset_member(user: User, dataset: DataSet) -> bool:
