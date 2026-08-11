@@ -34,7 +34,7 @@ The note (full text at the bottom) groups capabilities by entity — Dataset, Ag
 ### Decisions from the original draft that still stand
 
 1. ~~**Admin flag stays `is_staff`, not `is_superuser`.**~~ **Reversed during Phase 1 implementation.** `is_superuser` is what Django actually built for "bypass every permission check": `PermissionsMixin.has_perm()` shortcuts to `True` for an active superuser *before* it ever consults `user_permissions`/`groups`. That means every helper below gets the bypass for free just by calling `has_perm(...)` — no hand-rolled `is_staff or ...` (nor `is_superuser or ...`) at any call site, which is a genuine simplification, not just a relabeling. `is_staff` reverts to Django's own native meaning (can open `/admin`) and carries zero authorization weight anywhere in this app; DRF's built-in `IsAdminUser` (which checks `is_staff`) is replaced by a bespoke `IsAdmin` (checks `is_superuser` directly) at every admin-of-admin surface that doesn't go through `has_perm`. Externally, neither Django flag is named directly: the API and frontend only ever expose `is_admin` / `isAdmin` — every serializer field is declared as `is_admin = serializers.BooleanField(source="is_superuser")`, so the wire contract doesn't hint that this is backed by Django's own `is_superuser` field (which would otherwise leak an implementation detail — e.g. "they're on Django" — to API consumers) while internal code (`validated_data`, `instance.is_superuser = ...`) keeps reading/writing the real model attribute unchanged.
-2. **No `configure_models` permission.** `ConfigView`/`ConfigLanguageModelView`/`ConfigEmbeddingModelView` are read-only catalogs of available provider/model names, not a mutation on any resource. `IsAuthenticated`-only, dropped from `IsAdminUser`.
+2. **No `configure_models` permission** still stands — no new bespoke codename is introduced for these views. ~~`IsAuthenticated`-only~~ **partially reversed during Phase 1 implementation.** `ConfigView`/`ConfigLanguageModelView`/`ConfigEmbeddingModelView` are read-only catalogs of available provider/model names, not a mutation on any resource, and `IsAdminUser` is still dropped — but they're not left fully open to any authenticated user either: the only caller is `data-set-form.tsx` (New/Edit Data Set), so a user who can neither create nor edit a dataset has no legitimate use for this catalog and gets nothing from it. Gated on the existing `catalog.add_dataset` **or** `catalog.change_dataset` (global, any-of — see `any_permission_required` below), reusing Dataset's own CRUD codenames rather than inventing a new one, consistent with the rest of this doc's "already exists, just put it to use" idiom.
 3. ~~**`manage_users`/`manage_service_accounts` collapse into one.**~~ **Reversed by decision #2 above** — the note treats them as separate entities, so they get separate codenames after all.
 4. ~~**No `view_all_conversations`.**~~ **Reversed by decision #3 above** — the note asks for it explicitly (and its Agentic Executions twin), satisfied by repurposing the existing default `view_*` codenames rather than inventing a new one.
 
@@ -137,14 +137,25 @@ def has_dataset_perm(user, codename: str, dataset) -> bool:
     ).exists()
 ```
 
-Phase 1 shipped the global-only case as a method decorator rather than the permission class originally sketched here, since several call sites (e.g. `DataSetDetailView`) need a different codename per HTTP method on the same view:
+Phase 1 shipped the global-only case as a pair of method decorators rather than the permission class originally sketched here, since several call sites (e.g. `DataSetDetailView`) need a different codename per HTTP method on the same view. `permission_required` is the single-codename gate; `any_permission_required` is its any-of counterpart, needed for the Config views (see decision #2 above), which are gated on `add_dataset` **or** `change_dataset` rather than a single codename. An `all_permissions_required` (every one of several codenames, not just one) is a natural next addition if a view ever needs it — no call site does yet, so it isn't built. Names follow Django's own `permission_required` convention (`django.contrib.auth.decorators`) deliberately — its actual *implementation* isn't reused, since it's redirect-based (wrong for an API even with `raise_exception=True`, which still collapses 401-vs-403 into a flat 403 — DRF's `self.permission_denied()` gets this right) and its multi-codename form is AND-only (`has_perms`), not the any-of semantics needed here:
 
 ```python
-def required_permission(codename: str):
+def permission_required(codename: str):
     def decorator(view_method):
         @wraps(view_method)
         def wrapper(self, *args, **kwargs):
             if not self.request.user.has_perm(codename):
+                self.permission_denied(self.request)
+            return view_method(self, *args, **kwargs)
+        return wrapper
+    return decorator
+
+
+def any_permission_required(*codenames: str):
+    def decorator(view_method):
+        @wraps(view_method)
+        def wrapper(self, *args, **kwargs):
+            if not any(self.request.user.has_perm(codename) for codename in codenames):
                 self.permission_denied(self.request)
             return view_method(self, *args, **kwargs)
         return wrapper
@@ -214,10 +225,10 @@ Its three existing call sites (`agent/views.py`, `catalog/integrations/views.py`
   - `DataSetListView.get_queryset` → `datasets_visible_to(request.user)`.
   - `DataSetListView.perform_create` → require global `catalog.add_dataset` (was: `is_staff` only).
   - `DataSetDetailView` → `permission_classes = [IsAuthenticated]` + explicit checks per method: GET → `is_dataset_member(request.user, dataset)`; PUT/PATCH → global `catalog.change_dataset`; DELETE → global `catalog.delete_dataset`. Deliberately **no** per-dataset self-service edit/delete — matches decision #1 (Dataset is global-only) and stays close to today's staff-only behavior for mutations.
-  - `ConfigView`/`ConfigLanguageModelView`/`ConfigEmbeddingModelView` → `permission_classes = [IsAuthenticated]`, drop `IsAdminUser` (bundled, trivial, unrelated to Dataset access itself).
+  - `ConfigView`/`ConfigLanguageModelView`/`ConfigEmbeddingModelView` → `permission_classes = [IsAuthenticated]`, drop `IsAdminUser`, **and** `@any_permission_required(catalog.add_dataset, catalog.change_dataset)` on `get` (see decision #2 above) — their only caller is the New/Edit Data Set form, so a user who can do neither has no legitimate reason to see this catalog.
 - `catalog/entities/views.py` (catalog browsing) → replace `has_dataset_access` (still the Phase 0 stub up to this point) with `is_dataset_member(request.user, dataset)` — this is the "access to catalog" half of View, and its permanent final state (see Phase 0).
 
-**Test:** a user with no role assignment on a dataset can't see or touch that dataset's config or catalog; a user with a role assignment on a dataset retains access to it; a user granted global `catalog.view_dataset` sees every dataset's config/catalog regardless of role assignment; a plain role holder still cannot rename/delete their dataset (only a global `change_dataset`/`delete_dataset` grantee or staff can).
+**Test:** a user with no role assignment on a dataset can't see or touch that dataset's config or catalog; a user with a role assignment on a dataset retains access to it; a user granted global `catalog.view_dataset` sees every dataset's config/catalog regardless of role assignment; a plain role holder still cannot rename/delete their dataset (only a global `change_dataset`/`delete_dataset` grantee or admin can); a user holding neither `add_dataset` nor `change_dataset` gets 403 from all three Config views, while a holder of either one can use them.
 
 ---
 
@@ -269,7 +280,7 @@ Closes baseline gaps #2, #6 (execution half). No new permission declarations —
 
 ### Phase 6 — Users CRUD
 
-- `account/views/users.py` — swap `IsAdminUser` for `HasPermission` with per-method `required_permission` (`GET`→`account.view_user`, `POST`→`account.add_user`, `PATCH`→`account.change_user`, `DELETE`→`account.delete_user`). `IsAdminUser` itself was already replaced by a bespoke `IsAdmin` (checks `is_superuser`, not `is_staff` — see the reversed decision above) ahead of this phase, as part of a repo-wide sweep; that swap isn't this phase's remaining scope — the fine-grained per-method codename split above still is.
+- `account/views/users.py` — swap `IsAdminUser` for `HasPermission` with per-method `permission_required` (`GET`→`account.view_user`, `POST`→`account.add_user`, `PATCH`→`account.change_user`, `DELETE`→`account.delete_user`). `IsAdminUser` itself was already replaced by a bespoke `IsAdmin` (checks `is_superuser`, not `is_staff` — see the reversed decision above) ahead of this phase, as part of a repo-wide sweep; that swap isn't this phase's remaining scope — the fine-grained per-method codename split above still is.
 - `account/serializers.py`: `AccountSerializer` — add `permissions` (`SerializerMethodField`, list of codenames the user holds globally), so the frontend has something to gate on beyond `isAdmin` once Phase 9 lands.
 
 **Test:** a user granted only `account.view_user` can list/view users but can't create, edit, or delete them; a user with no `account.*_user` permission who also isn't an admin (`is_superuser`) gets 403 on all of `/api/users`.

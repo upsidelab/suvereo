@@ -1,11 +1,11 @@
 from django.http import Http404
 from django.shortcuts import get_object_or_404
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from account.authorization import is_dataset_member
 from catalog.entities.registry import entity_registry
 from catalog.models import DataSet
 
@@ -44,6 +44,6 @@ class EntityRecordsView(ListAPIView):
     def get_queryset(self):
         registration = self._registration()
         data_set = get_object_or_404(DataSet, pk=self.kwargs["data_set_id"])
-        if not self.request.user.has_dataset_access(data_set):
-            raise PermissionDenied("No dataset access.")
+        if not is_dataset_member(self.request.user, data_set):
+            raise self.permission_denied(self.request)
         return registration.model.objects.filter(dataset_id=self.kwargs["data_set_id"]).order_by("id")
