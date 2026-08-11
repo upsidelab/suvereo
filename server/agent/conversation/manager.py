@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime
 from typing import Optional
 
@@ -27,6 +28,18 @@ class ConversationManager:
         Engine calculates embedding for a question and using similarity search collects documents that may contain
         relevant content.
         """
+        # Checking the flag here, before branching, also has the side effect of populating
+        # conversation.agent's cache (get_conversation() already select_related()s it, so this
+        # is not even a fresh query) — the async path re-reads conversation.agent.agent_type
+        # later, and it must hit that cache rather than issue a fresh sync query from inside a
+        # running event loop.
+        agent_type = conversation.agent.agent_type
+        agent_class = AgentRegistry().get_agent_class_by_type(agent_type)
+        if getattr(agent_class, "MCP_TOOLS_ENABLED", False):
+            return asyncio.run(
+                self._get_answer_async(conversation, question_message, streaming, config_type, tool_scratchpad)
+            )
+
         agent = AgentRegistry().get_conversation_agent(
             conversation,
             streaming,
@@ -36,6 +49,22 @@ class ConversationManager:
         response = agent.get_answer(question_message)
 
         return response
+
+    async def _get_answer_async(
+        self,
+        conversation: Conversation,
+        question_message: str,
+        streaming: bool,
+        config_type: ConfigType,
+        tool_scratchpad: Optional[ToolScratchpad],
+    ) -> str:
+        agent = await AgentRegistry().aget_conversation_agent(
+            conversation,
+            streaming,
+            config_type=config_type,
+            tool_scratchpad=tool_scratchpad,
+        )
+        return await agent.aget_answer(question_message)
 
     def create_conversation(self, user_id: int, agent_id: int) -> Conversation:
         user = User.objects.get(id=user_id)

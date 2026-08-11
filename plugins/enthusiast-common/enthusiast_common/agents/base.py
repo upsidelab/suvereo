@@ -42,6 +42,7 @@ class BaseAgent(ABC, ExtraArgsClassBase):
     TOOLS = []
 
     FILE_UPLOAD = False
+    MCP_TOOLS_ENABLED = False
 
     def __init__(
         self,
@@ -58,6 +59,11 @@ class BaseAgent(ABC, ExtraArgsClassBase):
         self._conversation_id = conversation_id
         self._callback_handler = callback_handler
         self._injector = injector
+        self._dynamic_tools: list[BaseTool] = []
+
+    def set_dynamic_tools(self, tools: list[BaseTool]) -> None:
+        """Attach tools fetched at build time from tool-providing integrations (e.g. MCP servers)."""
+        self._dynamic_tools = tools
 
     @abstractmethod
     def get_answer(self, input_text: str) -> str:

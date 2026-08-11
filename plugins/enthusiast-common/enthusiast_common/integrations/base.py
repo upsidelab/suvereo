@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Optional, TypeVar
 
 from enthusiast_common.indexing import BaseEntityIndexer
+from langchain_core.tools import BaseTool as LCBaseTool
 
 
 class BaseIntegrationManager(ABC):
@@ -69,6 +70,19 @@ class BaseIntegration(ABC):
         if config_class is None:
             return {}
         return config_class.model_json_schema()
+
+
+class BaseToolProvidingIntegration(BaseIntegration):
+    """An integration that can also hand agents extra tools to call, on top of its stored config.
+
+    Discovered generically via ``resolve_all(data_set_id, BaseToolProvidingIntegration)`` — the
+    framework never needs to know about a specific tool-providing integration type (e.g. MCP
+    servers); it only needs to know this capability exists.
+    """
+
+    @abstractmethod
+    async def get_tools(self) -> list[LCBaseTool]:
+        """Return the LangChain tools this integration instance currently makes available."""
 
 
 # Bound to BaseIntegration, defined above — kept local to its only use below

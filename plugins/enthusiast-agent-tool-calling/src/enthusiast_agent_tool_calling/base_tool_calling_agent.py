@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any
 
 from enthusiast_agent_tools import FileListTool, FileRetrievalTool
@@ -46,6 +47,29 @@ class BaseToolCallingAgent(BaseAgent):
 
         return final_message.text
 
+    async def aget_answer(self, input_text: str) -> str:
+        """Async twin of get_answer(): uses ainvoke() so dynamic tools (e.g. MCP) can be awaited."""
+        history = self._injector.chat_history
+        compactor = self._injector.memory_compactor
+
+        agent = self._build_agent()
+        context_messages = await asyncio.to_thread(self._build_context_messages)
+        input_messages = context_messages + [HumanMessage(content=input_text)]
+        result = await agent.ainvoke({"messages": input_messages}, config=self._build_invoke_config())
+
+        new_messages = result["messages"][len(context_messages):]
+        final_message = next(
+            m for m in reversed(new_messages)
+            if isinstance(m, AIMessage) and not m.tool_calls
+        )
+
+        await asyncio.to_thread(history.add_messages, new_messages)
+
+        if compactor:
+            await asyncio.to_thread(compactor.compact_if_needed)
+
+        return final_message.text
+
     def _build_context_messages(self) -> list[BaseMessage]:
         return ContextWindowBuilder(
             chat_history=self._injector.chat_history,
@@ -53,7 +77,7 @@ class BaseToolCallingAgent(BaseAgent):
         ).build(max_tokens=MAX_HISTORY_TOKENS)
 
     def _build_tools(self) -> list[BaseTool]:
-        return [tool.as_tool() for tool in self._tools]
+        return [tool.as_tool() for tool in self._tools] + self._dynamic_tools
 
     def _get_system_prompt(self) -> str:
         return self._system_prompt.format(**self._get_system_prompt_variables())
