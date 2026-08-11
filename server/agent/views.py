@@ -325,7 +325,7 @@ class AgentDetailsView(APIView):
     @swagger_auto_schema(operation_description="Get a single configuration by id.", responses={200: AgentSerializer()})
     def get(self, request, pk):
         instance = get_object_or_404(Agent, pk=pk)
-        enforce_dataset_scoped_permission(self, PERMISSIONS.AGENT.VIEW, instance.dataset)
+        enforce_dataset_scoped_permission(self, PERMISSIONS.AGENT.VIEW, instance.dataset, obscured_model=Agent)
 
         serializer = AgentSerializer(instance)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -337,7 +337,7 @@ class AgentDetailsView(APIView):
     )
     def put(self, request, pk=None):
         instance = get_object_or_404(Agent, pk=pk)
-        enforce_dataset_scoped_permission(self, PERMISSIONS.AGENT.CHANGE, instance.dataset)
+        enforce_dataset_scoped_permission(self, PERMISSIONS.AGENT.CHANGE, instance.dataset, obscured_model=Agent)
 
         serializer = AgentSerializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -349,7 +349,7 @@ class AgentDetailsView(APIView):
     )
     def delete(self, request, pk=None):
         instance = get_object_or_404(Agent, pk=pk)
-        enforce_dataset_scoped_permission(self, PERMISSIONS.AGENT.DELETE, instance.dataset)
+        enforce_dataset_scoped_permission(self, PERMISSIONS.AGENT.DELETE, instance.dataset, obscured_model=Agent)
 
         instance.set_deleted_at()
         return Response(status=status.HTTP_204_NO_CONTENT)

@@ -53,14 +53,22 @@ def has_any_permission_on_any_dataset(user: User, *codenames: str) -> bool:
     ).exists()
 
 
-def enforce_dataset_scoped_permission(view, codename: str, dataset: DataSet) -> None:
+def enforce_dataset_scoped_permission(view, codename: str, dataset: DataSet, *, obscured_model: type = DataSet) -> None:
     """Holding `codename` (globally, or via a per-dataset role) lets the request through.
     Lacking it while still being a member of `dataset` denies with 403 - the dataset is
     visible to this user, this specific capability on it isn't. Having no relationship to
     `dataset` at all denies with 404, so its existence is never confirmed to someone outside
-    it."""
+    it.
+
+    The 404 message mimics Django's own `get_object_or_404` message for `obscured_model` -
+    whichever model the caller actually ran its existence check against before reaching here
+    (`DataSet` itself in most call sites; e.g. `Agent` when the caller resolved `dataset` from
+    an already-fetched agent). Matching that message, rather than leaving this 404 bare, keeps
+    "denied access" indistinguishable from "doesn't exist" for the same model - otherwise a
+    non-member could tell the two apart by comparing response bodies.
+    """
     if has_dataset_perm(view.request.user, codename, dataset):
         return
     if is_dataset_member(view.request.user, dataset):
         view.permission_denied(view.request)
-    raise Http404
+    raise Http404(f"No {obscured_model._meta.object_name} matches the given query.")

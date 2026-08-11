@@ -191,6 +191,15 @@ class TestAgentView:
         # apart from one that doesn't exist.
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
+    def test_outsider_gets_identical_404_body_to_a_nonexistent_dataset(self, api_client, url, dataset_instance):
+        # The two cases must be indistinguishable - not just the same status code, but the
+        # same response body - or a non-member could tell them apart by comparing responses.
+        existing_but_hidden = api_client.get(f"{url}?dataset={dataset_instance.pk}")
+        nonexistent = api_client.get(f"{url}?dataset=9999")
+
+        assert existing_but_hidden.data == {"detail": "No DataSet matches the given query."}
+        assert existing_but_hidden.data == nonexistent.data
+
     def test_get_dataset_member_without_view_agent_gets_forbidden(self, api_client, user, url, dataset_instance):
         # A member of the dataset, but the role grants nothing agent-related.
         _grant_dataset_permission(user, dataset_instance)
@@ -417,6 +426,15 @@ class TestAgentDetailsView:
         # Obscured as 404, not 403 - a non-member shouldn't be able to tell this dataset
         # apart from one that doesn't exist.
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_outsider_gets_identical_404_body_to_a_nonexistent_agent(self, api_client, agent_instance, url):
+        # The two cases must be indistinguishable - not just the same status code, but the
+        # same response body - or a non-member could tell them apart by comparing responses.
+        existing_but_hidden = api_client.get(url)
+        nonexistent = api_client.get(reverse("agent-details", kwargs={"pk": 9999}))
+
+        assert existing_but_hidden.data == {"detail": "No Agent matches the given query."}
+        assert existing_but_hidden.data == nonexistent.data
 
     def test_get_dataset_member_without_view_agent_gets_forbidden(self, api_client, user, agent_instance, url):
         # A member of the agent's dataset, but the role grants nothing agent-related.
