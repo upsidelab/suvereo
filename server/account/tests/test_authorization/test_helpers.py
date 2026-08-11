@@ -3,7 +3,13 @@ from django.contrib.auth.models import Group, Permission
 from model_bakery import baker
 
 from account.authorization import PERMISSIONS
-from account.authorization.helpers import datasets_visible_to, has_dataset_perm, is_dataset_member
+from account.authorization.helpers import (
+    datasets_visible_to,
+    has_any_dataset_access,
+    has_any_permission_on_any_dataset,
+    has_dataset_perm,
+    is_dataset_member,
+)
 from account.models import DatasetGroupRoleAssignment, DatasetRole, DatasetUserRoleAssignment, User
 from catalog.models import DataSet
 
@@ -118,7 +124,7 @@ class TestDatasetsVisibleTo:
 class TestHasDatasetPerm:
     CODENAME = PERMISSIONS.AGENT.VIEW
 
-    def test_superuser_has_any_dataset_perm(self):
+    def test_superuser_has_dataset_perm(self):
         user = baker.make(User, is_superuser=True)
         dataset = baker.make(DataSet)
 
@@ -174,3 +180,88 @@ class TestHasDatasetPerm:
         dataset = baker.make(DataSet)
 
         assert has_dataset_perm(user, self.CODENAME, dataset) is False
+
+
+class TestHasAnyDatasetAccess:
+    def test_superuser_has_it_with_no_datasets_at_all(self):
+        user = baker.make(User, is_superuser=True)
+
+        assert has_any_dataset_access(user) is True
+
+    def test_global_view_dataset_holder_has_it_with_no_datasets_at_all(self):
+        user = baker.make(User)
+        user.user_permissions.add(_permission(PERMISSIONS.DATASET.VIEW))
+
+        assert has_any_dataset_access(user) is True
+
+    def test_direct_role_assignment_on_any_dataset_grants_it(self):
+        user = baker.make(User)
+        dataset = baker.make(DataSet)
+        role = baker.make(DatasetRole)
+        baker.make(DatasetUserRoleAssignment, user=user, dataset=dataset, role=role)
+
+        assert has_any_dataset_access(user) is True
+
+    def test_group_role_assignment_on_any_dataset_grants_it(self):
+        user = baker.make(User)
+        group = baker.make(Group)
+        user.groups.add(group)
+        dataset = baker.make(DataSet)
+        role = baker.make(DatasetRole)
+        baker.make(DatasetGroupRoleAssignment, group=group, dataset=dataset, role=role)
+
+        assert has_any_dataset_access(user) is True
+
+    def test_plain_user_with_no_datasets_denied(self):
+        user = baker.make(User)
+        baker.make(DataSet)
+
+        assert has_any_dataset_access(user) is False
+
+
+class TestHasAnyPermissionOnAnyDataset:
+    CODENAMES = (PERMISSIONS.AGENT.ADD, PERMISSIONS.AGENT.CHANGE)
+
+    def test_superuser_has_it(self):
+        user = baker.make(User, is_superuser=True)
+
+        assert has_any_permission_on_any_dataset(user, *self.CODENAMES) is True
+
+    def test_global_permission_holder_has_it(self):
+        user = baker.make(User)
+        user.user_permissions.add(_permission(PERMISSIONS.AGENT.ADD))
+
+        assert has_any_permission_on_any_dataset(user, *self.CODENAMES) is True
+
+    def test_role_assignment_on_any_dataset_grants_it(self):
+        user = baker.make(User)
+        dataset = baker.make(DataSet)
+        role = baker.make(DatasetRole)
+        role.permissions.add(_permission(PERMISSIONS.AGENT.CHANGE))
+        baker.make(DatasetUserRoleAssignment, user=user, dataset=dataset, role=role)
+
+        assert has_any_permission_on_any_dataset(user, *self.CODENAMES) is True
+
+    def test_group_role_assignment_on_any_dataset_grants_it(self):
+        user = baker.make(User)
+        group = baker.make(Group)
+        user.groups.add(group)
+        dataset = baker.make(DataSet)
+        role = baker.make(DatasetRole)
+        role.permissions.add(_permission(PERMISSIONS.AGENT.ADD))
+        baker.make(DatasetGroupRoleAssignment, group=group, dataset=dataset, role=role)
+
+        assert has_any_permission_on_any_dataset(user, *self.CODENAMES) is True
+
+    def test_role_assignment_without_matching_permission_denies_it(self):
+        user = baker.make(User)
+        dataset = baker.make(DataSet)
+        role = baker.make(DatasetRole)
+        baker.make(DatasetUserRoleAssignment, user=user, dataset=dataset, role=role)
+
+        assert has_any_permission_on_any_dataset(user, *self.CODENAMES) is False
+
+    def test_plain_user_denied(self):
+        user = baker.make(User)
+
+        assert has_any_permission_on_any_dataset(user, *self.CODENAMES) is False

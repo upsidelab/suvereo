@@ -1,11 +1,16 @@
 import pytest
-from django.contrib.auth.models import Permission
+from django.contrib.auth.models import Group, Permission
 from model_bakery import baker
 from rest_framework.exceptions import PermissionDenied
 
 from account.authorization import PERMISSIONS
-from account.authorization.decorators import any_permission_required, permission_required
-from account.models import User
+from account.authorization.decorators import (
+    any_global_permission_required,
+    any_permission_on_any_dataset_required,
+    global_permission_required,
+)
+from account.models import DatasetGroupRoleAssignment, DatasetRole, DatasetUserRoleAssignment, User
+from catalog.models import DataSet
 
 pytestmark = pytest.mark.django_db
 
@@ -27,16 +32,20 @@ class _FakeView:
     def permission_denied(self, request, message=None, code=None):
         raise PermissionDenied(detail=message, code=code)
 
-    @permission_required(PERMISSIONS.DATASET.ADD)
+    @global_permission_required(PERMISSIONS.DATASET.ADD)
     def single_permission_action(self, *args, **kwargs):
         return "single-ok"
 
-    @any_permission_required(PERMISSIONS.DATASET.ADD, PERMISSIONS.DATASET.CHANGE)
+    @any_global_permission_required(PERMISSIONS.DATASET.ADD, PERMISSIONS.DATASET.CHANGE)
     def any_permission_action(self, *args, **kwargs):
         return "any-ok"
 
+    @any_permission_on_any_dataset_required(PERMISSIONS.AGENT.ADD, PERMISSIONS.AGENT.CHANGE)
+    def any_dataset_permission_action(self, *args, **kwargs):
+        return "any-dataset-ok"
 
-class TestPermissionRequired:
+
+class TestGlobalPermissionRequired:
     def test_preserves_wrapped_method_metadata(self):
         assert _FakeView.single_permission_action.__name__ == "single_permission_action"
 
@@ -64,7 +73,7 @@ class TestPermissionRequired:
         calls = []
 
         class _View(_FakeView):
-            @permission_required(PERMISSIONS.DATASET.ADD)
+            @global_permission_required(PERMISSIONS.DATASET.ADD)
             def action(self, *args, **kwargs):
                 calls.append(1)
                 return "ok"
@@ -77,7 +86,7 @@ class TestPermissionRequired:
         assert calls == []
 
 
-class TestAnyPermissionRequired:
+class TestAnyGlobalPermissionRequired:
     def test_allows_holder_of_first_codename(self):
         user = baker.make(User)
         user.user_permissions.add(_permission(PERMISSIONS.DATASET.ADD))
@@ -112,3 +121,47 @@ class TestAnyPermissionRequired:
 
         with pytest.raises(PermissionDenied):
             view.any_permission_action()
+
+
+class TestAnyPermissionOnAnyDatasetRequired:
+    def test_allows_global_holder(self):
+        user = baker.make(User)
+        user.user_permissions.add(_permission(PERMISSIONS.AGENT.ADD))
+        view = _FakeView(user)
+
+        assert view.any_dataset_permission_action() == "any-dataset-ok"
+
+    def test_allows_holder_via_role_on_any_dataset(self):
+        user = baker.make(User)
+        dataset = baker.make(DataSet)
+        role = baker.make(DatasetRole)
+        role.permissions.add(_permission(PERMISSIONS.AGENT.CHANGE))
+        baker.make(DatasetUserRoleAssignment, user=user, dataset=dataset, role=role)
+        view = _FakeView(user)
+
+        assert view.any_dataset_permission_action() == "any-dataset-ok"
+
+    def test_allows_holder_via_group_role_on_any_dataset(self):
+        user = baker.make(User)
+        group = baker.make(Group)
+        user.groups.add(group)
+        dataset = baker.make(DataSet)
+        role = baker.make(DatasetRole)
+        role.permissions.add(_permission(PERMISSIONS.AGENT.ADD))
+        baker.make(DatasetGroupRoleAssignment, group=group, dataset=dataset, role=role)
+        view = _FakeView(user)
+
+        assert view.any_dataset_permission_action() == "any-dataset-ok"
+
+    def test_allows_superuser(self):
+        user = baker.make(User, is_superuser=True)
+        view = _FakeView(user)
+
+        assert view.any_dataset_permission_action() == "any-dataset-ok"
+
+    def test_denies_holder_of_neither_codename_anywhere(self):
+        user = baker.make(User)
+        view = _FakeView(user)
+
+        with pytest.raises(PermissionDenied):
+            view.any_dataset_permission_action()

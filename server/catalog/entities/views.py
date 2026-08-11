@@ -5,9 +5,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from account.authorization import is_dataset_member
+from account.authorization import datasets_visible_to, has_any_dataset_access
 from catalog.entities.registry import entity_registry
-from catalog.models import DataSet
 
 
 class EntityListView(APIView):
@@ -16,6 +15,9 @@ class EntityListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        if not has_any_dataset_access(request.user):
+            self.permission_denied(request)
+
         data = [
             {
                 "slug": registration.slug,
@@ -43,7 +45,5 @@ class EntityRecordsView(ListAPIView):
 
     def get_queryset(self):
         registration = self._registration()
-        data_set = get_object_or_404(DataSet, pk=self.kwargs["data_set_id"])
-        if not is_dataset_member(self.request.user, data_set):
-            raise self.permission_denied(self.request)
-        return registration.model.objects.filter(dataset_id=self.kwargs["data_set_id"]).order_by("id")
+        data_set = get_object_or_404(datasets_visible_to(self.request.user), pk=self.kwargs["data_set_id"])
+        return registration.model.objects.filter(dataset_id=data_set.id).order_by("id")

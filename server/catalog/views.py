@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
@@ -8,10 +9,9 @@ from rest_framework.response import Response
 
 from account.authorization import (
     PERMISSIONS,
-    any_permission_required,
+    any_global_permission_required,
     datasets_visible_to,
-    is_dataset_member,
-    permission_required,
+    global_permission_required,
 )
 from agent.core.registries.embeddings import EmbeddingProviderRegistry
 from agent.core.registries.language_models import LanguageModelRegistry
@@ -42,7 +42,7 @@ class DataSetListView(ListCreateAPIView):
     def post(self, request, *args, **kwargs):
         return super().post(request, *args, **kwargs)
 
-    @permission_required(PERMISSIONS.DATASET.ADD)
+    @global_permission_required(PERMISSIONS.DATASET.ADD)
     def perform_create(self, serializer):
         with transaction.atomic():
             preconfigure_agents = serializer.validated_data.pop("preconfigure_agents")
@@ -66,10 +66,7 @@ class DataSetDetailView(RetrieveAPIView):
         ],
     )
     def get(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if not is_dataset_member(request.user, instance):
-            self.permission_denied(request)
-
+        instance = get_object_or_404(datasets_visible_to(request.user), pk=kwargs[self.lookup_url_kwarg])
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
@@ -82,7 +79,7 @@ class DataSetDetailView(RetrieveAPIView):
             )
         ],
     )
-    @permission_required(PERMISSIONS.DATASET.CHANGE)
+    @global_permission_required(PERMISSIONS.DATASET.CHANGE)
     def patch(self, request, *args, **kwargs):
         instance = self.get_object()
 
@@ -107,7 +104,7 @@ class DataSetDetailView(RetrieveAPIView):
             )
         ],
     )
-    @permission_required(PERMISSIONS.DATASET.DELETE)
+    @global_permission_required(PERMISSIONS.DATASET.DELETE)
     def delete(self, request, *args, **kwargs):
         instance = self.get_object()
 
@@ -147,7 +144,7 @@ class ConfigView(GenericAPIView):
             )
         },
     )
-    @any_permission_required(PERMISSIONS.DATASET.ADD, PERMISSIONS.DATASET.CHANGE)
+    @any_global_permission_required(PERMISSIONS.DATASET.ADD, PERMISSIONS.DATASET.CHANGE)
     def get(self, request, *args, **kwargs):
         response_body = {
             "language_model_providers": [
@@ -176,7 +173,7 @@ class ConfigLanguageModelView(GenericAPIView):
             )
         },
     )
-    @any_permission_required(PERMISSIONS.DATASET.ADD, PERMISSIONS.DATASET.CHANGE)
+    @any_global_permission_required(PERMISSIONS.DATASET.ADD, PERMISSIONS.DATASET.CHANGE)
     def get(self, request, *args, **kwargs):
         provider_name = kwargs.get("provider_name")
         response_body = LanguageModelRegistry().provider_class_by_name(provider_name).available_models()
@@ -216,7 +213,7 @@ class ConfigEmbeddingModelView(GenericAPIView):
             )
         },
     )
-    @any_permission_required(PERMISSIONS.DATASET.ADD, PERMISSIONS.DATASET.CHANGE)
+    @any_global_permission_required(PERMISSIONS.DATASET.ADD, PERMISSIONS.DATASET.CHANGE)
     def get(self, request, *args, **kwargs):
         provider_name = kwargs.get("provider_name")
         provider_class = EmbeddingProviderRegistry().provider_class_by_name(provider_name)

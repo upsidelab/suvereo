@@ -22,9 +22,11 @@ def _url(data_set):
 
 class TestDataSetDetailViewGet:
     def test_outsider_cannot_view_dataset(self, api_client, data_set):
+        # Obscured as 404, not 403 - a non-member shouldn't be able to tell this dataset
+        # apart from one that doesn't exist.
         response = api_client.get(_url(data_set))
 
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_direct_role_member_can_view_dataset(self, api_client, user, data_set):
         role = baker.make(DatasetRole)
@@ -56,6 +58,13 @@ class TestDataSetDetailViewGet:
         response = admin_api_client.get(_url(data_set))
 
         assert response.status_code == status.HTTP_200_OK
+
+    def test_nonexistent_dataset_returns_404(self, api_client):
+        url = reverse("data_set_detail", kwargs={"data_set_id": 9999})
+
+        response = api_client.get(url)
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 class TestDataSetDetailViewPatch:

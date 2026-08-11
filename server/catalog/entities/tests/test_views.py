@@ -43,11 +43,45 @@ def _url(data_set, slug="agents"):
     return reverse("entity-records", kwargs={"data_set_id": data_set.id, "slug": slug})
 
 
-class TestEntityRecordsView:
-    def test_outsider_is_denied(self, api_client, data_set):
-        response = api_client.get(_url(data_set))
+class TestEntityListView:
+    def test_outsider_with_no_dataset_at_all_is_denied(self, api_client):
+        response = api_client.get(reverse("entity-list"))
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_dataset_member_is_allowed(self, api_client, user, data_set):
+        role = baker.make(DatasetRole)
+        baker.make(DatasetUserRoleAssignment, user=user, dataset=data_set, role=role)
+
+        response = api_client.get(reverse("entity-list"))
+
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_global_view_dataset_holder_is_allowed(self, api_client, user):
+        user.user_permissions.add(_permission(PERMISSIONS.DATASET.VIEW))
+
+        response = api_client.get(reverse("entity-list"))
+
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_admin_is_allowed(self, admin_api_client):
+        response = admin_api_client.get(reverse("entity-list"))
+
+        assert response.status_code == status.HTTP_200_OK
+
+
+class TestEntityRecordsView:
+    def test_outsider_is_denied(self, api_client, data_set):
+        # Obscured as 404, not 403 - a non-member shouldn't be able to tell this dataset
+        # apart from one that doesn't exist.
+        response = api_client.get(_url(data_set))
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_nonexistent_dataset_returns_404(self, api_client):
+        response = api_client.get(reverse("entity-records", kwargs={"data_set_id": 9999, "slug": "agents"}))
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_direct_role_member_is_allowed(self, api_client, user, data_set):
         role = baker.make(DatasetRole)
