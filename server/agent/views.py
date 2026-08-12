@@ -2,12 +2,11 @@ import os
 
 from celery.result import AsyncResult
 from django.conf import settings
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
-from rest_framework.exceptions import NotFound
 from rest_framework.generics import ListAPIView
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
@@ -15,7 +14,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from utils.functions import get_model_descriptor_from_class_field
 
-from account.authorization import PERMISSIONS, any_permission_on_any_dataset_required, enforce_dataset_scoped_permission
+from account.authorization import (
+    PERMISSIONS,
+    any_permission_on_any_dataset_required,
+    datasets_with_permission,
+    enforce_dataset_scoped_permission,
+    has_dataset_perm,
+)
 from agent.conversation import ConversationManager
 from agent.core.registries.agents.agent_registry import AgentRegistry
 from agent.core.registries.language_models import LanguageModelRegistry
@@ -88,35 +93,35 @@ class ConversationView(APIView):
     )
     def get(self, request, conversation_id):
         conversation = get_object_or_404(
-            Conversation.objects.select_related("agent").prefetch_related(
+            Conversation.objects.select_related("agent")
+            .prefetch_related(
                 Prefetch(
                     "messages",
                     queryset=Message.objects.exclude(type__in=Message.internal_message_types()).order_by("id"),
                 )
+            )
+            .filter(
+                Q(user=request.user)
+                | Q(data_set__in=datasets_with_permission(request.user, PERMISSIONS.CONVERSATION.VIEW_ALL))
             ),
             id=conversation_id,
-            user=request.user,
         )
         serializer = ConversationContentSerializer(conversation)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
         operation_description="Ask a question in a conversation",
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                "data_set_id": openapi.Schema(type=openapi.TYPE_INTEGER, description="ID of the data set"),
-                "question_message": openapi.Schema(type=openapi.TYPE_STRING, description="Question message"),
-            },
-        ),
+        request_body=AskQuestionSerializer,
     )
     def post(self, request, conversation_id):
-        conversation = get_object_or_404(Conversation, id=conversation_id)
+        conversation = get_object_or_404(Conversation, id=conversation_id, user=request.user)
         serializer = AskQuestionSerializer(data=request.data, context={"conversation_id": conversation_id})
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        if not request.user.has_dataset_access(conversation.data_set):
-            return Response({"detail": "No dataset access."}, status=status.HTTP_403_FORBIDDEN)
+        if not has_dataset_perm(request.user, PERMISSIONS.CONVERSATION.CONVERSE, conversation.data_set):
+            # 403 rather than the 404-obscuring enforce_dataset_scoped_permission: the owner-scoped
+            # fetch above already means this caller legitimately knows the dataset exists.
+            self.permission_denied(request)
         if conversation.agent.deleted_at is not None or hasattr(conversation, "agentic_execution"):
             return Response({"detail": "Conversation locked."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -170,7 +175,9 @@ class ConversationListView(ListAPIView):
         data_set_id = self.request.query_params.get("data_set_id")
         agent_id = self.request.query_params.get("agent_id")
 
-        qs = Conversation.objects.filter(user=user).exclude(agentic_execution__isnull=False)
+        qs = Conversation.objects.filter(
+            Q(user=user) | Q(data_set__in=datasets_with_permission(user, PERMISSIONS.CONVERSATION.VIEW_ALL))
+        ).exclude(agentic_execution__isnull=False)
 
         if data_set_id:
             qs = qs.filter(data_set_id=data_set_id)
@@ -181,27 +188,18 @@ class ConversationListView(ListAPIView):
 
     @swagger_auto_schema(
         operation_description="Create a new conversation",
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={"data_set_id": openapi.Schema(type=openapi.TYPE_INTEGER, description="ID of the data set")},
-        ),
+        request_body=ConversationCreationSerializer,
+        responses={201: ConversationContentSerializer()},
     )
     def post(self, request):
-        manager = ConversationManager()
         input_serializer = ConversationCreationSerializer(data=request.data)
         if not input_serializer.is_valid():
             return Response(input_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        try:
-            conversation = manager.create_conversation(
-                user_id=request.user.id,
-                agent_id=input_serializer.validated_data.get("agent_id"),
-            )
-        except Agent.DoesNotExist:
-            raise NotFound("Agent not found.")
+        agent = get_object_or_404(Agent, id=input_serializer.validated_data.get("agent_id"))
+        enforce_dataset_scoped_permission(self, PERMISSIONS.CONVERSATION.CONVERSE, agent.dataset, obscured_model=Agent)
 
+        conversation = ConversationManager().create_conversation(user_id=request.user.id, agent_id=agent.id)
         conversation = Conversation.objects.select_related("agent").prefetch_related("messages").get(pk=conversation.pk)
-        if not request.user.has_dataset_access(conversation.data_set):
-            return Response({"detail": "No dataset access."}, status=status.HTTP_403_FORBIDDEN)
         serializer = ConversationContentSerializer(conversation)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -212,22 +210,13 @@ class MessageFeedbackView(APIView):
 
     @swagger_auto_schema(
         operation_description="Provide feedback on a message",
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                "feedback": openapi.Schema(type=openapi.TYPE_STRING, description="Feedback"),
-                "rating": openapi.Schema(type=openapi.TYPE_INTEGER, description="Rating"),
-            },
-        ),
+        request_body=MessageFeedbackSerializer,
         manual_parameters=[
             openapi.Parameter("id", openapi.IN_PATH, description="ID of the message", type=openapi.TYPE_INTEGER)
         ],
     )
     def patch(self, request, id):
-        try:
-            message = Message.objects.get(id=id)
-        except Message.DoesNotExist:
-            return Response({"error": "Message not found."}, status=status.HTTP_404_NOT_FOUND)
+        message = get_object_or_404(Message, id=id, conversation__user=request.user)
 
         serializer = MessageFeedbackSerializer(message, data=request.data, partial=True)
         if serializer.is_valid():
@@ -369,7 +358,11 @@ class ConversationFileUploadView(APIView):
         responses={202: FileUploadTaskResponseSerializer()},
     )
     def post(self, request, conversation_id, *args, **kwargs):
-        get_object_or_404(Conversation, pk=conversation_id, user=request.user)
+        conversation = get_object_or_404(Conversation, pk=conversation_id, user=request.user)
+
+        if not has_dataset_perm(request.user, PERMISSIONS.CONVERSATION.CONVERSE, conversation.data_set):
+            # 403, not 404 - same reasoning as ConversationView.post.
+            self.permission_denied(request)
         if "file" not in request.FILES:
             return Response({"error": "No file provided"}, status=status.HTTP_400_BAD_REQUEST)
 

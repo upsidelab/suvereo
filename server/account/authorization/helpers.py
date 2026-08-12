@@ -34,6 +34,19 @@ def has_dataset_perm(user: User, codename: str, dataset: DataSet) -> bool:
     ).exists()
 
 
+def datasets_with_permission(user: User, codename: str) -> QuerySet[DataSet]:
+    if user.has_perm(codename):
+        return DataSet.objects.all()
+    bare = codename.split(".")[-1]
+    return DataSet.objects.filter(
+        Q(datasetuserroleassignment__user=user, datasetuserroleassignment__role__permissions__codename=bare)
+        | Q(
+            datasetgrouproleassignment__group__in=user.groups.all(),
+            datasetgrouproleassignment__role__permissions__codename=bare,
+        )
+    ).distinct()
+
+
 def has_any_dataset_access(user: User) -> bool:
     if user.has_perm(PERMISSIONS.DATASET.VIEW):
         return True

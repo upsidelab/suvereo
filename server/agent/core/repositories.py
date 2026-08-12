@@ -12,6 +12,7 @@ from enthusiast_common.repositories import (
 )
 from enthusiast_common.structures import LLMFile
 
+from account.authorization import PERMISSIONS, datasets_with_permission
 from account.models import User
 from agent.models import Conversation, Message
 from agent.models.agent import Agent
@@ -61,11 +62,8 @@ class DjangoUserRepository(
     BaseUserRepository,
 ):
     def get_user_dataset(self, user_id: int, data_set_id: int) -> DataSet:
-        # NOTE: no membership check — DataSet.users is gone and access is unconditional for now
-        # (see the has_dataset_access stub in account/models.py and Phase 0 in
-        # specs/permissions-implementation-plan.md).
-        self.model.objects.get(pk=user_id)
-        return DataSet.objects.get(pk=data_set_id)
+        user = self.model.objects.get(pk=user_id)
+        return datasets_with_permission(user, PERMISSIONS.CONVERSATION.CONVERSE).get(pk=data_set_id)
 
 
 class DjangoMessageRepository(BaseDjangoRepository[Message], BaseMessageRepository[Message]):

@@ -5,6 +5,7 @@ from model_bakery import baker
 from account.authorization import PERMISSIONS
 from account.authorization.helpers import (
     datasets_visible_to,
+    datasets_with_permission,
     has_any_dataset_access,
     has_any_permission_on_any_dataset,
     has_dataset_perm,
@@ -180,6 +181,80 @@ class TestHasDatasetPerm:
         dataset = baker.make(DataSet)
 
         assert has_dataset_perm(user, self.CODENAME, dataset) is False
+
+
+class TestDatasetsWithPermission:
+    CODENAME = PERMISSIONS.CONVERSATION.VIEW_ALL
+
+    def test_superuser_gets_all_datasets(self):
+        user = baker.make(User, is_superuser=True)
+        baker.make(DataSet)
+        baker.make(DataSet)
+
+        assert datasets_with_permission(user, self.CODENAME).count() == 2
+
+    def test_global_permission_holder_gets_all_datasets(self):
+        user = baker.make(User)
+        user.user_permissions.add(_permission(PERMISSIONS.CONVERSATION.VIEW_ALL))
+        baker.make(DataSet)
+        baker.make(DataSet)
+
+        assert datasets_with_permission(user, self.CODENAME).count() == 2
+
+    def test_user_role_assignment_yields_only_that_dataset(self):
+        user = baker.make(User)
+        dataset = baker.make(DataSet)
+        baker.make(DataSet)
+        role = baker.make(DatasetRole)
+        role.permissions.add(_permission(PERMISSIONS.CONVERSATION.VIEW_ALL))
+        baker.make(DatasetUserRoleAssignment, user=user, dataset=dataset, role=role)
+
+        assert list(datasets_with_permission(user, self.CODENAME)) == [dataset]
+
+    def test_group_role_assignment_yields_only_that_dataset(self):
+        user = baker.make(User)
+        group = baker.make(Group)
+        user.groups.add(group)
+        dataset = baker.make(DataSet)
+        baker.make(DataSet)
+        role = baker.make(DatasetRole)
+        role.permissions.add(_permission(PERMISSIONS.CONVERSATION.VIEW_ALL))
+        baker.make(DatasetGroupRoleAssignment, group=group, dataset=dataset, role=role)
+
+        assert list(datasets_with_permission(user, self.CODENAME)) == [dataset]
+
+    def test_direct_and_group_assignments_are_unioned_without_duplicates(self):
+        user = baker.make(User)
+        group = baker.make(Group)
+        user.groups.add(group)
+        role = baker.make(DatasetRole)
+        role.permissions.add(_permission(PERMISSIONS.CONVERSATION.VIEW_ALL))
+        direct_dataset = baker.make(DataSet)
+        group_dataset = baker.make(DataSet)
+        shared_dataset = baker.make(DataSet)
+        baker.make(DatasetUserRoleAssignment, user=user, dataset=direct_dataset, role=role)
+        baker.make(DatasetUserRoleAssignment, user=user, dataset=shared_dataset, role=role)
+        baker.make(DatasetGroupRoleAssignment, group=group, dataset=group_dataset, role=role)
+        baker.make(DatasetGroupRoleAssignment, group=group, dataset=shared_dataset, role=role)
+
+        result = datasets_with_permission(user, self.CODENAME)
+
+        assert result.count() == 3
+        assert set(result) == {direct_dataset, group_dataset, shared_dataset}
+
+    def test_role_without_matching_permission_yields_nothing(self):
+        user = baker.make(User)
+        dataset = baker.make(DataSet)
+        role = baker.make(DatasetRole)
+        baker.make(DatasetUserRoleAssignment, user=user, dataset=dataset, role=role)
+
+        assert not datasets_with_permission(user, self.CODENAME).exists()
+
+    def test_plain_user_gets_nothing(self):
+        user = baker.make(User)
+        baker.make(DataSet)
+
+        assert not datasets_with_permission(user, self.CODENAME).exists()
 
 
 class TestHasAnyDatasetAccess:

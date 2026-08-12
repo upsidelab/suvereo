@@ -44,11 +44,3 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.email
-
-    def has_dataset_access(self, dataset):
-        """Temporary stub: dataset access is granted unconditionally until each entity's own phase
-        replaces this call site with a real has_dataset_perm(...) (or is_dataset_member(...)) check
-        (see specs/permissions-implementation-plan.md, Phase 0). Delete this method once its last
-        caller is gone — do not add new callers.
-        """
-        return True

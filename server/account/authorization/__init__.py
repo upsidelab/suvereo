@@ -5,6 +5,7 @@ from .decorators import (
 )
 from .helpers import (
     datasets_visible_to,
+    datasets_with_permission,
     enforce_dataset_scoped_permission,
     has_any_dataset_access,
     has_any_permission_on_any_dataset,
@@ -20,6 +21,7 @@ __all__ = [
     "any_global_permission_required",
     "any_permission_on_any_dataset_required",
     "datasets_visible_to",
+    "datasets_with_permission",
     "enforce_dataset_scoped_permission",
     "global_permission_required",
     "has_any_dataset_access",

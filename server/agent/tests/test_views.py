@@ -14,7 +14,7 @@ from rest_framework.test import APIClient
 
 from account.authorization import PERMISSIONS
 from account.models import DatasetRole, DatasetUserRoleAssignment, User
-from agent.models import Conversation
+from agent.models import Conversation, Message
 from agent.models.agent import Agent
 from agent.models.agentic_execution import AgenticExecution
 from catalog.models import DataSet
@@ -594,7 +594,8 @@ class TestConversationView:
     def url(self, conversation):
         return reverse("conversation-details", kwargs={"conversation_id": conversation.id})
 
-    def test_valid_post_returns_202(self, api_client, url, conversation):
+    def test_valid_post_returns_202(self, api_client, user, url, conversation):
+        _grant_dataset_permission(user, conversation.data_set, PERMISSIONS.CONVERSATION.CONVERSE)
         payload = {
             "data_set_id": conversation.data_set.id,
             "question_message": "Hello?",
@@ -615,7 +616,8 @@ class TestConversationView:
         assert response.data["streaming"] is True
         mock_task.assert_called_once()
 
-    def test_non_streaming_provider_disables_streaming_in_task(self, api_client, url, conversation):
+    def test_non_streaming_provider_disables_streaming_in_task(self, api_client, user, url, conversation):
+        _grant_dataset_permission(user, conversation.data_set, PERMISSIONS.CONVERSATION.CONVERSE)
         payload = {
             "data_set_id": conversation.data_set.id,
             "question_message": "Hello?",
@@ -635,13 +637,46 @@ class TestConversationView:
         assert response.data["streaming"] is False
         assert mock_task.call_args.kwargs["kwargs"]["streaming"] is False
 
+    def test_global_converse_holder_can_post(self, api_client, user, url, conversation):
+        # Global grant, no per-dataset role anywhere - the other converse tests all go through
+        # a DatasetUserRoleAssignment, so this covers has_dataset_perm's has_perm short-circuit.
+        user.user_permissions.add(_permission(PERMISSIONS.CONVERSATION.CONVERSE))
+        payload = {
+            "data_set_id": conversation.data_set.id,
+            "question_message": "Hello?",
+            "streaming": False,
+        }
+        with (
+            patch(
+                "agent.views.respond_to_user_message_task.apply_async",
+                return_value=type("obj", (), {"id": "fake-task-id"}),
+            ) as mock_task,
+            patch("agent.views.LanguageModelRegistry.provider_for_dataset") as mock_provider,
+        ):
+            mock_provider.return_value = type("obj", (), {"STREAMING_AVAILABLE": False})
+            response = api_client.post(url, payload, format="json")
+
+        assert response.status_code == status.HTTP_202_ACCEPTED
+        mock_task.assert_called_once()
+
     def test_invalid_payload_returns_400(self, api_client, url):
         payload = {"data_set_id": None}
         response = api_client.post(url, payload, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "question_message" in response.data
 
-    def test_agent_soft_deleted_returns_400(self, api_client, conversation, url):
+    def test_owner_without_converse_permission_gets_forbidden(self, api_client, conversation, url):
+        # Owns the conversation, but holds no role/permission on its dataset at all.
+        payload = {
+            "data_set_id": conversation.data_set.id,
+            "question_message": "Hello?",
+            "streaming": False,
+        }
+        response = api_client.post(url, payload, format="json")
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_agent_soft_deleted_returns_400(self, api_client, user, conversation, url):
+        _grant_dataset_permission(user, conversation.data_set, PERMISSIONS.CONVERSATION.CONVERSE)
         conversation.agent.deleted_at = timezone.now()
         conversation.agent.save()
 
@@ -654,7 +689,8 @@ class TestConversationView:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data["detail"] == "Conversation locked."
 
-    def test_execution_conversation_post_returns_400(self, api_client, conversation, url):
+    def test_execution_conversation_post_returns_400(self, api_client, user, conversation, url):
+        _grant_dataset_permission(user, conversation.data_set, PERMISSIONS.CONVERSATION.CONVERSE)
         baker.make(AgenticExecution, agent=conversation.agent, conversation=conversation, input={})
 
         payload = {
@@ -677,10 +713,32 @@ class TestConversationView:
         response = api_client.post(url, payload, format="json")
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_admin_can_post_to_any_conversation(self, admin_api_client, url):
+    def test_outsider_cannot_post_to_conversation_they_do_not_own(self, api_client):
         dataset = baker.make(DataSet)
         agent = baker.make(Agent, deleted_at=None, dataset=dataset)
-        conversation = baker.make(Conversation, agent=agent)
+        someone_elses_conversation = baker.make(Conversation, agent=agent)
+        url = reverse("conversation-details", kwargs={"conversation_id": someone_elses_conversation.id})
+        payload = {"data_set_id": dataset.id, "question_message": "How are you?", "streaming": False}
+
+        response = api_client.post(url, payload, format="json")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_admin_cannot_post_to_conversation_they_do_not_own(self, admin_api_client):
+        dataset = baker.make(DataSet)
+        agent = baker.make(Agent, deleted_at=None, dataset=dataset)
+        someone_elses_conversation = baker.make(Conversation, agent=agent)
+        url = reverse("conversation-details", kwargs={"conversation_id": someone_elses_conversation.id})
+        payload = {"data_set_id": dataset.id, "question_message": "How are you?", "streaming": False}
+
+        response = admin_api_client.post(url, payload, format="json")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_admin_can_post_to_own_conversation_without_converse_permission(self, admin_api_client, admin_user):
+        dataset = baker.make(DataSet)
+        agent = baker.make(Agent, deleted_at=None, dataset=dataset)
+        conversation = baker.make(Conversation, user=admin_user, agent=agent, data_set=dataset)
         url = reverse("conversation-details", kwargs={"conversation_id": conversation.id})
         payload = {"data_set_id": dataset.id, "question_message": "How are you?", "streaming": False}
 
@@ -697,21 +755,41 @@ class TestConversationView:
         assert response.status_code == status.HTTP_202_ACCEPTED
         mock_task.assert_called_once()
 
-    @pytest.mark.skip(
-        reason="Dataset-access enforcement for Conversation is stubbed permissive in Phase 0 "
-        "(has_dataset_access always returns True) — reinstated by Phase 4's has_dataset_perm check. "
-        "See specs/permissions-implementation-plan.md."
-    )
-    def test_user_can_not_post_to_conversation_with_no_dataset_access(self, api_client, url):
-        dataset = baker.make(DataSet)
-        agent = baker.make(Agent, deleted_at=None, dataset=dataset)
-        conversation = baker.make(Conversation, agent=agent)
-        url = reverse("conversation-details", kwargs={"conversation_id": conversation.id})
-        payload = {"data_set_id": dataset.id, "question_message": "How are you?", "streaming": False}
+    def test_get_owner_can_view_own_conversation(self, api_client, conversation, url):
+        response = api_client.get(url)
 
-        response = api_client.post(url, payload, format="json")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["id"] == conversation.id
 
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+    def test_get_non_owner_without_view_all_gets_not_found(self, api_client, conversation, url):
+        conversation.user = baker.make(User)
+        conversation.save()
+
+        response = api_client.get(url)
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_get_global_view_all_holder_sees_conversations_they_do_not_own(self, api_client, user, conversation, url):
+        conversation.user = baker.make(User)
+        conversation.save()
+        user.user_permissions.add(_permission(PERMISSIONS.CONVERSATION.VIEW_ALL))
+
+        response = api_client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["id"] == conversation.id
+
+    def test_get_per_dataset_view_all_holder_sees_that_datasets_conversations(
+        self, api_client, user, conversation, url
+    ):
+        conversation.user = baker.make(User)
+        conversation.save()
+        _grant_dataset_permission(user, conversation.data_set, PERMISSIONS.CONVERSATION.VIEW_ALL)
+
+        response = api_client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["id"] == conversation.id
 
 
 class TestConversationListView:
@@ -719,13 +797,33 @@ class TestConversationListView:
     def url(self):
         return reverse("conversation-list")
 
-    def test_create_conversation_success(self, api_client, agent, url):
+    def test_create_conversation_success(self, api_client, user, agent, dataset, url):
+        _grant_dataset_permission(user, dataset, PERMISSIONS.CONVERSATION.CONVERSE)
         payload = {"agent_id": agent.id}
 
         response = api_client.post(url, payload, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data["agent"]["id"] == agent.id
+
+    def test_create_conversation_global_converse_holder_can_create(self, api_client, user, agent, url):
+        user.user_permissions.add(_permission(PERMISSIONS.CONVERSATION.CONVERSE))
+
+        response = api_client.post(url, {"agent_id": agent.id}, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["agent"]["id"] == agent.id
+
+    def test_create_conversation_converse_on_another_dataset_does_not_grant_access(self, api_client, user, url):
+        granted_dataset = baker.make(DataSet)
+        _grant_dataset_permission(user, granted_dataset, PERMISSIONS.CONVERSATION.CONVERSE)
+        other_dataset = baker.make(DataSet)
+        agent_elsewhere = baker.make(Agent, deleted_at=None, dataset=other_dataset)
+
+        response = api_client.post(url, {"agent_id": agent_elsewhere.id}, format="json")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert not Conversation.objects.filter(agent=agent_elsewhere).exists()
 
     def test_create_conversation_invalid_payload(self, api_client, url):
         payload = {"wrong_field": 123}
@@ -742,19 +840,45 @@ class TestConversationListView:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    @pytest.mark.skip(
-        reason="Dataset-access enforcement for Conversation is stubbed permissive in Phase 0 "
-        "(has_dataset_access always returns True) — reinstated by Phase 4's has_dataset_perm check. "
-        "See specs/permissions-implementation-plan.md."
-    )
-    def test_create_conversation_throws_on_no_access_to_dataset(self, api_client, url):
+    def test_create_conversation_outsider_gets_not_found(self, api_client, url):
+        dataset = baker.make(DataSet)
+        agent = baker.make(Agent, deleted_at=None, dataset=dataset)
+        payload = {"agent_id": agent.id}
+
+        response = api_client.post(url, payload, format="json")
+        # Obscured as 404, not 403 - the agent id came from the caller, so a non-member
+        # shouldn't be able to confirm it exists by probing this endpoint.
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_create_conversation_outsider_gets_identical_404_body_to_a_nonexistent_agent(self, api_client, url):
+        # The two cases must be indistinguishable - not just the same status code, but the
+        # same response body - or a non-member could tell them apart by comparing responses.
+        agent = baker.make(Agent, deleted_at=None, dataset=baker.make(DataSet))
+
+        existing_but_hidden = api_client.post(url, {"agent_id": agent.id}, format="json")
+        nonexistent = api_client.post(url, {"agent_id": 9999}, format="json")
+
+        assert existing_but_hidden.data == {"detail": "No Agent matches the given query."}
+        assert existing_but_hidden.data == nonexistent.data
+
+    def test_create_conversation_dataset_member_without_converse_gets_forbidden(self, api_client, user, url):
+        dataset = baker.make(DataSet)
+        agent = baker.make(Agent, deleted_at=None, dataset=dataset)
+        _grant_dataset_permission(user, dataset)
+
+        response = api_client.post(url, {"agent_id": agent.id}, format="json")
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_create_conversation_denial_leaves_no_conversation_behind(self, api_client, url):
         dataset = baker.make(DataSet)
         agent = baker.make(Agent, deleted_at=None, dataset=dataset)
         payload = {"agent_id": agent.id}
 
         response = api_client.post(url, payload, format="json")
 
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert not Conversation.objects.filter(agent=agent).exists()
 
     def test_admin_can_create_conversation_with_any_dataset(self, admin_api_client, url):
         dataset = baker.make(DataSet)
@@ -869,6 +993,48 @@ class TestConversationListView:
         assert len(response.data["results"]) == 1
         assert response.data["results"][0]["id"] == user_conversation.id
 
+    def test_global_view_all_holder_sees_conversations_they_do_not_own(self, api_client, user, dataset):
+        other_user = baker.make(User)
+        agent = baker.make(Agent, deleted_at=None, dataset=dataset)
+        others_conversation = baker.make(Conversation, user=other_user, agent=agent, data_set=dataset)
+        user.user_permissions.add(_permission(PERMISSIONS.CONVERSATION.VIEW_ALL))
+
+        response = api_client.get(reverse("conversation-list"))
+
+        assert response.status_code == status.HTTP_200_OK
+        conversation_ids = [conv["id"] for conv in response.data["results"]]
+        assert others_conversation.id in conversation_ids
+
+    def test_per_dataset_view_all_holder_sees_only_that_datasets_conversations(self, api_client, user, dataset):
+        other_user = baker.make(User)
+        visible_agent = baker.make(Agent, deleted_at=None, dataset=dataset)
+        visible_conversation = baker.make(Conversation, user=other_user, agent=visible_agent, data_set=dataset)
+        other_dataset = baker.make(DataSet)
+        hidden_agent = baker.make(Agent, deleted_at=None, dataset=other_dataset)
+        hidden_conversation = baker.make(Conversation, user=other_user, agent=hidden_agent, data_set=other_dataset)
+        _grant_dataset_permission(user, dataset, PERMISSIONS.CONVERSATION.VIEW_ALL)
+
+        response = api_client.get(reverse("conversation-list"))
+
+        assert response.status_code == status.HTTP_200_OK
+        conversation_ids = [conv["id"] for conv in response.data["results"]]
+        assert visible_conversation.id in conversation_ids
+        assert hidden_conversation.id not in conversation_ids
+
+    def test_plain_converse_holder_without_view_all_sees_only_their_own_conversations(
+        self, api_client, user, dataset
+    ):
+        other_user = baker.make(User)
+        agent = baker.make(Agent, deleted_at=None, dataset=dataset)
+        others_conversation = baker.make(Conversation, user=other_user, agent=agent, data_set=dataset)
+        _grant_dataset_permission(user, dataset, PERMISSIONS.CONVERSATION.CONVERSE)
+
+        response = api_client.get(reverse("conversation-list"))
+
+        assert response.status_code == status.HTTP_200_OK
+        conversation_ids = [conv["id"] for conv in response.data["results"]]
+        assert others_conversation.id not in conversation_ids
+
     def test_execution_conversations_are_excluded_from_list(self, api_client, user, dataset, url):
         linked_agent = baker.make(Agent, deleted_at=None, dataset=dataset)
         regular_conversation = baker.make(Conversation, user=user, agent=linked_agent, data_set=dataset)
@@ -891,3 +1057,61 @@ class TestConversationListView:
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["id"] == execution_conversation.id
+
+
+class TestMessageFeedbackView:
+    @pytest.fixture
+    def message(self, conversation):
+        return baker.make(Message, conversation=conversation, type=Message.MessageType.AI, text="Hi there")
+
+    @pytest.fixture
+    def url(self, message):
+        return f"/api/messages/{message.id}/feedback/"
+
+    def test_owner_can_leave_feedback(self, api_client, message, url):
+        payload = {"rating": 5, "feedback": "Great answer"}
+
+        response = api_client.patch(url, payload, format="json")
+
+        assert response.status_code == status.HTTP_200_OK
+        message.refresh_from_db()
+        assert message.rating == 5
+        assert message.feedback == "Great answer"
+
+    def test_non_owner_gets_not_found(self, api_client, message, url):
+        # Obscured as 404 - probing message ids shouldn't reveal which ones exist.
+        message.conversation.user = baker.make(User)
+        message.conversation.save()
+        payload = {"rating": 5, "feedback": "Great answer"}
+
+        response = api_client.patch(url, payload, format="json")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_admin_who_is_not_the_owner_gets_not_found(self, admin_api_client, message):
+        url = f"/api/messages/{message.id}/feedback/"
+        payload = {"rating": 5, "feedback": "Great answer"}
+
+        response = admin_api_client.patch(url, payload, format="json")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_nonexistent_message_returns_404(self, api_client):
+        response = api_client.patch("/api/messages/99999/feedback/", {"rating": 5, "feedback": "x"}, format="json")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_non_owner_gets_identical_404_body_to_a_nonexistent_message(self, api_client, message, url):
+        message.conversation.user = baker.make(User)
+        message.conversation.save()
+
+        existing_but_hidden = api_client.patch(url, {"rating": 5, "feedback": "x"}, format="json")
+        nonexistent = api_client.patch("/api/messages/99999/feedback/", {"rating": 5, "feedback": "x"}, format="json")
+
+        assert existing_but_hidden.data == {"detail": "No Message matches the given query."}
+        assert existing_but_hidden.data == nonexistent.data
+
+    def test_invalid_payload_returns_400(self, api_client, message, url):
+        response = api_client.patch(url, {"rating": 6}, format="json")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
