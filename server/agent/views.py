@@ -22,7 +22,7 @@ from account.authorization import (
     has_dataset_perm,
 )
 from agent.conversation import ConversationManager
-from agent.core.registries.agents.agent_registry import AgentRegistry
+from agent.core.registries.agents.agent_registry import AgentRegistry, AgentRegistryError
 from agent.core.registries.language_models import LanguageModelRegistry
 from agent.core.repositories import DjangoDataSetRepository
 from agent.filters import AgentFilter
@@ -363,6 +363,20 @@ class ConversationFileUploadView(APIView):
         if not has_dataset_perm(request.user, PERMISSIONS.CONVERSATION.CONVERSE, conversation.data_set):
             # 403, not 404 - same reasoning as ConversationView.post.
             self.permission_denied(request)
+
+        try:
+            agent_class = AgentRegistry().get_agent_class_by_type(conversation.agent.agent_type)
+        except AgentRegistryError:
+            return Response(
+                {"detail": "This conversation's agent type is unavailable, so file upload is not supported."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not agent_class.FILE_UPLOAD:
+            return Response(
+                {"detail": "This conversation's agent does not accept file uploads."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         if "file" not in request.FILES:
             return Response({"error": "No file provided"}, status=status.HTTP_400_BAD_REQUEST)
 

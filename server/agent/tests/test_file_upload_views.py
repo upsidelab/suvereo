@@ -26,7 +26,21 @@ def _grant_dataset_permission(user, dataset, *codenames: str) -> DatasetRole:
     return role
 
 
+class FileUploadAgent:
+    FILE_UPLOAD = True
+
+
+class NoFileUploadAgent:
+    FILE_UPLOAD = False
+
+
 class TestConversationFileUploadView:
+    @pytest.fixture(autouse=True)
+    def agent_class(self):
+        with patch("agent.views.AgentRegistry.get_agent_class_by_type") as mock:
+            mock.return_value = FileUploadAgent
+            yield mock
+
     @pytest.fixture
     def url(self, conversation):
         return reverse("conversation-upload", kwargs={"conversation_id": conversation.id})
@@ -71,6 +85,29 @@ class TestConversationFileUploadView:
 
         assert response.status_code == status.HTTP_202_ACCEPTED
         mock_task.assert_called_once()
+
+    @patch("agent.views.process_file_upload_task.apply_async")
+    def test_upload_rejected_when_agent_class_does_not_support_file_upload(
+        self, mock_task, api_client, user, url, conversation, agent_class
+    ):
+        _grant_dataset_permission(user, conversation.data_set, PERMISSIONS.CONVERSATION.CONVERSE)
+        agent_class.return_value = NoFileUploadAgent
+        data = {"file": SimpleUploadedFile("test.txt", b"test content", content_type="text/plain")}
+
+        response = api_client.post(url, data, format="multipart")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["detail"] == "This conversation's agent does not accept file uploads."
+        mock_task.assert_not_called()
+
+    def test_upload_permission_is_checked_before_the_file_upload_guard(self, api_client, url, agent_class):
+        agent_class.return_value = NoFileUploadAgent
+
+        response = api_client.post(
+            url, {"file": SimpleUploadedFile("test.txt", b"x", content_type="text/plain")}, format="multipart"
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_upload_nonexistent_conversation_returns_404(self, api_client):
         url = reverse("conversation-upload", kwargs={"conversation_id": 99999})
