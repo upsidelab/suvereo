@@ -1,3 +1,5 @@
+from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
@@ -7,6 +9,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from account.authorization import (
+    PERMISSIONS,
+    datasets_with_permission,
+    enforce_dataset_scoped_permission,
+)
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
 from agent.agentic_execution.services import (
     AgenticExecutionService,
@@ -32,14 +39,15 @@ class AgenticExecutionDefinitionTypesView(APIView):
         operation_description="Return all agentic execution definition types registered for the given agent.",
         responses={
             200: AgenticExecutionDefinitionSerializer(many=True),
-            404: "Not Found — agent does not exist.",
+            403: "Forbidden — caller can see the agent's data set but cannot create executions on it.",
+            404: "Not Found — agent does not exist, or the caller has no access to its data set.",
         },
     )
     def get(self, request, agent_id):
-        try:
-            agent = Agent.objects.get(pk=agent_id)
-        except Agent.DoesNotExist:
-            return Response({"detail": "Agent not found."}, status=status.HTTP_404_NOT_FOUND)
+        agent = get_object_or_404(Agent, pk=agent_id)
+        enforce_dataset_scoped_permission(
+            self, PERMISSIONS.AGENTIC_EXECUTION.CREATE, agent.dataset, obscured_model=Agent
+        )
 
         execution_classes = AgenticExecutionService().get_execution_types(agent)
         data = [
@@ -66,14 +74,15 @@ class StartAgenticExecutionView(APIView):
         responses={
             202: AgenticExecutionSerializer(),
             400: "Bad Request — execution_key is invalid, input is invalid, or files sent to a non-file-upload agent.",
-            404: "Not Found — agent does not exist.",
+            403: "Forbidden — caller can see the agent's data set but cannot create executions on it.",
+            404: "Not Found — agent does not exist, or the caller has no access to its data set.",
         },
     )
     def post(self, request, agent_id):
-        try:
-            agent = Agent.objects.get(pk=agent_id)
-        except Agent.DoesNotExist:
-            return Response({"detail": "Agent not found."}, status=status.HTTP_404_NOT_FOUND)
+        agent = get_object_or_404(Agent, pk=agent_id)
+        enforce_dataset_scoped_permission(
+            self, PERMISSIONS.AGENTIC_EXECUTION.CREATE, agent.dataset, obscured_model=Agent
+        )
 
         execution_key = request.data.get("execution_key", "")
         try:
@@ -112,6 +121,12 @@ class StartAgenticExecutionView(APIView):
         return Response(AgenticExecutionDetailSerializer(execution).data, status=status.HTTP_202_ACCEPTED)
 
 
+def _visible_to(user) -> Q:
+    return Q(conversation__user=user) | Q(
+        agent__dataset__in=datasets_with_permission(user, PERMISSIONS.AGENTIC_EXECUTION.VIEW_ALL)
+    )
+
+
 class AgenticExecutionListView(ListAPIView):
     """Paginated list of past agentic executions, newest first."""
 
@@ -137,7 +152,7 @@ class AgenticExecutionListView(ListAPIView):
         return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
-        qs = AgenticExecution.objects.select_related("agent").filter(conversation__user=self.request.user)
+        qs = AgenticExecution.objects.select_related("agent").filter(_visible_to(self.request.user))
         dataset_id = self.request.query_params.get("dataset_id")
         if dataset_id:
             qs = qs.filter(agent__dataset_id=dataset_id)
@@ -167,6 +182,4 @@ class AgenticExecutionDetailView(RetrieveAPIView):
         return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
-        return AgenticExecution.objects.select_related("agent", "conversation").filter(
-            conversation__user=self.request.user
-        )
+        return AgenticExecution.objects.select_related("agent", "conversation").filter(_visible_to(self.request.user))
