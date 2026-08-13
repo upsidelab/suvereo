@@ -9,6 +9,10 @@ class AccountSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     email = serializers.EmailField()
     is_admin = serializers.BooleanField(source="is_superuser")
+    permissions = serializers.SerializerMethodField()
+
+    def get_permissions(self, user) -> list[str]:
+        return sorted(user.get_all_permissions())
 
 
 class UserSerializer(serializers.Serializer):
@@ -18,40 +22,62 @@ class UserSerializer(serializers.Serializer):
     is_admin = serializers.BooleanField(source="is_superuser")
     password = serializers.CharField(write_only=True)
 
+    def create(self, validated_data):
+        return User.objects.create_user(
+            email=validated_data["email"],
+            password=validated_data["password"],
+            is_active=validated_data["is_active"],
+            is_superuser=validated_data["is_superuser"],
+        )
+
 
 class UserUpdateSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
     email = serializers.EmailField()
     is_active = serializers.BooleanField()
     is_admin = serializers.BooleanField(source="is_superuser")
 
+    def update(self, instance, validated_data):
+        for attribute, value in validated_data.items():
+            setattr(instance, attribute, value)
+        instance.save()
+        return instance
+
 
 class UserUpdatePasswordSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
     password = serializers.CharField(write_only=True)
+
+    def update(self, instance, validated_data):
+        instance.set_password(validated_data["password"])
+        instance.save()
+        return instance
 
 
 class CreateUpdateServiceAccountSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(write_only=True)
     is_active = serializers.BooleanField(default=True)
     is_admin = serializers.BooleanField(default=False, source="is_superuser")
-    data_set_ids = serializers.ListField(child=serializers.IntegerField(), required=False)
+
+    def validate_name(self, name):
+        if not ServiceAccountNameService().is_service_account_name_available(name, exclude_user=self.instance):
+            raise serializers.ValidationError("A service account with this name already exists.")
+        return name
 
     def create(self, validated_data):
-        email = self._build_service_account_email(validated_data.get("name"))
-        is_active = validated_data.get("is_active")
-        is_superuser = validated_data.get("is_superuser")
-        # NOTE: data_set_ids is accepted but not persisted — DataSet.users is gone and no replacement
-        # backing store is seeded yet (see "Migration strategy" in permissions-implementation-plan.md).
-        service_account = User.objects.create_service_account(
-            email=email, is_active=is_active, is_superuser=is_superuser
+        return User.objects.create_service_account(
+            email=self._build_service_account_email(validated_data["name"]),
+            is_active=validated_data["is_active"],
+            is_superuser=validated_data["is_superuser"],
         )
-        return service_account
 
     def update(self, instance, validated_data):
-        instance.email = self._build_service_account_email(validated_data.get("name"))
-        instance.is_active = validated_data.get("is_active")
-        instance.is_superuser = validated_data.get("is_superuser")
+        if "name" in validated_data:
+            instance.email = self._build_service_account_email(validated_data.pop("name"))
+        for attribute, value in validated_data.items():
+            setattr(instance, attribute, value)
         instance.save()
-        # NOTE: data_set_ids is accepted but not persisted — see create() above.
         return instance
 
     def _build_service_account_email(self, name):
@@ -60,17 +86,11 @@ class CreateUpdateServiceAccountSerializer(serializers.Serializer):
 
 
 class ServiceAccountSerializer(serializers.ModelSerializer):
-    data_set_ids = serializers.SerializerMethodField()
     is_admin = serializers.BooleanField(source="is_superuser")
 
     class Meta:
         model = User
-        fields = ["id", "email", "date_joined", "data_set_ids", "is_active", "is_admin"]
-
-    def get_data_set_ids(self, obj):
-        # NOTE: Stubbed: DataSet.users is gone and no replacement backing store is seeded yet
-        # (see "Migration strategy" in specs/permissions-implementation-plan.md).
-        return []
+        fields = ["id", "email", "date_joined", "is_active", "is_admin"]
 
 
 class TokenResponseSerializer(serializers.Serializer):

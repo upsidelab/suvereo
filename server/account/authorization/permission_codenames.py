@@ -43,7 +43,6 @@ class UserPermission(StrEnum):
 class ServiceAccountPermission(StrEnum):
     ADD = "account.add_serviceaccount"
     CHANGE = "account.change_serviceaccount"
-    DELETE = "account.delete_serviceaccount"
     VIEW = "account.view_serviceaccount"
 
 

@@ -42,5 +42,12 @@ class User(AbstractUser):
 
     objects = UserManager()
 
+    class Meta(AbstractUser.Meta):
+        permissions = [
+            ("add_serviceaccount", "Can add service account"),
+            ("change_serviceaccount", "Can change service account"),
+            ("view_serviceaccount", "Can view service account"),
+        ]
+
     def __str__(self):
         return self.email

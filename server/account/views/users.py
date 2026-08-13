@@ -1,32 +1,33 @@
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import ListCreateAPIView, UpdateAPIView
+from rest_framework.permissions import IsAuthenticated
 
-from account.authorization import IsAdmin
+from account.authorization import PERMISSIONS, global_permission_required
 from account.models import User
 from account.serializers import UserSerializer, UserUpdatePasswordSerializer, UserUpdateSerializer
 
 
 class UserListView(ListCreateAPIView):
-    permission_classes = [IsAdmin]
+    permission_classes = [IsAuthenticated]
     serializer_class = UserSerializer
 
     @swagger_auto_schema(operation_description="List all users", manual_parameters=[])
+    @global_permission_required(PERMISSIONS.USER.VIEW)
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
     def get_queryset(self):
         return User.objects.filter(is_service_account=False)
 
     @swagger_auto_schema(operation_description="Create a new user", request_body=UserSerializer)
+    @global_permission_required(PERMISSIONS.USER.ADD)
     def perform_create(self, serializer):
-        User.objects.create_user(
-            email=serializer.validated_data["email"],
-            password=serializer.validated_data["password"],
-            is_active=serializer.validated_data["is_active"],
-            is_superuser=serializer.validated_data["is_superuser"],
-        )
+        serializer.save()
 
 
 class UserView(UpdateAPIView):
-    permission_classes = [IsAdmin]
+    permission_classes = [IsAuthenticated]
     serializer_class = UserUpdateSerializer
 
     @swagger_auto_schema(
@@ -39,16 +40,13 @@ class UserView(UpdateAPIView):
     def get_object(self):
         return User.objects.get(id=self.kwargs["id"], is_service_account=False)
 
+    @global_permission_required(PERMISSIONS.USER.CHANGE)
     def perform_update(self, serializer):
-        user = self.get_object()
-        user.email = serializer.validated_data["email"]
-        user.is_active = serializer.validated_data["is_active"]
-        user.is_superuser = serializer.validated_data["is_superuser"]
-        user.save()
+        serializer.save()
 
 
 class UserPasswordView(UpdateAPIView):
-    permission_classes = [IsAdmin]
+    permission_classes = [IsAuthenticated]
     serializer_class = UserUpdatePasswordSerializer
 
     @swagger_auto_schema(
@@ -61,7 +59,6 @@ class UserPasswordView(UpdateAPIView):
     def get_object(self):
         return User.objects.get(id=self.kwargs["id"], is_service_account=False)
 
+    @global_permission_required(PERMISSIONS.USER.CHANGE)
     def perform_update(self, serializer):
-        user = self.get_object()
-        user.set_password(serializer.validated_data["password"])
-        user.save()
+        serializer.save()
