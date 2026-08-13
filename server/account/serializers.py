@@ -1,8 +1,31 @@
 from rest_framework import serializers
+from rest_framework.exceptions import PermissionDenied
 
 from account.models import User
 
 from .services import ServiceAccountNameService
+
+
+class OnlyAdminsManageAdminsMixin:
+    """Restricts admin accounts to admins: a caller who is not an admin can neither grant admin
+    nor alter an account that already holds it.
+
+    The second half covers more than revoking and deactivating — editing an admin's email or
+    resetting their password would hand over the account just as effectively, so any write
+    against an admin target is refused.
+
+    Deliberately keyed off `is_superuser` directly rather than a grantable codename: a
+    "may grant admin" permission would let its holder grant it to themselves.
+    """
+
+    def validate(self, attrs):
+        request = self.context.get("request")
+        if request is not None and not request.user.is_superuser:
+            if attrs.get("is_superuser"):
+                raise PermissionDenied("Only an admin can grant admin access.")
+            if self.instance is not None and self.instance.is_superuser:
+                raise PermissionDenied("Only an admin can modify an admin account.")
+        return super().validate(attrs)
 
 
 class AccountSerializer(serializers.Serializer):
@@ -15,7 +38,7 @@ class AccountSerializer(serializers.Serializer):
         return sorted(user.get_all_permissions())
 
 
-class UserSerializer(serializers.Serializer):
+class UserSerializer(OnlyAdminsManageAdminsMixin, serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     email = serializers.EmailField()
     is_active = serializers.BooleanField()
@@ -31,7 +54,7 @@ class UserSerializer(serializers.Serializer):
         )
 
 
-class UserUpdateSerializer(serializers.Serializer):
+class UserUpdateSerializer(OnlyAdminsManageAdminsMixin, serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     email = serializers.EmailField()
     is_active = serializers.BooleanField()
@@ -44,7 +67,7 @@ class UserUpdateSerializer(serializers.Serializer):
         return instance
 
 
-class UserUpdatePasswordSerializer(serializers.Serializer):
+class UserUpdatePasswordSerializer(OnlyAdminsManageAdminsMixin, serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     password = serializers.CharField(write_only=True)
 
@@ -54,7 +77,7 @@ class UserUpdatePasswordSerializer(serializers.Serializer):
         return instance
 
 
-class CreateUpdateServiceAccountSerializer(serializers.Serializer):
+class CreateUpdateServiceAccountSerializer(OnlyAdminsManageAdminsMixin, serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(write_only=True)
     is_active = serializers.BooleanField(default=True)

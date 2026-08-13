@@ -178,6 +178,120 @@ class TestUserView:
         }
 
 
+class TestOnlyAdminsManageAdmins:
+    """A holder of account.* codenames who is not themselves an admin must not be able to reach
+    admin through them."""
+
+    @pytest.fixture
+    def user_manager(self, user):
+        user.user_permissions.set(
+            [
+                _permission(PERMISSIONS.USER.VIEW),
+                _permission(PERMISSIONS.USER.ADD),
+                _permission(PERMISSIONS.USER.CHANGE),
+            ]
+        )
+        return user
+
+    @pytest.fixture
+    def admin_target(self):
+        return baker.make(User, is_service_account=False, is_superuser=True, is_active=True)
+
+    def test_non_admin_cannot_create_an_admin(self, api_client, user_manager):
+        payload = {"email": "sneaky@example.com", "password": "pw123456", "is_active": True, "is_admin": True}
+
+        response = api_client.post(reverse("user_list"), payload, format="json")
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert not User.objects.filter(email="sneaky@example.com").exists()
+
+    def test_non_admin_can_still_create_an_ordinary_user(self, api_client, user_manager):
+        payload = {"email": "ordinary@example.com", "password": "pw123456", "is_active": True, "is_admin": False}
+
+        response = api_client.post(reverse("user_list"), payload, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+
+    def test_non_admin_cannot_promote_another_user_to_admin(self, api_client, user_manager, target_user):
+        response = api_client.patch(
+            reverse("user_details", kwargs={"id": target_user.id}),
+            {"email": target_user.email, "is_active": True, "is_admin": True},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        target_user.refresh_from_db()
+        assert target_user.is_superuser is False
+
+    def test_non_admin_cannot_promote_themselves(self, api_client, user_manager):
+        response = api_client.patch(
+            reverse("user_details", kwargs={"id": user_manager.id}),
+            {"email": user_manager.email, "is_active": True, "is_admin": True},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        user_manager.refresh_from_db()
+        assert user_manager.is_superuser is False
+
+    def test_non_admin_cannot_revoke_admin(self, api_client, user_manager, admin_target):
+        response = api_client.patch(
+            reverse("user_details", kwargs={"id": admin_target.id}),
+            {"email": admin_target.email, "is_active": True, "is_admin": False},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        admin_target.refresh_from_db()
+        assert admin_target.is_superuser is True
+
+    def test_non_admin_cannot_deactivate_an_admin(self, api_client, user_manager, admin_target):
+        response = api_client.patch(
+            reverse("user_details", kwargs={"id": admin_target.id}), {"is_active": False}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        admin_target.refresh_from_db()
+        assert admin_target.is_active is True
+
+    def test_non_admin_cannot_reset_an_admins_password(self, api_client, user_manager, admin_target):
+        response = api_client.put(
+            reverse("user_password", kwargs={"id": admin_target.id}), {"password": "hijacked"}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        admin_target.refresh_from_db()
+        assert not admin_target.check_password("hijacked")
+
+    def test_non_admin_cannot_change_an_admins_email(self, api_client, user_manager, admin_target):
+        response = api_client.patch(
+            reverse("user_details", kwargs={"id": admin_target.id}),
+            {"email": "hijacked@example.com"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_admin_can_do_all_of_it(self, admin_api_client, admin_target):
+        create = admin_api_client.post(
+            reverse("user_list"),
+            {"email": "new-admin@example.com", "password": "pw123456", "is_active": True, "is_admin": True},
+            format="json",
+        )
+        revoke = admin_api_client.patch(
+            reverse("user_details", kwargs={"id": admin_target.id}),
+            {"email": admin_target.email, "is_active": False, "is_admin": False},
+            format="json",
+        )
+
+        assert create.status_code == status.HTTP_201_CREATED
+        assert User.objects.get(email="new-admin@example.com").is_superuser is True
+        assert revoke.status_code == status.HTTP_200_OK
+        admin_target.refresh_from_db()
+        assert admin_target.is_superuser is False
+        assert admin_target.is_active is False
+
+
 class TestUserPasswordView:
     @pytest.fixture
     def url(self, target_user):

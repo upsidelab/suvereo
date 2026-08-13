@@ -2,6 +2,7 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.authtoken.models import Token
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -51,6 +52,10 @@ class ResetTokenView(APIView):
     @global_permission_required(PERMISSIONS.SERVICE_ACCOUNT.CHANGE)
     def post(self, request, id):
         service_account = User.objects.get(id=id, is_service_account=True)
+        if service_account.is_superuser and not request.user.is_superuser:
+            # Handing back a fresh token for an admin account is handing over admin.
+            raise PermissionDenied("Only an admin can modify an admin service account.")
+
         Token.objects.filter(user=service_account).delete()
         token, created = Token.objects.get_or_create(user=service_account)
         serializer = TokenResponseSerializer({"token": token.key})
@@ -74,7 +79,7 @@ class ServiceAccountListView(ListAPIView):
     )
     @global_permission_required(PERMISSIONS.SERVICE_ACCOUNT.ADD)
     def post(self, request):
-        serializer = CreateUpdateServiceAccountSerializer(data=request.data)
+        serializer = CreateUpdateServiceAccountSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             user = serializer.save()
             token, created = Token.objects.get_or_create(user=user)
@@ -95,7 +100,9 @@ class ServiceAccountView(APIView):
     @global_permission_required(PERMISSIONS.SERVICE_ACCOUNT.CHANGE)
     def patch(self, request, id):
         service_account = User.objects.get(id=id, is_service_account=True)
-        serializer = CreateUpdateServiceAccountSerializer(service_account, data=request.data, partial=True)
+        serializer = CreateUpdateServiceAccountSerializer(
+            service_account, data=request.data, partial=True, context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)

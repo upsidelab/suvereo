@@ -227,6 +227,102 @@ class TestCheckServiceNameView:
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
+class TestOnlyAdminsManageAdminServiceAccounts:
+    @pytest.fixture
+    def service_account_manager(self, user):
+        user.user_permissions.set(
+            [
+                _permission(PERMISSIONS.SERVICE_ACCOUNT.VIEW),
+                _permission(PERMISSIONS.SERVICE_ACCOUNT.ADD),
+                _permission(PERMISSIONS.SERVICE_ACCOUNT.CHANGE),
+            ]
+        )
+        return user
+
+    @pytest.fixture
+    def admin_service_account(self):
+        return baker.make(User, is_service_account=True, is_superuser=True, is_active=True)
+
+    def test_non_admin_cannot_create_an_admin_service_account(self, api_client, service_account_manager):
+        response = api_client.post(
+            reverse("service_account_list"),
+            {"name": "sneaky-bot", "is_active": True, "is_admin": True},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert not User.objects.filter(is_service_account=True).exists()
+
+    def test_non_admin_can_still_create_an_ordinary_service_account(self, api_client, service_account_manager):
+        response = api_client.post(
+            reverse("service_account_list"),
+            {"name": "ordinary-bot", "is_active": True, "is_admin": False},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+
+    def test_non_admin_cannot_promote_a_service_account(self, api_client, service_account_manager):
+        target = baker.make(User, is_service_account=True, is_superuser=False)
+
+        response = api_client.patch(f"/api/service_accounts/{target.id}", {"is_admin": True}, format="json")
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        target.refresh_from_db()
+        assert target.is_superuser is False
+
+    def test_non_admin_cannot_revoke_or_deactivate_an_admin_service_account(
+        self, api_client, service_account_manager, admin_service_account
+    ):
+        revoke = api_client.patch(
+            f"/api/service_accounts/{admin_service_account.id}", {"is_admin": False}, format="json"
+        )
+        deactivate = api_client.patch(
+            f"/api/service_accounts/{admin_service_account.id}", {"is_active": False}, format="json"
+        )
+
+        assert revoke.status_code == status.HTTP_403_FORBIDDEN
+        assert deactivate.status_code == status.HTTP_403_FORBIDDEN
+        admin_service_account.refresh_from_db()
+        assert admin_service_account.is_superuser is True
+        assert admin_service_account.is_active is True
+
+    def test_non_admin_cannot_reset_an_admin_service_accounts_token(
+        self, api_client, service_account_manager, admin_service_account
+    ):
+        original = Token.objects.create(user=admin_service_account)
+
+        response = api_client.post(reverse("reset_token", kwargs={"id": admin_service_account.id}))
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert Token.objects.get(user=admin_service_account).key == original.key
+
+    def test_non_admin_can_still_reset_an_ordinary_service_accounts_token(
+        self, api_client, service_account_manager, service_account
+    ):
+        Token.objects.create(user=service_account)
+
+        response = api_client.post(reverse("reset_token", kwargs={"id": service_account.id}))
+
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_admin_can_do_all_of_it(self, admin_api_client, admin_service_account):
+        create = admin_api_client.post(
+            reverse("service_account_list"),
+            {"name": "new-admin-bot", "is_active": True, "is_admin": True},
+            format="json",
+        )
+        revoke = admin_api_client.patch(
+            f"/api/service_accounts/{admin_service_account.id}", {"is_admin": False}, format="json"
+        )
+
+        assert create.status_code == status.HTTP_201_CREATED
+        assert User.objects.get(email="new-admin-bot@enthusiast.internal").is_superuser is True
+        assert revoke.status_code == status.HTTP_200_OK
+        admin_service_account.refresh_from_db()
+        assert admin_service_account.is_superuser is False
+
+
 class TestUserAndServiceAccountPermissionsAreIndependent:
     """Phase 7's core claim: the two entities live on one model but grant separately."""
 

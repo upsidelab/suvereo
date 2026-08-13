@@ -66,7 +66,7 @@ Dual-scope (global **or** per-dataset, via `has_dataset_perm`):
 | `agent.add_agenticexecution` | already exists (Django default) — doubles as "Create" (own-history access implied) |
 | `agent.view_agenticexecution` | already exists (Django default) — **repurposed** as "view all executions" |
 
-Not a permission codename at all: **"only admin can give admin, or deactivate admin"** is a hardcoded `request.user.is_superuser` gate plus the self-lockout guard (see Phase 8) — deliberately not delegable, same reasoning as the admin-of-admin surfaces below. Externally this flag is never called `is_superuser`; the API/frontend name is `is_admin`/`isAdmin` (see the reversed decision above).
+Not a permission codename at all: **"only admin can give admin, or deactivate admin"** is a hardcoded `request.user.is_superuser` gate (shipped in Phase 6/7 as `OnlyAdminsManageAdminsMixin`) — deliberately not delegable, same reasoning as the admin-of-admin surfaces below. Externally this flag is never called `is_superuser`; the API/frontend name is `is_admin`/`isAdmin` (see the reversed decision above).
 
 `default_permissions` is left alone (not set to `()`) on every model — the unused Django-default rows are being put to work, not pruned.
 
@@ -328,18 +328,39 @@ Found during Postman testing of the endpoints these phases touch. None were caus
 
 ---
 
-### Known gap between Phase 6/7 and Phase 8: `change_user`/`add_user` can currently self-promote to admin
+### ~~Known gap between Phase 6/7 and Phase 8~~ — CLOSED: admin-of-admin guard pulled forward into Phase 6/7
 
-Surfaced while implementing Phase 6. `UserSerializer`/`UserUpdateSerializer` both expose `is_admin` (`source="is_superuser"`), and until Phase 8's **"only admin can give admin"** guard lands, a holder of `account.change_user` can `PATCH` themselves (or anyone) to `is_admin: true` and a holder of `account.add_user` can create a fresh admin — i.e. either codename is transitively equivalent to full admin. Before this phase those endpoints were `IsAdmin`-only, so the escalation path is **new**, introduced by the split.
+Surfaced while implementing Phase 6, then **confirmed in manual testing** (an admin user was successfully created while logged in as a non-admin) and fixed in the same PR rather than waiting for Phase 8. `UserSerializer`/`UserUpdateSerializer` both expose `is_admin` (`source="is_superuser"`), so a holder of `account.change_user` could `PATCH` themselves to `is_admin: true` and a holder of `account.add_user` could create a fresh admin — either codename was transitively equivalent to full admin. The escalation path was **new**, introduced by the `IsAdmin`→codename split.
 
-It is bounded in practice: nothing in the app grants a codename yet (no role/group editing UI exists before Phase 8), so `change_user` can only be granted by an admin making a deliberate manual DB write. It is not bounded in principle, so **Phases 6/7 should not be deployed to a real environment ahead of Phase 8's guard** — or that one guard (`is_superuser` flips require `request.user.is_superuser`, plus the last-admin lockout check) should be pulled forward into this PR. Same reasoning as open item #4's "should Phase 8 land earlier": the admin-of-admin surface is what makes the fine-grained codenames safe to hand out.
+Closed by `OnlyAdminsManageAdminsMixin` (`account/serializers.py`), mixed into `UserSerializer`, `UserUpdateSerializer`, `UserUpdatePasswordSerializer`, and `CreateUpdateServiceAccountSerializer`. Two rules, both keyed off `request.user.is_superuser` directly — never a codename, since a grantable "may grant admin" permission would let its holder grant it to themselves:
+
+1. **A non-admin cannot set `is_admin: true`**, on create or update. Covers "create an admin" and "give admin to someone" (including to themselves).
+2. **A non-admin cannot write to an account that is already an admin**, in any way. Covers "revoke admin" and "deactivate an admin" as asked — and deliberately goes further to cover *any* field, because changing an admin's email or resetting their password hands over the account just as effectively as flipping the flag. Two takeover vectors that the literal rule-list would have left open.
+
+Denials are `403` (`rest_framework.exceptions.PermissionDenied` raised from `validate()`), not `400` — the request is well-formed, the caller simply isn't allowed to make it, which matches every other denial in this refactor.
+
+Beyond the serializers, one view-level equivalent: **`ResetTokenView`** refuses a non-admin rotating an *admin service account's* token, since the endpoint hands the caller a working credential for that account. Not reachable through a serializer, so guarded in the view.
+
+`self.context.get("request")` is checked rather than indexed, so a serializer used with no request — the `createadminserviceaccount` management command, which is how the very first admin gets created — bypasses the guard. Shell access is already privileged; that path stays open by design and is covered by a test.
+
+### The last-admin lockout guard is deliberately NOT implemented — dropped, do not reintroduce
+
+It was built during this phase (`ProtectsLastAdminMixin`, refusing any write that would leave zero active admins) and then **removed after review**. Recorded here because Phase 8's original scope asks for it, and the next person to read that bullet should know it was considered and rejected on purpose rather than forgotten:
+
+- **No stated requirement asks for it.** The Permissions Note says *"Only admin can give admin, or deactivate admin"* — that's the escalation guard above, which stays. The lockout guard came from this plan porting `assert_user_deactivatable` out of the abandoned `feature/ent-333-...` branch. Inherited scope, not a requirement.
+- **It cannot be an invariant, only an endpoint guard.** It covered two DRF endpoints; the Django admin, the shell, `createsuperuser`, and a direct `UPDATE` all bypass it. A class named for a system property it can't actually hold is worse than no class — the next reader assumes "an active admin always exists" and builds on a guarantee that isn't there.
+- **It protects nothing security-relevant.** The escalation guard stops an untrusted caller *gaining* privilege. This one stopped a trusted admin doing something legal, deliberate and recoverable to themselves. No attacker benefits from an admin locking themselves out, so removing it costs the threat model nothing.
+- **Recovery is cheap for this audience.** Anyone who can deploy Enthusiast can restore an admin from the shell or with a one-row DB update. The cost of the mistake is minutes, and only for someone who took a deliberate action.
+- It also blocked a legitimate workflow: demoting yourself to check what a non-admin sees while testing this very refactor.
+
+The trade being accepted: in a hosted/multi-tenant deployment — where whoever clicks "deactivate" is not whoever holds the shell — this becomes a support escalation instead of a self-service fix. If Enthusiast is ever run that way, revisit; until then it's theoretical. The cheaper mitigation is documenting the recovery command, not guarding the endpoint.
 
 ---
 
-### Phase 8 — Permission Management (admin lockout, Groups CRUD, Dataset Roles CRUD, role assignment)
+### Phase 8 — Permission Management (Groups CRUD, Dataset Roles CRUD, role assignment)
 
-- **Self-lockout guard** (`account/authorization.py`) — block demoting (`is_superuser=False`) or deactivating (`is_active=False`) **the last remaining `is_superuser=True` user** (ports the pattern from `feature/ent-333-...`'s `assert_user_deactivatable`, retargeted from group membership to the `is_superuser` flag — see the reversed decision above; exposed to the API/frontend as `is_admin`/`isAdmin`, never as `is_superuser`). Wired into the Users/Service-Account update serializers' `validate()`.
-- **"Only admin can give admin"** — flipping another user's `is_superuser` (`is_admin` on the wire) requires `request.user.is_superuser` itself; hardcoded, not a delegable permission (same reasoning as the admin-of-admin surfaces below — a "grant admin" permission would let its holder grant themselves admin).
+- ~~**Self-lockout guard**~~ **Dropped — will not be implemented.** Built during Phase 6/7 and removed after review; see "The last-admin lockout guard is deliberately NOT implemented" above for the reasoning. Original scope, for reference: block demoting (`is_superuser=False`) or deactivating (`is_active=False`) **the last remaining `is_superuser=True` user** (ports the pattern from `feature/ent-333-...`'s `assert_user_deactivatable`, retargeted from group membership to the `is_superuser` flag — see the reversed decision above; exposed to the API/frontend as `is_admin`/`isAdmin`, never as `is_superuser`). Wired into the Users/Service-Account update serializers' `validate()`.
+- ~~**"Only admin can give admin"**~~ **Already landed — pulled forward into Phase 6/7** (see the closed-gap section above). Nothing left to do here; with the self-lockout guard dropped, this phase's admin-protection scope is fully discharged.
 - `account/views/groups.py` (new) — `GroupListView`/`GroupDetailView`, CRUD on `Group` + its `permissions` M2M — the note's "general" groups. `IsAdmin`.
 - `account/views/dataset_roles.py` (new) — `DatasetRoleListView`/`DatasetRoleDetailView` — the note's "dataset-specific" groups. `IsAdmin`. Delete blocked while `DatasetUserRoleAssignment.objects.filter(role=role).count() + DatasetGroupRoleAssignment.objects.filter(role=role).count()` is nonzero (surface the count in the response body).
 - `account/views/permissions.py` (new) — `GET /api/permissions?scope=global|dataset`, `IsAdmin`. `scope=global` returns all 32; `scope=dataset` returns the 13 dual-scope ones only. (Counts corrected during Phase 7 — see "Final permission set".)
@@ -347,7 +368,7 @@ It is bounded in practice: nothing in the app grants a codename yet (no role/gro
 - **View-dependency validation** (decision #6 above) — `DatasetRole` and `Group` serializers reject a save whose `permissions` set includes `add_X`/`change_X`/`delete_X` for an entity without the matching `view_X`, for every entity the dependency applies to (carve-outs: Conversation, Agentic Execution, and — pending Phase 3's decision — possibly Integration's `sync_integration`). The error names the specific missing `view_X` codename; nothing is auto-added on the backend's behalf.
 - `account/admin.py`, `catalog/admin.py`, `pecl/urls.py`: deregister `UserAdmin`/`DataSet`/`Integration`, drop the `/admin` URL include (per checklist — predates this refactor, unrelated cleanup bundled in since it's low-risk and already flagged).
 
-**Test:** cannot demote/deactivate the last admin (`is_superuser`) user, whether acting on self or via another admin; a non-admin can never grant admin to anyone, including themselves; role-in-use delete guard fires on both `DatasetRole` and `Group`; assigning a Group a `DatasetRole` on a dataset grants its members dataset-scoped access resolved through current group membership (no per-member row materialized); `/admin` is unreachable; saving a `DatasetRole`/`Group` with `change_agent` but not `view_agent` is rejected with a clear per-codename error, while the same set plus `view_agent` saves cleanly; saving `converse` alone (no `view_conversation`) is **not** rejected.
+**Test:** ~~cannot demote/deactivate the last admin (`is_superuser`) user, whether acting on self or via another admin;~~ (dropped — see above) ~~a non-admin can never grant admin to anyone, including themselves;~~ (already covered by Phase 6/7's tests) role-in-use delete guard fires on both `DatasetRole` and `Group`; assigning a Group a `DatasetRole` on a dataset grants its members dataset-scoped access resolved through current group membership (no per-member row materialized); `/admin` is unreachable; saving a `DatasetRole`/`Group` with `change_agent` but not `view_agent` is rejected with a clear per-codename error, while the same set plus `view_agent` saves cleanly; saving `converse` alone (no `view_conversation`) is **not** rejected.
 
 ---
 
