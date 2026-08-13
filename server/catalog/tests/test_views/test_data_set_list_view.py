@@ -1,27 +1,18 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from django.contrib.auth.models import Group, Permission
 from django.test import override_settings
 from django.urls import reverse
 from enthusiast_common.utils import RequiredFieldsModel
-from model_bakery import baker
 from pydantic import Field
 from rest_framework import status
 
-from account.authorization import PERMISSIONS
-from account.models import DatasetGroupRoleAssignment, DatasetRole, DatasetUserRoleAssignment
 from agent.core.registries.agents.agent_registry import AgentRegistry
 from agent.core.registries.embeddings.embedding_provider_registry import EmbeddingProviderRegistry
 from agent.models import Agent
 from catalog.models import DataSet
 
 pytestmark = pytest.mark.django_db
-
-
-def _permission(codename: str) -> Permission:
-    app_label, name = codename.split(".")
-    return Permission.objects.get(codename=name, content_type__app_label=app_label)
 
 
 class TestArgs(RequiredFieldsModel):
@@ -54,27 +45,19 @@ class TestDataSetListViewPost:
     def payload_preconfigure_agents(self):
         return {"name": "New DataSet", "preconfigure_agents": True}
 
-    def test_admin_can_create_dataset(self, admin_api_client, url, payload):
+    def test_staff_can_create_dataset(self, admin_api_client, url, payload):
         response = admin_api_client.post(url, payload, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
         assert DataSet.objects.filter(name="New DataSet").exists()
 
-    def test_non_admin_cannot_create_dataset(self, api_client, url, payload):
+    def test_non_staff_cannot_create_dataset(self, api_client, url, payload):
         response = api_client.post(url, payload, format="json")
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
         assert not DataSet.objects.filter(name="New DataSet").exists()
 
-    def test_user_with_add_dataset_permission_can_create_dataset(self, api_client, user, url, payload):
-        user.user_permissions.add(_permission(PERMISSIONS.DATASET.ADD))
-
-        response = api_client.post(url, payload, format="json")
-
-        assert response.status_code == status.HTTP_201_CREATED
-        assert DataSet.objects.filter(name="New DataSet").exists()
-
-    def test_admin_dataset_creation_with_no_agent_preconfiguration(self, admin_api_client, url, payload):
+    def test_staff_dataset_creation_with_no_agent_preconfiguration(self, admin_api_client, url, payload):
         response = admin_api_client.post(url, payload, format="json")
 
         dataset = DataSet.objects.get(name="New DataSet")
@@ -85,7 +68,7 @@ class TestDataSetListViewPost:
     @override_settings(
         AVAILABLE_AGENTS=['dummy_agent_directory_path.DummyAgent']
     )
-    def test_admin_dataset_creation_with_agent_preconfiguration(
+    def test_staff_dataset_creation_with_agent_preconfiguration(
         self, mock_agent_registry, admin_api_client, url, payload_preconfigure_agents
     ):
         mock_agent_registry.return_value = [self.MOCK_AGENT_CLASS]
@@ -134,61 +117,3 @@ class TestDataSetListViewPost:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert not DataSet.objects.filter(name="Constrained DataSet").exists()
-
-
-class TestDataSetListViewGet:
-    @pytest.fixture
-    def url(self):
-        return reverse("data_set_list")
-
-    def _ids(self, response):
-        return {item["id"] for item in response.data["results"]}
-
-    def test_plain_user_sees_no_datasets(self, api_client, url):
-        baker.make(DataSet)
-
-        response = api_client.get(url)
-
-        assert response.status_code == status.HTTP_200_OK
-        assert self._ids(response) == set()
-
-    def test_user_sees_only_their_assigned_dataset(self, api_client, user, url):
-        visible = baker.make(DataSet)
-        baker.make(DataSet)
-        role = baker.make(DatasetRole)
-        baker.make(DatasetUserRoleAssignment, user=user, dataset=visible, role=role)
-
-        response = api_client.get(url)
-
-        assert response.status_code == status.HTTP_200_OK
-        assert self._ids(response) == {visible.id}
-
-    def test_user_sees_dataset_via_group_assignment(self, api_client, user, url):
-        group = baker.make(Group)
-        user.groups.add(group)
-        visible = baker.make(DataSet)
-        baker.make(DataSet)
-        role = baker.make(DatasetRole)
-        baker.make(DatasetGroupRoleAssignment, group=group, dataset=visible, role=role)
-
-        response = api_client.get(url)
-
-        assert response.status_code == status.HTTP_200_OK
-        assert self._ids(response) == {visible.id}
-
-    def test_global_view_dataset_holder_sees_all_datasets(self, api_client, user, url):
-        user.user_permissions.add(_permission(PERMISSIONS.DATASET.VIEW))
-        datasets = baker.make(DataSet, _quantity=2)
-
-        response = api_client.get(url)
-
-        assert response.status_code == status.HTTP_200_OK
-        assert self._ids(response) == {d.id for d in datasets}
-
-    def test_admin_sees_all_datasets(self, admin_api_client, url):
-        datasets = baker.make(DataSet, _quantity=2)
-
-        response = admin_api_client.get(url)
-
-        assert response.status_code == status.HTTP_200_OK
-        assert self._ids(response) == {d.id for d in datasets}

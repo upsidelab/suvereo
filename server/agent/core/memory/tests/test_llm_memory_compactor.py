@@ -15,7 +15,7 @@ from catalog.models import DataSet
 @pytest.fixture
 def conversation():
     user = baker.make(get_user_model())
-    data_set = baker.make(DataSet)
+    data_set = baker.make(DataSet, users=[user])
     agent = baker.make(Agent, dataset=data_set)
     return baker.make(Conversation, user=user, data_set=data_set, agent=agent)
 
@@ -57,7 +57,7 @@ class TestLLMMemoryCompactorGetSummary:
 
     def test_returns_stored_summary(self, llm, chat_history):
         user = baker.make(get_user_model())
-        data_set = baker.make(DataSet)
+        data_set = baker.make(DataSet, users=[user])
         agent = baker.make(Agent, dataset=data_set)
         conversation = baker.make(
             Conversation, user=user, data_set=data_set, agent=agent, conversation_summary="Existing summary."

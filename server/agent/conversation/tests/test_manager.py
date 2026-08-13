@@ -17,7 +17,7 @@ class TestConversationManager:
         """Set up test fixtures before each test method."""
         self.manager = ConversationManager()
         self.user = baker.make(get_user_model())
-        self.data_set = baker.make(DataSet)
+        self.data_set = baker.make(DataSet, users=[self.user])
         self.agent = baker.make(Agent, dataset=self.data_set)
 
     def test_create_conversation_success(self):
@@ -134,6 +134,7 @@ class TestConversationManager:
         # Given
         other_user = get_user_model().objects.create_user(email="other@example.com", password="testpass123")
         other_data_set = DataSet.objects.create(name="Other DataSet")
+        other_user.data_sets.add(other_data_set)
 
         conversation = Conversation.objects.create(
             user=other_user,

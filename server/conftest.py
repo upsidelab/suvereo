@@ -17,7 +17,7 @@ def user():
 
 @pytest.fixture
 def admin_user():
-    return baker.make(User, is_superuser=True)
+    return baker.make(User, is_staff=True)
 
 
 @pytest.fixture
