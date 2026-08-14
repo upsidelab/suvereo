@@ -6,7 +6,7 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIV
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from account.authorization import PERMISSIONS, admin_required, any_global_permission_required
+from account.authorization import PERMISSIONS, admin_required, global_permission_required
 from account.models import DatasetGroupRoleAssignment
 from account.serializers import GroupDetailSerializer, GroupSerializer
 
@@ -25,7 +25,7 @@ class GroupListView(ListCreateAPIView):
         return GroupSerializer
 
     @swagger_auto_schema(operation_description="List all groups")
-    @any_global_permission_required(PERMISSIONS.GROUP.VIEW, PERMISSIONS.GROUP.ASSIGN)
+    @global_permission_required(PERMISSIONS.GROUP.VIEW)
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
@@ -44,7 +44,7 @@ class GroupDetailView(RetrieveUpdateDestroyAPIView):
     lookup_url_kwarg = "id"
 
     @swagger_auto_schema(operation_description="Retrieve a group", manual_parameters=[GROUP_ID_PARAMETER])
-    @any_global_permission_required(PERMISSIONS.GROUP.VIEW, PERMISSIONS.GROUP.ASSIGN)
+    @global_permission_required(PERMISSIONS.GROUP.VIEW)
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 

@@ -8,7 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from account.authorization import PERMISSIONS, any_global_permission_required, global_permission_required
+from account.authorization import PERMISSIONS, global_permission_required
 from account.models import User
 from account.serializers import UserReferenceSerializer, UserSummarySerializer
 
@@ -26,7 +26,7 @@ class GroupMemberListView(APIView):
         manual_parameters=[GROUP_ID_PARAMETER],
         responses={200: UserSummarySerializer(many=True)},
     )
-    @any_global_permission_required(PERMISSIONS.GROUP.VIEW, PERMISSIONS.GROUP.ASSIGN)
+    @global_permission_required(PERMISSIONS.GROUP.VIEW)
     def get(self, request, id):
         group = get_object_or_404(Group, pk=id)
         members = group.user_set.order_by("email")

@@ -5,7 +5,7 @@ from account.authorization import (
     GLOBAL_SCOPE_PERMISSIONS,
     INTERNAL_CODES,
     PUBLIC_CODES,
-    VIEW_DEPENDENCIES,
+    dependencies_within,
     permission_label,
 )
 
@@ -52,8 +52,12 @@ class GrantedPermissionsMixin:
 
     1. Only permissions this kind of grant can actually carry. One outside the set is inert once
        stored - nothing would ever read it - so accepting it would misreport what the grant does.
-    2. Granting `add`/`change`/`delete` on an entity requires also granting its `view`. The error
-       names the missing code instead of adding it.
+    2. Every dependency in `PERMISSION_DEPENDENCIES` that applies in this scope is satisfied. The
+       error names each missing requirement together with the permissions that made it necessary,
+       so the admin can see what they were about to agree to rather than what to type next.
+
+    Nothing is auto-added: a silent grant hides what was actually decided from whoever reads the
+    stored set later, while a rejection forces the box to be ticked deliberately.
 
     Mixed into the group and dataset-role serializers, which differ only in the allowed set.
     """
@@ -68,13 +72,16 @@ class GrantedPermissionsMixin:
         if not_grantable:
             raise serializers.ValidationError(self.not_grantable_error.format(codes=", ".join(not_grantable)))
 
-        unmet = sorted(
-            (PUBLIC_CODES[codename], PUBLIC_CODES[VIEW_DEPENDENCIES[codename]])
-            for codename in granted
-            if codename in VIEW_DEPENDENCIES and VIEW_DEPENDENCIES[codename] not in granted
-        )
-        if unmet:
-            raise serializers.ValidationError(
-                [f"Granting {code} also requires {required}." for code, required in unmet]
-            )
+        unmet = [
+            (PUBLIC_CODES[required], sorted(PUBLIC_CODES[dependent] for dependent in dependents if dependent in granted))
+            for required, dependents in dependencies_within(self.grantable_permissions).items()
+            if required not in granted
+        ]
+        errors = [
+            f"{required} is required by {', '.join(requiring)}."
+            for required, requiring in sorted(unmet)
+            if requiring
+        ]
+        if errors:
+            raise serializers.ValidationError(errors)
         return permissions
