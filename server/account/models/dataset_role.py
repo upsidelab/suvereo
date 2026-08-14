@@ -6,5 +6,8 @@ class DatasetRole(models.Model):
     name = models.CharField(max_length=100, unique=True)
     permissions = models.ManyToManyField(Permission, blank=True)
 
+    class Meta:
+        permissions = [("assign_datasetrole", "Can assign dataset roles to users and groups")]
+
     def __str__(self):
         return self.name

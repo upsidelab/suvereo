@@ -29,6 +29,16 @@ def any_global_permission_required(*codenames: str):
     return decorator
 
 
+def admin_required(view_method):
+    @wraps(view_method)
+    def wrapper(self, *args, **kwargs):
+        if not self.request.user.is_superuser:
+            self.permission_denied(self.request)
+        return view_method(self, *args, **kwargs)
+
+    return wrapper
+
+
 def any_permission_on_any_dataset_required(*codenames: str):
     def decorator(view_method):
         @wraps(view_method)

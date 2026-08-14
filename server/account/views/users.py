@@ -22,8 +22,8 @@ class UserListView(ListCreateAPIView):
 
     @swagger_auto_schema(operation_description="Create a new user", request_body=UserSerializer)
     @global_permission_required(PERMISSIONS.USER.ADD)
-    def perform_create(self, serializer):
-        serializer.save()
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
 
 
 class UserView(UpdateAPIView):
@@ -41,8 +41,8 @@ class UserView(UpdateAPIView):
         return User.objects.get(id=self.kwargs["id"], is_service_account=False)
 
     @global_permission_required(PERMISSIONS.USER.CHANGE)
-    def perform_update(self, serializer):
-        serializer.save()
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
 
 
 class UserPasswordView(UpdateAPIView):
@@ -60,5 +60,5 @@ class UserPasswordView(UpdateAPIView):
         return User.objects.get(id=self.kwargs["id"], is_service_account=False)
 
     @global_permission_required(PERMISSIONS.USER.CHANGE)
-    def perform_update(self, serializer):
-        serializer.save()
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)

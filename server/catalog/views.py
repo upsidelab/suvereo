@@ -39,10 +39,10 @@ class DataSetListView(ListCreateAPIView):
         return datasets_visible_to(self.request.user)
 
     @swagger_auto_schema(operation_description="Create a new data set", request_body=DataSetCreateSerializer)
+    @global_permission_required(PERMISSIONS.DATASET.ADD)
     def post(self, request, *args, **kwargs):
         return super().post(request, *args, **kwargs)
 
-    @global_permission_required(PERMISSIONS.DATASET.ADD)
     def perform_create(self, serializer):
         with transaction.atomic():
             preconfigure_agents = serializer.validated_data.pop("preconfigure_agents")

@@ -10,7 +10,7 @@ class DatasetUserRoleAssignment(models.Model):
     role = models.ForeignKey(DatasetRole, on_delete=models.PROTECT)
 
     class Meta:
-        unique_together = ("user", "dataset")
+        unique_together = ("user", "dataset", "role")
 
     def __str__(self):
         return f"{self.user} — {self.role} @ {self.dataset}"
