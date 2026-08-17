@@ -71,17 +71,31 @@ class GrantedPermissionsMixin:
         not_grantable = sorted(PUBLIC_CODES[codename] for codename in granted - set(self.grantable_permissions))
         if not_grantable:
             raise serializers.ValidationError(self.not_grantable_error.format(codes=", ".join(not_grantable)))
+        return permissions
+
+    def validate(self, attrs):
+        if "permissions" in attrs:
+            missing = self._missing_dependencies(attrs["permissions"])
+            if missing:
+                raise serializers.ValidationError(
+                    {
+                        "permissions": [
+                            f"{entry['code']} is required by {', '.join(entry['required_by'])}." for entry in missing
+                        ],
+                        "missing_permissions": missing,
+                    }
+                )
+        return super().validate(attrs)
+
+    def _missing_dependencies(self, permissions) -> list[dict]:
+        granted = {permission_label(permission) for permission in permissions}
 
         unmet = [
-            (PUBLIC_CODES[required], sorted(PUBLIC_CODES[dependent] for dependent in dependents if dependent in granted))
+            {
+                "code": PUBLIC_CODES[required],
+                "required_by": sorted(PUBLIC_CODES[dependent] for dependent in dependents if dependent in granted),
+            }
             for required, dependents in dependencies_within(self.grantable_permissions).items()
             if required not in granted
         ]
-        errors = [
-            f"{required} is required by {', '.join(requiring)}."
-            for required, requiring in sorted(unmet)
-            if requiring
-        ]
-        if errors:
-            raise serializers.ValidationError(errors)
-        return permissions
+        return sorted((entry for entry in unmet if entry["required_by"]), key=lambda entry: entry["code"])

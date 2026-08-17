@@ -8,7 +8,7 @@ PERMISSION_ENTITIES: dict[str, type[StrEnum]] = {
     if isinstance(permission_set, type) and issubclass(permission_set, StrEnum)
 }
 
-# The public permissions vocabulary, derived rather than maintained from PERMISSIONS
+# The public permissions vocabulary, derived from PERMISSIONS rather than maintained.
 PUBLIC_CODES: dict[str, str] = {
     str(member): f"{entity_name.lower()}.{member.name.lower()}"
     for entity_name, permission_set in PERMISSION_ENTITIES.items()
