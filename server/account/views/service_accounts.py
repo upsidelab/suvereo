@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
@@ -51,7 +52,7 @@ class ResetTokenView(APIView):
     )
     @global_permission_required(PERMISSIONS.SERVICE_ACCOUNT.CHANGE)
     def post(self, request, id):
-        service_account = User.objects.get(id=id, is_service_account=True)
+        service_account = get_object_or_404(User, id=id, is_service_account=True)
         if service_account.is_superuser and not request.user.is_superuser:
             # Handing back a fresh token for an admin account is handing over admin.
             raise PermissionDenied("Only an admin can modify an admin service account.")
@@ -99,7 +100,7 @@ class ServiceAccountView(APIView):
     )
     @global_permission_required(PERMISSIONS.SERVICE_ACCOUNT.CHANGE)
     def patch(self, request, id):
-        service_account = User.objects.get(id=id, is_service_account=True)
+        service_account = get_object_or_404(User, id=id, is_service_account=True)
         serializer = CreateUpdateServiceAccountSerializer(
             service_account, data=request.data, partial=True, context={"request": request}
         )

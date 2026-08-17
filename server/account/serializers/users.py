@@ -1,7 +1,19 @@
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.validators import UniqueValidator
 
 from account.models import User
+
+
+def unique_email_field():
+    return serializers.EmailField(
+        validators=[
+            UniqueValidator(
+                queryset=User.objects.all(),
+                message="An account with this email already exists.",
+            )
+        ]
+    )
 
 
 class OnlyAdminsManageAdminsMixin:
@@ -28,7 +40,7 @@ class OnlyAdminsManageAdminsMixin:
 
 class UserSerializer(OnlyAdminsManageAdminsMixin, serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
-    email = serializers.EmailField()
+    email = unique_email_field()
     is_active = serializers.BooleanField()
     is_admin = serializers.BooleanField(source="is_superuser")
     password = serializers.CharField(write_only=True)
@@ -44,7 +56,7 @@ class UserSerializer(OnlyAdminsManageAdminsMixin, serializers.Serializer):
 
 class UserUpdateSerializer(OnlyAdminsManageAdminsMixin, serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
-    email = serializers.EmailField()
+    email = unique_email_field()
     is_active = serializers.BooleanField()
     is_admin = serializers.BooleanField(source="is_superuser")
 

@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import ListCreateAPIView, UpdateAPIView
@@ -38,7 +39,7 @@ class UserView(UpdateAPIView):
         ],
     )
     def get_object(self):
-        return User.objects.get(id=self.kwargs["id"], is_service_account=False)
+        return get_object_or_404(User, id=self.kwargs["id"], is_service_account=False)
 
     @global_permission_required(PERMISSIONS.USER.CHANGE)
     def update(self, request, *args, **kwargs):
@@ -57,7 +58,7 @@ class UserPasswordView(UpdateAPIView):
         ],
     )
     def get_object(self):
-        return User.objects.get(id=self.kwargs["id"], is_service_account=False)
+        return get_object_or_404(User, id=self.kwargs["id"], is_service_account=False)
 
     @global_permission_required(PERMISSIONS.USER.CHANGE)
     def update(self, request, *args, **kwargs):
