@@ -3,8 +3,9 @@ from django.contrib.auth.models import Group, Permission
 from model_bakery import baker
 from rest_framework.exceptions import PermissionDenied
 
-from account.authorization import PERMISSIONS
+from account.authorization import PERMISSIONS, PUBLIC_CODES
 from account.authorization.decorators import (
+    admin_required,
     any_global_permission_required,
     any_permission_on_any_dataset_required,
     global_permission_required,
@@ -43,6 +44,10 @@ class _FakeView:
     @any_permission_on_any_dataset_required(PERMISSIONS.AGENT.ADD, PERMISSIONS.AGENT.CHANGE)
     def any_dataset_permission_action(self, *args, **kwargs):
         return "any-dataset-ok"
+
+    @admin_required
+    def admin_action(self, *args, **kwargs):
+        return "admin-ok"
 
 
 class TestGlobalPermissionRequired:
@@ -165,3 +170,18 @@ class TestAnyPermissionOnAnyDatasetRequired:
 
         with pytest.raises(PermissionDenied):
             view.any_dataset_permission_action()
+
+
+class TestAdminRequired:
+    def test_allows_a_superuser(self):
+        view = _FakeView(baker.make(User, is_superuser=True))
+
+        assert view.admin_action() == "admin-ok"
+
+    def test_denies_a_non_admin_holding_every_declared_permission(self):
+        user = baker.make(User)
+        user.user_permissions.set([_permission(codename) for codename in PUBLIC_CODES])
+        view = _FakeView(user)
+
+        with pytest.raises(PermissionDenied):
+            view.admin_action()

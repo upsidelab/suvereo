@@ -329,26 +329,13 @@ class TestUserAndServiceAccountPermissionsAreIndependent:
     @pytest.fixture
     def user_manager(self):
         manager = baker.make(User, is_service_account=False, is_superuser=False)
-        manager.user_permissions.set(
-            [
-                _permission(PERMISSIONS.USER.VIEW),
-                _permission(PERMISSIONS.USER.ADD),
-                _permission(PERMISSIONS.USER.CHANGE),
-                _permission(PERMISSIONS.USER.DELETE),
-            ]
-        )
+        manager.user_permissions.set([_permission(codename) for codename in PERMISSIONS.USER])
         return manager
 
     @pytest.fixture
     def service_account_manager(self):
         manager = baker.make(User, is_service_account=False, is_superuser=False)
-        manager.user_permissions.set(
-            [
-                _permission(PERMISSIONS.SERVICE_ACCOUNT.VIEW),
-                _permission(PERMISSIONS.SERVICE_ACCOUNT.ADD),
-                _permission(PERMISSIONS.SERVICE_ACCOUNT.CHANGE),
-            ]
-        )
+        manager.user_permissions.set([_permission(codename) for codename in PERMISSIONS.SERVICE_ACCOUNT])
         return manager
 
     def test_full_user_permissions_grant_no_service_account_access(self, user_manager, service_account):
