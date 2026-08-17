@@ -19,7 +19,7 @@ class UserListView(ListCreateAPIView):
         return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
-        return User.objects.filter(is_service_account=False)
+        return User.objects.filter(is_service_account=False).order_by("email")
 
     @swagger_auto_schema(operation_description="Create a new user", request_body=UserSerializer)
     @global_permission_required(PERMISSIONS.USER.ADD)

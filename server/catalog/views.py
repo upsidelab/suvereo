@@ -36,7 +36,7 @@ class DataSetListView(ListCreateAPIView):
         return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
-        return datasets_visible_to(self.request.user)
+        return datasets_visible_to(self.request.user).order_by("name", "id")
 
     @swagger_auto_schema(operation_description="Create a new data set", request_body=DataSetCreateSerializer)
     @global_permission_required(PERMISSIONS.DATASET.ADD)
