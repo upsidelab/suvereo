@@ -47,11 +47,7 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
     setPermissionErrors([]);
     setMissingPermissions([]);
 
-    if (isAdmin) {
-      api.permissions().getPermissions("dataset").then(setEntities).catch(() => setEntities([]));
-    } else {
-      setEntities([]);
-    }
+    api.permissions().getPermissions("dataset").then(setEntities).catch(() => setEntities([]));
 
     if (role) {
       api.datasetRoles().getDatasetRoleDetail(role.id).then((detail) => {
@@ -62,7 +58,7 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
       form.reset({ name: "" });
       setSelected([]);
     }
-  }, [open, role, isAdmin, form]);
+  }, [open, role, form]);
 
   const handleSubmit = async (values: DatasetRoleFormSchema) => {
     setError(null);
@@ -110,40 +106,30 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             {isAdmin ? (
-              <>
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Role name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <PermissionChecklist
-                  entities={entities}
-                  selected={selected}
-                  onChange={setSelected}
-                  missingPermissions={missingPermissions}
-                />
-                <Button type="submit">Save</Button>
-              </>
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Role name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             ) : (
-              <>
-                <p className="text-sm text-muted-foreground">Only an admin can edit a role's permissions.</p>
-                {selected.length === 0
-                  ? <p className="text-sm text-muted-foreground">This role grants nothing yet.</p>
-                  : (
-                    <ul className="text-sm space-y-1">
-                      {selected.map((code) => <li key={code} className="font-mono text-xs">{code}</li>)}
-                    </ul>
-                  )}
-              </>
+              <p className="text-sm text-muted-foreground">Only an admin can edit a role's permissions.</p>
             )}
+            <PermissionChecklist
+              entities={entities}
+              selected={selected}
+              onChange={setSelected}
+              disabled={!isAdmin}
+              missingPermissions={missingPermissions}
+            />
+            {isAdmin && <Button type="submit">Save</Button>}
           </form>
         </Form>
       </DialogContent>

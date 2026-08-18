@@ -57,11 +57,7 @@ export function GroupModal({ role, onSaved }: GroupModalProps) {
     setMissingPermissions([]);
     setSection("permissions");
 
-    if (isAdmin) {
-      api.permissions().getPermissions("global").then(setEntities).catch(() => setEntities([]));
-    } else {
-      setEntities([]);
-    }
+    api.permissions().getPermissions("global").then(setEntities).catch(() => setEntities([]));
 
     if (isBuiltIn) {
       setSelected([]);
@@ -75,7 +71,7 @@ export function GroupModal({ role, onSaved }: GroupModalProps) {
       form.reset({ name: "" });
       setSelected([]);
     }
-  }, [open, role, isAdmin, isBuiltIn, form]);
+  }, [open, role, isBuiltIn, form]);
 
   const handleSubmit = async (values: GroupFormSchema) => {
     setError(null);
@@ -164,19 +160,15 @@ export function GroupModal({ role, onSaved }: GroupModalProps) {
                 <p className="text-sm text-muted-foreground">Only an admin can edit a role's permissions.</p>
               )}
 
-              {isAdmin ? (
-                <PermissionChecklist
-                  entities={entities}
-                  selected={isBuiltIn
-                    ? entities.flatMap((entity) => entity.permissions.map((permission) => permission.code))
-                    : selected}
-                  onChange={setSelected}
-                  disabled={!canEdit}
-                  missingPermissions={missingPermissions}
-                />
-              ) : (
-                !isBuiltIn && <ReadOnlyCodeList codes={selected} />
-              )}
+              <PermissionChecklist
+                entities={entities}
+                selected={isBuiltIn
+                  ? entities.flatMap((entity) => entity.permissions.map((permission) => permission.code))
+                  : selected}
+                onChange={setSelected}
+                disabled={!canEdit}
+                missingPermissions={missingPermissions}
+              />
 
               {canEdit && <Button type="submit">Save</Button>}
             </form>
@@ -192,14 +184,5 @@ export function GroupModal({ role, onSaved }: GroupModalProps) {
         )}
       </DialogContent>
     </Dialog>
-  );
-}
-
-function ReadOnlyCodeList({ codes }: { codes: string[] }) {
-  if (codes.length === 0) return <p className="text-sm text-muted-foreground">This role grants nothing yet.</p>;
-  return (
-    <ul className="text-sm space-y-1">
-      {codes.map((code) => <li key={code} className="font-mono text-xs">{code}</li>)}
-    </ul>
   );
 }
