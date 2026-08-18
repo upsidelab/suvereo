@@ -25,13 +25,6 @@ def role():
 
 
 @pytest.fixture
-def assigner(user, data_set):
-    """Holds `dataset_role.assign` on `data_set` only, which is how a per-dataset delegate looks."""
-    assign_role(user, data_set, make_role("access-manager", PERMISSIONS.DATASET_ROLE.ASSIGN))
-    return user
-
-
-@pytest.fixture
 def global_assigner():
     return grant(baker.make(User, email="global@example.com"), PERMISSIONS.DATASET_ROLE.ASSIGN)
 
@@ -62,11 +55,6 @@ class TestWhoCanSeeADataSetsAccessList:
 
         assert response.status_code == status.HTTP_200_OK
 
-    def test_a_per_dataset_assign_holder_is_allowed_on_their_own_data_set(self, assigner, data_set):
-        response = client_for(assigner).get(access_url(data_set))
-
-        assert response.status_code == status.HTTP_200_OK
-
     def test_a_member_without_the_assign_grant_is_forbidden(self, user, data_set):
         """The data set is already visible to them, so there is nothing left to hide - what they
         are missing is the capability, and `403` says exactly that."""
@@ -76,18 +64,23 @@ class TestWhoCanSeeADataSetsAccessList:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    def test_an_outsider_is_told_the_data_set_does_not_exist(self, api_client, data_set):
-        response = api_client.get(access_url(data_set))
+    def test_a_non_holder_is_refused_the_same_way_whether_or_not_they_are_a_member(
+        self, user, data_set, other_data_set
+    ):
+        assign_role(user, data_set, make_role("converser", PERMISSIONS.CONVERSATION.CONVERSE))
+        client = client_for(user)
+
+        member = client.get(access_url(data_set))
+        outsider = client.get(access_url(other_data_set))
+
+        assert member.status_code == status.HTTP_403_FORBIDDEN
+        assert member.data == outsider.data
+
+    def test_a_holder_asking_for_a_data_set_that_does_not_exist_still_gets_a_404(self, global_assigner):
+        response = client_for(global_assigner).get(reverse("dataset_access_list", args=[9999]))
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert response.data == DATA_SET_NOT_FOUND
-
-    def test_the_outsiders_404_is_identical_to_a_missing_data_sets(self, api_client, data_set):
-        hidden = api_client.get(access_url(data_set))
-        missing = api_client.get(reverse("dataset_access_list", args=[9999]))
-
-        assert hidden.status_code == missing.status_code
-        assert hidden.data == missing.data
 
 
 class TestTheAccessListPayload:
@@ -177,13 +170,12 @@ class TestGrantingARole:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_an_outsider_is_refused_before_the_role_is_looked_up(self, api_client, data_set, role, subject):
-        """The data set gate runs first, so the response says nothing about whether the role in the
-        path exists - otherwise the endpoint would enumerate roles for anyone."""
+    def test_a_non_holder_is_refused_before_the_role_is_looked_up(self, api_client, data_set, role, subject):
+        """The permission gate runs first, so the response says nothing about whether the role in
+        the path exists - otherwise the endpoint would enumerate roles for anyone."""
         response = api_client.post(grant_url(data_set, role), {"user_id": subject.id}, format="json")
 
-        assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert response.data == DATA_SET_NOT_FOUND
+        assert response.status_code == status.HTTP_403_FORBIDDEN
         assert not DatasetUserRoleAssignment.objects.exists()
 
 
@@ -256,22 +248,8 @@ class TestHowFarAGrantReaches:
 
         assert response.status_code == status.HTTP_201_CREATED
 
-    def test_a_per_dataset_assign_grant_does_not_reach_another_data_set(
-        self, assigner, data_set, other_data_set, role, subject
-    ):
-        client = client_for(assigner)
-
-        assert client.get(access_url(data_set)).status_code == status.HTTP_200_OK
-
-        response = client.post(grant_url(other_data_set, role), {"user_id": subject.id}, format="json")
-
-        assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert response.data == DATA_SET_NOT_FOUND
-
     def test_an_assign_grant_resolves_through_group_membership(self, user, data_set):
-        group = make_group("access-managers")
-        join_group(user, group)
-        assign_role(group, data_set, make_role("access-manager", PERMISSIONS.DATASET_ROLE.ASSIGN))
+        join_group(user, make_group("access-managers", PERMISSIONS.DATASET_ROLE.ASSIGN))
 
         response = client_for(user).get(access_url(data_set))
 

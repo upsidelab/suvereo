@@ -13,11 +13,13 @@ from account.tests.public_permission_codes_contract import (
     AGENTIC_EXECUTION_CREATE,
     CONVERSATION_CONVERSE,
     DATASET_ROLE_ASSIGN,
+    DATASET_ROLE_VIEW,
     DATASET_VIEW,
     GROUP_ASSIGN,
     GROUP_VIEW,
     INTEGRATION_SYNC,
     INTEGRATION_VIEW,
+    SERVICE_ACCOUNT_VIEW,
     USER_ADD,
     USER_VIEW,
 )
@@ -69,11 +71,15 @@ class TestDependenciesOnAGroup:
             pytest.param([INTEGRATION_SYNC, INTEGRATION_VIEW, DATASET_VIEW], None, id="sync satisfied"),
             pytest.param(
                 [GROUP_ASSIGN],
-                [requires(GROUP_VIEW, by=[GROUP_ASSIGN])],
-                id="assigning members requires seeing the group",
+                [
+                    requires(GROUP_VIEW, by=[GROUP_ASSIGN]),
+                    requires(SERVICE_ACCOUNT_VIEW, by=[GROUP_ASSIGN]),
+                    requires(USER_VIEW, by=[GROUP_ASSIGN]),
+                ],
+                id="assigning members requires seeing the group and both kinds of subject",
             ),
             pytest.param(
-                [GROUP_ASSIGN, GROUP_VIEW],
+                [GROUP_ASSIGN, GROUP_VIEW, USER_VIEW, SERVICE_ACCOUNT_VIEW],
                 None,
                 id="group is not dataset-scoped, so no dataset.view is demanded",
             ),
@@ -95,10 +101,19 @@ class TestDependenciesOnAGroup:
             ),
             pytest.param(
                 [DATASET_ROLE_ASSIGN],
-                [requires(DATASET_VIEW, by=[DATASET_ROLE_ASSIGN])],
-                id="dataset_role.assign does not require dataset_role.view, unlike group.assign",
+                [
+                    requires(DATASET_VIEW, by=[DATASET_ROLE_ASSIGN]),
+                    requires(DATASET_ROLE_VIEW, by=[DATASET_ROLE_ASSIGN]),
+                    requires(SERVICE_ACCOUNT_VIEW, by=[DATASET_ROLE_ASSIGN]),
+                    requires(USER_VIEW, by=[DATASET_ROLE_ASSIGN]),
+                ],
+                id="dataset_role.assign requires dataset_role.view, exactly like group.assign",
             ),
-            pytest.param([DATASET_ROLE_ASSIGN, DATASET_VIEW], None, id="dataset_role.assign satisfied"),
+            pytest.param(
+                [DATASET_ROLE_ASSIGN, DATASET_VIEW, DATASET_ROLE_VIEW, USER_VIEW, SERVICE_ACCOUNT_VIEW],
+                None,
+                id="dataset_role.assign satisfied",
+            ),
             pytest.param([DATASET_VIEW], None, id="dataset.view requires nothing"),
             pytest.param([], None, id="an empty set is valid"),
             # Not from the contract module on purpose: these are strings the vocabulary must refuse.
@@ -157,8 +172,8 @@ class TestDependenciesOnADatasetRole:
             pytest.param([CONVERSATION_CONVERSE], None, id="converse has no requirements in this scope"),
             pytest.param(
                 [DATASET_ROLE_ASSIGN],
-                None,
-                id="per-dataset delegation would be unconstructable if this required anything",
+                [NOT_GRANTABLE_ON_A_ROLE.format(codes=DATASET_ROLE_ASSIGN)],
+                id="assignment is global-only, so a role cannot carry it",
             ),
             pytest.param(
                 [USER_ADD, USER_VIEW],

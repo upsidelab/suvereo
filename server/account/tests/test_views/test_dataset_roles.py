@@ -26,7 +26,7 @@ def detail_url(role):
     return reverse("dataset_role_details", args=[role.id])
 
 
-class TestReadingRolesAcceptsViewOrAssign:
+class TestReadingRolesRequiresTheViewCode:
     def test_returns_401_when_unauthenticated(self, list_url):
         assert APIClient().get(list_url).status_code == status.HTTP_401_UNAUTHORIZED
 
@@ -38,10 +38,9 @@ class TestReadingRolesAcceptsViewOrAssign:
         assert response.status_code == status.HTTP_200_OK
         assert role.id in [row["id"] for row in response.data["results"]]
 
-    def test_an_assign_holder_on_a_single_data_set_can_list(self, user, list_url, data_set, role):
-        """They have to see the catalogue to grant anything from it, and no role could carry
-        `dataset_role.view` to say so."""
-        assign_role(user, data_set, make_role("access-manager", PERMISSIONS.DATASET_ROLE.ASSIGN))
+    def test_an_assign_holder_reaches_the_catalogue_through_the_view_code_it_requires(self, user, list_url, role):
+        """An assigner has to see the catalogue to grant anything from it - `assign` never travels without `view`."""
+        grant(user, PERMISSIONS.DATASET_ROLE.ASSIGN, PERMISSIONS.DATASET_ROLE.VIEW)
 
         response = client_for(user).get(list_url)
 
@@ -63,12 +62,11 @@ class TestWritingRolesIsAdminOnly:
         ],
     )
     def test_a_dataset_role_delegate_cannot_create_edit_or_delete_a_role(
-        self, user, list_url, detail_url, role, data_set, method, uses_detail_url, body
+        self, user, list_url, detail_url, role, method, uses_detail_url, body
     ):
         """Holding both dataset-role codes, globally, still is not enough: what a role *carries*
         is the ceiling on everything a delegate can hand out, so only an admin sets it."""
-        grant(user, PERMISSIONS.DATASET_ROLE.VIEW)
-        assign_role(user, data_set, make_role("access-manager", PERMISSIONS.DATASET_ROLE.ASSIGN))
+        grant(user, PERMISSIONS.DATASET_ROLE.VIEW, PERMISSIONS.DATASET_ROLE.ASSIGN)
         url = detail_url if uses_detail_url else list_url
 
         response = getattr(client_for(user), method)(url, body, format="json")
