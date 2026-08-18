@@ -5,7 +5,7 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIV
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from account.authorization import PERMISSIONS, admin_required, any_permission_on_any_dataset_required
+from account.authorization import PERMISSIONS, admin_required, global_permission_required
 from account.models import DatasetGroupRoleAssignment, DatasetRole, DatasetUserRoleAssignment
 from account.serializers import DatasetRoleDetailSerializer, DatasetRoleSerializer
 
@@ -26,7 +26,7 @@ class DatasetRoleListView(ListCreateAPIView):
         return DatasetRoleSerializer
 
     @swagger_auto_schema(operation_description="List dataset-scoped roles")
-    @any_permission_on_any_dataset_required(PERMISSIONS.DATASET_ROLE.VIEW, PERMISSIONS.DATASET_ROLE.ASSIGN)
+    @global_permission_required(PERMISSIONS.DATASET_ROLE.VIEW)
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
@@ -49,7 +49,7 @@ class DatasetRoleDetailView(RetrieveUpdateDestroyAPIView):
     @swagger_auto_schema(
         operation_description="Retrieve a dataset-scoped role", manual_parameters=[DATASET_ROLE_ID_PARAMETER]
     )
-    @any_permission_on_any_dataset_required(PERMISSIONS.DATASET_ROLE.VIEW, PERMISSIONS.DATASET_ROLE.ASSIGN)
+    @global_permission_required(PERMISSIONS.DATASET_ROLE.VIEW)
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 

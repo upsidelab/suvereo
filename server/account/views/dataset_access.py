@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from account.authorization import PERMISSIONS, enforce_dataset_scoped_permission
+from account.authorization import PERMISSIONS, global_permission_required
 from account.models import DatasetGroupRoleAssignment, DatasetRole, DatasetUserRoleAssignment
 from account.serializers import (
     DatasetGroupRoleAssignmentSerializer,
@@ -28,9 +28,7 @@ class _DatasetAccessView(APIView):
     permission_classes = [IsAuthenticated]
 
     def _get_dataset(self, data_set_id):
-        data_set = get_object_or_404(DataSet, pk=data_set_id)
-        enforce_dataset_scoped_permission(self, PERMISSIONS.DATASET_ROLE.ASSIGN, data_set)
-        return data_set
+        return get_object_or_404(DataSet, pk=data_set_id)
 
     def _get_dataset_and_role(self, data_set_id, role_id):
         data_set = self._get_dataset(data_set_id)
@@ -42,6 +40,7 @@ class DatasetAccessListView(_DatasetAccessView):
         operation_description="List the role assignments on a data set",
         manual_parameters=[DATA_SET_ID_PARAMETER],
     )
+    @global_permission_required(PERMISSIONS.DATASET_ROLE.ASSIGN)
     def get(self, request, data_set_id):
         data_set = self._get_dataset(data_set_id)
         users = DatasetUserRoleAssignment.objects.filter(dataset=data_set).select_related("user", "role")
@@ -60,6 +59,7 @@ class DatasetRoleUserListView(_DatasetAccessView):
         request_body=UserReferenceSerializer,
         manual_parameters=[DATA_SET_ID_PARAMETER, ROLE_ID_PARAMETER],
     )
+    @global_permission_required(PERMISSIONS.DATASET_ROLE.ASSIGN)
     def post(self, request, data_set_id, role_id):
         data_set, role = self._get_dataset_and_role(data_set_id, role_id)
         serializer = UserReferenceSerializer(data=request.data)
@@ -83,6 +83,7 @@ class DatasetRoleUserView(_DatasetAccessView):
             openapi.Parameter("user_id", openapi.IN_PATH, description="ID of the user", type=openapi.TYPE_INTEGER),
         ],
     )
+    @global_permission_required(PERMISSIONS.DATASET_ROLE.ASSIGN)
     def delete(self, request, data_set_id, role_id, user_id):
         data_set = self._get_dataset(data_set_id)
         assignment = get_object_or_404(
@@ -98,6 +99,7 @@ class DatasetRoleGroupListView(_DatasetAccessView):
         request_body=GroupReferenceSerializer,
         manual_parameters=[DATA_SET_ID_PARAMETER, ROLE_ID_PARAMETER],
     )
+    @global_permission_required(PERMISSIONS.DATASET_ROLE.ASSIGN)
     def post(self, request, data_set_id, role_id):
         data_set, role = self._get_dataset_and_role(data_set_id, role_id)
         serializer = GroupReferenceSerializer(data=request.data)
@@ -121,6 +123,7 @@ class DatasetRoleGroupView(_DatasetAccessView):
             openapi.Parameter("group_id", openapi.IN_PATH, description="ID of the group", type=openapi.TYPE_INTEGER),
         ],
     )
+    @global_permission_required(PERMISSIONS.DATASET_ROLE.ASSIGN)
     def delete(self, request, data_set_id, role_id, group_id):
         data_set = self._get_dataset(data_set_id)
         assignment = get_object_or_404(

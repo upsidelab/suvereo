@@ -15,7 +15,7 @@ _GLOBAL_ONLY_PERMISSIONS: list[str] = [
     *UserPermission,
     *ServiceAccountPermission,
     *GroupPermission,
-    DatasetRolePermission.VIEW,
+    *DatasetRolePermission,
 ]
 
 DATASET_SCOPE_PERMISSIONS: list[str] = [
@@ -23,7 +23,6 @@ DATASET_SCOPE_PERMISSIONS: list[str] = [
     *IntegrationPermission,
     *ConversationPermission,
     *AgenticExecutionPermission,
-    DatasetRolePermission.ASSIGN,
 ]
 
 GLOBAL_SCOPE_PERMISSIONS: list[str] = [*_GLOBAL_ONLY_PERMISSIONS, *DATASET_SCOPE_PERMISSIONS]
@@ -41,6 +40,7 @@ PERMISSION_DEPENDENCIES: dict[str, list[str]] = {
         DatasetPermission.CHANGE,
         DatasetPermission.DELETE,
         *DATASET_SCOPE_PERMISSIONS,
+        DatasetRolePermission.ASSIGN,
     ],
     AgentPermission.VIEW: [
         AgentPermission.ADD,
@@ -56,12 +56,17 @@ PERMISSION_DEPENDENCIES: dict[str, list[str]] = {
     UserPermission.VIEW: [
         UserPermission.ADD,
         UserPermission.CHANGE,
+        GroupPermission.ASSIGN,
+        DatasetRolePermission.ASSIGN,
     ],
     ServiceAccountPermission.VIEW: [
         ServiceAccountPermission.ADD,
         ServiceAccountPermission.CHANGE,
+        GroupPermission.ASSIGN,
+        DatasetRolePermission.ASSIGN,
     ],
     GroupPermission.VIEW: [GroupPermission.ASSIGN],
+    DatasetRolePermission.VIEW: [DatasetRolePermission.ASSIGN],
 }
 
 
