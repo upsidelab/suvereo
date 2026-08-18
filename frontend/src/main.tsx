@@ -17,6 +17,7 @@ import { EditDataSet } from "@/pages/data-sets/(id)/edit.tsx";
 import { IndexDataSetUsers } from "@/pages/data-sets/(id)/users.tsx";
 import { IndexDataSetIntegrations } from "@/pages/data-sets/(id)/integrations.tsx";
 import { UsersIndex } from "@/pages/users";
+import { RolesIndex } from "@/pages/roles";
 import { OnboardingIndex } from "@/pages/onboarding";
 import AgentsPage from "@/pages/data-sets/(id)/agents";
 import { AgenticExecutionsPage } from "@/pages/data-sets/(id)/agentic-executions/index.tsx";
@@ -102,6 +103,10 @@ const router = createBrowserRouter([
       {
         path: '/users',
         element: <UsersIndex />
+      },
+      {
+        path: '/roles',
+        element: <RolesIndex />
       },
       {
         path: '/data-sets/:dataSetId/agents',

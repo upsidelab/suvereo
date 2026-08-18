@@ -3,7 +3,7 @@ import { UsersApiClient } from "@/lib/api/users.ts";
 import { DataSetsApiClient } from "@/lib/api/data-sets.ts";
 import { ConversationsApiClient } from "@/lib/api/conversations.ts";
 import { ServiceAccountsApiClient } from "@/lib/api/service-accounts.ts";
-import { Account, PaginatedResult, User } from "@/lib/types.ts";
+import { Account, GroupMember, PaginatedResult, User } from "@/lib/types.ts";
 import { ConfigApiClient } from "@/lib/api/config.ts";
 import { AgentsApiClient } from "@/lib/api/agents.ts";
 import { AgenticExecutionsApiClient } from "@/lib/api/agentic-executions.ts";
@@ -95,6 +95,18 @@ export class ApiClient {
     }
 
     return results;
+  }
+
+  async getAdmins(): Promise<GroupMember[]> {
+    const response = await fetch(`${this.apiBase}/api/admins`, this._requestConfiguration());
+    if (!response.ok) {
+      throw new ApiError(`Failed to list admins: ${response.statusText}`, {
+        data: await response.json().catch(() => ({})),
+        status: response.status,
+      });
+    }
+    const result = await response.json() as { id: number; email: string; is_service_account: boolean }[];
+    return result.map((item) => ({ id: item.id, email: item.email, isServiceAccount: item.is_service_account }));
   }
 
   serviceAccounts(): ServiceAccountsApiClient {

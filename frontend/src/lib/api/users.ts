@@ -89,6 +89,17 @@ export class UsersApiClient extends BaseApiClient {
     );
   }
 
+  async setUserAdmin(userId: number, isAdmin: boolean): Promise<Response> {
+    return await fetch(
+      `${this.apiBase}/api/users/${userId}`,
+      {
+        ...this._requestConfiguration(),
+        method: "PATCH",
+        body: JSON.stringify({ is_admin: isAdmin })
+      }
+    );
+  }
+
   async updateUserPassword(userId: number, password: string) {
     const payload: UpdateUserPasswordPayload = {
       password: password

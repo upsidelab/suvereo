@@ -1,6 +1,7 @@
 import { BaseApiClient } from "@/lib/api/base.ts";
 import { PaginatedResult, ServiceAccount } from "@/lib/types.ts";
 import { Token } from "@/lib/api.ts";
+import { ApiError } from "@/lib/api-error.ts";
 
 export type ServiceAccountResponse = {
   id: number;
@@ -41,6 +42,40 @@ export class ServiceAccountsApiClient extends BaseApiClient {
         isAdmin: item.is_admin
       }))
     };
+  }
+
+  async getAllServiceAccounts(): Promise<ServiceAccount[]> {
+    const results: ServiceAccount[] = [];
+    let url: string | null = `${this.apiBase}/api/service_accounts/`;
+
+    while (url) {
+      const response: Response = await fetch(url, this._requestConfiguration());
+      if (!response.ok) {
+        throw new ApiError(`Failed to list service accounts: ${response.statusText}`, {
+          data: await response.json().catch(() => ({})),
+          status: response.status,
+        });
+      }
+      const page = await response.json() as PaginatedResult<ServiceAccountResponse>;
+      results.push(...page.results.map((item) => ({
+        id: item.id,
+        email: item.email,
+        dateCreated: item.date_joined,
+        isActive: item.is_active,
+        isAdmin: item.is_admin
+      })));
+      url = page.next ?? null;
+    }
+
+    return results;
+  }
+
+  async setServiceAccountAdmin(id: number, isAdmin: boolean): Promise<Response> {
+    return await fetch(`${this.apiBase}/api/service_accounts/${id}`, {
+      ...this._requestConfiguration(),
+      method: 'PATCH',
+      body: JSON.stringify({ is_admin: isAdmin })
+    });
   }
 
   async createServiceAccount(serviceAccount: CreateServiceAccountParams): Promise<Token> {
