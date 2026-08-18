@@ -30,6 +30,12 @@ export type UpdateServiceAccountPayload = CreateServiceAccountPayload;
 export class ServiceAccountsApiClient extends BaseApiClient {
   async getServiceAccounts(page: number): Promise<PaginatedResult<ServiceAccount>> {
     const response = await fetch(`${this.apiBase}/api/service_accounts?page=${page}`, this._requestConfiguration());
+    if (!response.ok) {
+      throw new ApiError(`Failed to list service accounts: ${response.statusText}`, {
+        data: await response.json().catch(() => ({})),
+        status: response.status,
+      });
+    }
     const result = await response.json() as PaginatedResult<ServiceAccountResponse>;
 
     return {
@@ -90,6 +96,13 @@ export class ServiceAccountsApiClient extends BaseApiClient {
       method: 'POST',
       body: JSON.stringify(payload)
     });
+
+    if (!response.ok) {
+      throw new ApiError(`Failed to create service account: ${response.statusText}`, {
+        data: await response.json().catch(() => ({})),
+        status: response.status,
+      });
+    }
 
     return await response.json() as Token;
   }

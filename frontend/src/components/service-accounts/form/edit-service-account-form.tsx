@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Form } from "@/components/ui/form.tsx";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -8,7 +9,7 @@ import { DetailsFields } from "@/components/service-accounts/form/details-fields
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { ServiceAccount } from "@/lib/types.ts";
-import { PermissionFields } from "@/components/service-accounts/form/permission-fields.tsx";
+import { AccountAccessFields } from "@/components/service-accounts/form/account-access-fields.tsx";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -30,6 +31,7 @@ export interface EditServiceAccountFormProps {
 }
 
 export function EditServiceAccountForm({ serviceAccount, onServiceAccountUpdated }: EditServiceAccountFormProps) {
+  const [error, setError] = useState<string | null>(null);
   const oldName = serviceAccount.email.split('@')[0];
   const form = useForm<CreateServiceAccountFormSchema>({
     resolver: zodResolver(formSchema),
@@ -42,7 +44,13 @@ export function EditServiceAccountForm({ serviceAccount, onServiceAccountUpdated
   });
 
   const handleSubmit = async (values: CreateServiceAccountFormSchema) => {
-    await api.serviceAccounts().updateServiceAccount(serviceAccount.id, values);
+    setError(null);
+    const response = await api.serviceAccounts().updateServiceAccount(serviceAccount.id, values);
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      setError(body.detail ?? "Could not update this service account.");
+      return;
+    }
     onServiceAccountUpdated();
   };
 
@@ -50,8 +58,9 @@ export function EditServiceAccountForm({ serviceAccount, onServiceAccountUpdated
     <>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          {error && <p className="text-sm text-destructive">{error}</p>}
           <DetailsFields form={form}/>
-          <PermissionFields form={form}/>
+          <AccountAccessFields form={form}/>
           <Button type="submit">Update</Button>
         </form>
       </Form>

@@ -153,7 +153,7 @@ export function GroupModal({ role, onSaved }: GroupModalProps) {
 
               {isBuiltIn && (
                 <p className="text-sm text-muted-foreground">
-                  Admins bypass every permission check. This can't be edited.
+                  Admins have full access to the system. This can't be edited.
                 </p>
               )}
               {!isBuiltIn && !isAdmin && (

@@ -8,8 +8,9 @@ import { checkServiceNameAvailability } from "@/components/util/check-service-na
 import { TokenGeneratedModal } from "@/components/service-accounts/token-generated-modal.tsx";
 import { DetailsFields } from "@/components/service-accounts/form/details-fields.tsx";
 import { ApiClient } from "@/lib/api.ts";
+import { ApiError } from "@/lib/api-error.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
-import { PermissionFields } from "@/components/service-accounts/form/permission-fields.tsx";
+import { AccountAccessFields } from "@/components/service-accounts/form/account-access-fields.tsx";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -39,11 +40,18 @@ export function NewServiceAccountForm({onServiceAccountCreated}: NewServiceAccou
   });
   const [isTokenDialogOpen, setIsTokenDialogOpen] = useState(false);
   const [generatedToken, setGeneratedToken] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (values: CreateServiceAccountFormSchema) => {
-    const {  token } = await api.serviceAccounts().createServiceAccount(values);
-    setGeneratedToken(token);
-    setIsTokenDialogOpen(true);
+    setError(null);
+    try {
+      const { token } = await api.serviceAccounts().createServiceAccount(values);
+      setGeneratedToken(token);
+      setIsTokenDialogOpen(true);
+    } catch (submitError) {
+      const body = submitError instanceof ApiError ? submitError.response.data as { detail?: string } : {};
+      setError(body.detail ?? "Could not create this service account.");
+    }
   };
 
   const handleTokenDialogOpenChange = (value: boolean) => {
@@ -57,8 +65,9 @@ export function NewServiceAccountForm({onServiceAccountCreated}: NewServiceAccou
     <>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          {error && <p className="text-sm text-destructive">{error}</p>}
           <DetailsFields form={form}/>
-          <PermissionFields form={form}/>
+          <AccountAccessFields form={form}/>
           <Button type="submit">Create</Button>
         </form>
       </Form>

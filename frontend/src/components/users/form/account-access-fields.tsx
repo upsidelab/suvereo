@@ -2,14 +2,14 @@ import { FormControl, FormDescription, FormField, FormItem, FormLabel } from "@/
 import { Switch } from "@/components/ui/switch.tsx";
 import { UseFormReturn } from "react-hook-form";
 
-export interface PermissionFieldsProps {
+export interface AccountAccessFieldsProps {
   form: UseFormReturn<any, any, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
-export function PermissionFields({ form }: PermissionFieldsProps) {
+export function AccountAccessFields({ form }: AccountAccessFieldsProps) {
   return (
     <>
-      <h3 className="mb-4 text-lg font-medium">Permissions</h3>
+      <h3 className="mb-4 text-lg font-medium">Account access</h3>
       <FormField
         control={form.control}
         name="isActive"
@@ -42,7 +42,7 @@ export function PermissionFields({ form }: PermissionFieldsProps) {
                 Admin
               </FormLabel>
               <FormDescription>
-                Admins can manage data sets and users.
+                Admins have full access to the system.
               </FormDescription>
             </div>
             <FormControl>

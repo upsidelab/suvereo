@@ -6,7 +6,7 @@ import { z } from "zod";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { Button } from "@/components/ui/button.tsx";
-import { PermissionFields } from "@/components/users/form/permission-fields.tsx";
+import { AccountAccessFields } from "@/components/users/form/account-access-fields.tsx";
 import { DetailsFields } from "@/components/users/form/details-fields.tsx";
 import { RevokeOwnAdminAccessDialog } from "@/components/roles/revoke-own-admin-access-dialog.tsx";
 import { User } from "@/lib/types.ts";
@@ -30,6 +30,7 @@ export function EditUserForm({ user, onUserUpdated }: EditUserFormProps) {
   const { account, setAccount } = useApplicationContext()!;
   const isOwnAccount = account?.email === user.email;
   const [valuesAwaitingConfirmation, setValuesAwaitingConfirmation] = useState<UserFormSchema | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<UserFormSchema>({
     resolver: zodResolver(formSchema),
@@ -41,7 +42,13 @@ export function EditUserForm({ user, onUserUpdated }: EditUserFormProps) {
   });
 
   const update = async (values: UserFormSchema) => {
-    await api.users().updateUser(user.id, values);
+    setError(null);
+    const response = await api.users().updateUser(user.id, values);
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      setError(body.detail ?? "Could not update this user.");
+      return;
+    }
     if (isOwnAccount) {
       setAccount(await api.getAccount());
     }
@@ -70,8 +77,9 @@ export function EditUserForm({ user, onUserUpdated }: EditUserFormProps) {
     <>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          {error && <p className="text-sm text-destructive">{error}</p>}
           <DetailsFields form={form} />
-          <PermissionFields form={form} />
+          <AccountAccessFields form={form} />
           <Button type="submit">Update</Button>
         </form>
       </Form>

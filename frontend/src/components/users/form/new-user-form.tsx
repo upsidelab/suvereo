@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Form } from "@/components/ui/form.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -6,7 +7,7 @@ import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { PasswordFields } from "@/components/users/form/password-fields.tsx";
-import { PermissionFields } from "@/components/users/form/permission-fields.tsx";
+import { AccountAccessFields } from "@/components/users/form/account-access-fields.tsx";
 import { DetailsFields } from "@/components/users/form/details-fields.tsx";
 
 const formSchema = z.object({
@@ -28,6 +29,7 @@ export interface NewUserFormProps {
 }
 
 export function NewUserForm({ onUserCreated }: NewUserFormProps) {
+  const [error, setError] = useState<string | null>(null);
   const form = useForm<UserFormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -39,7 +41,13 @@ export function NewUserForm({ onUserCreated }: NewUserFormProps) {
   });
 
   const handleSubmit = async (values: UserFormSchema) => {
-    await api.users().createUser(values);
+    setError(null);
+    const response = await api.users().createUser(values);
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      setError(body.detail ?? "Could not create this user.");
+      return;
+    }
     onUserCreated();
     form.reset();
   }
@@ -47,9 +55,10 @@ export function NewUserForm({ onUserCreated }: NewUserFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        {error && <p className="text-sm text-destructive">{error}</p>}
         <DetailsFields form={form} />
         <PasswordFields form={form} />
-        <PermissionFields form={form} />
+        <AccountAccessFields form={form} />
         <Button type="submit">Create</Button>
       </form>
     </Form>
