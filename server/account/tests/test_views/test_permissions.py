@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from account.authorization import PERMISSIONS
-from account.tests.helpers import client_for, grant, permission
+from account.tests.helpers import grant, permission
 from account.tests.public_permission_codes_contract import DATASET_ADD
 
 pytestmark = pytest.mark.django_db
