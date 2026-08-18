@@ -23,6 +23,7 @@ import AgentsPage from "@/pages/data-sets/(id)/agents";
 import { AgenticExecutionsPage } from "@/pages/data-sets/(id)/agentic-executions/index.tsx";
 import { AgenticExecutionDetailPage } from "@/pages/data-sets/(id)/agentic-executions/(id)/index.tsx";
 import { EntityRecordsPage } from "@/pages/data-sets/(id)/entities/[slug].tsx";
+import { PERMISSIONS } from "@/lib/permissions.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -38,7 +39,7 @@ const protectedLoginLoader = async () => {
 
   if (apiDataSets.length === 0) {
     const accountData = await api.getAccount();
-    if (accountData.isAdmin) {
+    if (accountData.permissions.includes(PERMISSIONS.DATASET.ADD)) {
       return redirect("/onboarding");
     } else {
       return redirect("/no-data-sets");

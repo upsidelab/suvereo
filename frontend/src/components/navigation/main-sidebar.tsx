@@ -13,6 +13,7 @@ import {
   PlayIcon,
   PlugZapIcon,
   Settings2Icon,
+  ShieldIcon,
   SparklesIcon,
   UserIcon,
 } from "lucide-react";
@@ -21,13 +22,12 @@ import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { EntityType } from "@/lib/types.ts";
+import { PERMISSIONS } from "@/lib/permissions.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 
 export function MainSidebar() {
-  const { account, dataSetId } = useApplicationContext()!;
-  const { isLoadingAgents } = useApplicationContext()!;
-  const { availableAgents } = useApplicationContext()!;
+  const { account, dataSetId, dataSets, isLoadingAgents, availableAgents, hasPermission } = useApplicationContext()!;
   const [entityTypes, setEntityTypes] = useState<EntityType[]>([]);
 
   useEffect(() => {
@@ -64,25 +64,37 @@ export function MainSidebar() {
     }
   ];
 
+  const canSeeDataSets = dataSets.length > 0 || hasPermission(PERMISSIONS.DATASET.ADD);
+  const canSeeUsers = hasPermission(PERMISSIONS.USER.VIEW);
+  const canSeeServiceAccounts = hasPermission(PERMISSIONS.SERVICE_ACCOUNT.VIEW);
+  const canSeeRoles = hasPermission(PERMISSIONS.GROUP.VIEW) || hasPermission(PERMISSIONS.DATASET_ROLE.VIEW);
+  const hasManageAccess = canSeeDataSets || canSeeUsers || canSeeServiceAccounts || canSeeRoles;
+
   const manageItems: SidebarSectionItemProps[] = [
-    {
+    ...(canSeeDataSets ? [{
       title: "Data Sets",
       link: "/data-sets",
       key: "data-sets",
       icon: <DatabaseIcon />
-    },
-    {
+    }] : []),
+    ...(canSeeUsers ? [{
       title: "Users",
       link: "/users",
       key: "users",
       icon: <UserIcon />
-    },
-    {
+    }] : []),
+    ...(canSeeServiceAccounts ? [{
       title: "Service Accounts",
       link: "/service-accounts",
       key: "service-accounts",
       icon: <PlugZapIcon />
-    },
+    }] : []),
+    ...(canSeeRoles ? [{
+      title: "Roles",
+      link: "/roles",
+      key: "roles",
+      icon: <ShieldIcon />
+    }] : []),
     {
       title: "Help",
       link: "https://upsidelab.io/tools/enthusiast/docs",
@@ -146,10 +158,8 @@ export function MainSidebar() {
         {catalogItems.length > 0 && (
           <MainSidebarSection title="Catalog" items={catalogItems} />
         )}
-        {account && account.isAdmin && (
-          <>
-            <MainSidebarSection className="mt-auto" title="Manage" items={manageItems} />
-          </>
+        {account && hasManageAccess && (
+          <MainSidebarSection className="mt-auto" title="Manage" items={manageItems} />
         )}
       </SidebarContent>
       <SidebarFooter>

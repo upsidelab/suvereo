@@ -144,26 +144,6 @@ export class DataSetsApiClient extends BaseApiClient {
     );
   }
 
-  async syncDataSetAllSources(dataSetId: number | undefined): Promise<void> {
-    await fetch(
-      `${this.apiBase}/api/data_sets/${dataSetId}/sync`,
-      {
-        ...this._requestConfiguration(),
-        method: "POST"
-      }
-    );
-  }
-
-  async syncAllSources(): Promise<void> {
-    await fetch(
-      `${this.apiBase}/api/sync`,
-      {
-        ...this._requestConfiguration(),
-        method: "POST"
-      }
-    );
-  }
-
   async getDataSet(dataSetId: number): Promise<DataSet> {
     const response = await fetch(`${this.apiBase}/api/data_sets/${dataSetId}`, this._requestConfiguration());
     const data = await response.json();

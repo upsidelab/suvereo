@@ -1,33 +1,23 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import { ApiClient } from "@/lib/api.ts";
-import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { useNavigate } from "react-router-dom";
-import { DataSet } from "@/lib/types.ts";
 import { PERMISSIONS } from "@/lib/permissions.ts";
-
-const api = new ApiClient(authenticationProviderInstance);
 
 export function DataSetList() {
   const {dataSets, hasPermission} = useApplicationContext()!;
+  const canCreateDataSets = hasPermission(PERMISSIONS.DATASET.ADD);
+  const canEditDataSets = hasPermission(PERMISSIONS.DATASET.CHANGE);
   const canAssignRoles = hasPermission(PERMISSIONS.DATASET_ROLE.ASSIGN);
   const navigate = useNavigate();
 
-  const handleSyncAllSources = async () => {
-    await api.dataSets().syncAllSources();
-  }
-
-  const handleSyncDataSetAllSources = async (dataSet: DataSet) => {
-    await api.dataSets().syncDataSetAllSources(dataSet.id);
-  }
-
   return (
     <>
-      <div className="flex flex-row justify-end items-center space-x-4 mb-4">
-        <Button variant="default" onClick={() => navigate('/data-sets/new') }>New Data Set</Button>
-        <Button variant="default" onClick={() => handleSyncAllSources() }>Sync All</Button>
-      </div>
+      {canCreateDataSets &&
+        <div className="flex flex-row justify-end items-center space-x-4 mb-4">
+          <Button variant="default" onClick={() => navigate('/data-sets/new') }>New Data Set</Button>
+        </div>
+      }
       <Table>
         <TableHeader>
           <TableRow>
@@ -54,14 +44,11 @@ export function DataSetList() {
                 }} variant="secondary">Sources</Button>
               </TableCell>
               <TableCell>
-                <Button onClick={() => {
-                  handleSyncDataSetAllSources(item)
-                }} variant="secondary">Sync</Button>
-              </TableCell>
-              <TableCell>
-                <Button onClick={() => {
-                  navigate(`/data-sets/${item.id}/edit`)
-                }} variant="secondary">Edit</Button>
+                {canEditDataSets &&
+                  <Button onClick={() => {
+                    navigate(`/data-sets/${item.id}/edit`)
+                  }} variant="secondary">Edit</Button>
+                }
               </TableCell>
              </TableRow>
           ))}
