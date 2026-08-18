@@ -152,16 +152,21 @@ export type PermissionEntity = {
   permissions: PermissionOption[];
 };
 
-export type DatasetRoleAssignment = {
+export type DatasetUserRoleAssignment = {
   id: number;
   role: DatasetRoleOption;
-  user?: GroupMember;
-  group?: GroupOption;
+  user: GroupMember;
+};
+
+export type DatasetGroupRoleAssignment = {
+  id: number;
+  role: DatasetRoleOption;
+  group: GroupOption;
 };
 
 export type DatasetAccess = {
-  users: DatasetRoleAssignment[];
-  groups: DatasetRoleAssignment[];
+  users: DatasetUserRoleAssignment[];
+  groups: DatasetGroupRoleAssignment[];
 };
 
 export type ProvidersConfig = {

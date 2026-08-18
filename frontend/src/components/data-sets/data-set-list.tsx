@@ -5,11 +5,13 @@ import { authenticationProviderInstance } from "@/lib/authentication-provider.ts
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { useNavigate } from "react-router-dom";
 import { DataSet } from "@/lib/types.ts";
+import { PERMISSIONS } from "@/lib/permissions.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 
 export function DataSetList() {
-  const {dataSets} = useApplicationContext()!;
+  const {dataSets, hasPermission} = useApplicationContext()!;
+  const canAssignRoles = hasPermission(PERMISSIONS.DATASET_ROLE.ASSIGN);
   const navigate = useNavigate();
 
   const handleSyncAllSources = async () => {
@@ -40,9 +42,11 @@ export function DataSetList() {
                 {item.name}
               </TableCell>
               <TableCell className="flex space-x-4" width="25%">
-                <Button onClick={() => {
-                  navigate(`/data-sets/${item.id}/users`)
-                }} variant="secondary">Manage Access</Button>
+                {canAssignRoles &&
+                  <Button onClick={() => {
+                    navigate(`/data-sets/${item.id}/users`)
+                  }} variant="secondary">Manage Access</Button>
+                }
               </TableCell>
               <TableCell>
                 <Button onClick={() => {

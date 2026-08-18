@@ -1,5 +1,5 @@
 import { BaseApiClient } from "@/lib/api/base.ts";
-import { DataSet, DatasetAccess, User } from "@/lib/types.ts";
+import { DataSet, DatasetAccess, DatasetRoleOption, GroupOption } from "@/lib/types.ts";
 import { ApiError } from "@/lib/api-error.ts";
 
 export type DataSetResponse = {
@@ -15,6 +15,19 @@ export type DataSetResponse = {
 export type CreateDataSetPayload = DataSetResponse & {
   preconfigure_agents: boolean;
 };
+
+type DatasetAccessResponse = {
+  users: {
+    id: number;
+    user: { id: number; email: string; is_service_account: boolean };
+    role: DatasetRoleOption;
+  }[];
+  groups: {
+    id: number;
+    group: GroupOption;
+    role: DatasetRoleOption;
+  }[];
+}
 
 export type UpdateDataSetPayload = {
   id: number | undefined;
@@ -62,36 +75,6 @@ export class DataSetsApiClient extends BaseApiClient {
     return responseJson.id!;
   }
 
-  // TODO: delete together with data-set-user-list.tsx / add-user-selector.tsx when the Access tab
-  // lands. The user<->data set membership endpoints these three call no longer exist - role
-  // assignment replaced them - so they are already dead at runtime; they stay only so their last
-  // consumer keeps compiling until it is replaced.
-  async getDataSetUsers(dataSetId: number): Promise<User[]> {
-    const response = await fetch(`${this.apiBase}/api/data_sets/${dataSetId}/users`, this._requestConfiguration());
-    return (await response.json()).results as User[];
-  }
-
-  async addDataSetUser(dataSetId: number, userId: number): Promise<void> {
-    await fetch(
-      `${this.apiBase}/api/data_sets/${dataSetId}/users`,
-      {
-        ...this._requestConfiguration(),
-        method: "POST",
-        body: JSON.stringify({user_id: userId})
-      }
-    );
-  }
-
-  async removeDataSetUser(dataSetId: number, userId: number): Promise<void> {
-    await fetch(
-      `${this.apiBase}/api/data_sets/${dataSetId}/users/${userId}`,
-      {
-        ...this._requestConfiguration(),
-        method: "DELETE"
-      }
-    );
-  }
-
   async getDataSetAccess(dataSetId: number): Promise<DatasetAccess> {
     const response = await fetch(`${this.apiBase}/api/data_sets/${dataSetId}/roles/`, this._requestConfiguration());
     if (!response.ok) {
@@ -100,7 +83,23 @@ export class DataSetsApiClient extends BaseApiClient {
         status: response.status,
       });
     }
-    return await response.json() as DatasetAccess;
+    const result = await response.json() as DatasetAccessResponse;
+    return {
+      users: result.users.map((assignment) => ({
+        id: assignment.id,
+        role: assignment.role,
+        user: {
+          id: assignment.user.id,
+          email: assignment.user.email,
+          isServiceAccount: assignment.user.is_service_account
+        }
+      })),
+      groups: result.groups.map((assignment) => ({
+        id: assignment.id,
+        role: assignment.role,
+        group: assignment.group
+      }))
+    };
   }
 
   async grantRoleToUser(dataSetId: number, roleId: number, userId: number): Promise<Response> {
