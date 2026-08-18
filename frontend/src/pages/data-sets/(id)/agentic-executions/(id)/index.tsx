@@ -8,6 +8,7 @@ import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { AgenticExecutionDetail } from "@/lib/types.ts";
+import { ApiError } from "@/lib/api-error.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -17,6 +18,7 @@ export function AgenticExecutionDetailPage() {
   const { id: dataSetId, executionId } = useParams();
   const { availableAgents } = useApplicationContext()!;
   const [execution, setExecution] = useState<AgenticExecutionDetail | null>(null);
+  const [isAccessDenied, setIsAccessDenied] = useState(false);
 
   const agentName = (id: number) => availableAgents.find(a => a.id === id)?.name ?? `Agent #${id}`;
 
@@ -42,13 +44,30 @@ export function AgenticExecutionDetailPage() {
       }
     };
 
-    fetchExecution();
+    fetchExecution().catch(fetchError => {
+      if (!active) return;
+      if (fetchError instanceof ApiError && [403, 404].includes(fetchError.response.status)) {
+        setIsAccessDenied(true);
+        return;
+      }
+      throw fetchError;
+    });
 
     return () => {
       active = false;
       if (interval) clearInterval(interval);
     };
   }, [executionId]);
+
+  if (isAccessDenied) {
+    return (
+      <PageMain>
+        <div className="text-muted-foreground text-sm">
+          You don't have permission to view this agentic execution.
+        </div>
+      </PageMain>
+    );
+  }
 
   if (!execution) {
     return (

@@ -5,11 +5,13 @@ import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { useNavigate } from "react-router-dom";
 import { PaginatedTable } from "@/components/util/paginated-table.tsx";
 import { Lock } from "lucide-react";
+import { PERMISSIONS } from "@/lib/permissions.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 
 export function ConversationsList() {
-  const { dataSetId } = useApplicationContext()!;
+  const { dataSetId, hasDatasetPermission } = useApplicationContext()!;
+  const canViewAllConversations = hasDatasetPermission(PERMISSIONS.CONVERSATION.VIEW_ALL);
   const navigate = useNavigate();
 
   const navigateToConversation = (id: number) => {
@@ -36,7 +38,7 @@ export function ConversationsList() {
       loadItems={loadConversations}
       itemsReloadDependencies={dataSetId}
       noItemsMessage="You don't have any conversations yet"
-      tableHeaders={["Conversation", "Agent", "Time"]}
+      tableHeaders={canViewAllConversations ? ["Conversation", "Agent", "Owner", "Time"] : ["Conversation", "Agent", "Time"]}
       tableRow={(item, index) => {
         const isAgentDeleted = !!item.agent.deleted_at;
         const isAgentCorrupted = !!item.agent.corrupted;
@@ -53,6 +55,7 @@ export function ConversationsList() {
             <TableCell className="w-1/4">
               {item.agent.name}
             </TableCell>
+            {canViewAllConversations && <TableCell className="w-1/4">{item.user_email}</TableCell>}
             <TableCell className="w-1/4">{new Date(item.started_at).toLocaleString('en-US')}</TableCell>
           </TableRow>
         )

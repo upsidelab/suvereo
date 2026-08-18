@@ -18,7 +18,7 @@ export function EntityRecordsPage() {
     api.entities().listTypes().then(types => {
       const found = types.find(t => t.slug === slug);
       setEntityType(found ?? null);
-    });
+    }).catch(() => setEntityType(null));
   }, [slug]);
 
   if (!entityType) {

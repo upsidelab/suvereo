@@ -210,6 +210,7 @@ export type ConversationFile = {
 export type AgenticExecution = {
   id: number;
   agent: number;
+  user_email: string;
   execution_key: string;
   conversation: number;
   status: 'pending' | 'in_progress' | 'finished' | 'failed';
