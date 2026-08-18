@@ -1,5 +1,6 @@
 import { BaseApiClient } from "@/lib/api/base.ts";
-import { DataSet, User } from "@/lib/types.ts";
+import { DataSet, DatasetAccess, User } from "@/lib/types.ts";
+import { ApiError } from "@/lib/api-error.ts";
 
 export type DataSetResponse = {
   id: number | undefined;
@@ -37,7 +38,7 @@ export class DataSetsApiClient extends BaseApiClient {
     return results;
   }
 
-  async createDataSet(dataSet: DataSet, preconfigureAgents: boolean): Promise<number> {
+  async createDataSet(dataSet: Omit<DataSet, "id" | "permissions">, preconfigureAgents: boolean): Promise<number> {
     const body: CreateDataSetPayload = {
       id: undefined,
       name: dataSet.name,
@@ -61,6 +62,10 @@ export class DataSetsApiClient extends BaseApiClient {
     return responseJson.id!;
   }
 
+  // TODO: delete together with data-set-user-list.tsx / add-user-selector.tsx when the Access tab
+  // lands. The user<->data set membership endpoints these three call no longer exist - role
+  // assignment replaced them - so they are already dead at runtime; they stay only so their last
+  // consumer keeps compiling until it is replaced.
   async getDataSetUsers(dataSetId: number): Promise<User[]> {
     const response = await fetch(`${this.apiBase}/api/data_sets/${dataSetId}/users`, this._requestConfiguration());
     return (await response.json()).results as User[];
@@ -80,6 +85,59 @@ export class DataSetsApiClient extends BaseApiClient {
   async removeDataSetUser(dataSetId: number, userId: number): Promise<void> {
     await fetch(
       `${this.apiBase}/api/data_sets/${dataSetId}/users/${userId}`,
+      {
+        ...this._requestConfiguration(),
+        method: "DELETE"
+      }
+    );
+  }
+
+  async getDataSetAccess(dataSetId: number): Promise<DatasetAccess> {
+    const response = await fetch(`${this.apiBase}/api/data_sets/${dataSetId}/roles/`, this._requestConfiguration());
+    if (!response.ok) {
+      throw new ApiError(`Failed to load data set access: ${response.statusText}`, {
+        data: await response.json().catch(() => ({})),
+        status: response.status,
+      });
+    }
+    return await response.json() as DatasetAccess;
+  }
+
+  async grantRoleToUser(dataSetId: number, roleId: number, userId: number): Promise<Response> {
+    return await fetch(
+      `${this.apiBase}/api/data_sets/${dataSetId}/roles/${roleId}/users`,
+      {
+        ...this._requestConfiguration(),
+        method: "POST",
+        body: JSON.stringify({ user_id: userId })
+      }
+    );
+  }
+
+  async grantRoleToGroup(dataSetId: number, roleId: number, groupId: number): Promise<Response> {
+    return await fetch(
+      `${this.apiBase}/api/data_sets/${dataSetId}/roles/${roleId}/groups`,
+      {
+        ...this._requestConfiguration(),
+        method: "POST",
+        body: JSON.stringify({ group_id: groupId })
+      }
+    );
+  }
+
+  async revokeRoleFromUser(dataSetId: number, roleId: number, userId: number): Promise<Response> {
+    return await fetch(
+      `${this.apiBase}/api/data_sets/${dataSetId}/roles/${roleId}/users/${userId}`,
+      {
+        ...this._requestConfiguration(),
+        method: "DELETE"
+      }
+    );
+  }
+
+  async revokeRoleFromGroup(dataSetId: number, roleId: number, groupId: number): Promise<Response> {
+    return await fetch(
+      `${this.apiBase}/api/data_sets/${dataSetId}/roles/${roleId}/groups/${groupId}`,
       {
         ...this._requestConfiguration(),
         method: "DELETE"
@@ -119,6 +177,7 @@ export class DataSetsApiClient extends BaseApiClient {
       embeddingProvider: data.embedding_provider,
       embeddingModel: data.embedding_model,
       embeddingVectorSize: data.embedding_vector_dimensions,
+      permissions: data.permissions,
     } as DataSet;
   }
 

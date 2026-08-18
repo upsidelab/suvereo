@@ -8,12 +8,10 @@ export type ServiceAccountResponse = {
   date_joined: string;
   is_active: boolean;
   is_admin: boolean;
-  data_set_ids: number[];
 }
 
 export type CreateServiceAccountParams = {
   name: string;
-  dataSetIds: number[];
   isActive: boolean;
   isAdmin: boolean;
 }
@@ -22,7 +20,6 @@ export type UpdateServiceAccountParams = CreateServiceAccountParams;
 
 export type CreateServiceAccountPayload = {
   name: string;
-  data_set_ids: number[];
   is_active: boolean;
   is_admin: boolean;
 }
@@ -40,7 +37,6 @@ export class ServiceAccountsApiClient extends BaseApiClient {
         id: item.id,
         email: item.email,
         dateCreated: item.date_joined,
-        dataSetIds: item.data_set_ids,
         isActive: item.is_active,
         isAdmin: item.is_admin
       }))
@@ -50,7 +46,6 @@ export class ServiceAccountsApiClient extends BaseApiClient {
   async createServiceAccount(serviceAccount: CreateServiceAccountParams): Promise<Token> {
     const payload: CreateServiceAccountPayload = {
       name: serviceAccount.name,
-      data_set_ids: serviceAccount.dataSetIds,
       is_active: serviceAccount.isActive,
       is_admin: serviceAccount.isAdmin
     };
@@ -67,7 +62,6 @@ export class ServiceAccountsApiClient extends BaseApiClient {
   async updateServiceAccount(id: number, serviceAccount: UpdateServiceAccountParams): Promise<Response> {
     const payload: UpdateServiceAccountPayload = {
       name: serviceAccount.name,
-      data_set_ids: serviceAccount.dataSetIds,
       is_active: serviceAccount.isActive,
       is_admin: serviceAccount.isAdmin
     };

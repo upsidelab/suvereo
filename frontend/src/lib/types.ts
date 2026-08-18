@@ -40,6 +40,7 @@ export type DataSet = {
   embeddingProvider: string;
   embeddingModel: string;
   embeddingVectorSize: number;
+  permissions: string[];
 }
 
 export type Product = {
@@ -64,6 +65,7 @@ export type Document = {
 export type Account = {
   email: string;
   isAdmin: boolean;
+  permissions: string[];
 }
 
 export type User = {
@@ -94,6 +96,7 @@ export type Conversation = {
   agent: Agent;
   history?: Message[];
   is_execution_conversation: boolean;
+  user_email: string;
 }
 
 export type Message = {
@@ -108,7 +111,57 @@ export type ServiceAccount = {
   isActive: boolean;
   isAdmin: boolean;
   dateCreated: string;
-  dataSetIds: number[];
+};
+
+export type GroupOption = {
+  id: number;
+  name: string;
+};
+
+export type GroupDetail = {
+  id: number;
+  name: string;
+  permissions: string[];
+};
+
+export type GroupMember = {
+  id: number;
+  email: string;
+  isServiceAccount: boolean;
+};
+
+export type DatasetRoleOption = {
+  id: number;
+  name: string;
+};
+
+export type DatasetRoleDetail = {
+  id: number;
+  name: string;
+  permissions: string[];
+};
+
+export type PermissionOption = {
+  code: string;
+  label: string;
+};
+
+export type PermissionEntity = {
+  entity: string;
+  label: string;
+  permissions: PermissionOption[];
+};
+
+export type DatasetRoleAssignment = {
+  id: number;
+  role: DatasetRoleOption;
+  user?: GroupMember;
+  group?: GroupOption;
+};
+
+export type DatasetAccess = {
+  users: DatasetRoleAssignment[];
+  groups: DatasetRoleAssignment[];
 };
 
 export type ProvidersConfig = {

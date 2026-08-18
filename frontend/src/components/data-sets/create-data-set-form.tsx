@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
-import { DataSet } from "@/lib/types.ts";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { DataSetForm } from "./data-set-form.tsx";
@@ -19,7 +18,7 @@ export function CreateDataSetForm({ isOnboarding = false }: CreateDataSetFormPro
   const submitLabel = isOnboarding ? "Continue" : "Create"
 
   const handleSubmit = async (values: DataSetFormSchema) => {
-    const createdDataSetId = await api.dataSets().createDataSet({ ...values, id: undefined } as DataSet, values.preconfigureAgents);
+    const createdDataSetId = await api.dataSets().createDataSet({ ...values }, values.preconfigureAgents);
     const dataSets = await api.dataSets().getDataSets();
     setDataSets(dataSets);
     setDataSetId(createdDataSetId);

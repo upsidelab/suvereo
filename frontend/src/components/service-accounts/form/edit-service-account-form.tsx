@@ -1,12 +1,10 @@
-import { useEffect } from "react";
 import { Form } from "@/components/ui/form.tsx";
 import { z } from "zod";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button.tsx";
 import { checkServiceNameAvailability } from "@/components/util/check-service-name-availability.tsx";
 import { DetailsFields } from "@/components/service-accounts/form/details-fields.tsx";
-import { DataSetsFields } from "@/components/service-accounts/form/data-sets-fields.tsx";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { ServiceAccount } from "@/lib/types.ts";
@@ -17,7 +15,6 @@ const api = new ApiClient(authenticationProviderInstance);
 const formSchema = z.object({
   oldName: z.string().trim(),
   name: z.string().trim().min(1),
-  dataSetIds: z.array(z.number()),
   isActive: z.boolean(),
   isAdmin: z.boolean(),
 }).refine(async (data) => data.name === data.oldName || await checkServiceNameAvailability(data.name), {
@@ -39,18 +36,10 @@ export function EditServiceAccountForm({ serviceAccount, onServiceAccountUpdated
     defaultValues: {
       name: oldName,
       oldName: oldName,
-      dataSetIds: serviceAccount.dataSetIds || [],
       isActive: serviceAccount.isActive,
       isAdmin: serviceAccount.isAdmin || false,
     }
   });
-  const isAdmin = useWatch({ control: form.control, name: "isAdmin" });
-
-  useEffect(() => {
-    if (isAdmin) {
-      form.setValue("dataSetIds", []);
-    }
-  }, [isAdmin, form]);
 
   const handleSubmit = async (values: CreateServiceAccountFormSchema) => {
     await api.serviceAccounts().updateServiceAccount(serviceAccount.id, values);
@@ -63,7 +52,6 @@ export function EditServiceAccountForm({ serviceAccount, onServiceAccountUpdated
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
           <DetailsFields form={form}/>
           <PermissionFields form={form}/>
-          {!isAdmin && <DataSetsFields form={form}/>}
           <Button type="submit">Update</Button>
         </form>
       </Form>
