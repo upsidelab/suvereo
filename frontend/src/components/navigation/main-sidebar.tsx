@@ -33,13 +33,16 @@ export function MainSidebar() {
   const canViewSources = hasDatasetPermission(PERMISSIONS.INTEGRATION.VIEW);
   const canUseExecutions = hasDatasetPermission(PERMISSIONS.AGENTIC_EXECUTION.CREATE)
     || hasDatasetPermission(PERMISSIONS.AGENTIC_EXECUTION.VIEW_ALL);
+  const canConverse = hasDatasetPermission(PERMISSIONS.CONVERSATION.CONVERSE);
+  const canViewAllConversations = hasDatasetPermission(PERMISSIONS.CONVERSATION.VIEW_ALL);
+  const canSeeAsk = canConverse || canViewAllConversations;
   const [entityTypes, setEntityTypes] = useState<EntityType[]>([]);
 
   useEffect(() => {
     api.entities().listTypes().then(setEntityTypes).catch(() => setEntityTypes([]));
   }, []);
 
-  const askItems: SidebarSectionItemProps[] = [
+  const converseItems: SidebarSectionItemProps[] = canConverse ? [
     ...(isLoadingAgents ? [] : availableAgents.map(agent => ({
       title: agent.name,
       link: `/data-sets/${dataSetId}/chat/new/${encodeURIComponent(agent.id)}`,
@@ -60,7 +63,11 @@ export function MainSidebar() {
         key: "configure-agent",
         icon: <Settings2Icon />
       }] : [])
-    ]),
+    ])
+  ] : [];
+
+  const askItems: SidebarSectionItemProps[] = [
+    ...converseItems,
     {
       title: "History",
       link: `/data-sets/${dataSetId}/history`,
@@ -160,7 +167,9 @@ export function MainSidebar() {
       <SidebarContent>
         {dataSetId !== null && (
           <>
-            <MainSidebarSection title="Ask" items={askItems} />
+            {canSeeAsk && (
+              <MainSidebarSection title="Ask" items={askItems} />
+            )}
             {configureItems.length > 0 && (
               <MainSidebarSection title="Configure" items={configureItems} />
             )}
