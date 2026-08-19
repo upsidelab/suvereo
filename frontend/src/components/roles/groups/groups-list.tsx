@@ -7,6 +7,7 @@ import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { GroupModal } from "@/components/roles/groups/group-modal.tsx";
 import { RevokeConfirmDialog } from "@/components/roles/revoke-confirm-dialog.tsx";
 import { ADMIN_ROLE, GlobalRole } from "@/components/roles/groups/admin-role.ts";
+import { ApiError } from "@/lib/api-error.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -15,15 +16,21 @@ export function GroupsList() {
   const isAdmin = !!account?.isAdmin;
   const [groups, setGroups] = useState<GlobalRole[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isAccessDenied, setIsAccessDenied] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [groupToDelete, setGroupToDelete] = useState<GlobalRole | null>(null);
 
   const load = useCallback(async () => {
     try {
       setGroups(await api.groups().getGroups());
+      setIsAccessDenied(false);
       setError(null);
-    } catch {
-      setError("You don't have access to the list of roles.");
+    } catch (loadError) {
+      if (loadError instanceof ApiError && loadError.response.status === 403) {
+        setIsAccessDenied(true);
+        return;
+      }
+      setError("Failed to load the list of roles.");
     }
   }, []);
 
@@ -54,6 +61,10 @@ export function GroupsList() {
   };
 
   const rows: GlobalRole[] = [ADMIN_ROLE, ...groups];
+
+  if (isAccessDenied) {
+    return <p className="text-sm text-destructive">You don't have access to the list of roles.</p>;
+  }
 
   return (
     <>

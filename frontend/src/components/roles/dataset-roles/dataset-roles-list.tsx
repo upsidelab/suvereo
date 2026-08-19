@@ -7,6 +7,7 @@ import { DatasetRoleOption } from "@/lib/types.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { DatasetRoleModal } from "@/components/roles/dataset-roles/dataset-role-modal.tsx";
 import { RevokeConfirmDialog } from "@/components/roles/revoke-confirm-dialog.tsx";
+import { ApiError } from "@/lib/api-error.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -15,15 +16,21 @@ export function DatasetRolesList() {
   const isAdmin = !!account?.isAdmin;
   const [roles, setRoles] = useState<DatasetRoleOption[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isAccessDenied, setIsAccessDenied] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [roleToDelete, setRoleToDelete] = useState<DatasetRoleOption | null>(null);
 
   const load = useCallback(async () => {
     try {
       setRoles(await api.datasetRoles().getDatasetRoles());
+      setIsAccessDenied(false);
       setError(null);
-    } catch {
-      setError("You don't have access to the list of dataset roles.");
+    } catch (loadError) {
+      if (loadError instanceof ApiError && loadError.response.status === 403) {
+        setIsAccessDenied(true);
+        return;
+      }
+      setError("Failed to load the list of dataset roles.");
     }
   }, []);
 
@@ -53,6 +60,10 @@ export function DatasetRolesList() {
     setIsDeleteDialogOpen(false);
     setRoleToDelete(null);
   };
+
+  if (isAccessDenied) {
+    return <p className="text-sm text-destructive">You don't have access to the list of dataset roles.</p>;
+  }
 
   return (
     <>
