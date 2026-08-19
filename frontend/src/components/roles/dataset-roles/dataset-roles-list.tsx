@@ -16,6 +16,7 @@ export function DatasetRolesList() {
   const isAdmin = !!account?.isAdmin;
   const [roles, setRoles] = useState<DatasetRoleOption[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isAccessDenied, setIsAccessDenied] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [roleToDelete, setRoleToDelete] = useState<DatasetRoleOption | null>(null);
@@ -31,6 +32,8 @@ export function DatasetRolesList() {
         return;
       }
       setError("Failed to load the list of dataset roles.");
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
@@ -60,6 +63,10 @@ export function DatasetRolesList() {
     setIsDeleteDialogOpen(false);
     setRoleToDelete(null);
   };
+
+  if (isLoading) {
+    return null;
+  }
 
   if (isAccessDenied) {
     return <p className="text-sm text-destructive">You don't have access to the list of dataset roles.</p>;

@@ -16,6 +16,7 @@ export function GroupsList() {
   const isAdmin = !!account?.isAdmin;
   const [groups, setGroups] = useState<GlobalRole[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isAccessDenied, setIsAccessDenied] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [groupToDelete, setGroupToDelete] = useState<GlobalRole | null>(null);
@@ -31,6 +32,8 @@ export function GroupsList() {
         return;
       }
       setError("Failed to load the list of roles.");
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
@@ -61,6 +64,10 @@ export function GroupsList() {
   };
 
   const rows: GlobalRole[] = [ADMIN_ROLE, ...groups];
+
+  if (isLoading) {
+    return null;
+  }
 
   if (isAccessDenied) {
     return <p className="text-sm text-destructive">You don't have access to the list of roles.</p>;

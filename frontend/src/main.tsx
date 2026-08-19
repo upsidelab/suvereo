@@ -33,6 +33,14 @@ const GLOBAL_MANAGE_ROUTES = [
   { path: "/roles", permissions: [PERMISSIONS.GROUP.VIEW, PERMISSIONS.DATASET_ROLE.VIEW] },
 ];
 
+const requireAnyPermission = (permissions: string[]) => async () => {
+  const accountData = await api.getAccount();
+  if (!permissions.some(permission => accountData.permissions.includes(permission))) {
+    return redirect("/");
+  }
+  return null;
+};
+
 const protectedLoginLoader = async ({ request }: LoaderFunctionArgs) => {
   if (!authenticationProviderInstance.isAuthenticated()) {
     return redirect("/login");
@@ -123,7 +131,8 @@ const router = createBrowserRouter([
       },
       {
         path: '/roles',
-        element: <RolesIndex />
+        element: <RolesIndex />,
+        loader: requireAnyPermission([PERMISSIONS.GROUP.VIEW, PERMISSIONS.DATASET_ROLE.VIEW])
       },
       {
         path: '/data-sets/:dataSetId/agents',
