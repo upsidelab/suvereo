@@ -77,7 +77,7 @@ export function DatasetRolesList() {
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
-            <TableHead className="w-48">Action</TableHead>
+            <TableHead className={isAdmin ? "w-48" : "w-24"}>Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

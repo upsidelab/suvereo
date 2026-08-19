@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.tsx";
-import { Plus, RefreshCw, Settings, Trash2 } from "lucide-react";
+import { Eye, Plus, RefreshCw, Settings, Trash2 } from "lucide-react";
 import { ButtonWithTooltip } from "@/components/ui/button-with-tooltip.tsx";
 import { AddEditIntegrationModal } from "@/components/integrations/add-edit-integration-modal.tsx";
 
@@ -39,7 +39,7 @@ export function IntegrationList({ dataSetId }: IntegrationListProps) {
   const canChangeIntegrations = hasDatasetPermission(PERMISSIONS.INTEGRATION.CHANGE, dataSetId);
   const canDeleteIntegrations = hasDatasetPermission(PERMISSIONS.INTEGRATION.DELETE, dataSetId);
   const canSyncIntegrations = hasDatasetPermission(PERMISSIONS.INTEGRATION.SYNC, dataSetId);
-  const canManageIntegrations = canChangeIntegrations || canDeleteIntegrations || canSyncIntegrations;
+  const [isViewingIntegration, setIsViewingIntegration] = useState(false);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [integrationTypes, setIntegrationTypes] = useState<IntegrationType[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -71,12 +71,21 @@ export function IntegrationList({ dataSetId }: IntegrationListProps) {
   const integrationTypeNames = [...new Set(integrationTypes.map(t => t.integration_type_name))];
 
   const handleAdd = (typeName: string) => {
+    setIsViewingIntegration(false);
     setIntegrationToEdit(null);
     setModalTypeName(typeName);
     setModalOpen(true);
   };
 
   const handleEdit = (integration: Integration) => {
+    setIsViewingIntegration(false);
+    setIntegrationToEdit(integration);
+    setModalTypeName(undefined);
+    setModalOpen(true);
+  };
+
+  const handleView = (integration: Integration) => {
+    setIsViewingIntegration(true);
     setIntegrationToEdit(integration);
     setModalTypeName(undefined);
     setModalOpen(true);
@@ -142,7 +151,7 @@ export function IntegrationList({ dataSetId }: IntegrationListProps) {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Type</TableHead>
-              {canManageIntegrations && <TableHead className="text-right">Actions</TableHead>}
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -152,42 +161,50 @@ export function IntegrationList({ dataSetId }: IntegrationListProps) {
                 <TableCell>
                   <IntegrationTypeBadge typeName={integration.integration_type_name} />
                 </TableCell>
-                {canManageIntegrations && (
-                  <TableCell className="text-right">
-                    <div className="flex justify-end space-x-2">
-                      {integration.configurable && canChangeIntegrations && (
-                        <ButtonWithTooltip
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(integration)}
-                          tooltip="Edit configuration"
-                        >
-                          <Settings className="h-4 w-4" />
-                        </ButtonWithTooltip>
-                      )}
-                      {integration.syncable && canSyncIntegrations && (
-                        <ButtonWithTooltip
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleSync(integration)}
-                          tooltip="Synchronize data"
-                        >
-                          <RefreshCw className="h-4 w-4" />
-                        </ButtonWithTooltip>
-                      )}
-                      {canDeleteIntegrations && (
-                        <ButtonWithTooltip
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteClick(integration)}
-                          tooltip="Delete"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </ButtonWithTooltip>
-                      )}
-                    </div>
-                  </TableCell>
-                )}
+                <TableCell className="text-right">
+                  <div className="flex justify-end space-x-2">
+                    {integration.configurable && !canChangeIntegrations && (
+                      <ButtonWithTooltip
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleView(integration)}
+                        tooltip="View configuration"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </ButtonWithTooltip>
+                    )}
+                    {integration.configurable && canChangeIntegrations && (
+                      <ButtonWithTooltip
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(integration)}
+                        tooltip="Edit configuration"
+                      >
+                        <Settings className="h-4 w-4" />
+                      </ButtonWithTooltip>
+                    )}
+                    {integration.syncable && canSyncIntegrations && (
+                      <ButtonWithTooltip
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleSync(integration)}
+                        tooltip="Synchronize data"
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                      </ButtonWithTooltip>
+                    )}
+                    {canDeleteIntegrations && (
+                      <ButtonWithTooltip
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteClick(integration)}
+                        tooltip="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </ButtonWithTooltip>
+                    )}
+                  </div>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -209,6 +226,7 @@ export function IntegrationList({ dataSetId }: IntegrationListProps) {
         onSuccess={loadIntegrations}
         integrationTypeName={modalTypeName}
         integration={integrationToEdit}
+        readOnly={isViewingIntegration}
       />
 
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

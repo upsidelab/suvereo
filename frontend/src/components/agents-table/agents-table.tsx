@@ -2,7 +2,7 @@ import { useState } from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { useApplicationContext } from "@/lib/use-application-context";
-import { AlertTriangle, Plus, Settings, Trash2 } from "lucide-react";
+import { AlertTriangle, Eye, Plus, Settings, Trash2 } from "lucide-react";
 
 import { DeleteConfirmationModal } from "./delete-confirmation-modal";
 import { useAgentTypes } from "./hooks/use-agent-types";
@@ -24,12 +24,13 @@ export default function AgentsTable() {
   const canAddAgents = hasDatasetPermission(PERMISSIONS.AGENT.ADD);
   const canChangeAgents = hasDatasetPermission(PERMISSIONS.AGENT.CHANGE);
   const canDeleteAgents = hasDatasetPermission(PERMISSIONS.AGENT.DELETE);
-  const { agentTypes, loadingTypes } = useAgentTypes();
+  const { agentTypes, loadingTypes } = useAgentTypes(canAddAgents || canChangeAgents);
 
   const [isAccessDenied, setIsAccessDenied] = useState(false);
   
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
+  const [isViewingAgent, setIsViewingAgent] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
 
@@ -56,11 +57,19 @@ export default function AgentsTable() {
 
   const openNew = () => {
     setEditingAgent(null);
+    setIsViewingAgent(false);
     setFormModalOpen(true);
   };
 
   const openEdit = (agent: Agent) => {
     setEditingAgent(agent);
+    setIsViewingAgent(false);
+    setFormModalOpen(true);
+  };
+
+  const openView = (agent: Agent) => {
+    setEditingAgent(agent);
+    setIsViewingAgent(true);
     setFormModalOpen(true);
   };
 
@@ -78,6 +87,7 @@ export default function AgentsTable() {
     if (!open) {
       setFormModalOpen(false);
       setEditingAgent(null);
+      setIsViewingAgent(false);
     }
   };
 
@@ -134,10 +144,20 @@ export default function AgentsTable() {
                 )}
               </TableCell>
               <TableCell className={"w-1/4"}>
-                {agentTypes.find(t => t.key === item.agent_type)?.name || item.agent_type || 'Unknown'}
+                {item.agent_type_name || agentTypes.find(t => t.key === item.agent_type)?.name || item.agent_type || 'Unknown'}
               </TableCell>
               <TableCell className="text-right w-1">
                 <div className="flex justify-end space-x-2">
+                  {!canChangeAgents && (
+                    <ButtonWithTooltip
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openView(item)}
+                      tooltip="View configuration"
+                    >
+                      <Eye className="h-4 w-4"/>
+                    </ButtonWithTooltip>
+                  )}
                   {canChangeAgents && (
                     <ButtonWithTooltip
                       variant="outline"
@@ -173,6 +193,7 @@ export default function AgentsTable() {
         loadingTypes={loadingTypes}
         dataSetId={dataSetId}
         onSuccess={handleFormSuccess}
+        readOnly={isViewingAgent}
       />
 
       <DeleteConfirmationModal

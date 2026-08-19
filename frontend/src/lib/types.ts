@@ -28,6 +28,7 @@ export type Integration = {
   syncable: boolean;
   configurable: boolean;
   config: Record<string, unknown>;
+  config_schema: unknown;
   created_at: string;
   updated_at: string;
 };
@@ -80,6 +81,7 @@ export type Agent = {
   name: string;
   description: string;
   agent_type: string;
+  agent_type_name: string;
   created_at: string;
   updated_at: string;
   deleted_at: string;
@@ -191,6 +193,7 @@ export type ExtraArgDetail = {
   type: TypeInfo;
   description?: string | null;
   title?: string | null;
+  required?: boolean;
 };
 
 export type AgentConfig = {
@@ -241,8 +244,10 @@ export type AgentDetails = {
   description: string;
   file_upload: boolean;
   config: AgentConfig;
+  config_schema: AgentConfig;
   dataset: number;
   agent_type: string;
+  agent_type_name: string;
   created_at: string;
   updated_at: string;
 };

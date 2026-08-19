@@ -12,6 +12,7 @@ interface FormModalProps {
   disabled?: boolean;
   loading?: boolean;
   loadingText?: string;
+  readOnly?: boolean;
   children: ReactNode;
   dependencies?: any[]; // For scroll effect dependencies
 }
@@ -27,6 +28,7 @@ export function FormModal({
   disabled = false,
   loading = false,
   loadingText = "Loading...",
+  readOnly = false,
   children,
   dependencies = []
 }: FormModalProps) {
@@ -71,6 +73,7 @@ export function FormModal({
       disabled={disabled}
       loading={loading}
       loadingText={loadingText}
+      readOnly={readOnly}
     >
       <div className="relative">
         <div 

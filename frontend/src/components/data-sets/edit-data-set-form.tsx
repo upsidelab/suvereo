@@ -16,6 +16,7 @@ const api = new ApiClient(authenticationProviderInstance);
 
 export function EditDataSetForm() {
   const { setDataSets, hasPermission } = useApplicationContext()!;
+  const canChangeDataSets = hasPermission(PERMISSIONS.DATASET.CHANGE);
   const canDeleteDataSets = hasPermission(PERMISSIONS.DATASET.DELETE);
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -107,6 +108,7 @@ export function EditDataSetForm() {
         onSubmit={handleSubmit}
         submitButtonText="Update"
         disabledFields={['embeddingProvider', 'embeddingModel', 'embeddingVectorSize']}
+        readOnly={!canChangeDataSets}
       />
       {canDeleteDataSets &&
         <div className="mt-8 border-t pt-6">

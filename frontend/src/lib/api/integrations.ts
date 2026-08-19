@@ -5,6 +5,13 @@ import { ApiError } from "@/lib/api-error.ts";
 export class IntegrationsApiClient extends BaseApiClient {
   async listTypes(): Promise<IntegrationType[]> {
     const response = await fetch(`${this.apiBase}/api/integration-types/`, this._requestConfiguration());
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new ApiError(`Failed to list integration types: ${response.statusText}`, {
+        data: errorData,
+        status: response.status,
+      });
+    }
     return await response.json() as IntegrationType[];
   }
 

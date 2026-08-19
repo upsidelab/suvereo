@@ -51,17 +51,19 @@ export function UsersList() {
           loadItems={loadUsers}
           itemsReloadDependencies={version}
           noItemsMessage="No users"
-          tableHeaders={["Email", "Active", "Admin", "Actions"]}
+          tableHeaders={canChangeUsers ? ["Email", "Active", "Admin", "Actions"] : ["Email", "Active", "Admin"]}
           tableRow={(item, index) => {
             return (
               <TableRow key={index}>
-                <TableCell width="70%">{item.email}</TableCell>
+                <TableCell width={canChangeUsers ? "70%" : "90%"}>{item.email}</TableCell>
                 <TableCell width="5%">{item.isActive && <Check size={16} />}</TableCell>
                 <TableCell width="5%">{item.isAdmin && <Check size={16} />}</TableCell>
-                <TableCell className="flex space-x-4" width="20%">
-                  {canChangeUsers && <EditUserModal user={item} onUserUpdated={() => setVersion(version + 1)} />}
-                  {canChangeUsers && <ChangePasswordModal user={item} onUserUpdated={() => setVersion(version + 1)} />}
-                </TableCell>
+                {canChangeUsers && (
+                  <TableCell className="flex space-x-4" width="20%">
+                    <EditUserModal user={item} onUserUpdated={() => setVersion(version + 1)} />
+                    <ChangePasswordModal user={item} onUserUpdated={() => setVersion(version + 1)} />
+                  </TableCell>
+                )}
               </TableRow>
             )
           }}

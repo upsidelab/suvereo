@@ -28,6 +28,20 @@ interface DataSetFormProps {
   submitButtonText: string;
   isOnboarding?: boolean;
   disabledFields?: string[];
+  readOnly?: boolean;
+}
+
+function ReadOnlyMessage() {
+  return (
+    <Alert className="mb-4">
+      <div className="flex items-start gap-2">
+        <InfoIcon className="h-4 w-4 mt-0.5 flex-shrink-0" />
+        <AlertDescription>
+          You can view this data set's configuration, but not change it.
+        </AlertDescription>
+      </div>
+    </Alert>
+  );
 }
 
 // Helper component to show disabled field message
@@ -44,10 +58,11 @@ function DisabledFieldMessage() {
   );
 }
 
-export function DataSetForm({ initialData, onSubmit, submitButtonText, isOnboarding = false, disabledFields = [] }: DataSetFormProps) {
+export function DataSetForm({ initialData, onSubmit, submitButtonText, isOnboarding = false, disabledFields = [], readOnly = false }: DataSetFormProps) {
   const [providersConfig, setProvidersConfig] = useState<ProvidersConfig | undefined>(undefined);
   const [languageModelNames, setLanguageModelNames] = useState<string[] | undefined>(undefined);
   const [embeddingModelsConfig, setEmbeddingModelsConfig] = useState<EmbeddingModelsConfig | undefined>(undefined);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const form = useForm<DataSetFormSchema>({
     resolver: zodResolver(formSchema),
@@ -64,19 +79,26 @@ export function DataSetForm({ initialData, onSubmit, submitButtonText, isOnboard
 
   useEffect(() => {
     const loadProvidersConfig = async () => {
-      const result = await api.config().getAvailableProviders();
-      setProvidersConfig(result);
-      
-      // Set default values if not already set
-      if (!form.getValues('languageModelProvider') && result.languageModelProviders.length > 0) {
-        form.setValue("languageModelProvider", result.languageModelProviders[0]);
-      }
-      if (!form.getValues('embeddingProvider') && result.embeddingProviders.length > 0) {
-        form.setValue("embeddingProvider", result.embeddingProviders[0]);
+      try {
+        const result = await api.config().getAvailableProviders();
+        setProvidersConfig(result);
+
+        // Set default values if not already set
+        if (!form.getValues('languageModelProvider') && result.languageModelProviders.length > 0) {
+          form.setValue("languageModelProvider", result.languageModelProviders[0]);
+        }
+        if (!form.getValues('embeddingProvider') && result.embeddingProviders.length > 0) {
+          form.setValue("embeddingProvider", result.embeddingProviders[0]);
+        }
+      } catch (error) {
+        console.error("Failed to load the available providers:", error);
+        setLoadError("Failed to load the available providers.");
       }
     }
 
-    loadProvidersConfig();
+    if (!readOnly) {
+      loadProvidersConfig();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -86,16 +108,23 @@ export function DataSetForm({ initialData, onSubmit, submitButtonText, isOnboard
     const loadLanguageModels = async () => {
       if (languageModelProvider) {
         setLanguageModelNames(undefined);
-        const result = await api.config().getLanguageModelsForProvider(languageModelProvider);
-        setLanguageModelNames(result);
-        
-        // Set default value if not already set
-        if (!form.getValues('languageModel') && result.length > 0) {
-          form.setValue("languageModel", result[0]);
+        try {
+          const result = await api.config().getLanguageModelsForProvider(languageModelProvider);
+          setLanguageModelNames(result);
+
+          // Set default value if not already set
+          if (!form.getValues('languageModel') && result.length > 0) {
+            form.setValue("languageModel", result[0]);
+          }
+        } catch (error) {
+          console.error("Failed to load the language models:", error);
+          setLoadError("Failed to load the language models for this provider.");
         }
       }
     }
-    loadLanguageModels();
+    if (!readOnly) {
+      loadLanguageModels();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [languageModelProvider]);
 
@@ -105,16 +134,23 @@ export function DataSetForm({ initialData, onSubmit, submitButtonText, isOnboard
     const loadEmbeddingModels = async () => {
       if (embeddingProvider) {
         setEmbeddingModelsConfig(undefined);
-        const result = await api.config().getEmbeddingModelsForProvider(embeddingProvider);
-        setEmbeddingModelsConfig(result);
+        try {
+          const result = await api.config().getEmbeddingModelsForProvider(embeddingProvider);
+          setEmbeddingModelsConfig(result);
 
-        // Set default value if not already set
-        if (!form.getValues('embeddingModel') && result.models.length > 0) {
-          form.setValue("embeddingModel", result.models[0]);
+          // Set default value if not already set
+          if (!form.getValues('embeddingModel') && result.models.length > 0) {
+            form.setValue("embeddingModel", result.models[0]);
+          }
+        } catch (error) {
+          console.error("Failed to load the embedding models:", error);
+          setLoadError("Failed to load the embedding models for this provider.");
         }
       }
     }
-    loadEmbeddingModels();
+    if (!readOnly) {
+      loadEmbeddingModels();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [embeddingProvider]);
 
@@ -131,6 +167,15 @@ export function DataSetForm({ initialData, onSubmit, submitButtonText, isOnboard
 
   const [advancedOpen, setAdvancedOpen] = useState<boolean>(false);
 
+  // The provider and model catalogs need the change permission, so read-only offers the one value
+  // the data set already holds.
+  const optionsFor = (current: string | undefined, available: string[] | undefined) =>
+    (readOnly ? [current].filter((value): value is string => !!value) : available);
+  const languageModelProviderOptions = optionsFor(initialData?.languageModelProvider, providersConfig?.languageModelProviders);
+  const languageModelOptions = optionsFor(initialData?.languageModel, languageModelNames);
+  const embeddingProviderOptions = optionsFor(initialData?.embeddingProvider, providersConfig?.embeddingProviders);
+  const embeddingModelOptions = optionsFor(initialData?.embeddingModel, embeddingModelsConfig?.models);
+
   const handleSubmit = async (values: DataSetFormSchema) => {
     await onSubmit(values);
   };
@@ -138,7 +183,12 @@ export function DataSetForm({ initialData, onSubmit, submitButtonText, isOnboard
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)}>
-        {disabledFields.length > 0 && <DisabledFieldMessage />}
+        {loadError && (
+          <Alert className="mb-4">
+            <AlertDescription>{loadError}</AlertDescription>
+          </Alert>
+        )}
+        {readOnly ? <ReadOnlyMessage /> : disabledFields.length > 0 && <DisabledFieldMessage />}
         <div className="space-y-6">
           {!isOnboarding &&
             <FormField
@@ -148,7 +198,7 @@ export function DataSetForm({ initialData, onSubmit, submitButtonText, isOnboard
                 <FormItem>
                   <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Name of the data set" {...field}/>
+                    <Input placeholder="Name of the data set" readOnly={readOnly} {...field}/>
                   </FormControl>
                   <FormDescription>
                     This is the name of the data set visible to your users
@@ -168,14 +218,14 @@ export function DataSetForm({ initialData, onSubmit, submitButtonText, isOnboard
                   <FormItem>
                     <FormLabel className="hidden">Language Model Provider</FormLabel>
                     <Select value={field.value} onValueChange={field.onChange} defaultValue={field.value}>
-                      <SelectTrigger disabled={!providersConfig}>
+                      <SelectTrigger disabled={readOnly || !providersConfig}>
                         <SelectValue placeholder="Loading..."/>
                       </SelectTrigger>
                       <SelectContent>
                         {
-                          providersConfig?.languageModelProviders &&
+                          languageModelProviderOptions &&
                           <>
-                            {providersConfig.languageModelProviders.map((provider) => (
+                            {languageModelProviderOptions.map((provider) => (
                               <SelectItem key={provider} value={provider}>{provider}</SelectItem>
                             ))}
                           </>
@@ -194,14 +244,14 @@ export function DataSetForm({ initialData, onSubmit, submitButtonText, isOnboard
                   <FormItem>
                     <FormLabel className="hidden">Language Model</FormLabel>
                     <Select value={field.value} onValueChange={field.onChange} defaultValue={field.value}>
-                      <SelectTrigger disabled={!languageModelNames}>
+                      <SelectTrigger disabled={readOnly || !languageModelNames}>
                           <SelectValue placeholder="Loading..."/>
                       </SelectTrigger>
                       <SelectContent>
                         {
-                          languageModelNames &&
+                          languageModelOptions &&
                           <>
-                            {languageModelNames.map((modelName) => (
+                            {languageModelOptions.map((modelName) => (
                               <SelectItem key={modelName} value={modelName}>{modelName}</SelectItem>
                             ))}
                           </>
@@ -231,16 +281,16 @@ export function DataSetForm({ initialData, onSubmit, submitButtonText, isOnboard
                   <FormItem>
                     <FormLabel>Embedding Provider</FormLabel>
                     <Select value={field.value} onValueChange={field.onChange} defaultValue={field.value}>
-                      <SelectTrigger disabled={!providersConfig || disabledFields.includes('embeddingProvider')}>
+                      <SelectTrigger disabled={readOnly || !providersConfig || disabledFields.includes('embeddingProvider')}>
                         <FormControl>
                           <SelectValue placeholder="Select a provider for embeddings"/>
                         </FormControl>
                       </SelectTrigger>
                       <SelectContent>
                         {
-                          providersConfig?.embeddingProviders &&
+                          embeddingProviderOptions &&
                           <>
-                          {providersConfig.embeddingProviders.map((provider) => (
+                          {embeddingProviderOptions.map((provider) => (
                             <SelectItem key={provider} value={provider}>{provider}</SelectItem>
                           ))}
                           </>
@@ -258,16 +308,16 @@ export function DataSetForm({ initialData, onSubmit, submitButtonText, isOnboard
                   <FormItem>
                     <FormLabel>Embedding Model</FormLabel>
                     <Select value={field.value} onValueChange={field.onChange} defaultValue={field.value}>
-                      <SelectTrigger disabled={!embeddingModelsConfig || disabledFields.includes('embeddingModel')}>
+                      <SelectTrigger disabled={readOnly || !embeddingModelsConfig || disabledFields.includes('embeddingModel')}>
                         <FormControl>
                           <SelectValue placeholder="Select a model for embeddings"/>
                         </FormControl>
                       </SelectTrigger>
                       <SelectContent>
                         {
-                          embeddingModelsConfig &&
+                          embeddingModelOptions &&
                           <>
-                            {embeddingModelsConfig.models.map((modelName) => (
+                            {embeddingModelOptions.map((modelName) => (
                               <SelectItem key={modelName} value={modelName}>{modelName}</SelectItem>
                             ))}
                           </>
@@ -281,7 +331,7 @@ export function DataSetForm({ initialData, onSubmit, submitButtonText, isOnboard
               {(() => {
                 const allowedSizes = embeddingModelsConfig?.vectorSizeConstraints[embeddingModel ?? ""];
                 const isConstrained = allowedSizes && allowedSizes.length > 0;
-                const isDisabled = disabledFields.includes('embeddingVectorSize');
+                const isDisabled = readOnly || disabledFields.includes('embeddingVectorSize');
                 return (
                   <FormField
                     control={form.control}
@@ -306,7 +356,7 @@ export function DataSetForm({ initialData, onSubmit, submitButtonText, isOnboard
                               </SelectContent>
                             </Select>
                           ) : (
-                            <Input {...field} />
+                            <Input readOnly={readOnly} {...field} />
                           )}
                         </FormControl>
                         <FormDescription>
@@ -322,7 +372,7 @@ export function DataSetForm({ initialData, onSubmit, submitButtonText, isOnboard
             </div>
           </CollapsibleContent>
         </Collapsible>
-        <Button type="submit">{submitButtonText}</Button>
+        {!readOnly && <Button type="submit">{submitButtonText}</Button>}
       </form>
     </Form>
   )

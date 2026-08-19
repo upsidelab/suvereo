@@ -51,23 +51,25 @@ export function ServiceAccountsList() {
           loadItems={loadServiceAccounts}
           itemsReloadDependencies={version}
           noItemsMessage="No service accounts"
-          tableHeaders={["Name", "Date Created", "Active", "Admin", "Actions"]}
+          tableHeaders={canChangeServiceAccounts
+            ? ["Name", "Date Created", "Active", "Admin", "Actions"]
+            : ["Name", "Date Created", "Active", "Admin"]}
           tableRow={(item, index) => {
             return (
               <TableRow key={index}>
-                <TableCell width="60%">{item.email}</TableCell>
+                <TableCell width={canChangeServiceAccounts ? "60%" : "80%"}>{item.email}</TableCell>
                 <TableCell width="10%">{new Date(item.dateCreated).toLocaleDateString()}</TableCell>
                 <TableCell width="5%">{item.isActive && <Check size={16} />}</TableCell>
                 <TableCell width="5%">{item.isAdmin && <Check size={16} />}</TableCell>
-                <TableCell className="flex space-x-4" width="20%">
-                  {canChangeServiceAccounts &&
+                {canChangeServiceAccounts && (
+                  <TableCell className="flex space-x-4" width="20%">
                     <EditServiceAccountModal
                       serviceAccount={item}
                       onServiceAccountUpdated={() => setVersion(version + 1)}
                     />
-                  }
-                  {canChangeServiceAccounts && <TokenResetModal serviceAccount={item} />}
-                </TableCell>
+                    <TokenResetModal serviceAccount={item} />
+                  </TableCell>
+                )}
               </TableRow>
             )
           }}

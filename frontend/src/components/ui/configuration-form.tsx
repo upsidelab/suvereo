@@ -42,6 +42,7 @@ export function ConfigurationForm({
               value={currentValue}
               onChange={(value) => handleFieldChange(key, value)}
               error={error}
+              required={!!schema.required}
             />
           </div>
         );

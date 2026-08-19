@@ -15,6 +15,7 @@ interface ConfigurationModalProps {
   disabled?: boolean;
   loading?: boolean;
   loadingText?: string;
+  readOnly?: boolean;
 }
 
 export function ConfigurationModal({
@@ -29,7 +30,8 @@ export function ConfigurationModal({
   submitting,
   disabled = false,
   loading = false,
-  loadingText = "Loading..."
+  loadingText = "Loading...",
+  readOnly = false
 }: ConfigurationModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -50,11 +52,13 @@ export function ConfigurationModal({
         
         <DialogFooter className="flex-shrink-0 gap-y-2">
           <Button onClick={onCancel} disabled={submitting}>
-            {cancelLabel}
+            {readOnly ? "Close" : cancelLabel}
           </Button>
-          <Button disabled={disabled || submitting} onClick={onSubmit}>
-            {submitting ? "Saving..." : submitLabel}
-          </Button>
+          {!readOnly && (
+            <Button disabled={disabled || submitting} onClick={onSubmit}>
+              {submitting ? "Saving..." : submitLabel}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

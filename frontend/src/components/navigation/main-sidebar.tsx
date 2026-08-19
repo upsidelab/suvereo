@@ -27,7 +27,12 @@ import { PERMISSIONS } from "@/lib/permissions.ts";
 const api = new ApiClient(authenticationProviderInstance);
 
 export function MainSidebar() {
-  const { account, dataSetId, dataSets, isLoadingAgents, availableAgents, hasPermission } = useApplicationContext()!;
+  const { account, dataSetId, dataSets, isLoadingAgents, availableAgents, hasPermission, hasDatasetPermission } = useApplicationContext()!;
+  const canViewAgents = hasDatasetPermission(PERMISSIONS.AGENT.VIEW);
+  const canAddAgents = hasDatasetPermission(PERMISSIONS.AGENT.ADD);
+  const canViewSources = hasDatasetPermission(PERMISSIONS.INTEGRATION.VIEW);
+  const canUseExecutions = hasDatasetPermission(PERMISSIONS.AGENTIC_EXECUTION.CREATE)
+    || hasDatasetPermission(PERMISSIONS.AGENTIC_EXECUTION.VIEW_ALL);
   const [entityTypes, setEntityTypes] = useState<EntityType[]>([]);
 
   useEffect(() => {
@@ -49,12 +54,12 @@ export function MainSidebar() {
         icon: <BotMessageSquareIcon />,
         disabled: true
       },
-      {
+      ...(canAddAgents ? [{
         title: "Add Agent",
         link: `/data-sets/${dataSetId}/agents?action=add`,
         key: "configure-agent",
         icon: <Settings2Icon />
-      }
+      }] : [])
     ]),
     {
       title: "History",
@@ -120,24 +125,24 @@ export function MainSidebar() {
   ];
 
   const configureItems: SidebarSectionItemProps[] = [
-    {
+    ...(canViewAgents ? [{
       title: "Agents",
       link: `/data-sets/${dataSetId}/agents`,
       key: "agents",
       icon: <BotMessageSquareIcon />
-    },
-    {
+    }] : []),
+    ...(canUseExecutions ? [{
       title: "Agentic Executions",
       link: `/data-sets/${dataSetId}/agentic-executions`,
       key: "agentic-executions",
       icon: <PlayIcon />
-    },
-    {
+    }] : []),
+    ...(canViewSources ? [{
       title: "Integrations",
       link: `/data-sets/${dataSetId}/integrations`,
       key: "integrations",
       icon: <LinkIcon />
-    },
+    }] : []),
   ];
 
   const catalogItems: SidebarSectionItemProps[] = entityTypes.map(entityType => ({
@@ -156,7 +161,9 @@ export function MainSidebar() {
         {dataSetId !== null && (
           <>
             <MainSidebarSection title="Ask" items={askItems} />
-            <MainSidebarSection title="Configure" items={configureItems} />
+            {configureItems.length > 0 && (
+              <MainSidebarSection title="Configure" items={configureItems} />
+            )}
             {catalogItems.length > 0 && (
               <MainSidebarSection title="Catalog" items={catalogItems} />
             )}
