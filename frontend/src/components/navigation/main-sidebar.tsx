@@ -153,10 +153,14 @@ export function MainSidebar() {
         <DataSetSelector />
       </SidebarHeader>
       <SidebarContent>
-        <MainSidebarSection title="Ask" items={askItems} />
-        <MainSidebarSection title="Configure" items={configureItems} />
-        {catalogItems.length > 0 && (
-          <MainSidebarSection title="Catalog" items={catalogItems} />
+        {dataSetId !== null && (
+          <>
+            <MainSidebarSection title="Ask" items={askItems} />
+            <MainSidebarSection title="Configure" items={configureItems} />
+            {catalogItems.length > 0 && (
+              <MainSidebarSection title="Catalog" items={catalogItems} />
+            )}
+          </>
         )}
         {account && hasManageAccess && (
           <MainSidebarSection className="mt-auto" title="Manage" items={manageItems} />

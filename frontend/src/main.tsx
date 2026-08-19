@@ -2,7 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
-import { createBrowserRouter, redirect, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, LoaderFunctionArgs, redirect, RouterProvider } from "react-router-dom";
 import { ChatHistory } from "@/pages/data-sets/(id)/history.tsx";
 import { Chat } from "@/pages/data-sets/(id)/chat/index.tsx";
 import { LoginPage } from "@/pages/login.tsx";
@@ -27,7 +27,13 @@ import { PERMISSIONS } from "@/lib/permissions.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 
-const protectedLoginLoader = async () => {
+const GLOBAL_MANAGE_ROUTES = [
+  { path: "/users", permissions: [PERMISSIONS.USER.VIEW] },
+  { path: "/service-accounts", permissions: [PERMISSIONS.SERVICE_ACCOUNT.VIEW] },
+  { path: "/roles", permissions: [PERMISSIONS.GROUP.VIEW, PERMISSIONS.DATASET_ROLE.VIEW] },
+];
+
+const protectedLoginLoader = async ({ request }: LoaderFunctionArgs) => {
   if (!authenticationProviderInstance.isAuthenticated()) {
     return redirect("/login");
   }
@@ -41,8 +47,18 @@ const protectedLoginLoader = async () => {
     const accountData = await api.getAccount();
     if (accountData.permissions.includes(PERMISSIONS.DATASET.ADD)) {
       return redirect("/onboarding");
-    } else {
+    }
+
+    const manageRoutes = GLOBAL_MANAGE_ROUTES.filter(
+      route => route.permissions.some(permission => accountData.permissions.includes(permission))
+    );
+    if (manageRoutes.length === 0) {
       return redirect("/no-data-sets");
+    }
+
+    const { pathname } = new URL(request.url);
+    if (!manageRoutes.some(route => pathname.startsWith(route.path))) {
+      return redirect(manageRoutes[0].path);
     }
   }
 
