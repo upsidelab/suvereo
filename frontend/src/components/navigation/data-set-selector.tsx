@@ -12,9 +12,12 @@ import logoUrl from "@/assets/logo.png";
 import logoSvgUrl from '@/assets/logo.svg';
 import { Separator } from "@/components/ui/separator.tsx";
 import { useNavigate, useLocation } from "react-router-dom";
+import { PERMISSIONS } from "@/lib/permissions.ts";
 
 export function DataSetSelector() {
-  const { dataSets, dataSetId, setDataSetId, account } = useApplicationContext()!;
+  const { dataSets, dataSetId, setDataSetId, hasPermission } = useApplicationContext()!;
+  const canAddDataSets = hasPermission(PERMISSIONS.DATASET.ADD);
+  const canManageDataSets = dataSets.length > 0;
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -78,25 +81,29 @@ export function DataSetSelector() {
           ))
         )}
         </div>
-        {account && account.isAdmin &&
+        {(canAddDataSets || canManageDataSets) &&
           <>
             <Separator className="my-2"/>
-            <DropdownMenuItem
-              key="new"
-              onClick={() => navigate('/data-sets/new')}
-              className="gap-2 px-1.5"
-            >
-              <PlusCircleIcon className="size-4" />
-              New
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              key="manage"
-              onClick={() => navigate('/data-sets')}
-              className="gap-2 px-1.5"
-            >
-              <ListIcon className="size-4" />
-              Manage
-            </DropdownMenuItem>
+            {canAddDataSets &&
+              <DropdownMenuItem
+                key="new"
+                onClick={() => navigate('/data-sets/new')}
+                className="gap-2 px-1.5"
+              >
+                <PlusCircleIcon className="size-4" />
+                New
+              </DropdownMenuItem>
+            }
+            {canManageDataSets &&
+              <DropdownMenuItem
+                key="manage"
+                onClick={() => navigate('/data-sets')}
+                className="gap-2 px-1.5"
+              >
+                <ListIcon className="size-4" />
+                Manage
+              </DropdownMenuItem>
+            }
           </>
         }
       </DropdownMenuContent>
