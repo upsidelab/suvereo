@@ -79,6 +79,9 @@ const router = createBrowserRouter([
     path: "/",
     element: <App />,
     loader: protectedLoginLoader,
+    // The root match never changes id, so its loader would otherwise run on full loads only -
+    // leaving its redirects unenforced and its data sets stale after a mutation.
+    shouldRevalidate: () => true,
     errorElement: <ErrorPage />,
     children: [
       {

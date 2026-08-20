@@ -50,8 +50,6 @@ export function ApplicationContextProvider({ children }: ApplicationContextProvi
   }, [location.pathname, dataSets, dataSetId]);
 
   const fetchAgentsForDataSet = async () => {
-    if (!dataSetId) return;
-
     const dataSet = dataSets.find(candidate => candidate.id === dataSetId);
     if (!dataSet?.permissions.includes(PERMISSIONS.AGENT.VIEW)) {
       setAvailableAgents([]);
@@ -61,7 +59,7 @@ export function ApplicationContextProvider({ children }: ApplicationContextProvi
 
     setIsLoadingAgents(true);
     try {
-      const agents = await api.agents().getDatasetAvailableAgents(dataSetId);
+      const agents = await api.agents().getDatasetAvailableAgents(dataSet.id!);
       setAvailableAgents(agents.filter(agent => !agent.corrupted));
     } catch (error) {
       console.error("Failed to load agents:", error);
