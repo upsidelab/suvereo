@@ -37,10 +37,16 @@ export function MainSidebar() {
   const canViewAllConversations = hasDatasetPermission(PERMISSIONS.CONVERSATION.VIEW_ALL);
   const canSeeAsk = canConverse || canViewAllConversations;
   const [entityTypes, setEntityTypes] = useState<EntityType[]>([]);
+  const hasDataSetAccess = dataSets.length > 0;
 
   useEffect(() => {
+    if (!hasDataSetAccess) {
+      setEntityTypes([]);
+      return;
+    }
+
     api.entities().listTypes().then(setEntityTypes).catch(() => setEntityTypes([]));
-  }, []);
+  }, [hasDataSetAccess]);
 
   const converseItems: SidebarSectionItemProps[] = canConverse ? [
     ...(isLoadingAgents ? [] : availableAgents.map(agent => ({
