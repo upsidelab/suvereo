@@ -33,12 +33,6 @@ const api = new ApiClient(authenticationProviderInstance);
 
 const NO_DATA_SETS_PATH = "/no-data-sets";
 
-const GLOBAL_MANAGE_ROUTES = [
-  { path: "/users", permissions: [PERMISSIONS.USER.VIEW] },
-  { path: "/service-accounts", permissions: [PERMISSIONS.SERVICE_ACCOUNT.VIEW] },
-  { path: "/roles", permissions: [PERMISSIONS.GROUP.VIEW, PERMISSIONS.DATASET_ROLE.VIEW] },
-];
-
 const loginLoader = async () => {
   return authenticationProviderInstance.isAuthenticated() ? redirect("/") : null;
 };
@@ -68,24 +62,12 @@ const protectedLoginLoader = async ({ request }: LoaderFunctionArgs) => {
     return signOutAndReturnToLogin();
   }
 
-  if (apiDataSets.length === 0) {
+  // Without a data set the index has nothing to show, so it becomes onboarding for whoever can
+  // create one and the no-data-sets landing for everyone else. Every other path is left to its own
+  // guard - a global screen the user holds still opens, anything else renders the 404 page.
+  if (apiDataSets.length === 0 && new URL(request.url).pathname === "/") {
     const accountData = await api.getAccount();
-    if (accountData.permissions.includes(PERMISSIONS.DATASET.ADD)) {
-      return redirect("/onboarding");
-    }
-
-    const manageRoutes = GLOBAL_MANAGE_ROUTES.filter(
-      route => route.permissions.some(permission => accountData.permissions.includes(permission))
-    );
-    const { pathname } = new URL(request.url);
-
-    if (manageRoutes.length === 0) {
-      return pathname === NO_DATA_SETS_PATH ? { dataSets: apiDataSets } : redirect(NO_DATA_SETS_PATH);
-    }
-
-    if (!manageRoutes.some(route => pathname.startsWith(route.path))) {
-      return redirect(manageRoutes[0].path);
-    }
+    return redirect(accountData.permissions.includes(PERMISSIONS.DATASET.ADD) ? "/onboarding" : NO_DATA_SETS_PATH);
   }
 
   return { dataSets: apiDataSets };
