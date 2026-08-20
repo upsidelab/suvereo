@@ -172,7 +172,7 @@ const router = createBrowserRouter([
       {
         path: '/roles',
         element: (
-          <RequirePermission globalAnyOf={[PERMISSIONS.GROUP.VIEW, PERMISSIONS.DATASET_ROLE.VIEW]}>
+          <RequirePermission globalAnyOf={[PERMISSIONS.GLOBAL_ROLE.VIEW, PERMISSIONS.DATASET_ROLE.VIEW]}>
             <RolesIndex />
           </RequirePermission>
         )

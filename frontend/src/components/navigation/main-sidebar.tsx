@@ -85,7 +85,7 @@ export function MainSidebar() {
   const canSeeDataSets = dataSets.length > 0 || hasPermission(PERMISSIONS.DATASET.ADD);
   const canSeeUsers = hasPermission(PERMISSIONS.USER.VIEW);
   const canSeeServiceAccounts = hasPermission(PERMISSIONS.SERVICE_ACCOUNT.VIEW);
-  const canSeeRoles = hasPermission(PERMISSIONS.GROUP.VIEW) || hasPermission(PERMISSIONS.DATASET_ROLE.VIEW);
+  const canSeeRoles = hasPermission(PERMISSIONS.GLOBAL_ROLE.VIEW) || hasPermission(PERMISSIONS.DATASET_ROLE.VIEW);
   const hasManageAccess = canSeeDataSets || canSeeUsers || canSeeServiceAccounts || canSeeRoles;
 
   const manageItems: SidebarSectionItemProps[] = [

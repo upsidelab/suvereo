@@ -52,7 +52,7 @@ export function AddAccessSelector({ subjects, roles, grantedRoles, onSubmit }: A
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button variant="outline" role="combobox" aria-expanded={open} className="w-[400px] justify-between">
-            {selectedSubject ? `${subjectTypeLabel(selectedSubject)}: ${selectedSubject.label}` : "Select user or group..."}
+            {selectedSubject ? `${subjectTypeLabel(selectedSubject)}: ${selectedSubject.label}` : "Select user or global role..."}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
@@ -60,7 +60,7 @@ export function AddAccessSelector({ subjects, roles, grantedRoles, onSubmit }: A
           <Command>
             <CommandInput placeholder="Search..." />
             <CommandList>
-              <CommandEmpty>No users or groups found.</CommandEmpty>
+              <CommandEmpty>No users or global roles found.</CommandEmpty>
               <CommandGroup>
                 {selectableSubjects.map((subject) => (
                   <CommandItem
@@ -106,5 +106,5 @@ export function AddAccessSelector({ subjects, roles, grantedRoles, onSubmit }: A
 }
 
 function subjectTypeLabel(subject: AccessSubject): string {
-  return subject.type === "user" ? "User" : "Group";
+  return subject.type === "user" ? "User" : "Global role";
 }

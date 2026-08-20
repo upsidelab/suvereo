@@ -1,5 +1,5 @@
 import { BaseApiClient } from "@/lib/api/base.ts";
-import { DataSet, DatasetAccess, DatasetRoleOption, GroupOption } from "@/lib/types.ts";
+import { DataSet, DatasetAccess, DatasetRoleOption, GlobalRoleOption } from "@/lib/types.ts";
 import { ApiError } from "@/lib/api-error.ts";
 
 export type DataSetResponse = {
@@ -22,9 +22,9 @@ type DatasetAccessResponse = {
     user: { id: number; email: string; is_service_account: boolean };
     role: DatasetRoleOption;
   }[];
-  groups: {
+  global_roles: {
     id: number;
-    group: GroupOption;
+    global_role: GlobalRoleOption;
     role: DatasetRoleOption;
   }[];
 }
@@ -94,10 +94,10 @@ export class DataSetsApiClient extends BaseApiClient {
           isServiceAccount: assignment.user.is_service_account
         }
       })),
-      groups: result.groups.map((assignment) => ({
+      globalRoles: result.global_roles.map((assignment) => ({
         id: assignment.id,
         role: assignment.role,
-        group: assignment.group
+        globalRole: assignment.global_role
       }))
     };
   }
@@ -113,13 +113,13 @@ export class DataSetsApiClient extends BaseApiClient {
     );
   }
 
-  async grantRoleToGroup(dataSetId: number, roleId: number, groupId: number): Promise<Response> {
+  async grantRoleToGlobalRole(dataSetId: number, roleId: number, globalRoleId: number): Promise<Response> {
     return await fetch(
-      `${this.apiBase}/api/data_sets/${dataSetId}/roles/${roleId}/groups`,
+      `${this.apiBase}/api/data_sets/${dataSetId}/roles/${roleId}/global_roles`,
       {
         ...this._requestConfiguration(),
         method: "POST",
-        body: JSON.stringify({ group_id: groupId })
+        body: JSON.stringify({ global_role_id: globalRoleId })
       }
     );
   }
@@ -134,9 +134,9 @@ export class DataSetsApiClient extends BaseApiClient {
     );
   }
 
-  async revokeRoleFromGroup(dataSetId: number, roleId: number, groupId: number): Promise<Response> {
+  async revokeRoleFromGlobalRole(dataSetId: number, roleId: number, globalRoleId: number): Promise<Response> {
     return await fetch(
-      `${this.apiBase}/api/data_sets/${dataSetId}/roles/${roleId}/groups/${groupId}`,
+      `${this.apiBase}/api/data_sets/${dataSetId}/roles/${roleId}/global_roles/${globalRoleId}`,
       {
         ...this._requestConfiguration(),
         method: "DELETE"

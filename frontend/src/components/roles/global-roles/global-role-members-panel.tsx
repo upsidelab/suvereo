@@ -5,32 +5,32 @@ import { ScrollArea } from "@/components/ui/scroll-area.tsx";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select.tsx";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
-import { GroupMember } from "@/lib/types.ts";
+import { GlobalRoleMember } from "@/lib/types.ts";
 import { PERMISSIONS } from "@/lib/permissions.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 
-export interface GroupMembersPanelProps {
-  groupId: number;
+export interface GlobalRoleMembersPanelProps {
+  globalRoleId: number;
 }
 
-export function GroupMembersPanel({ groupId }: GroupMembersPanelProps) {
+export function GlobalRoleMembersPanel({ globalRoleId }: GlobalRoleMembersPanelProps) {
   const { hasPermission } = useApplicationContext()!;
-  const canAssign = hasPermission(PERMISSIONS.GROUP.ASSIGN);
-  const [members, setMembers] = useState<GroupMember[]>([]);
-  const [candidates, setCandidates] = useState<GroupMember[]>([]);
+  const canAssign = hasPermission(PERMISSIONS.GLOBAL_ROLE.ASSIGN);
+  const [members, setMembers] = useState<GlobalRoleMember[]>([]);
+  const [candidates, setCandidates] = useState<GlobalRoleMember[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [pickerError, setPickerError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
-    let currentMembers: GroupMember[];
+    let currentMembers: GlobalRoleMember[];
     try {
-      currentMembers = await api.groups().getGroupMembers(groupId);
+      currentMembers = await api.globalRoles().getGlobalRoleMembers(globalRoleId);
     } catch {
-      setError("Could not load this group's members.");
+      setError("Could not load this global role's members.");
       return;
     }
     setMembers(currentMembers);
@@ -52,7 +52,7 @@ export function GroupMembersPanel({ groupId }: GroupMembersPanelProps) {
       setCandidates([]);
       setPickerError("You need the User → View permission to add members by name.");
     }
-  }, [groupId, canAssign]);
+  }, [globalRoleId, canAssign]);
 
   useEffect(() => {
     load();
@@ -60,7 +60,7 @@ export function GroupMembersPanel({ groupId }: GroupMembersPanelProps) {
 
   const handleAdd = async () => {
     if (!selectedUserId) return;
-    const response = await api.groups().addGroupMember(groupId, Number(selectedUserId));
+    const response = await api.globalRoles().addGlobalRoleMember(globalRoleId, Number(selectedUserId));
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
       setError(body.detail ?? "Could not add this member.");
@@ -70,8 +70,8 @@ export function GroupMembersPanel({ groupId }: GroupMembersPanelProps) {
     await load();
   };
 
-  const handleRemove = async (member: GroupMember) => {
-    const response = await api.groups().removeGroupMember(groupId, member.id);
+  const handleRemove = async (member: GlobalRoleMember) => {
+    const response = await api.globalRoles().removeGlobalRoleMember(globalRoleId, member.id);
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
       setError(body.detail ?? "Could not remove this member.");

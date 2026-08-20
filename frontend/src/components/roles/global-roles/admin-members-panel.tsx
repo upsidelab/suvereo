@@ -5,7 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area.tsx";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select.tsx";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
-import { GroupMember } from "@/lib/types.ts";
+import { GlobalRoleMember } from "@/lib/types.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { RevokeOwnAdminAccessDialog } from "@/components/roles/revoke-own-admin-access-dialog.tsx";
 
@@ -14,8 +14,8 @@ const api = new ApiClient(authenticationProviderInstance);
 export function AdminMembersPanel() {
   const { account, setAccount } = useApplicationContext()!;
   const canWrite = !!account?.isAdmin;
-  const [members, setMembers] = useState<GroupMember[]>([]);
-  const [candidates, setCandidates] = useState<GroupMember[]>([]);
+  const [members, setMembers] = useState<GlobalRoleMember[]>([]);
+  const [candidates, setCandidates] = useState<GlobalRoleMember[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [listError, setListError] = useState<string | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<string>("");
@@ -23,7 +23,7 @@ export function AdminMembersPanel() {
 
   const load = useCallback(async () => {
     setError(null);
-    let admins: GroupMember[];
+    let admins: GlobalRoleMember[];
     try {
       admins = await api.getAdmins();
     } catch {
@@ -54,7 +54,7 @@ export function AdminMembersPanel() {
     load();
   }, [load]);
 
-  const setAdmin = async (subject: GroupMember, isAdmin: boolean) => {
+  const setAdmin = async (subject: GlobalRoleMember, isAdmin: boolean) => {
     const response = subject.isServiceAccount
       ? await api.serviceAccounts().setServiceAccountAdmin(subject.id, isAdmin)
       : await api.users().setUserAdmin(subject.id, isAdmin);
@@ -76,7 +76,7 @@ export function AdminMembersPanel() {
     await setAdmin(subject, true);
   };
 
-  const handleRemove = async (subject: GroupMember) => {
+  const handleRemove = async (subject: GlobalRoleMember) => {
     if (subject.email === account?.email) {
       setIsSelfDemotionDialogOpen(true);
       return;
@@ -147,6 +147,6 @@ export function AdminMembersPanel() {
   );
 }
 
-function subjectKey(subject: GroupMember): string {
+function subjectKey(subject: GlobalRoleMember): string {
   return `${subject.isServiceAccount ? "service-account" : "user"}:${subject.id}`;
 }

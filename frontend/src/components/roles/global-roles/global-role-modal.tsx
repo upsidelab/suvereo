@@ -12,9 +12,9 @@ import { PermissionEntity } from "@/lib/types.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { MissingPermission, PermissionChecklist } from "@/components/roles/permission-checklist.tsx";
 import { PermissionErrors } from "@/components/roles/permission-errors.tsx";
-import { GroupMembersPanel } from "@/components/roles/groups/group-members-panel.tsx";
-import { AdminMembersPanel } from "@/components/roles/groups/admin-members-panel.tsx";
-import { ADMIN_ROLE, GlobalRole, isAdminRole } from "@/components/roles/groups/admin-role.ts";
+import { GlobalRoleMembersPanel } from "@/components/roles/global-roles/global-role-members-panel.tsx";
+import { AdminMembersPanel } from "@/components/roles/global-roles/admin-members-panel.tsx";
+import { ADMIN_ROLE, GlobalRole, isAdminRole } from "@/components/roles/global-roles/admin-role.ts";
 
 const formSchema = z.object({
   name: z.string().trim().min(1),
@@ -25,12 +25,12 @@ const api = new ApiClient(authenticationProviderInstance);
 
 type Section = "permissions" | "members";
 
-export interface GroupModalProps {
+export interface GlobalRoleModalProps {
   role?: GlobalRole;
   onSaved: () => void;
 }
 
-export function GroupModal({ role, onSaved }: GroupModalProps) {
+export function GlobalRoleModal({ role, onSaved }: GlobalRoleModalProps) {
   const { account } = useApplicationContext()!;
   const isAdmin = !!account?.isAdmin;
   const isBuiltIn = isAdminRole(role);
@@ -64,7 +64,7 @@ export function GroupModal({ role, onSaved }: GroupModalProps) {
       setSelected([]);
       form.reset({ name: ADMIN_ROLE.name });
     } else if (role?.id != null) {
-      api.groups().getGroupDetail(role.id).then((detail) => {
+      api.globalRoles().getGlobalRoleDetail(role.id).then((detail) => {
         form.reset({ name: detail.name });
         setSelected(detail.permissions);
       }).catch(() => setError("Could not load this role."));
@@ -80,8 +80,8 @@ export function GroupModal({ role, onSaved }: GroupModalProps) {
     setMissingPermissions([]);
 
     const response = role?.id != null
-      ? await api.groups().updateGroup(role.id, values.name, selected)
-      : await api.groups().createGroup(values.name, selected);
+      ? await api.globalRoles().updateGlobalRole(role.id, values.name, selected)
+      : await api.globalRoles().createGlobalRole(values.name, selected);
 
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
@@ -182,7 +182,7 @@ export function GroupModal({ role, onSaved }: GroupModalProps) {
           isBuiltIn
             ? <AdminMembersPanel />
             : role?.id != null
-              ? <GroupMembersPanel groupId={role.id} />
+              ? <GlobalRoleMembersPanel globalRoleId={role.id} />
               : <p className="text-sm text-muted-foreground">Save the role first to add members.</p>
         )}
         </div>

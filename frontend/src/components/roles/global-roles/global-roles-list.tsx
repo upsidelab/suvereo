@@ -4,14 +4,14 @@ import { Button } from "@/components/ui/button.tsx";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
-import { GroupModal } from "@/components/roles/groups/group-modal.tsx";
+import { GlobalRoleModal } from "@/components/roles/global-roles/global-role-modal.tsx";
 import { RevokeConfirmDialog } from "@/components/roles/revoke-confirm-dialog.tsx";
-import { ADMIN_ROLE, GlobalRole } from "@/components/roles/groups/admin-role.ts";
+import { ADMIN_ROLE, GlobalRole } from "@/components/roles/global-roles/admin-role.ts";
 import { ApiError } from "@/lib/api-error.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 
-export function GroupsList() {
+export function GlobalRolesList() {
   const { account } = useApplicationContext()!;
   const isAdmin = !!account?.isAdmin;
   const [groups, setGroups] = useState<GlobalRole[]>([]);
@@ -23,7 +23,7 @@ export function GroupsList() {
 
   const load = useCallback(async () => {
     try {
-      setGroups(await api.groups().getGroups());
+      setGroups(await api.globalRoles().getGlobalRoles());
       setIsAccessDenied(false);
       setError(null);
     } catch (loadError) {
@@ -43,7 +43,7 @@ export function GroupsList() {
 
   const confirmDelete = async () => {
     if (groupToDelete?.id == null) return;
-    const response = await api.groups().deleteGroup(groupToDelete.id);
+    const response = await api.globalRoles().deleteGlobalRole(groupToDelete.id);
     setIsDeleteDialogOpen(false);
     setGroupToDelete(null);
     if (!response.ok) {
@@ -74,7 +74,7 @@ export function GroupsList() {
       {error && <p className="text-sm text-destructive mb-4">{error}</p>}
       {isAdmin && (
         <div className="flex flex-col items-end mb-4">
-          <GroupModal onSaved={load} />
+          <GlobalRoleModal onSaved={load} />
         </div>
       )}
       <Table className="table-fixed">
@@ -96,7 +96,7 @@ export function GroupsList() {
                 )}
               </TableCell>
               <TableCell className="flex space-x-4">
-                <GroupModal role={role} onSaved={load} />
+                <GlobalRoleModal role={role} onSaved={load} />
                 {isAdmin && !role.isBuiltIn && (
                   <Button
                     variant="secondary"

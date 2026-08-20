@@ -115,18 +115,18 @@ export type ServiceAccount = {
   dateCreated: string;
 };
 
-export type GroupOption = {
+export type GlobalRoleOption = {
   id: number;
   name: string;
 };
 
-export type GroupDetail = {
+export type GlobalRoleDetail = {
   id: number;
   name: string;
   permissions: string[];
 };
 
-export type GroupMember = {
+export type GlobalRoleMember = {
   id: number;
   email: string;
   isServiceAccount: boolean;
@@ -157,18 +157,18 @@ export type PermissionEntity = {
 export type DatasetUserRoleAssignment = {
   id: number;
   role: DatasetRoleOption;
-  user: GroupMember;
+  user: GlobalRoleMember;
 };
 
-export type DatasetGroupRoleAssignment = {
+export type DatasetGlobalRoleAssignment = {
   id: number;
   role: DatasetRoleOption;
-  group: GroupOption;
+  globalRole: GlobalRoleOption;
 };
 
 export type DatasetAccess = {
   users: DatasetUserRoleAssignment[];
-  groups: DatasetGroupRoleAssignment[];
+  globalRoles: DatasetGlobalRoleAssignment[];
 };
 
 export type ProvidersConfig = {
