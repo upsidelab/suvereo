@@ -12,15 +12,13 @@ export interface CreateDataSetFormProps {
 }
 
 export function CreateDataSetForm({ isOnboarding = false }: CreateDataSetFormProps) {
-  const {setDataSets, setDataSetId} = useApplicationContext()!;
+  const {setDataSetId} = useApplicationContext()!;
   const navigate = useNavigate();
 
   const submitLabel = isOnboarding ? "Continue" : "Create"
 
   const handleSubmit = async (values: DataSetFormSchema) => {
     const createdDataSetId = await api.dataSets().createDataSet({ ...values }, values.preconfigureAgents);
-    const dataSets = await api.dataSets().getDataSets();
-    setDataSets(dataSets);
     setDataSetId(createdDataSetId);
     navigate(`/data-sets/${createdDataSetId}/integrations`);
   };

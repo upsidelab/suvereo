@@ -24,6 +24,8 @@ import { AgenticExecutionsPage } from "@/pages/data-sets/(id)/agentic-executions
 import { AgenticExecutionDetailPage } from "@/pages/data-sets/(id)/agentic-executions/(id)/index.tsx";
 import { EntityRecordsPage } from "@/pages/data-sets/(id)/entities/[slug].tsx";
 import { PERMISSIONS } from "@/lib/permissions.ts";
+import { ApiError } from "@/lib/api-error.ts";
+import { ROOT_ROUTE_ID } from "@/lib/root-route.ts";
 import { RequirePermission } from "@/components/util/require-permission.tsx";
 import { NotFound } from "@/pages/not-found.tsx";
 
@@ -37,14 +39,33 @@ const GLOBAL_MANAGE_ROUTES = [
   { path: "/roles", permissions: [PERMISSIONS.GROUP.VIEW, PERMISSIONS.DATASET_ROLE.VIEW] },
 ];
 
+const loginLoader = async () => {
+  return authenticationProviderInstance.isAuthenticated() ? redirect("/") : null;
+};
+
+const signOutAndReturnToLogin = () => {
+  authenticationProviderInstance.logout();
+  return redirect("/login");
+};
+
 const protectedLoginLoader = async ({ request }: LoaderFunctionArgs) => {
   if (!authenticationProviderInstance.isAuthenticated()) {
     return redirect("/login");
   }
 
-  const apiDataSets = await api.dataSets().getDataSets();
+  let apiDataSets;
+  try {
+    apiDataSets = await api.dataSets().getDataSets();
+  } catch (loadError) {
+    // A token that no longer authenticates would otherwise bounce between here and `loginLoader`.
+    if (loadError instanceof ApiError && loadError.response.status === 401) {
+      return signOutAndReturnToLogin();
+    }
+    throw loadError;
+  }
+
   if (!apiDataSets) {
-    return redirect("/login");
+    return signOutAndReturnToLogin();
   }
 
   if (apiDataSets.length === 0) {
@@ -59,7 +80,7 @@ const protectedLoginLoader = async ({ request }: LoaderFunctionArgs) => {
     const { pathname } = new URL(request.url);
 
     if (manageRoutes.length === 0) {
-      return pathname === NO_DATA_SETS_PATH ? null : redirect(NO_DATA_SETS_PATH);
+      return pathname === NO_DATA_SETS_PATH ? { dataSets: apiDataSets } : redirect(NO_DATA_SETS_PATH);
     }
 
     if (!manageRoutes.some(route => pathname.startsWith(route.path))) {
@@ -67,11 +88,12 @@ const protectedLoginLoader = async ({ request }: LoaderFunctionArgs) => {
     }
   }
 
-  return null;
+  return { dataSets: apiDataSets };
 };
 
 const router = createBrowserRouter([
   {
+    id: ROOT_ROUTE_ID,
     path: "/",
     element: <App />,
     loader: protectedLoginLoader,
@@ -210,7 +232,8 @@ const router = createBrowserRouter([
   },
   {
     path: "/login",
-    element: <LoginPage />
+    element: <LoginPage />,
+    loader: loginLoader
   },
   {
     path: "/onboarding",

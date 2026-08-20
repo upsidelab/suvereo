@@ -1,9 +1,10 @@
-import { ReactNode, useState, useEffect, useRef } from "react";
+import { ReactNode, useState, useEffect, useMemo, useRef } from "react";
 import { ApplicationContext, ApplicationContextValue } from "@/lib/application-context.ts";
-import { Account, DataSet } from "@/lib/types.ts";
+import { Account } from "@/lib/types.ts";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
-import { useLocation } from "react-router-dom";
+import { useLocation, useRouteLoaderData } from "react-router-dom";
+import { ROOT_ROUTE_ID, RootRouteData } from "@/lib/root-route.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -17,8 +18,10 @@ function extractDataSetIdFromPath(path: string): number | null {
 }
 
 export function ApplicationContextProvider({ children }: ApplicationContextProviderProps) {
-  const [dataSets, setDataSets] = useState<DataSet[]>([]);
-  const [isLoadingDataSets, setIsLoadingDataSets] = useState(true);
+  // Onboarding mounts this provider outside the root route, where there is no loader data - and no
+  // data sets either, since that is the only way onboarding is reached.
+  const rootData = useRouteLoaderData(ROOT_ROUTE_ID) as RootRouteData | undefined;
+  const dataSets = useMemo(() => rootData?.dataSets ?? [], [rootData]);
   const [dataSetId, setDataSetId] = useState<number | null>(null);
   const [availableAgents, setAvailableAgents] = useState<{ name: string; id: number; }[]>([]);
   const [isLoadingAgents, setIsLoadingAgents] = useState(true);
@@ -30,25 +33,15 @@ export function ApplicationContextProvider({ children }: ApplicationContextProvi
   const location = useLocation();
 
   useEffect(() => {
-    const fetchDataSets = async () => {
-      try {
-        const apiDataSets = await api.dataSets().getDataSets();
-        setDataSets(apiDataSets);
+    if (!location.pathname.includes("/data-sets/") || location.pathname.endsWith("/data-sets/new")) {
+      return;
+    }
 
-        if (location.pathname.includes("/data-sets/") && !location.pathname.endsWith("/data-sets/new")) {
-          const urlDataSetId = extractDataSetIdFromPath(location.pathname);
-
-          if (urlDataSetId && apiDataSets.some(ds => ds.id === urlDataSetId)) {
-            setDataSetId(urlDataSetId);
-          }
-        }
-      } finally {
-        setIsLoadingDataSets(false);
-      }
-    };
-
-    fetchDataSets();
-  }, [location.pathname]);
+    const urlDataSetId = extractDataSetIdFromPath(location.pathname);
+    if (urlDataSetId && dataSets.some(dataSet => dataSet.id === urlDataSetId)) {
+      setDataSetId(urlDataSetId);
+    }
+  }, [location.pathname, dataSets]);
 
   const fetchAgentsForDataSet = async () => {
     if (!dataSetId) return;
@@ -92,8 +85,6 @@ export function ApplicationContextProvider({ children }: ApplicationContextProvi
 
   const value: ApplicationContextValue = {
     dataSets,
-    setDataSets,
-    isLoadingDataSets,
     dataSetId,
     setDataSetId,
     availableAgents,

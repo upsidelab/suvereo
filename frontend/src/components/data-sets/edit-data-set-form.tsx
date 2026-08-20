@@ -15,7 +15,7 @@ import { PERMISSIONS } from "@/lib/permissions.ts";
 const api = new ApiClient(authenticationProviderInstance);
 
 export function EditDataSetForm() {
-  const { setDataSets, hasPermission } = useApplicationContext()!;
+  const { hasPermission } = useApplicationContext()!;
   const canChangeDataSets = hasPermission(PERMISSIONS.DATASET.CHANGE);
   const canDeleteDataSets = hasPermission(PERMISSIONS.DATASET.DELETE);
   const { id } = useParams<{ id: string }>();
@@ -63,12 +63,8 @@ export function EditDataSetForm() {
 
       // Call the API to update the data set
       await api.dataSets().updateDataSet(parseInt(id), updatedDataSet);
-      
-      // Refresh the data sets list
-      const updatedDataSets = await api.dataSets().getDataSets();
-      setDataSets(updatedDataSets);
-      
-      // Navigate back to the data sets list
+
+      // The root loader refetches the list on navigation
       navigate('/data-sets');
     } catch (err) {
       console.error("Error updating data set:", err);
@@ -120,11 +116,7 @@ export function EditDataSetForm() {
         open={deleteModalOpen}
         onOpenChange={setDeleteModalOpen}
         dataSet={dataSet}
-        onConfirm={async () => {
-          const updatedDataSets = await api.dataSets().getDataSets();
-          setDataSets(updatedDataSets);
-          navigate('/data-sets');
-        }}
+        onConfirm={() => navigate('/data-sets')}
       />
     </>
   );

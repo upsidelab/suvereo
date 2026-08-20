@@ -21,10 +21,10 @@ export interface RequirePermissionProps {
  * @param dataSetAccess Requires only that the data set named by the route is one the user can see.
  */
 export function RequirePermission({ globalAnyOf, dataSetAnyOf, dataSetAccess, children }: RequirePermissionProps) {
-  const { account, dataSets, isLoadingDataSets, hasPermission, hasDatasetPermission } = useApplicationContext()!;
+  const { account, dataSets, hasPermission, hasDatasetPermission } = useApplicationContext()!;
   const { id, dataSetId } = useParams();
 
-  if (!account || isLoadingDataSets) {
+  if (!account) {
     return null;
   }
 

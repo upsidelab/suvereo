@@ -7,8 +7,38 @@ import { authenticationProviderInstance } from "@/lib/authentication-provider.ts
 import { useNavigate } from "react-router-dom";
 import { ApiClient } from "@/lib/api.ts";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert.tsx";
+import { PERMISSIONS } from "@/lib/permissions.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
+
+async function firstAgentId(dataSetId: number): Promise<number | undefined> {
+  try {
+    const agents = await api.agents().getDatasetAvailableAgents(dataSetId);
+    return agents?.[0]?.id;
+  } catch {
+    // Listing agents needs `agent.view`, which a signed-in user may not hold.
+    return undefined;
+  }
+}
+
+/**
+ * Where to send a user who has just signed in: straight into a conversation when they can hold
+ * one, and the start page otherwise - `protectedLoginLoader` decides from there, so no permission
+ * rule is duplicated here.
+ */
+async function landingPage(): Promise<string> {
+  const dataSets = await api.dataSets().getDataSets();
+  const dataSet = dataSets[0];
+
+  if (!dataSet || !dataSet.permissions.includes(PERMISSIONS.CONVERSATION.CONVERSE)) {
+    return '/';
+  }
+
+  const agentId = await firstAgentId(dataSet.id!);
+  return agentId
+    ? `/data-sets/${dataSet.id}/chat/new/${agentId}`
+    : `/data-sets/${dataSet.id}/chat/new`;
+}
 
 export function LoginForm({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   const [isLoading, setIsLoading] = useState(false);
@@ -25,25 +55,18 @@ export function LoginForm({ className, ...props }: HTMLAttributes<HTMLDivElement
     try {
       const { token } = await api.login(email, password);
       authenticationProviderInstance.login(token);
-
-      const dataSets = await api.dataSets().getDataSets();
-      if (dataSets.length === 0) {
-        const account = await api.getAccount();
-        if (account.isAdmin) {
-          navigate('/onboarding');
-        } else {
-          navigate('/no-data-sets');
-        }
-      } else {
-        const dataSetAgents = await api.agents().getDatasetAvailableAgents(dataSets[0].id!)
-        const agentId = dataSetAgents?.[0]?.id;
-        const page = agentId
-          ? `/data-sets/${dataSets[0].id}/chat/new/${agentId}`
-          : `/data-sets/${dataSets[0].id}/chat/new`;
-        navigate(page);
-      }
     } catch {
       setIsError(true);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      navigate(await landingPage());
+    } catch {
+      // Signing in worked, so this is never a credentials error - the root loader takes over from
+      // the start page.
+      navigate('/');
     } finally {
       setIsLoading(false);
     }
