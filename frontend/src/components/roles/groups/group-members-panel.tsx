@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button.tsx";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table.tsx";
+import { ScrollArea } from "@/components/ui/scroll-area.tsx";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select.tsx";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
@@ -80,7 +81,7 @@ export function GroupMembersPanel({ groupId }: GroupMembersPanelProps) {
   };
 
   return (
-    <div>
+    <div className="flex flex-col grow min-h-0">
       {error && <p className="text-sm text-destructive mb-4">{error}</p>}
       {canAssign && (
         pickerError
@@ -103,30 +104,32 @@ export function GroupMembersPanel({ groupId }: GroupMembersPanelProps) {
             </div>
           )
       )}
-      {members.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No members yet.</p>
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Email</TableHead>
-              {canAssign && <TableHead>Action</TableHead>}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {members.map((member) => (
-              <TableRow key={member.id}>
-                <TableCell>{member.email}{member.isServiceAccount && " (service account)"}</TableCell>
-                {canAssign && (
-                  <TableCell>
-                    <Button variant="secondary" onClick={() => handleRemove(member)}>Remove</Button>
-                  </TableCell>
-                )}
+      <ScrollArea className="grow min-h-0 w-full rounded-md border px-4 py-2">
+        {members.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No members yet.</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-full">Email</TableHead>
+                {canAssign && <TableHead className="whitespace-nowrap">Action</TableHead>}
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+            </TableHeader>
+            <TableBody>
+              {members.map((member) => (
+                <TableRow key={member.id}>
+                  <TableCell width="100%">{member.email}{member.isServiceAccount && " (service account)"}</TableCell>
+                  {canAssign && (
+                    <TableCell className="whitespace-nowrap">
+                      <Button variant="secondary" onClick={() => handleRemove(member)}>Remove</Button>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </ScrollArea>
     </div>
   );
 }

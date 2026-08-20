@@ -11,6 +11,7 @@ import { authenticationProviderInstance } from "@/lib/authentication-provider.ts
 import { PermissionEntity } from "@/lib/types.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { MissingPermission, PermissionChecklist } from "@/components/roles/permission-checklist.tsx";
+import { PermissionErrors } from "@/components/roles/permission-errors.tsx";
 import { GroupMembersPanel } from "@/components/roles/groups/group-members-panel.tsx";
 import { AdminMembersPanel } from "@/components/roles/groups/admin-members-panel.tsx";
 import { ADMIN_ROLE, GlobalRole, isAdminRole } from "@/components/roles/groups/admin-role.ts";
@@ -105,16 +106,16 @@ export function GroupModal({ role, onSaved }: GroupModalProps) {
       <DialogTrigger asChild>
         <Button variant={role ? "secondary" : "default"}>{triggerLabel}</Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="w-[min(92vw,36rem)] max-w-none">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         {error && <p className="text-sm text-destructive mb-4">{error}</p>}
-        {permissionErrors.length > 0 && (
-          <ul className="text-sm text-destructive mb-4 space-y-1">
-            {permissionErrors.map((message) => <li key={message}>{message}</li>)}
-          </ul>
-        )}
+        <PermissionErrors
+          entities={entities}
+          missingPermissions={missingPermissions}
+          serverMessages={permissionErrors}
+        />
         <div className="flex items-center space-x-2 border-b pb-2 mb-4">
           <Button
             type="button"
@@ -132,6 +133,8 @@ export function GroupModal({ role, onSaved }: GroupModalProps) {
           </Button>
         </div>
 
+        {/* Both sections share a floor, so switching between them cannot resize the dialog. */}
+        <div className="min-h-[26rem] flex flex-col">
         {section === "permissions" && (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -182,6 +185,7 @@ export function GroupModal({ role, onSaved }: GroupModalProps) {
               ? <GroupMembersPanel groupId={role.id} />
               : <p className="text-sm text-muted-foreground">Save the role first to add members.</p>
         )}
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -11,6 +11,7 @@ import { authenticationProviderInstance } from "@/lib/authentication-provider.ts
 import { DatasetRoleOption, PermissionEntity } from "@/lib/types.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { MissingPermission, PermissionChecklist } from "@/components/roles/permission-checklist.tsx";
+import { PermissionErrors } from "@/components/roles/permission-errors.tsx";
 
 const formSchema = z.object({
   name: z.string().trim().min(1),
@@ -90,7 +91,7 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
       <DialogTrigger asChild>
         <Button variant={role ? "secondary" : "default"}>{triggerLabel}</Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="w-[min(92vw,36rem)] max-w-none">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
@@ -98,11 +99,11 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
           This only defines the role. To grant it to a user or group, go to Data Sets → Manage Access for that data set.
         </p>
         {error && <p className="text-sm text-destructive mb-4">{error}</p>}
-        {permissionErrors.length > 0 && (
-          <ul className="text-sm text-destructive mb-4 space-y-1">
-            {permissionErrors.map((message) => <li key={message}>{message}</li>)}
-          </ul>
-        )}
+        <PermissionErrors
+          entities={entities}
+          missingPermissions={missingPermissions}
+          serverMessages={permissionErrors}
+        />
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             {isAdmin ? (

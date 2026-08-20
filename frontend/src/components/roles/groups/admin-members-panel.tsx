@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button.tsx";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table.tsx";
+import { ScrollArea } from "@/components/ui/scroll-area.tsx";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select.tsx";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
@@ -90,7 +91,7 @@ export function AdminMembersPanel() {
   };
 
   return (
-    <div>
+    <div className="flex flex-col grow min-h-0">
       {error && <p className="text-sm text-destructive mb-4">{error}</p>}
       {listError && <p className="text-sm text-muted-foreground mb-4">{listError}</p>}
       {canWrite && (
@@ -110,30 +111,32 @@ export function AdminMembersPanel() {
           <Button onClick={handleAdd} disabled={!selectedSubject}>Add</Button>
         </div>
       )}
-      {members.length === 0
-        ? !listError && <p className="text-sm text-muted-foreground">No admins yet.</p>
-        : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Email</TableHead>
-                {canWrite && <TableHead>Action</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {members.map((member) => (
-                <TableRow key={subjectKey(member)}>
-                  <TableCell>{member.email}{member.isServiceAccount && " (service account)"}</TableCell>
-                  {canWrite && (
-                    <TableCell>
-                      <Button variant="secondary" onClick={() => handleRemove(member)}>Remove</Button>
-                    </TableCell>
-                  )}
+      <ScrollArea className="grow min-h-0 w-full rounded-md border px-4 py-2">
+        {members.length === 0
+          ? !listError && <p className="text-sm text-muted-foreground">No admins yet.</p>
+          : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-full">Email</TableHead>
+                  {canWrite && <TableHead className="whitespace-nowrap">Action</TableHead>}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+              </TableHeader>
+              <TableBody>
+                {members.map((member) => (
+                  <TableRow key={subjectKey(member)}>
+                    <TableCell width="100%">{member.email}{member.isServiceAccount && " (service account)"}</TableCell>
+                    {canWrite && (
+                      <TableCell className="whitespace-nowrap">
+                        <Button variant="secondary" onClick={() => handleRemove(member)}>Remove</Button>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+      </ScrollArea>
 
       <RevokeOwnAdminAccessDialog
         open={isSelfDemotionDialogOpen}
