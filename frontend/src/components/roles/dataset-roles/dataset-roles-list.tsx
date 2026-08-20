@@ -48,12 +48,7 @@ export function DatasetRolesList() {
     setRoleToDelete(null);
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
-      const held = [
-        body.user_assignments ? `${body.user_assignments} user` : null,
-        body.group_assignments ? `${body.group_assignments} group` : null,
-      ].filter(Boolean).join(" and ");
-      setError([body.detail ?? "Could not delete this role.", held ? `(held by ${held})` : null]
-        .filter(Boolean).join(" "));
+      setError(body.detail ?? "Could not delete this role.");
       return;
     }
     await load();

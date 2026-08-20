@@ -48,11 +48,7 @@ export function GroupsList() {
     setGroupToDelete(null);
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
-      const assignments = body.dataset_assignments;
-      setError([
-        body.detail ?? "Could not delete this role.",
-        assignments ? `(${assignments} data set assignment${assignments === 1 ? "" : "s"})` : null,
-      ].filter(Boolean).join(" "));
+      setError(body.detail ?? "Could not delete this role.");
       return;
     }
     await load();
@@ -118,7 +114,7 @@ export function GroupsList() {
       <RevokeConfirmDialog
         open={isDeleteDialogOpen}
         title={`Delete role${groupToDelete ? ` "${groupToDelete.name}"` : ""}`}
-        description="Its members lose everything it granted them. This action cannot be undone."
+        description="Its members lose everything it granted them, on every data set where it held a role. This action cannot be undone."
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
       />
