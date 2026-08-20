@@ -14,6 +14,8 @@ import { AttachmentBubble } from "@/components/conversation-view/attachment-bubb
 import { MessageError } from "@/components/conversation-view/message-error.tsx";
 import { MessageBubbleTyping } from "@/components/conversation-view/message-bubble-typing.tsx";
 import { ChatWindow } from "@/components/conversation-view/chat-window.tsx";
+import { NotFound } from "@/pages/not-found.tsx";
+import { ApiError } from "@/lib/api-error.ts";
 
 import type { AgentDetails } from "@/lib/types";
 import type { Conversation as ConversationSchema } from '@/lib/types.ts';
@@ -47,6 +49,7 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
   const navigate = useNavigate();
 
   const [conversation, setConversation] = useState<ConversationSchema | null>(null);
+  const [isConversationUnavailable, setIsConversationUnavailable] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isAgentLoading, setIsAgentLoading] = useState(false);
   const [statusText, setStatusText] = useState("Thinking...");
@@ -89,7 +92,16 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
         await onMessageComposerSubmit(pendingMessage);
       }
 
-      const conversation = await api.conversations().getConversation(conversationId);
+      let conversation: ConversationSchema;
+      try {
+        conversation = await api.conversations().getConversation(conversationId);
+      } catch (loadError) {
+        if (loadError instanceof ApiError && [403, 404].includes(loadError.response.status)) {
+          setIsConversationUnavailable(true);
+          return;
+        }
+        throw loadError;
+      }
       setConversation(conversation);
       setAgentId(conversation.agent?.id);
 
@@ -309,6 +321,10 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
   const isUserMessage = (message: MessageProps) => {
     return message.type === "human" || message.type === "file";
   };
+
+  if (isConversationUnavailable) {
+    return <NotFound />;
+  }
 
   return (
     <PageMain className="h-full py-0">

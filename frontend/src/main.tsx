@@ -24,6 +24,8 @@ import { AgenticExecutionsPage } from "@/pages/data-sets/(id)/agentic-executions
 import { AgenticExecutionDetailPage } from "@/pages/data-sets/(id)/agentic-executions/(id)/index.tsx";
 import { EntityRecordsPage } from "@/pages/data-sets/(id)/entities/[slug].tsx";
 import { PERMISSIONS } from "@/lib/permissions.ts";
+import { RequirePermission } from "@/components/util/require-permission.tsx";
+import { NotFound } from "@/pages/not-found.tsx";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -32,14 +34,6 @@ const GLOBAL_MANAGE_ROUTES = [
   { path: "/service-accounts", permissions: [PERMISSIONS.SERVICE_ACCOUNT.VIEW] },
   { path: "/roles", permissions: [PERMISSIONS.GROUP.VIEW, PERMISSIONS.DATASET_ROLE.VIEW] },
 ];
-
-const requireAnyPermission = (permissions: string[]) => async () => {
-  const accountData = await api.getAccount();
-  if (!permissions.some(permission => accountData.permissions.includes(permission))) {
-    return redirect("/");
-  }
-  return null;
-};
 
 const protectedLoginLoader = async ({ request }: LoaderFunctionArgs) => {
   if (!authenticationProviderInstance.isAuthenticated()) {
@@ -86,7 +80,11 @@ const router = createBrowserRouter([
       },
       {
         path: '/data-sets/:id/chat',
-        element: <Chat />,
+        element: (
+          <RequirePermission dataSetAnyOf={[PERMISSIONS.CONVERSATION.CONVERSE, PERMISSIONS.CONVERSATION.VIEW_ALL]}>
+            <Chat />
+          </RequirePermission>
+        ),
         children: [
           { path: 'new' },
           { path: 'new/:agent' },
@@ -95,7 +93,11 @@ const router = createBrowserRouter([
       },
       {
         path: '/data-sets/:id/history',
-        element: <ChatHistory />
+        element: (
+          <RequirePermission dataSetAnyOf={[PERMISSIONS.CONVERSATION.CONVERSE, PERMISSIONS.CONVERSATION.VIEW_ALL]}>
+            <ChatHistory />
+          </RequirePermission>
+        )
       },
       {
         path: '/data-sets',
@@ -103,19 +105,35 @@ const router = createBrowserRouter([
       },
       {
         path: '/data-sets/new',
-        element: <NewDataSet />
+        element: (
+          <RequirePermission globalAnyOf={[PERMISSIONS.DATASET.ADD]}>
+            <NewDataSet />
+          </RequirePermission>
+        )
       },
       {
         path: '/data-sets/:id/edit',
-        element: <EditDataSet />
+        element: (
+          <RequirePermission dataSetAccess>
+            <EditDataSet />
+          </RequirePermission>
+        )
       },
       {
         path: '/data-sets/:id/users',
-        element: <IndexDataSetUsers />
+        element: (
+          <RequirePermission globalAnyOf={[PERMISSIONS.DATASET_ROLE.ASSIGN]}>
+            <IndexDataSetUsers />
+          </RequirePermission>
+        )
       },
       {
         path: '/data-sets/:id/integrations',
-        element: <IndexDataSetIntegrations />
+        element: (
+          <RequirePermission dataSetAnyOf={[PERMISSIONS.INTEGRATION.VIEW]}>
+            <IndexDataSetIntegrations />
+          </RequirePermission>
+        )
       },
       {
         path: '/data-sets/:id/entities/:slug',
@@ -123,28 +141,59 @@ const router = createBrowserRouter([
       },
       {
         path: '/service-accounts',
-        element: <ApiConnectionIndex />
+        element: (
+          <RequirePermission globalAnyOf={[PERMISSIONS.SERVICE_ACCOUNT.VIEW]}>
+            <ApiConnectionIndex />
+          </RequirePermission>
+        )
       },
       {
         path: '/users',
-        element: <UsersIndex />
+        element: (
+          <RequirePermission globalAnyOf={[PERMISSIONS.USER.VIEW]}>
+            <UsersIndex />
+          </RequirePermission>
+        )
       },
       {
         path: '/roles',
-        element: <RolesIndex />,
-        loader: requireAnyPermission([PERMISSIONS.GROUP.VIEW, PERMISSIONS.DATASET_ROLE.VIEW])
+        element: (
+          <RequirePermission globalAnyOf={[PERMISSIONS.GROUP.VIEW, PERMISSIONS.DATASET_ROLE.VIEW]}>
+            <RolesIndex />
+          </RequirePermission>
+        )
       },
       {
         path: '/data-sets/:dataSetId/agents',
-        element: <AgentsPage />
+        element: (
+          <RequirePermission dataSetAnyOf={[PERMISSIONS.AGENT.VIEW]}>
+            <AgentsPage />
+          </RequirePermission>
+        )
       },
       {
         path: '/data-sets/:id/agentic-executions',
-        element: <AgenticExecutionsPage />
+        element: (
+          <RequirePermission
+            dataSetAnyOf={[PERMISSIONS.AGENTIC_EXECUTION.CREATE, PERMISSIONS.AGENTIC_EXECUTION.VIEW_ALL]}
+          >
+            <AgenticExecutionsPage />
+          </RequirePermission>
+        )
       },
       {
         path: '/data-sets/:id/agentic-executions/:executionId',
-        element: <AgenticExecutionDetailPage />
+        element: (
+          <RequirePermission
+            dataSetAnyOf={[PERMISSIONS.AGENTIC_EXECUTION.CREATE, PERMISSIONS.AGENTIC_EXECUTION.VIEW_ALL]}
+          >
+            <AgenticExecutionDetailPage />
+          </RequirePermission>
+        )
+      },
+      {
+        path: '*',
+        element: <NotFound />
       }
     ]
   },

@@ -3,7 +3,7 @@ import { ApplicationContext, ApplicationContextValue } from "@/lib/application-c
 import { Account, DataSet } from "@/lib/types.ts";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -16,16 +16,9 @@ function extractDataSetIdFromPath(path: string): number | null {
   return match ? parseInt(match[1]) : null;
 }
 
-function buildNewUrl(path: string, newDataSetId: number): string {
-  const pathParts = path.split("/data-sets/");
-  const dataSetPath = pathParts[1] || "";
-  const pathSegments = dataSetPath.split("/");
-  const remainingPath = pathSegments.slice(1).join("/") || "";
-  return `/data-sets/${newDataSetId}/${remainingPath}`;
-}
-
 export function ApplicationContextProvider({ children }: ApplicationContextProviderProps) {
   const [dataSets, setDataSets] = useState<DataSet[]>([]);
+  const [isLoadingDataSets, setIsLoadingDataSets] = useState(true);
   const [dataSetId, setDataSetId] = useState<number | null>(null);
   const [availableAgents, setAvailableAgents] = useState<{ name: string; id: number; }[]>([]);
   const [isLoadingAgents, setIsLoadingAgents] = useState(true);
@@ -35,31 +28,27 @@ export function ApplicationContextProvider({ children }: ApplicationContextProvi
   const [fileExtensionsError, setFileExtensionsError] = useState<string | null>(null);
   const hasFetchedFileExtensions = useRef(false);
   const location = useLocation();
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchDataSets = async () => {
-      const apiDataSets = await api.dataSets().getDataSets();
-      setDataSets(apiDataSets);
+      try {
+        const apiDataSets = await api.dataSets().getDataSets();
+        setDataSets(apiDataSets);
 
-      if (location.pathname.includes("/data-sets/") && !location.pathname.endsWith("/data-sets/new")) {
-        const urlDataSetId = extractDataSetIdFromPath(location.pathname);
+        if (location.pathname.includes("/data-sets/") && !location.pathname.endsWith("/data-sets/new")) {
+          const urlDataSetId = extractDataSetIdFromPath(location.pathname);
 
-        if (apiDataSets.length > 0) {
           if (urlDataSetId && apiDataSets.some(ds => ds.id === urlDataSetId)) {
             setDataSetId(urlDataSetId);
-          } else {
-            const defaultId = apiDataSets[0].id!;
-            setDataSetId(defaultId);
-            const newUrl = buildNewUrl(location.pathname, defaultId);
-            navigate(newUrl, { replace: true });
           }
         }
+      } finally {
+        setIsLoadingDataSets(false);
       }
     };
 
     fetchDataSets();
-  }, [location.pathname, navigate]);
+  }, [location.pathname]);
 
   const fetchAgentsForDataSet = async () => {
     if (!dataSetId) return;
@@ -104,6 +93,7 @@ export function ApplicationContextProvider({ children }: ApplicationContextProvi
   const value: ApplicationContextValue = {
     dataSets,
     setDataSets,
+    isLoadingDataSets,
     dataSetId,
     setDataSetId,
     availableAgents,

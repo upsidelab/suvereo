@@ -1,6 +1,7 @@
 import { FeedbackData, TaskHandle } from "@/lib/api.ts";
 import { BaseApiClient } from "@/lib/api/base.ts";
 import { Conversation, Message, PaginatedResult } from "@/lib/types.ts";
+import { ApiError } from "@/lib/api-error.ts";
 
 export type CreateConversationPayload = {
   agent_id: number;
@@ -98,23 +99,19 @@ export class ConversationsApiClient extends BaseApiClient {
   }
 
   async getConversation(conversation_id: number | null): Promise<Conversation> {
-    try {
-      const response = await fetch(`${this.apiBase}/api/conversations/${conversation_id}`, {
-        ...this._requestConfiguration()
+    const response = await fetch(`${this.apiBase}/api/conversations/${conversation_id}`, {
+      ...this._requestConfiguration()
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new ApiError(`Failed to get conversation: ${response.statusText}`, {
+        data: errorData,
+        status: response.status,
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to get conversation: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(`Failed to get conversation history: ${error.message}`);
-      } else {
-        throw new Error("Failed to get conversation history: An unknown error occurred.");
-      }
     }
+
+    return await response.json();
   }
 
   async updateMessageFeedback(messageId: number | null, feedbackData: FeedbackData): Promise<void> {

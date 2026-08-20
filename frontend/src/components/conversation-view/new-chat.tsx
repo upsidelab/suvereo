@@ -6,6 +6,7 @@ import { authenticationProviderInstance } from "@/lib/authentication-provider.ts
 import { PageMain } from "@/components/util/page-main.tsx";
 import { PageHeading } from "@/components/util/page-heading.tsx";
 import { ChatWindow } from "@/components/conversation-view/chat-window.tsx";
+import { NotFound } from "@/pages/not-found.tsx";
 
 import type { AgentDetails } from "@/lib/types";
 import type { OnPendingMessage } from "@/pages/data-sets/(id)/chat/index.tsx";
@@ -19,7 +20,7 @@ interface NewChatProps {
 const api = new ApiClient(authenticationProviderInstance);
 
 export function NewChat({ onPendingMessage }: NewChatProps) {
-  const { availableAgents, hasDatasetPermission } = useApplicationContext()!;
+  const { availableAgents, isLoadingAgents, hasDatasetPermission } = useApplicationContext()!;
   const canConverse = hasDatasetPermission(PERMISSIONS.CONVERSATION.CONVERSE);
   const { agent } = useParams();
   const [agentDetails, setAgentDetails] = useState<AgentDetails>();
@@ -43,15 +44,6 @@ export function NewChat({ onPendingMessage }: NewChatProps) {
         description: 'Please choose an agent from the sidebar to start a new conversation.',
         pageTitle: 'Choose Agent',
         pageDescription: 'Select an agent to start a conversation.'
-      };
-    }
-    
-    if (!selectedAgent) {
-      return {
-        title: 'Agent Not Found',
-        description: 'The selected agent could not be found or may have been removed.',
-        pageTitle: 'Agent Not Found',
-        pageDescription: 'The requested agent is not available.'
       };
     }
 
@@ -78,6 +70,14 @@ export function NewChat({ onPendingMessage }: NewChatProps) {
   const onSubmit: OnSubmit = async (message, createdConversationId) => {
     const conversationId = createdConversationId || await api.conversations().createConversation(selectedAgent!.id);
     onPendingMessage(message, conversationId);
+  }
+
+  if (isLoadingAgents) {
+    return null;
+  }
+
+  if (agentId && !selectedAgent && availableAgents.length > 0) {
+    return <NotFound />;
   }
 
   return (

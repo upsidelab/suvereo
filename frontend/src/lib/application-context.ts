@@ -4,6 +4,7 @@ import { Account, DataSet } from "@/lib/types.ts";
 export interface ApplicationContextValue {
   dataSets: DataSet[];
   setDataSets: (dataSets: DataSet[]) => void;
+  isLoadingDataSets: boolean;
   dataSetId: number | null;
   setDataSetId: (id: number | null) => void;
   availableAgents: { name: string; id: number; corrupted?: boolean; }[];

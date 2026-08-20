@@ -6,6 +6,7 @@ import { EntityTable } from "@/components/entities/entity-table.tsx";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { EntityType } from "@/lib/types.ts";
+import { NotFound } from "@/pages/not-found.tsx";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -13,16 +14,21 @@ export function EntityRecordsPage() {
   const { id, slug } = useParams<{ id: string; slug: string }>();
   const dataSetId = Number(id);
   const [entityType, setEntityType] = useState<EntityType | null>(null);
+  const [isLoadingEntityType, setIsLoadingEntityType] = useState(true);
 
   useEffect(() => {
     api.entities().listTypes().then(types => {
       const found = types.find(t => t.slug === slug);
       setEntityType(found ?? null);
-    }).catch(() => setEntityType(null));
+    }).catch(() => setEntityType(null)).finally(() => setIsLoadingEntityType(false));
   }, [slug]);
 
-  if (!entityType) {
+  if (isLoadingEntityType) {
     return null;
+  }
+
+  if (!entityType) {
+    return <NotFound />;
   }
 
   return (

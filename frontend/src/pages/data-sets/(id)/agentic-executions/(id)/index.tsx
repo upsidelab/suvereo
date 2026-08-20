@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { FileIcon } from "lucide-react";
 import { PageMain } from "@/components/util/page-main.tsx";
+import { NotFound } from "@/pages/not-found.tsx";
 import { PageHeading } from "@/components/util/page-heading.tsx";
 import { ExecutionStatusBadge } from "@/components/agentic-executions/execution-status-badge.tsx";
 import { ApiClient } from "@/lib/api.ts";
@@ -60,13 +61,7 @@ export function AgenticExecutionDetailPage() {
   }, [executionId]);
 
   if (isAccessDenied) {
-    return (
-      <PageMain>
-        <div className="text-muted-foreground text-sm">
-          You don't have permission to view this agentic execution.
-        </div>
-      </PageMain>
-    );
+    return <NotFound />;
   }
 
   if (!execution) {
