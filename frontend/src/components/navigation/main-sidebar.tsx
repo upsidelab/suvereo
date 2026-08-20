@@ -107,6 +107,9 @@ export function MainSidebar() {
       key: "roles",
       icon: <ShieldIcon />
     }] : []),
+  ];
+
+  const helpItems: SidebarSectionItemProps[] = [
     {
       title: "Help",
       link: "https://upsidelab.io/tools/enthusiast/docs",
@@ -178,9 +181,12 @@ export function MainSidebar() {
             )}
           </>
         )}
-        {account && hasManageAccess && (
-          <MainSidebarSection className="mt-auto" title="Manage" items={manageItems} />
-        )}
+        <div className="mt-auto">
+          {account && hasManageAccess && (
+            <MainSidebarSection title="Manage" items={manageItems} />
+          )}
+          <MainSidebarSection items={helpItems} />
+        </div>
       </SidebarContent>
       <SidebarFooter>
         <UserMenu />

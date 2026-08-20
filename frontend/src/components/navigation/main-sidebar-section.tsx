@@ -15,7 +15,7 @@ export interface SidebarSectionItemProps {
 }
 
 export interface SidebarSectionProps {
-  title: string;
+  title?: string;
   items: SidebarSectionItemProps[];
   className?: string;
 }
@@ -23,7 +23,7 @@ export interface SidebarSectionProps {
 export function MainSidebarSection({ title, items, className }: SidebarSectionProps) {
   return (
     <SidebarGroup className={className}>
-      <SidebarGroupLabel>{title}</SidebarGroupLabel>
+      {title && <SidebarGroupLabel>{title}</SidebarGroupLabel>}
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map((item) => {

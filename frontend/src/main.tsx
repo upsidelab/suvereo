@@ -29,6 +29,8 @@ import { NotFound } from "@/pages/not-found.tsx";
 
 const api = new ApiClient(authenticationProviderInstance);
 
+const NO_DATA_SETS_PATH = "/no-data-sets";
+
 const GLOBAL_MANAGE_ROUTES = [
   { path: "/users", permissions: [PERMISSIONS.USER.VIEW] },
   { path: "/service-accounts", permissions: [PERMISSIONS.SERVICE_ACCOUNT.VIEW] },
@@ -54,11 +56,12 @@ const protectedLoginLoader = async ({ request }: LoaderFunctionArgs) => {
     const manageRoutes = GLOBAL_MANAGE_ROUTES.filter(
       route => route.permissions.some(permission => accountData.permissions.includes(permission))
     );
+    const { pathname } = new URL(request.url);
+
     if (manageRoutes.length === 0) {
-      return redirect("/no-data-sets");
+      return pathname === NO_DATA_SETS_PATH ? null : redirect(NO_DATA_SETS_PATH);
     }
 
-    const { pathname } = new URL(request.url);
     if (!manageRoutes.some(route => pathname.startsWith(route.path))) {
       return redirect(manageRoutes[0].path);
     }
@@ -192,6 +195,10 @@ const router = createBrowserRouter([
         )
       },
       {
+        path: NO_DATA_SETS_PATH,
+        element: <NoDataSets />
+      },
+      {
         path: '*',
         element: <NotFound />
       }
@@ -200,10 +207,6 @@ const router = createBrowserRouter([
   {
     path: "/login",
     element: <LoginPage />
-  },
-  {
-    path: "/no-data-sets",
-    element: <NoDataSets />
   },
   {
     path: "/onboarding",
