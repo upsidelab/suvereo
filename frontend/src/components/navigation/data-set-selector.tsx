@@ -21,13 +21,7 @@ export function DataSetSelector() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const activeDataSet = () => {
-    if (dataSetId === null && dataSets.length > 0) {
-      setDataSetId(dataSets[0].id!);
-      return dataSets[0];
-    }
-    return dataSets.find((e) => e.id === dataSetId);
-  };
+  const activeDataSet = () => dataSets.find((e) => e.id === dataSetId) ?? dataSets[0];
 
   const handleDataSetChange = (id: number) => {
     setDataSetId(id);

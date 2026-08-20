@@ -5,6 +5,7 @@ import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { useLocation, useRouteLoaderData } from "react-router-dom";
 import { ROOT_ROUTE_ID, RootRouteData } from "@/lib/root-route.ts";
+import { PERMISSIONS } from "@/lib/permissions.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -33,18 +34,30 @@ export function ApplicationContextProvider({ children }: ApplicationContextProvi
   const location = useLocation();
 
   useEffect(() => {
-    if (!location.pathname.includes("/data-sets/") || location.pathname.endsWith("/data-sets/new")) {
+    if (dataSets.length === 0) {
       return;
     }
 
     const urlDataSetId = extractDataSetIdFromPath(location.pathname);
     if (urlDataSetId && dataSets.some(dataSet => dataSet.id === urlDataSetId)) {
       setDataSetId(urlDataSetId);
+      return;
     }
-  }, [location.pathname, dataSets]);
+
+    if (dataSetId === null) {
+      setDataSetId(dataSets[0].id!);
+    }
+  }, [location.pathname, dataSets, dataSetId]);
 
   const fetchAgentsForDataSet = async () => {
     if (!dataSetId) return;
+
+    const dataSet = dataSets.find(candidate => candidate.id === dataSetId);
+    if (!dataSet?.permissions.includes(PERMISSIONS.AGENT.VIEW)) {
+      setAvailableAgents([]);
+      setIsLoadingAgents(false);
+      return;
+    }
 
     setIsLoadingAgents(true);
     try {
