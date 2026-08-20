@@ -140,7 +140,11 @@ const router = createBrowserRouter([
       },
       {
         path: '/data-sets/:id/entities/:slug',
-        element: <EntityRecordsPage />
+        element: (
+          <RequirePermission dataSetAccess>
+            <EntityRecordsPage />
+          </RequirePermission>
+        )
       },
       {
         path: '/service-accounts',
