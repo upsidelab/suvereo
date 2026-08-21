@@ -71,6 +71,13 @@ export class DataSetsApiClient extends BaseApiClient {
       }
     );
 
+    if (!response.ok) {
+      throw new ApiError(`Failed to create data set: ${response.statusText}`, {
+        data: await response.json().catch(() => ({})),
+        status: response.status,
+      });
+    }
+
     const responseJson = (await response.json()) as DataSetResponse;
     return responseJson.id!;
   }
@@ -182,12 +189,19 @@ export class DataSetsApiClient extends BaseApiClient {
       language_model: dataSet.languageModel,
     }
 
-    await fetch(`${this.apiBase}/api/data_sets/${dataSetId}`,
+    const response = await fetch(`${this.apiBase}/api/data_sets/${dataSetId}`,
       {
         ...this._requestConfiguration(),
         method: 'PATCH',
         body: JSON.stringify(body)
       }
     );
+
+    if (!response.ok) {
+      throw new ApiError(`Failed to update data set: ${response.statusText}`, {
+        data: await response.json().catch(() => ({})),
+        status: response.status,
+      });
+    }
   }
 }

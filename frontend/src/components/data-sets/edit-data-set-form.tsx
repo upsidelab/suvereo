@@ -54,22 +54,15 @@ export function EditDataSetForm() {
       return;
     }
 
-    try {
-      // Create the updated data set object
-      const updatedDataSet: DataSet = {
-        ...dataSet,
-        ...values
-      };
+    const updatedDataSet: DataSet = {
+      ...dataSet,
+      ...values
+    };
 
-      // Call the API to update the data set
-      await api.dataSets().updateDataSet(parseInt(id), updatedDataSet);
+    await api.dataSets().updateDataSet(parseInt(id), updatedDataSet);
 
-      // The root loader refetches the list on navigation
-      navigate('/data-sets');
-    } catch (err) {
-      console.error("Error updating data set:", err);
-      setError("Failed to update data set");
-    }
+    // The root loader refetches the list on navigation
+    navigate('/data-sets');
   };
 
   if (isLoading) {
