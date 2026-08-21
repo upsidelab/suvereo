@@ -2,6 +2,7 @@ from django.apps import apps as installed_apps
 from django.contrib.auth.management import create_permissions
 from django.db import migrations
 
+
 PERMISSION_NAMES = {
     "catalog.view_dataset": "See every data set and its configuration",
     "catalog.add_dataset": "Create data sets",
