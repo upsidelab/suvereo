@@ -133,11 +133,11 @@ export function GlobalRoleModal({ role, onSaved }: GlobalRoleModalProps) {
           </Button>
         </div>
 
-        {/* Both sections share a floor, so switching between them cannot resize the dialog. */}
-        <div className="min-h-[26rem] flex flex-col">
+        {/* Both sections share a fixed height, so switching between them cannot resize the dialog. */}
+        <div className="h-[26rem] flex flex-col">
         {section === "permissions" && (
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="flex grow flex-col space-y-4 min-h-0">
               {canEdit ? (
                 <FormField
                   control={form.control}
@@ -171,9 +171,14 @@ export function GlobalRoleModal({ role, onSaved }: GlobalRoleModalProps) {
                 onChange={setSelected}
                 disabled={!canEdit}
                 missingPermissions={missingPermissions}
+                className="h-auto grow min-h-0"
               />
 
-              {canEdit && <Button type="submit">Save</Button>}
+              {canEdit && (
+                <div className="flex justify-end">
+                  <Button type="submit">Save</Button>
+                </div>
+              )}
             </form>
           </Form>
         )}

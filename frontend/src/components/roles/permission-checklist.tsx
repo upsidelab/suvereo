@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { cn } from "@/lib/utils.ts";
 import { ScrollArea } from "@/components/ui/scroll-area.tsx";
 import { Checkbox } from "@/components/ui/checkbox.tsx";
 import { PermissionEntity } from "@/lib/types.ts";
@@ -15,6 +16,7 @@ export interface PermissionChecklistProps {
   onChange: (codes: string[]) => void;
   disabled?: boolean;
   missingPermissions?: MissingPermission[];
+  className?: string;
 }
 
 export function PermissionChecklist({
@@ -23,6 +25,7 @@ export function PermissionChecklist({
   onChange,
   disabled,
   missingPermissions = [],
+  className,
 }: PermissionChecklistProps) {
   const instanceId = useId();
 
@@ -42,7 +45,7 @@ export function PermissionChecklist({
   };
 
   return (
-    <ScrollArea className="h-[280px] w-full rounded-md border px-4 py-2">
+    <ScrollArea className={cn("h-[280px] w-full rounded-md border px-4 py-2", className)}>
       <div className="space-y-5">
         {entities.map((entity) => {
           const entityCodes = entity.permissions.map((permission) => permission.code);

@@ -130,7 +130,11 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
               disabled={!isAdmin}
               missingPermissions={missingPermissions}
             />
-            {isAdmin && <Button type="submit">Save</Button>}
+            {isAdmin && (
+              <div className="flex justify-end">
+                <Button type="submit">Save</Button>
+              </div>
+            )}
           </form>
         </Form>
       </DialogContent>
