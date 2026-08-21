@@ -23,15 +23,15 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name='DatasetGroupRoleAssignment',
+            name='DatasetGlobalRoleAssignment',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('dataset', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='catalog.dataset')),
-                ('group', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='auth.group')),
-                ('role', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='account.datasetrole')),
+                ('global_role', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='auth.group')),
+                ('role', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='account.datasetrole')),
             ],
             options={
-                'unique_together': {('group', 'dataset')},
+                'unique_together': {('global_role', 'dataset')},
             },
         ),
         migrations.CreateModel(
@@ -39,7 +39,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('dataset', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='catalog.dataset')),
-                ('role', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='account.datasetrole')),
+                ('role', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='account.datasetrole')),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
             ],
             options={

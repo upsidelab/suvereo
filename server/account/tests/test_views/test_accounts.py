@@ -4,8 +4,8 @@ from django.urls import reverse
 from rest_framework import status
 
 from account.authorization import PERMISSIONS, PUBLIC_CODES, permission_label
-from account.tests.helpers import assign_role, grant, join_group, make_group, make_role
-from account.tests.public_permission_codes_contract import GROUP_ASSIGN, GROUP_VIEW, USER_VIEW
+from account.tests.helpers import assign_role, grant, join_global_role, make_global_role, make_role
+from account.tests.public_permission_codes_contract import GLOBAL_ROLE_ASSIGN, GLOBAL_ROLE_VIEW, USER_VIEW
 
 pytestmark = pytest.mark.django_db
 
@@ -58,12 +58,12 @@ def test_permissions_lists_a_directly_granted_code(api_client, user, url):
     assert response.data["permissions"] == [USER_VIEW]
 
 
-def test_permissions_folds_in_codes_granted_through_a_group(api_client, user, url):
-    join_group(user, make_group("assigners", PERMISSIONS.GROUP.VIEW, PERMISSIONS.GROUP.ASSIGN))
+def test_permissions_folds_in_codes_granted_through_a_global_role(api_client, user, url):
+    join_global_role(user, make_global_role("assigners", PERMISSIONS.GLOBAL_ROLE.VIEW, PERMISSIONS.GLOBAL_ROLE.ASSIGN))
 
     response = api_client.get(url)
 
-    assert set(response.data["permissions"]) == {GROUP_VIEW, GROUP_ASSIGN}
+    assert set(response.data["permissions"]) == {GLOBAL_ROLE_VIEW, GLOBAL_ROLE_ASSIGN}
 
 
 def test_permissions_excludes_per_dataset_role_grants(api_client, user, url, data_set):

@@ -197,6 +197,18 @@ class TestAgenticExecutionListView:
         assert own_execution.id in execution_ids
         assert others_execution.id not in execution_ids
 
+    def test_attributes_each_execution_to_the_user_who_started_it(self, agent, dataset, url):
+        starter = baker.make(User, email="starter@example.com")
+        conversation = baker.make(Conversation, user=starter, agent=agent, data_set=dataset)
+        baker.make(AgenticExecution, agent=agent, conversation=conversation, input={})
+        watcher = baker.make(User, is_superuser=False)
+        watcher.user_permissions.add(_permission(PERMISSIONS.AGENTIC_EXECUTION.VIEW_ALL))
+
+        response = _client_for(watcher).get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["results"][0]["user_email"] == "starter@example.com"
+
     def test_returns_results_ordered_newest_first(self, api_client, user, agent, dataset, url):
         conv1 = baker.make(Conversation, user=user, agent=agent, data_set=dataset)
         conv2 = baker.make(Conversation, user=user, agent=agent, data_set=dataset)
@@ -228,7 +240,7 @@ class TestAgenticExecutionDetailView:
         assert response.status_code == status.HTTP_200_OK
         for field in ("id", "agent", "execution_key", "conversation", "status", "input", "result",
                       "failure_code", "failure_explanation", "celery_task_id",
-                      "started_at", "finished_at", "duration_seconds"):
+                      "started_at", "finished_at", "duration_seconds", "user_email"):
             assert field in response.data
 
     def test_returns_404_for_nonexistent(self, api_client):

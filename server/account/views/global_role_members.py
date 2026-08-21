@@ -12,21 +12,21 @@ from account.authorization import PERMISSIONS, global_permission_required
 from account.models import User
 from account.serializers import UserReferenceSerializer, UserSummarySerializer
 
-GROUP_ID_PARAMETER = openapi.Parameter("id", openapi.IN_PATH, description="ID of the group", type=openapi.TYPE_INTEGER)
+GLOBAL_ROLE_ID_PARAMETER = openapi.Parameter("id", openapi.IN_PATH, description="ID of the global role", type=openapi.TYPE_INTEGER)
 USER_ID_PARAMETER = openapi.Parameter("user_id", openapi.IN_PATH, description="ID of the user", type=openapi.TYPE_INTEGER)
 
 
-class GroupMemberListView(APIView):
+class GlobalRoleMemberListView(APIView):
     """List a group's members; add a user to it."""
 
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         operation_description="List a group's members",
-        manual_parameters=[GROUP_ID_PARAMETER],
+        manual_parameters=[GLOBAL_ROLE_ID_PARAMETER],
         responses={200: UserSummarySerializer(many=True)},
     )
-    @global_permission_required(PERMISSIONS.GROUP.VIEW)
+    @global_permission_required(PERMISSIONS.GLOBAL_ROLE.VIEW)
     def get(self, request, id):
         group = get_object_or_404(Group, pk=id)
         members = group.user_set.order_by("email")
@@ -35,9 +35,9 @@ class GroupMemberListView(APIView):
     @swagger_auto_schema(
         operation_description="Add a user to a group",
         request_body=UserReferenceSerializer,
-        manual_parameters=[GROUP_ID_PARAMETER],
+        manual_parameters=[GLOBAL_ROLE_ID_PARAMETER],
     )
-    @global_permission_required(PERMISSIONS.GROUP.ASSIGN)
+    @global_permission_required(PERMISSIONS.GLOBAL_ROLE.ASSIGN)
     def post(self, request, id):
         group = get_object_or_404(Group, pk=id)
         serializer = UserReferenceSerializer(data=request.data)
@@ -53,19 +53,19 @@ class GroupMemberListView(APIView):
         )
 
 
-class GroupMemberDetailView(APIView):
+class GlobalRoleMemberDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         operation_description="Remove a user from a group",
-        manual_parameters=[GROUP_ID_PARAMETER, USER_ID_PARAMETER],
+        manual_parameters=[GLOBAL_ROLE_ID_PARAMETER, USER_ID_PARAMETER],
     )
-    @global_permission_required(PERMISSIONS.GROUP.ASSIGN)
+    @global_permission_required(PERMISSIONS.GLOBAL_ROLE.ASSIGN)
     def delete(self, request, id, user_id):
         group = get_object_or_404(Group, pk=id)
         user = get_object_or_404(User, pk=user_id)
 
         if not user.groups.filter(pk=group.pk).exists():
-            raise Http404("No group membership matches the given query.")
+            raise Http404("No global role membership matches the given query.")
         user.groups.remove(group)
         return Response(status=status.HTTP_204_NO_CONTENT)

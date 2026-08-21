@@ -14,7 +14,7 @@ TAKEN_NAME = "already-taken"
 
 
 @pytest.fixture
-def existing_group():
+def existing_global_role():
     return Group.objects.create(name=TAKEN_NAME)
 
 
@@ -29,19 +29,19 @@ def target_user():
 
 
 @pytest.fixture
-def guarded_writes(existing_group, existing_role, target_user):
+def guarded_writes(existing_global_role, existing_role, target_user):
     """Every guarded write, paired with a body that an authorised caller would be told is invalid."""
     return {
-        "POST /api/groups (name taken)": ("post", reverse("group_list"), {"name": TAKEN_NAME}),
-        "POST /api/groups (name free)": ("post", reverse("group_list"), {"name": "brand-new"}),
-        "PATCH /api/groups/<id> (name taken)": (
+        "POST /api/global_roles (name taken)": ("post", reverse("global_role_list"), {"name": TAKEN_NAME}),
+        "POST /api/global_roles (name free)": ("post", reverse("global_role_list"), {"name": "brand-new"}),
+        "PATCH /api/global_roles/<id> (name taken)": (
             "patch",
-            reverse("group_details", args=[existing_group.id]),
+            reverse("global_role_details", args=[existing_global_role.id]),
             {"name": TAKEN_NAME},
         ),
-        "PUT /api/groups/<id> (name taken)": (
+        "PUT /api/global_roles/<id> (name taken)": (
             "put",
-            reverse("group_details", args=[existing_group.id]),
+            reverse("global_role_details", args=[existing_global_role.id]),
             {"name": TAKEN_NAME},
         ),
         "POST /api/dataset_roles (name taken)": ("post", reverse("dataset_role_list"), {"name": TAKEN_NAME}),
@@ -63,10 +63,10 @@ class TestAnUnauthorisedCallerIsRefusedBeforeValidation:
     @pytest.mark.parametrize(
         "endpoint",
         [
-            "POST /api/groups (name taken)",
-            "POST /api/groups (name free)",
-            "PATCH /api/groups/<id> (name taken)",
-            "PUT /api/groups/<id> (name taken)",
+            "POST /api/global_roles (name taken)",
+            "POST /api/global_roles (name free)",
+            "PATCH /api/global_roles/<id> (name taken)",
+            "PUT /api/global_roles/<id> (name taken)",
             "POST /api/dataset_roles (name taken)",
             "POST /api/users (invalid email)",
             "PATCH /api/users/<id> (invalid email)",
@@ -82,8 +82,8 @@ class TestAnUnauthorisedCallerIsRefusedBeforeValidation:
 
     def test_a_taken_name_is_indistinguishable_from_a_free_one(self, user, guarded_writes):
         client = client_for(user)
-        _, url, taken = guarded_writes["POST /api/groups (name taken)"]
-        _, _, free = guarded_writes["POST /api/groups (name free)"]
+        _, url, taken = guarded_writes["POST /api/global_roles (name taken)"]
+        _, _, free = guarded_writes["POST /api/global_roles (name free)"]
 
         taken_response = client.post(url, taken, format="json")
         free_response = client.post(url, free, format="json")
@@ -95,11 +95,11 @@ class TestAnUnauthorisedCallerIsRefusedBeforeValidation:
 class TestAnAuthorisedCallerStillSeesValidationErrors:
     """The other half: the guard moved earlier, it did not swallow the validation."""
 
-    def test_an_admin_creating_a_group_with_a_taken_name_gets_400(self, admin_api_client, existing_group):
-        response = admin_api_client.post(reverse("group_list"), {"name": TAKEN_NAME}, format="json")
+    def test_an_admin_creating_a_global_role_with_a_taken_name_gets_400(self, admin_api_client, existing_global_role):
+        response = admin_api_client.post(reverse("global_role_list"), {"name": TAKEN_NAME}, format="json")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert str(response.data["name"][0]) == "group with this name already exists."
+        assert str(response.data["name"][0]) == "A global role with this name already exists."
 
     def test_an_admin_creating_a_dataset_role_with_a_taken_name_gets_400(self, admin_api_client, existing_role):
         response = admin_api_client.post(reverse("dataset_role_list"), {"name": TAKEN_NAME}, format="json")

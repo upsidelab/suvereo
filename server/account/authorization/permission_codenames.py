@@ -2,24 +2,24 @@ from enum import StrEnum
 
 
 class DatasetPermission(StrEnum):
+    VIEW = "catalog.view_dataset"
     ADD = "catalog.add_dataset"
     CHANGE = "catalog.change_dataset"
     DELETE = "catalog.delete_dataset"
-    VIEW = "catalog.view_dataset"
 
 
 class AgentPermission(StrEnum):
+    VIEW = "agent.view_agent"
     ADD = "agent.add_agent"
     CHANGE = "agent.change_agent"
     DELETE = "agent.delete_agent"
-    VIEW = "agent.view_agent"
 
 
 class IntegrationPermission(StrEnum):
+    VIEW = "catalog.view_integration"
     ADD = "catalog.add_integration"
     CHANGE = "catalog.change_integration"
     DELETE = "catalog.delete_integration"
-    VIEW = "catalog.view_integration"
     SYNC = "catalog.sync_integration"
 
 
@@ -34,18 +34,20 @@ class AgenticExecutionPermission(StrEnum):
 
 
 class UserPermission(StrEnum):
+    VIEW = "account.view_user"
     ADD = "account.add_user"
     CHANGE = "account.change_user"
-    VIEW = "account.view_user"
 
 
 class ServiceAccountPermission(StrEnum):
+    VIEW = "account.view_serviceaccount"
     ADD = "account.add_serviceaccount"
     CHANGE = "account.change_serviceaccount"
-    VIEW = "account.view_serviceaccount"
 
 
-class GroupPermission(StrEnum):
+class GlobalRolePermission(StrEnum):
+    """Django's `auth.Group` is a global role to an API consumer, and the public codes say so."""
+
     VIEW = "auth.view_group"
     ASSIGN = "account.assign_group"
 
@@ -63,5 +65,5 @@ class PERMISSIONS:
     AGENTIC_EXECUTION = AgenticExecutionPermission
     USER = UserPermission
     SERVICE_ACCOUNT = ServiceAccountPermission
-    GROUP = GroupPermission
+    GLOBAL_ROLE = GlobalRolePermission
     DATASET_ROLE = DatasetRolePermission

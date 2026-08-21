@@ -2,14 +2,16 @@ from django.contrib.auth.models import Permission
 from django.db.models import Q
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from account.authorization import (
     PERMISSION_ENTITIES,
     PERMISSION_SCOPES,
+    PERMISSIONS,
     PUBLIC_CODES,
-    IsAdmin,
+    any_global_permission_required,
     entity_label,
     permission_label,
 )
@@ -19,9 +21,7 @@ DEFAULT_SCOPE = "global"
 
 
 class PermissionListView(APIView):
-    """The checkbox list backing the group and dataset-role editors, grouped by entity."""
-
-    permission_classes = [IsAdmin]
+    permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         operation_description="List the permissions that can be granted, grouped by entity",
@@ -36,6 +36,7 @@ class PermissionListView(APIView):
         ],
         responses={200: PermissionEntitySerializer(many=True)},
     )
+    @any_global_permission_required(PERMISSIONS.GLOBAL_ROLE.VIEW, PERMISSIONS.DATASET_ROLE.VIEW)
     def get(self, request):
         scope = request.query_params.get("scope", DEFAULT_SCOPE)
         if scope not in PERMISSION_SCOPES:

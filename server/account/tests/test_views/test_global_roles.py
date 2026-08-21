@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from account.authorization import PERMISSIONS
+from account.models import DatasetGlobalRoleAssignment
 from account.tests.helpers import assign_role, client_for, grant, make_role, permission
 from account.tests.public_permission_codes_contract import DATASET_VIEW, USER_VIEW
 
@@ -12,20 +13,20 @@ pytestmark = pytest.mark.django_db
 
 
 @pytest.fixture
-def group():
-    group = Group.objects.create(name="support")
-    group.permissions.add(permission(PERMISSIONS.DATASET.VIEW))
-    return group
+def global_role():
+    global_role = Group.objects.create(name="support")
+    global_role.permissions.add(permission(PERMISSIONS.DATASET.VIEW))
+    return global_role
 
 
 @pytest.fixture
 def list_url():
-    return reverse("group_list")
+    return reverse("global_role_list")
 
 
 @pytest.fixture
-def detail_url(group):
-    return reverse("group_details", args=[group.id])
+def detail_url(global_role):
+    return reverse("global_role_details", args=[global_role.id])
 
 
 class TestReadingGroupsRequiresGroupView:
@@ -34,13 +35,13 @@ class TestReadingGroupsRequiresGroupView:
         assert APIClient().get(detail_url).status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_a_group_view_holder_can_list_and_retrieve(self, api_client, user, list_url, detail_url):
-        grant(user, PERMISSIONS.GROUP.VIEW)
+        grant(user, PERMISSIONS.GLOBAL_ROLE.VIEW)
 
         assert api_client.get(list_url).status_code == status.HTTP_200_OK
         assert api_client.get(detail_url).status_code == status.HTTP_200_OK
 
     def test_group_assign_alone_does_not_substitute_for_group_view(self, api_client, user, list_url, detail_url):
-        grant(user, PERMISSIONS.GROUP.ASSIGN)
+        grant(user, PERMISSIONS.GLOBAL_ROLE.ASSIGN)
 
         assert api_client.get(list_url).status_code == status.HTTP_403_FORBIDDEN
         assert api_client.get(detail_url).status_code == status.HTTP_403_FORBIDDEN
@@ -53,7 +54,7 @@ class TestReadingGroupsRequiresGroupView:
 class TestWritingGroupsIsAdminOnly:
     @pytest.mark.parametrize(
         "delegated",
-        [(PERMISSIONS.GROUP.VIEW,), (PERMISSIONS.GROUP.ASSIGN, PERMISSIONS.GROUP.VIEW)],
+        [(PERMISSIONS.GLOBAL_ROLE.VIEW,), (PERMISSIONS.GLOBAL_ROLE.ASSIGN, PERMISSIONS.GLOBAL_ROLE.VIEW)],
         ids=["viewer", "assigner"],
     )
     @pytest.mark.parametrize(
@@ -66,7 +67,7 @@ class TestWritingGroupsIsAdminOnly:
         ],
     )
     def test_a_delegate_cannot_create_edit_or_delete_a_group(
-        self, user, list_url, detail_url, group, delegated, method, uses_detail_url, body
+        self, user, list_url, detail_url, global_role, delegated, method, uses_detail_url, body
     ):
         grant(user, *delegated)
         url = detail_url if uses_detail_url else list_url
@@ -74,7 +75,7 @@ class TestWritingGroupsIsAdminOnly:
         response = getattr(client_for(user), method)(url, body, format="json")
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
-        assert Group.objects.filter(pk=group.pk).exists()
+        assert Group.objects.filter(pk=global_role.pk).exists()
         assert not Group.objects.filter(name__in=["new-team", "renamed"]).exists()
 
     def test_an_admin_can_create_a_group(self, admin_api_client, list_url):
@@ -85,37 +86,35 @@ class TestWritingGroupsIsAdminOnly:
 
 
 class TestGroupPayloads:
-    def test_the_listing_carries_only_an_id_and_a_name(self, api_client, user, list_url, group):
-        grant(user, PERMISSIONS.GROUP.VIEW)
+    def test_the_listing_carries_only_an_id_and_a_name(self, api_client, user, list_url, global_role):
+        grant(user, PERMISSIONS.GLOBAL_ROLE.VIEW)
 
         response = api_client.get(list_url)
 
         assert [set(row) for row in response.data["results"]] == [{"id", "name"}]
 
     def test_the_detail_carries_permissions_as_public_codes(self, api_client, user, detail_url):
-        grant(user, PERMISSIONS.GROUP.VIEW)
+        grant(user, PERMISSIONS.GLOBAL_ROLE.VIEW)
 
         response = api_client.get(detail_url)
 
         assert response.data["permissions"] == [DATASET_VIEW]
 
 
-class TestGroupDeletion:
-    def test_a_group_still_holding_a_role_on_a_data_set_cannot_be_deleted(
-        self, admin_api_client, detail_url, group, data_set
-    ):
-        assign_role(group, data_set, make_role("reader", PERMISSIONS.AGENT.VIEW))
-
-        response = admin_api_client.delete(detail_url)
-
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.data["dataset_assignments"] == 1
-        assert Group.objects.filter(pk=group.pk).exists()
-
-    def test_a_group_with_members_but_no_dataset_role_can_be_deleted(self, admin_api_client, detail_url, group, user):
-        user.groups.add(group)
+class TestGlobalRoleDeletion:
+    def test_deleting_a_global_role_gives_up_the_roles_it_held(self, admin_api_client, detail_url, global_role, data_set):
+        assign_role(global_role, data_set, make_role("reader", PERMISSIONS.AGENT.VIEW))
 
         response = admin_api_client.delete(detail_url)
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
-        assert not Group.objects.filter(pk=group.pk).exists()
+        assert not Group.objects.filter(pk=global_role.pk).exists()
+        assert not DatasetGlobalRoleAssignment.objects.filter(global_role_id=global_role.pk).exists()
+
+    def test_a_global_role_with_members_can_be_deleted(self, admin_api_client, detail_url, global_role, user):
+        user.groups.add(global_role)
+
+        response = admin_api_client.delete(detail_url)
+
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert not Group.objects.filter(pk=global_role.pk).exists()

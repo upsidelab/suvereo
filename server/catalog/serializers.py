@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from account.authorization import dataset_permission_codes
 from agent.core.registries.embeddings.embedding_provider_registry import EmbeddingProviderRegistry
 
 from .models import DataSet, Integration
@@ -18,10 +19,19 @@ DATASET_FIELDS = [
 
 
 class DataSetSerializer(serializers.ModelSerializer):
+    permissions = serializers.SerializerMethodField()
+
     class Meta:
         model = DataSet
-        fields = DATASET_FIELDS
-        read_only_fields = ["id"]
+        fields = DATASET_FIELDS + ["permissions"]
+        read_only_fields = ["id", "permissions"]
+
+    def get_permissions(self, data_set) -> list[str]:
+        """The requesting user's dataset-scoped permissions on this data set"""
+        request = self.context.get("request")
+        if request is None:
+            return []
+        return dataset_permission_codes(request.user, data_set)
 
 
 class DataSetCreateSerializer(DataSetSerializer):
@@ -63,6 +73,7 @@ class IntegrationSerializer(serializers.ModelSerializer):
     integration_type_name = serializers.SerializerMethodField()
     syncable = serializers.SerializerMethodField()
     configurable = serializers.SerializerMethodField()
+    config_schema = serializers.SerializerMethodField()
 
     class Meta:
         model = Integration
@@ -75,6 +86,7 @@ class IntegrationSerializer(serializers.ModelSerializer):
             "syncable",
             "configurable",
             "config",
+            "config_schema",
             "created_at",
             "updated_at",
         ]
@@ -99,6 +111,10 @@ class IntegrationSerializer(serializers.ModelSerializer):
     def get_syncable(self, integration):
         plugin_class = self._get_plugin_class(integration)
         return plugin_class.is_syncable() if plugin_class else False
+
+    def get_config_schema(self, integration) -> dict:
+        plugin_class = self._get_plugin_class(integration)
+        return plugin_class().get_config_schema() if plugin_class else {}
 
     def get_configurable(self, integration):
         plugin_class = self._get_plugin_class(integration)

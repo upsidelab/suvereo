@@ -5,7 +5,7 @@ from model_bakery import baker
 from rest_framework import serializers, status
 
 from account.authorization import PERMISSIONS
-from account.models import DatasetGroupRoleAssignment, DatasetRole, DatasetUserRoleAssignment
+from account.models import DatasetGlobalRoleAssignment, DatasetRole, DatasetUserRoleAssignment
 from agent.models import Agent
 from catalog.entities.registry import EntityRegistration, entity_registry
 from catalog.models import DataSet
@@ -93,11 +93,11 @@ class TestEntityRecordsView:
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data["results"]) == 1
 
-    def test_group_role_member_is_allowed(self, api_client, user, data_set):
-        group = baker.make(Group)
-        user.groups.add(group)
+    def test_global_role_member_is_allowed(self, api_client, user, data_set):
+        global_role = baker.make(Group)
+        user.groups.add(global_role)
         role = baker.make(DatasetRole)
-        baker.make(DatasetGroupRoleAssignment, group=group, dataset=data_set, role=role)
+        baker.make(DatasetGlobalRoleAssignment, global_role=global_role, dataset=data_set, role=role)
 
         response = api_client.get(_url(data_set))
 

@@ -1035,6 +1035,25 @@ class TestConversationListView:
         conversation_ids = [conv["id"] for conv in response.data["results"]]
         assert others_conversation.id not in conversation_ids
 
+    def test_list_attributes_each_conversation_to_its_owner(self, api_client, user, dataset, url):
+        other_user = baker.make(User, email="colleague@example.com")
+        agent = baker.make(Agent, deleted_at=None, dataset=dataset)
+        baker.make(Conversation, user=user, agent=agent, data_set=dataset)
+        baker.make(Conversation, user=other_user, agent=agent, data_set=dataset)
+        user.user_permissions.add(_permission(PERMISSIONS.CONVERSATION.VIEW_ALL))
+
+        response = api_client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        owners = {conv["user_email"] for conv in response.data["results"]}
+        assert owners == {user.email, "colleague@example.com"}
+
+    def test_detail_attributes_the_conversation_to_its_owner(self, api_client, user, conversation):
+        response = api_client.get(reverse("conversation-details", kwargs={"conversation_id": conversation.id}))
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["user_email"] == user.email
+
     def test_execution_conversations_are_excluded_from_list(self, api_client, user, dataset, url):
         linked_agent = baker.make(Agent, deleted_at=None, dataset=dataset)
         regular_conversation = baker.make(Conversation, user=user, agent=linked_agent, data_set=dataset)

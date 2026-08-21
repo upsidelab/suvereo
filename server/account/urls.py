@@ -1,10 +1,11 @@
 from django.urls import path
 
 import account.views.accounts
+import account.views.admins
 import account.views.dataset_access
 import account.views.dataset_roles
-import account.views.group_members
-import account.views.groups
+import account.views.global_role_members
+import account.views.global_roles
 import account.views.login
 import account.views.permissions
 import account.views.service_accounts
@@ -13,6 +14,7 @@ import account.views.users
 urlpatterns = [
     path("api/auth/login", account.views.login.LoginView.as_view(), name="login"),
     path("api/account", account.views.accounts.AccountView.as_view(), name="account"),
+    path("api/admins", account.views.admins.AdminListView.as_view(), name="admin_list"),
     path("api/users", account.views.users.UserListView.as_view(), name="user_list"),
     path("api/users/<int:id>", account.views.users.UserView.as_view(), name="user_details"),
     path("api/users/<int:id>/password", account.views.users.UserPasswordView.as_view(), name="user_password"),
@@ -32,17 +34,17 @@ urlpatterns = [
         account.views.service_accounts.CheckServiceNameView.as_view(),
         name="check_service_name",
     ),
-    path("api/groups", account.views.groups.GroupListView.as_view(), name="group_list"),
-    path("api/groups/<int:id>", account.views.groups.GroupDetailView.as_view(), name="group_details"),
+    path("api/global_roles", account.views.global_roles.GlobalRoleListView.as_view(), name="global_role_list"),
+    path("api/global_roles/<int:id>", account.views.global_roles.GlobalRoleDetailView.as_view(), name="global_role_details"),
     path(
-        "api/groups/<int:id>/members",
-        account.views.group_members.GroupMemberListView.as_view(),
-        name="group_member_list",
+        "api/global_roles/<int:id>/members",
+        account.views.global_role_members.GlobalRoleMemberListView.as_view(),
+        name="global_role_member_list",
     ),
     path(
-        "api/groups/<int:id>/members/<int:user_id>",
-        account.views.group_members.GroupMemberDetailView.as_view(),
-        name="group_member_details",
+        "api/global_roles/<int:id>/members/<int:user_id>",
+        account.views.global_role_members.GlobalRoleMemberDetailView.as_view(),
+        name="global_role_member_details",
     ),
     path("api/dataset_roles", account.views.dataset_roles.DatasetRoleListView.as_view(), name="dataset_role_list"),
     path(
@@ -67,13 +69,13 @@ urlpatterns = [
         name="dataset_role_user_details",
     ),
     path(
-        "api/data_sets/<int:data_set_id>/roles/<int:role_id>/groups",
-        account.views.dataset_access.DatasetRoleGroupListView.as_view(),
-        name="dataset_role_group_list",
+        "api/data_sets/<int:data_set_id>/roles/<int:role_id>/global_roles",
+        account.views.dataset_access.DatasetRoleGlobalRoleListView.as_view(),
+        name="dataset_role_global_role_list",
     ),
     path(
-        "api/data_sets/<int:data_set_id>/roles/<int:role_id>/groups/<int:group_id>",
-        account.views.dataset_access.DatasetRoleGroupView.as_view(),
-        name="dataset_role_group_details",
+        "api/data_sets/<int:data_set_id>/roles/<int:role_id>/global_roles/<int:global_role_id>",
+        account.views.dataset_access.DatasetRoleGlobalRoleView.as_view(),
+        name="dataset_role_global_role_details",
     ),
 ]

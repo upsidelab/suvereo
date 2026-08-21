@@ -9,7 +9,7 @@ asserted. Import those from `public_permission_codes_contract`.
 from django.contrib.auth.models import Group, Permission
 from rest_framework.test import APIClient
 
-from account.models import DatasetGroupRoleAssignment, DatasetRole, DatasetUserRoleAssignment
+from account.models import DatasetGlobalRoleAssignment, DatasetRole, DatasetUserRoleAssignment
 
 # Django caches a user's resolved permissions on the instance, and `force_authenticate` hands that
 # same instance to the view. Granting anything after the first `has_perm` therefore has to drop the
@@ -40,17 +40,17 @@ def grant(user, *codenames: str):
     return _reset_permission_cache(user)
 
 
-def make_group(name: str = "group", *codenames: str) -> Group:
-    """A group carrying the given global permissions."""
-    group = Group.objects.create(name=name)
+def make_global_role(name: str = "global-role", *codenames: str) -> Group:
+    """A global role carrying the given global permissions."""
+    global_role = Group.objects.create(name=name)
     if codenames:
-        group.permissions.add(*permissions(*codenames))
-    return group
+        global_role.permissions.add(*permissions(*codenames))
+    return global_role
 
 
-def join_group(user, group: Group):
-    """Add a user to a group, so the group's permissions reach them."""
-    user.groups.add(group)
+def join_global_role(user, global_role: Group):
+    """Add a user to a global role, so the role's permissions reach them."""
+    user.groups.add(global_role)
     return _reset_permission_cache(user)
 
 
@@ -63,9 +63,9 @@ def make_role(name: str = "role", *codenames: str) -> DatasetRole:
 
 
 def assign_role(subject, dataset, role: DatasetRole):
-    """Grant `role` on `dataset` to a user or a group, whichever `subject` is."""
+    """Grant `role` on `dataset` to a user or a global role, whichever `subject` is."""
     if isinstance(subject, Group):
-        return DatasetGroupRoleAssignment.objects.create(group=subject, dataset=dataset, role=role)
+        return DatasetGlobalRoleAssignment.objects.create(global_role=subject, dataset=dataset, role=role)
     return DatasetUserRoleAssignment.objects.create(user=subject, dataset=dataset, role=role)
 
 

@@ -4,7 +4,7 @@ from .permission_codenames import (
     ConversationPermission,
     DatasetPermission,
     DatasetRolePermission,
-    GroupPermission,
+    GlobalRolePermission,
     IntegrationPermission,
     ServiceAccountPermission,
     UserPermission,
@@ -14,7 +14,7 @@ _GLOBAL_ONLY_PERMISSIONS: list[str] = [
     *DatasetPermission,
     *UserPermission,
     *ServiceAccountPermission,
-    *GroupPermission,
+    *GlobalRolePermission,
     *DatasetRolePermission,
 ]
 
@@ -46,6 +46,8 @@ PERMISSION_DEPENDENCIES: dict[str, list[str]] = {
         AgentPermission.ADD,
         AgentPermission.CHANGE,
         AgentPermission.DELETE,
+        ConversationPermission.CONVERSE,
+        AgenticExecutionPermission.CREATE,
     ],
     IntegrationPermission.VIEW: [
         IntegrationPermission.ADD,
@@ -56,16 +58,16 @@ PERMISSION_DEPENDENCIES: dict[str, list[str]] = {
     UserPermission.VIEW: [
         UserPermission.ADD,
         UserPermission.CHANGE,
-        GroupPermission.ASSIGN,
+        GlobalRolePermission.ASSIGN,
         DatasetRolePermission.ASSIGN,
     ],
     ServiceAccountPermission.VIEW: [
         ServiceAccountPermission.ADD,
         ServiceAccountPermission.CHANGE,
-        GroupPermission.ASSIGN,
+        GlobalRolePermission.ASSIGN,
         DatasetRolePermission.ASSIGN,
     ],
-    GroupPermission.VIEW: [GroupPermission.ASSIGN],
+    GlobalRolePermission.VIEW: [GlobalRolePermission.ASSIGN],
     DatasetRolePermission.VIEW: [DatasetRolePermission.ASSIGN],
 }
 

@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
             unique_together={("user", "dataset", "role")},
         ),
         migrations.AlterUniqueTogether(
-            name="datasetgrouproleassignment",
-            unique_together={("group", "dataset", "role")},
+            name="datasetglobalroleassignment",
+            unique_together={("global_role", "dataset", "role")},
         ),
     ]
