@@ -1,4 +1,5 @@
 from django.contrib.auth.models import Permission
+from django.core.exceptions import ImproperlyConfigured
 from rest_framework import serializers
 
 from account.authorization import (
@@ -31,7 +32,11 @@ class PermissionCodeField(serializers.RelatedField):
     queryset = Permission.objects.select_related("content_type")
 
     def to_representation(self, permission) -> str:
-        return PUBLIC_CODES[permission_label(permission)]
+        label = permission_label(permission)
+        try:
+            return PUBLIC_CODES[label]
+        except KeyError:
+            raise ImproperlyConfigured(f"Permission {label} is in the database but is not declared in PERMISSIONS.")
 
     def to_internal_value(self, code) -> Permission:
         codename = INTERNAL_CODES.get(code)
