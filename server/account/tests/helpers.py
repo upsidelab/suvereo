@@ -6,15 +6,15 @@ Public codes belong in request bodies and response assertions, where they are th
 asserted. Import those from `public_permission_codes_contract`.
 """
 
-from django.contrib.auth.models import Group, Permission
+from django.contrib.auth.models import Permission
 from rest_framework.test import APIClient
 
-from account.models import DatasetGlobalRoleAssignment, DatasetRole, DatasetUserRoleAssignment
+from account.models import DatasetGlobalRoleAssignment, DatasetRole, DatasetUserRoleAssignment, GlobalRole
 
 # Django caches a user's resolved permissions on the instance, and `force_authenticate` hands that
 # same instance to the view. Granting anything after the first `has_perm` therefore has to drop the
 # cache, or the new grant is invisible for the rest of the test.
-_PERMISSION_CACHES = ("_perm_cache", "_user_perm_cache", "_group_perm_cache")
+_PERMISSION_CACHES = ("_perm_cache", "_user_perm_cache", "_group_perm_cache", "_role_perm_cache")
 
 
 def _reset_permission_cache(user):
@@ -40,17 +40,17 @@ def grant(user, *codenames: str):
     return _reset_permission_cache(user)
 
 
-def make_global_role(name: str = "global-role", *codenames: str) -> Group:
+def make_global_role(name: str = "global-role", *codenames: str) -> GlobalRole:
     """A global role carrying the given global permissions."""
-    global_role = Group.objects.create(name=name)
+    global_role = GlobalRole.objects.create(name=name)
     if codenames:
         global_role.permissions.add(*permissions(*codenames))
     return global_role
 
 
-def join_global_role(user, global_role: Group):
+def join_global_role(user, global_role: GlobalRole):
     """Add a user to a global role, so the role's permissions reach them."""
-    user.groups.add(global_role)
+    global_role.members.add(user)
     return _reset_permission_cache(user)
 
 
@@ -64,7 +64,7 @@ def make_role(name: str = "role", *codenames: str) -> DatasetRole:
 
 def assign_role(subject, dataset, role: DatasetRole):
     """Grant `role` on `dataset` to a user or a global role, whichever `subject` is."""
-    if isinstance(subject, Group):
+    if isinstance(subject, GlobalRole):
         return DatasetGlobalRoleAssignment.objects.create(global_role=subject, dataset=dataset, role=role)
     return DatasetUserRoleAssignment.objects.create(user=subject, dataset=dataset, role=role)
 

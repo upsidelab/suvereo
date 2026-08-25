@@ -26,8 +26,6 @@ PERMISSION_NAMES = {
     "account.view_serviceaccount": "See the list of service accounts",
     "account.add_serviceaccount": "Create service accounts",
     "account.change_serviceaccount": "Edit service accounts and reset their tokens",
-    "auth.view_group": "See global roles and the permissions they carry",
-    "account.assign_group": "Add users to and remove them from global roles",
     "account.view_datasetrole": "See the dataset roles that can be granted",
     "account.assign_datasetrole": "Grant and revoke dataset roles on a data set",
 }

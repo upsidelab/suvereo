@@ -46,10 +46,8 @@ class ServiceAccountPermission(StrEnum):
 
 
 class GlobalRolePermission(StrEnum):
-    """Django's `auth.Group` is a global role to an API consumer, and the public codes say so."""
-
-    VIEW = "auth.view_group"
-    ASSIGN = "account.assign_group"
+    VIEW = "account.view_globalrole"
+    ASSIGN = "account.assign_globalrole"
 
 
 class DatasetRolePermission(StrEnum):

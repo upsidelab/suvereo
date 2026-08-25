@@ -1,13 +1,13 @@
-from django.contrib.auth.models import Group
 from django.db import models
 
 from .dataset_role import DatasetRole
+from .global_role import GlobalRole
 
 
 class DatasetGlobalRoleAssignment(models.Model):
     """A dataset role held on one data set by everyone in one global role."""
 
-    global_role = models.ForeignKey(Group, on_delete=models.CASCADE)
+    global_role = models.ForeignKey(GlobalRole, on_delete=models.CASCADE)
     dataset = models.ForeignKey("catalog.DataSet", on_delete=models.CASCADE)
     role = models.ForeignKey(DatasetRole, on_delete=models.CASCADE)
 
