@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from django.contrib.auth.models import Group, Permission
+from django.contrib.auth.models import Permission
 from django.test import override_settings
 from django.urls import reverse
 from enthusiast_common.utils import RequiredFieldsModel
@@ -10,7 +10,7 @@ from pydantic import Field
 from rest_framework import status
 
 from account.authorization import PERMISSIONS
-from account.models import DatasetGlobalRoleAssignment, DatasetRole, DatasetUserRoleAssignment
+from account.models import DatasetGlobalRoleAssignment, DatasetRole, DatasetUserRoleAssignment, GlobalRole
 from account.tests.public_permission_codes_contract import (
     AGENT_VIEW,
     CONVERSATION_CONVERSE,
@@ -169,8 +169,8 @@ class TestDataSetListViewGet:
         assert self._ids(response) == {visible.id}
 
     def test_user_sees_dataset_via_global_role_assignment(self, api_client, user, url):
-        global_role = baker.make(Group)
-        user.groups.add(global_role)
+        global_role = baker.make(GlobalRole)
+        global_role.members.add(user)
         visible = baker.make(DataSet)
         baker.make(DataSet)
         role = baker.make(DatasetRole)

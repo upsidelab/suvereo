@@ -1,5 +1,5 @@
 import pytest
-from django.contrib.auth.models import Group, Permission
+from django.contrib.auth.models import Permission
 from model_bakery import baker
 from rest_framework.exceptions import PermissionDenied
 
@@ -10,7 +10,7 @@ from account.authorization.decorators import (
     any_permission_on_any_dataset_required,
     global_permission_required,
 )
-from account.models import DatasetGlobalRoleAssignment, DatasetRole, DatasetUserRoleAssignment, User
+from account.models import DatasetGlobalRoleAssignment, DatasetRole, DatasetUserRoleAssignment, GlobalRole, User
 from catalog.models import DataSet
 
 pytestmark = pytest.mark.django_db
@@ -148,8 +148,8 @@ class TestAnyPermissionOnAnyDatasetRequired:
 
     def test_allows_holder_via_global_role_on_any_dataset(self):
         user = baker.make(User)
-        global_role = baker.make(Group)
-        user.groups.add(global_role)
+        global_role = baker.make(GlobalRole)
+        global_role.members.add(user)
         dataset = baker.make(DataSet)
         role = baker.make(DatasetRole)
         role.permissions.add(_permission(PERMISSIONS.AGENT.ADD))

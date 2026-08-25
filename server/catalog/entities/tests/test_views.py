@@ -1,11 +1,11 @@
 import pytest
-from django.contrib.auth.models import Group, Permission
+from django.contrib.auth.models import Permission
 from django.urls import reverse
 from model_bakery import baker
 from rest_framework import serializers, status
 
 from account.authorization import PERMISSIONS
-from account.models import DatasetGlobalRoleAssignment, DatasetRole, DatasetUserRoleAssignment
+from account.models import DatasetGlobalRoleAssignment, DatasetRole, DatasetUserRoleAssignment, GlobalRole
 from agent.models import Agent
 from catalog.entities.registry import EntityRegistration, entity_registry
 from catalog.models import DataSet
@@ -94,8 +94,8 @@ class TestEntityRecordsView:
         assert len(response.data["results"]) == 1
 
     def test_global_role_member_is_allowed(self, api_client, user, data_set):
-        global_role = baker.make(Group)
-        user.groups.add(global_role)
+        global_role = baker.make(GlobalRole)
+        global_role.members.add(user)
         role = baker.make(DatasetRole)
         baker.make(DatasetGlobalRoleAssignment, global_role=global_role, dataset=data_set, role=role)
 

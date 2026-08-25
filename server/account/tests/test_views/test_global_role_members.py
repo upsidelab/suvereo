@@ -1,12 +1,11 @@
 import pytest
-from django.contrib.auth.models import Group
 from django.urls import reverse
 from model_bakery import baker
 from rest_framework import status
 from rest_framework.test import APIClient
 
 from account.authorization import PERMISSIONS
-from account.models import User
+from account.models import GlobalRole, User
 from account.tests.helpers import client_for, grant, make_global_role
 
 pytestmark = pytest.mark.django_db
@@ -14,7 +13,7 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def global_role():
-    return Group.objects.create(name="support")
+    return GlobalRole.objects.create(name="support")
 
 
 @pytest.fixture
@@ -43,7 +42,7 @@ class TestListingMembers:
     def test_a_group_view_holder_sees_the_members_ordered_by_email(self, api_client, user, global_role, members_url):
         grant(user, PERMISSIONS.GLOBAL_ROLE.VIEW)
         for email in ["carol@example.com", "alice@example.com", "bob@example.com"]:
-            baker.make(User, email=email).groups.add(global_role)
+            global_role.members.add(baker.make(User, email=email))
 
         response = api_client.get(members_url)
 
@@ -63,23 +62,23 @@ class TestAddingAMember:
         response = client_for(assigner).post(members_url, {"user_id": member.id}, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
-        assert member.groups.filter(pk=global_role.pk).exists()
+        assert global_role.members.filter(pk=member.pk).exists()
 
     def test_a_plain_user_cannot_add_anyone(self, api_client, member, global_role, members_url):
         response = api_client.post(members_url, {"user_id": member.id}, format="json")
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
-        assert not member.groups.filter(pk=global_role.pk).exists()
+        assert not global_role.members.filter(pk=member.pk).exists()
 
     def test_adding_someone_who_is_already_a_member_reports_no_change(self, assigner, member, global_role, members_url):
         """`200`, not a second `201`. The membership is a set, and the caller is told the request
         was a no-op rather than being led to believe it created something."""
-        member.groups.add(global_role)
+        global_role.members.add(member)
 
         response = client_for(assigner).post(members_url, {"user_id": member.id}, format="json")
 
         assert response.status_code == status.HTTP_200_OK
-        assert member.groups.filter(pk=global_role.pk).count() == 1
+        assert global_role.members.filter(pk=member.pk).count() == 1
 
     def test_a_service_account_can_be_added(self, assigner, global_role, members_url):
         service_account = baker.make(User, email="bot@example.com", is_service_account=True)
@@ -112,12 +111,12 @@ class TestAddingAMember:
 
 class TestRemovingAMember:
     def test_an_assigner_can_remove_a_member(self, assigner, member, global_role):
-        member.groups.add(global_role)
+        global_role.members.add(member)
 
         response = client_for(assigner).delete(_member_url(global_role, member))
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
-        assert not member.groups.filter(pk=global_role.pk).exists()
+        assert not global_role.members.filter(pk=member.pk).exists()
 
     def test_removing_someone_who_is_not_a_member_reports_that_nothing_matched(self, assigner, member, global_role):
         response = client_for(assigner).delete(_member_url(global_role, member))
@@ -131,7 +130,7 @@ class TestRemovingAMember:
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_removing_the_same_member_twice_only_succeeds_once(self, assigner, member, global_role):
-        member.groups.add(global_role)
+        global_role.members.add(member)
         client = client_for(assigner)
 
         assert client.delete(_member_url(global_role, member)).status_code == status.HTTP_204_NO_CONTENT
@@ -143,7 +142,7 @@ class TestWhatMembershipActuallyDoes:
         response = client_for(assigner).post(members_url, {"user_id": assigner.id}, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
-        assert assigner.groups.filter(pk=global_role.pk).exists()
+        assert global_role.members.filter(pk=assigner.pk).exists()
 
     def test_the_group_s_permissions_reach_a_newly_added_member(self, assigner, member):
         global_role = make_global_role("user-managers", PERMISSIONS.USER.VIEW)
