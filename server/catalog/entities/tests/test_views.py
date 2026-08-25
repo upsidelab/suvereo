@@ -1,11 +1,11 @@
 import pytest
-from django.contrib.auth.models import Permission
 from django.urls import reverse
 from model_bakery import baker
 from rest_framework import serializers, status
 
 from account.authorization import PERMISSIONS
 from account.models import DatasetGlobalRoleAssignment, DatasetRole, DatasetUserRoleAssignment, GlobalRole
+from account.tests.helpers import grant
 from agent.models import Agent
 from catalog.entities.registry import EntityRegistration, entity_registry
 from catalog.models import DataSet
@@ -34,11 +34,6 @@ def fake_entity_registration(monkeypatch):
     return registration
 
 
-def _permission(codename: str) -> Permission:
-    app_label, name = codename.split(".")
-    return Permission.objects.get(codename=name, content_type__app_label=app_label)
-
-
 def _url(data_set, slug="agents"):
     return reverse("entity-records", kwargs={"data_set_id": data_set.id, "slug": slug})
 
@@ -58,7 +53,7 @@ class TestEntityListView:
         assert response.status_code == status.HTTP_200_OK
 
     def test_global_view_dataset_holder_is_allowed(self, api_client, user):
-        user.user_permissions.add(_permission(PERMISSIONS.DATASET.VIEW))
+        grant(user, PERMISSIONS.DATASET.VIEW)
 
         response = api_client.get(reverse("entity-list"))
 
@@ -104,7 +99,7 @@ class TestEntityRecordsView:
         assert response.status_code == status.HTTP_200_OK
 
     def test_global_view_dataset_holder_is_allowed(self, api_client, user, data_set):
-        user.user_permissions.add(_permission(PERMISSIONS.DATASET.VIEW))
+        grant(user, PERMISSIONS.DATASET.VIEW)
 
         response = api_client.get(_url(data_set))
 

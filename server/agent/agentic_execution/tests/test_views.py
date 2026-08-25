@@ -11,6 +11,7 @@ from rest_framework.test import APIClient
 
 from account.authorization import PERMISSIONS
 from account.models import DatasetRole, DatasetUserRoleAssignment, User
+from account.tests.helpers import grant
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
 from agent.agentic_execution.services import FileUploadNotSupportedError, UnsupportedFileTypeError
 from agent.models.agent import Agent
@@ -156,7 +157,7 @@ class TestAgenticExecutionListView:
         conversation = baker.make(Conversation, user=other_user, agent=agent, data_set=dataset)
         others_execution = baker.make(AgenticExecution, agent=agent, conversation=conversation, input={})
         watcher = baker.make(User, is_superuser=False)
-        watcher.user_permissions.add(_permission(PERMISSIONS.AGENTIC_EXECUTION.VIEW_ALL))
+        grant(watcher, PERMISSIONS.AGENTIC_EXECUTION.VIEW_ALL)
 
         response = _client_for(watcher).get(url)
 
@@ -202,7 +203,7 @@ class TestAgenticExecutionListView:
         conversation = baker.make(Conversation, user=starter, agent=agent, data_set=dataset)
         baker.make(AgenticExecution, agent=agent, conversation=conversation, input={})
         watcher = baker.make(User, is_superuser=False)
-        watcher.user_permissions.add(_permission(PERMISSIONS.AGENTIC_EXECUTION.VIEW_ALL))
+        grant(watcher, PERMISSIONS.AGENTIC_EXECUTION.VIEW_ALL)
 
         response = _client_for(watcher).get(url)
 
@@ -269,7 +270,7 @@ class TestAgenticExecutionDetailView:
 
     def test_global_view_all_holder_can_fetch_other_users_execution(self, execution, url):
         watcher = baker.make(User, is_superuser=False)
-        watcher.user_permissions.add(_permission(PERMISSIONS.AGENTIC_EXECUTION.VIEW_ALL))
+        grant(watcher, PERMISSIONS.AGENTIC_EXECUTION.VIEW_ALL)
 
         response = _client_for(watcher).get(url)
 
@@ -358,7 +359,7 @@ class TestAgenticExecutionDefinitionTypesView:
 
     def test_global_create_holder_can_list_definitions(self, dataset, url):
         holder = baker.make(User, is_superuser=False)
-        holder.user_permissions.add(_permission(PERMISSIONS.AGENTIC_EXECUTION.CREATE))
+        grant(holder, PERMISSIONS.AGENTIC_EXECUTION.CREATE)
 
         response = _client_for(holder).get(url)
 
@@ -531,7 +532,7 @@ class TestStartAgenticExecutionView:
 
     def test_global_create_holder_can_start_an_execution(self, agent, url):
         holder = baker.make(User, is_superuser=False)
-        holder.user_permissions.add(_permission(PERMISSIONS.AGENTIC_EXECUTION.CREATE))
+        grant(holder, PERMISSIONS.AGENTIC_EXECUTION.CREATE)
 
         with patch("agent.agentic_execution.views.AgenticExecutionService.start") as mock_start, \
              patch("agent.agentic_execution.services.run_agentic_execution_task.delay"):

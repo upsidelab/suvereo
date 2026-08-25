@@ -6,6 +6,7 @@ from rest_framework import status
 
 from account.authorization import PERMISSIONS
 from account.models import DatasetGlobalRoleAssignment, DatasetRole, DatasetUserRoleAssignment, GlobalRole
+from account.tests.helpers import grant
 from account.tests.public_permission_codes_contract import (
     AGENT_VIEW,
     DATASET_SCOPED_CONTRACT,
@@ -53,7 +54,7 @@ class TestDataSetDetailViewGet:
         assert response.status_code == status.HTTP_200_OK
 
     def test_global_view_dataset_holder_can_view_any_dataset(self, api_client, user, data_set):
-        user.user_permissions.add(_permission(PERMISSIONS.DATASET.VIEW))
+        grant(user, PERMISSIONS.DATASET.VIEW)
 
         response = api_client.get(_url(data_set))
 
@@ -101,7 +102,7 @@ class TestDataSetDetailViewPatch:
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_global_change_dataset_holder_can_update_dataset(self, api_client, user, data_set):
-        user.user_permissions.add(_permission(PERMISSIONS.DATASET.CHANGE))
+        grant(user, PERMISSIONS.DATASET.CHANGE)
 
         response = api_client.patch(_url(data_set), {"name": "Renamed"}, format="json")
 
@@ -134,7 +135,7 @@ class TestDataSetDetailViewDelete:
         assert DataSet.objects.filter(id=data_set.id).exists()
 
     def test_global_delete_dataset_holder_can_delete_dataset(self, api_client, user, data_set):
-        user.user_permissions.add(_permission(PERMISSIONS.DATASET.DELETE))
+        grant(user, PERMISSIONS.DATASET.DELETE)
 
         response = api_client.delete(_url(data_set))
 

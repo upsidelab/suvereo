@@ -13,6 +13,7 @@ from account.authorization.helpers import (
     is_dataset_member,
 )
 from account.models import DatasetGlobalRoleAssignment, DatasetRole, DatasetUserRoleAssignment, GlobalRole, User
+from account.tests.helpers import grant
 from account.tests.public_permission_codes_contract import (
     AGENT_VIEW,
     CONVERSATION_CONVERSE,
@@ -40,7 +41,7 @@ class TestIsDatasetMember:
 
     def test_global_view_dataset_holder_is_member_of_any_dataset(self):
         user = baker.make(User)
-        user.user_permissions.add(_permission(PERMISSIONS.DATASET.VIEW))
+        grant(user, PERMISSIONS.DATASET.VIEW)
         dataset = baker.make(DataSet)
 
         assert is_dataset_member(user, dataset) is True
@@ -88,7 +89,7 @@ class TestDatasetsVisibleTo:
 
     def test_global_view_dataset_holder_sees_all_datasets(self):
         user = baker.make(User)
-        user.user_permissions.add(_permission(PERMISSIONS.DATASET.VIEW))
+        grant(user, PERMISSIONS.DATASET.VIEW)
         baker.make(DataSet, _quantity=2)
 
         assert datasets_visible_to(user).count() == 2
@@ -142,7 +143,7 @@ class TestHasDatasetPerm:
 
     def test_global_permission_holder_has_dataset_perm_anywhere(self):
         user = baker.make(User)
-        user.user_permissions.add(_permission(PERMISSIONS.AGENT.VIEW))
+        grant(user, PERMISSIONS.AGENT.VIEW)
         dataset = baker.make(DataSet)
 
         assert has_dataset_perm(user, self.CODENAME, dataset) is True
@@ -204,7 +205,7 @@ class TestDatasetsWithPermission:
 
     def test_global_permission_holder_gets_all_datasets(self):
         user = baker.make(User)
-        user.user_permissions.add(_permission(PERMISSIONS.CONVERSATION.VIEW_ALL))
+        grant(user, PERMISSIONS.CONVERSATION.VIEW_ALL)
         baker.make(DataSet)
         baker.make(DataSet)
 
@@ -274,7 +275,7 @@ class TestHasAnyDatasetAccess:
 
     def test_global_view_dataset_holder_has_it_with_no_datasets_at_all(self):
         user = baker.make(User)
-        user.user_permissions.add(_permission(PERMISSIONS.DATASET.VIEW))
+        grant(user, PERMISSIONS.DATASET.VIEW)
 
         assert has_any_dataset_access(user) is True
 
@@ -313,7 +314,7 @@ class TestHasAnyPermissionOnAnyDataset:
 
     def test_global_permission_holder_has_it(self):
         user = baker.make(User)
-        user.user_permissions.add(_permission(PERMISSIONS.AGENT.ADD))
+        grant(user, PERMISSIONS.AGENT.ADD)
 
         assert has_any_permission_on_any_dataset(user, *self.CODENAMES) is True
 
@@ -376,7 +377,7 @@ class TestDatasetPermissionCodes:
 
     def test_global_grant_reports_on_every_dataset(self):
         user = baker.make(User)
-        user.user_permissions.add(_permission(PERMISSIONS.AGENT.VIEW))
+        grant(user, PERMISSIONS.AGENT.VIEW)
         first = baker.make(DataSet)
         second = baker.make(DataSet)
 
@@ -385,7 +386,7 @@ class TestDatasetPermissionCodes:
 
     def test_global_and_role_grants_are_unioned_without_duplicates(self):
         user = baker.make(User)
-        user.user_permissions.add(_permission(PERMISSIONS.AGENT.VIEW))
+        grant(user, PERMISSIONS.AGENT.VIEW)
         dataset = baker.make(DataSet)
         role = baker.make(DatasetRole)
         role.permissions.add(_permission(PERMISSIONS.AGENT.VIEW), _permission(PERMISSIONS.CONVERSATION.CONVERSE))
@@ -397,7 +398,7 @@ class TestDatasetPermissionCodes:
         # `dataset.view` is what makes the dataset visible in the first place, but it is global-only:
         # it says nothing about what can be done inside this dataset, so it stays off this list.
         user = baker.make(User)
-        user.user_permissions.add(_permission(PERMISSIONS.DATASET.VIEW))
+        grant(user, PERMISSIONS.DATASET.VIEW)
         dataset = baker.make(DataSet)
 
         assert DATASET_VIEW not in dataset_permission_codes(user, dataset)

@@ -14,7 +14,7 @@ from account.models import DatasetGlobalRoleAssignment, DatasetRole, DatasetUser
 # Django caches a user's resolved permissions on the instance, and `force_authenticate` hands that
 # same instance to the view. Granting anything after the first `has_perm` therefore has to drop the
 # cache, or the new grant is invisible for the rest of the test.
-_PERMISSION_CACHES = ("_perm_cache", "_user_perm_cache", "_group_perm_cache", "_role_perm_cache")
+_PERMISSION_CACHES = ("_perm_cache", "_user_perm_cache", "_group_perm_cache")
 
 
 def _reset_permission_cache(user):
@@ -35,8 +35,15 @@ def permissions(*codenames: str) -> list[Permission]:
 
 
 def grant(user, *codenames: str):
-    """Grant global permissions directly to a user."""
-    user.user_permissions.add(*permissions(*codenames))
+    """Grant global permissions to a user, through a global role kept for them alone.
+
+    Permissions reach an account through global roles and nothing else, so writing them onto
+    `user.user_permissions` would grant a test something the product cannot grant anyone.
+    Repeated calls accumulate on the same role.
+    """
+    global_role, _ = GlobalRole.objects.get_or_create(name=f"granted-to-{user.pk}")
+    global_role.permissions.add(*permissions(*codenames))
+    global_role.members.add(user)
     return _reset_permission_cache(user)
 
 

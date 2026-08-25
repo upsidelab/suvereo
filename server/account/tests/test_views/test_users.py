@@ -7,6 +7,7 @@ from rest_framework.test import APIClient
 
 from account.authorization import PERMISSIONS
 from account.models import GlobalRole, User
+from account.tests.helpers import grant
 
 pytestmark = pytest.mark.django_db
 
@@ -52,7 +53,7 @@ class TestUserListView:
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_view_user_holder_can_list_users(self, api_client, user, target_user, url):
-        user.user_permissions.add(_permission(PERMISSIONS.USER.VIEW))
+        grant(user, PERMISSIONS.USER.VIEW)
 
         response = api_client.get(url)
 
@@ -60,7 +61,7 @@ class TestUserListView:
         assert target_user.id in [result["id"] for result in response.data["results"]]
 
     def test_view_user_holder_cannot_create_users(self, api_client, user, url, payload):
-        user.user_permissions.add(_permission(PERMISSIONS.USER.VIEW))
+        grant(user, PERMISSIONS.USER.VIEW)
 
         response = api_client.post(url, payload, format="json")
 
@@ -68,7 +69,7 @@ class TestUserListView:
         assert not User.objects.filter(email="new@example.com").exists()
 
     def test_add_user_holder_can_create_a_user(self, api_client, user, url, payload):
-        user.user_permissions.add(_permission(PERMISSIONS.USER.ADD))
+        grant(user, PERMISSIONS.USER.ADD)
 
         response = api_client.post(url, payload, format="json")
 
@@ -76,14 +77,14 @@ class TestUserListView:
         assert User.objects.filter(email="new@example.com").exists()
 
     def test_create_response_carries_the_new_users_id(self, api_client, user, url, payload):
-        user.user_permissions.add(_permission(PERMISSIONS.USER.ADD))
+        grant(user, PERMISSIONS.USER.ADD)
 
         response = api_client.post(url, payload, format="json")
 
         assert response.data["id"] == User.objects.get(email="new@example.com").id
 
     def test_add_user_holder_cannot_list_users(self, api_client, url, user):
-        user.user_permissions.add(_permission(PERMISSIONS.USER.ADD))
+        grant(user, PERMISSIONS.USER.ADD)
 
         response = api_client.get(url)
 
@@ -128,14 +129,14 @@ class TestUserView:
         assert target_user.email != "renamed@example.com"
 
     def test_view_user_holder_cannot_update_a_user(self, api_client, user, target_user, url, payload):
-        user.user_permissions.add(_permission(PERMISSIONS.USER.VIEW))
+        grant(user, PERMISSIONS.USER.VIEW)
 
         response = api_client.patch(url, payload, format="json")
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_change_user_holder_can_update_a_user(self, api_client, user, target_user, url, payload):
-        user.user_permissions.add(_permission(PERMISSIONS.USER.CHANGE))
+        grant(user, PERMISSIONS.USER.CHANGE)
 
         response = api_client.patch(url, payload, format="json")
 
@@ -184,13 +185,7 @@ class TestOnlyAdminsManageAdmins:
 
     @pytest.fixture
     def user_manager(self, user):
-        user.user_permissions.set(
-            [
-                _permission(PERMISSIONS.USER.VIEW),
-                _permission(PERMISSIONS.USER.ADD),
-                _permission(PERMISSIONS.USER.CHANGE),
-            ]
-        )
+        grant(user, PERMISSIONS.USER.VIEW, PERMISSIONS.USER.ADD, PERMISSIONS.USER.CHANGE)
         return user
 
     @pytest.fixture
@@ -298,7 +293,7 @@ class TestUserPasswordView:
         return reverse("user_password", kwargs={"id": target_user.id})
 
     def test_change_user_holder_can_set_a_password(self, api_client, user, target_user, url):
-        user.user_permissions.add(_permission(PERMISSIONS.USER.CHANGE))
+        grant(user, PERMISSIONS.USER.CHANGE)
 
         response = api_client.put(url, {"password": "brand-new-pass"}, format="json")
 
@@ -308,7 +303,7 @@ class TestUserPasswordView:
         assert target_user.check_password("brand-new-pass")
 
     def test_view_user_holder_cannot_set_a_password(self, api_client, user, target_user, url):
-        user.user_permissions.add(_permission(PERMISSIONS.USER.VIEW))
+        grant(user, PERMISSIONS.USER.VIEW)
 
         response = api_client.put(url, {"password": "brand-new-pass"}, format="json")
 

@@ -90,7 +90,8 @@ class TestGroupPayloads:
 
         response = api_client.get(list_url)
 
-        assert [set(row) for row in response.data["results"]] == [{"id", "name"}]
+        assert response.data["results"]
+        assert all(set(row) == {"id", "name"} for row in response.data["results"])
 
     def test_the_detail_carries_permissions_as_public_codes(self, api_client, user, detail_url):
         grant(user, PERMISSIONS.GLOBAL_ROLE.VIEW)

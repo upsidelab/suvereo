@@ -11,6 +11,7 @@ from rest_framework import status
 
 from account.authorization import PERMISSIONS
 from account.models import DatasetGlobalRoleAssignment, DatasetRole, DatasetUserRoleAssignment, GlobalRole
+from account.tests.helpers import grant
 from account.tests.public_permission_codes_contract import (
     AGENT_VIEW,
     CONVERSATION_CONVERSE,
@@ -72,7 +73,7 @@ class TestDataSetListViewPost:
         assert not DataSet.objects.filter(name="New DataSet").exists()
 
     def test_user_with_add_dataset_permission_can_create_dataset(self, api_client, user, url, payload):
-        user.user_permissions.add(_permission(PERMISSIONS.DATASET.ADD))
+        grant(user, PERMISSIONS.DATASET.ADD)
 
         response = api_client.post(url, payload, format="json")
 
@@ -182,7 +183,7 @@ class TestDataSetListViewGet:
         assert self._ids(response) == {visible.id}
 
     def test_global_view_dataset_holder_sees_all_datasets(self, api_client, user, url):
-        user.user_permissions.add(_permission(PERMISSIONS.DATASET.VIEW))
+        grant(user, PERMISSIONS.DATASET.VIEW)
         datasets = baker.make(DataSet, _quantity=2)
 
         response = api_client.get(url)
@@ -230,7 +231,7 @@ class TestDataSetListViewGetPermissionsField:
         }
 
     def test_global_grant_reports_on_every_visible_dataset(self, api_client, user, url):
-        user.user_permissions.add(_permission(PERMISSIONS.DATASET.VIEW), _permission(PERMISSIONS.AGENT.VIEW))
+        grant(user, PERMISSIONS.DATASET.VIEW, PERMISSIONS.AGENT.VIEW)
         baker.make(DataSet, _quantity=2)
 
         response = api_client.get(url)

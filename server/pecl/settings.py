@@ -166,6 +166,10 @@ AUTH_PASSWORD_VALIDATORS = [
 
 AUTH_USER_MODEL = "account.User"
 
+# Permissions are reached through global roles and nothing else, so `ModelBackend` is replaced
+# rather than accompanied. It remains the authenticator - `RoleBackend` subclasses it.
+AUTHENTICATION_BACKENDS = ["account.authorization.backends.RoleBackend"]
+
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 

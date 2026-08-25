@@ -10,6 +10,7 @@ from rest_framework.test import APIClient
 
 from account.authorization import PERMISSIONS
 from account.models import DatasetRole, DatasetUserRoleAssignment
+from account.tests.helpers import grant
 
 pytestmark = pytest.mark.django_db
 
@@ -77,7 +78,7 @@ class TestConversationFileUploadView:
     @patch("agent.views.process_file_upload_task.apply_async")
     def test_upload_global_converse_holder_can_upload(self, mock_task, api_client, user, url):
         # Global grant, no per-dataset role anywhere.
-        user.user_permissions.add(_permission(PERMISSIONS.CONVERSATION.CONVERSE))
+        grant(user, PERMISSIONS.CONVERSATION.CONVERSE)
         mock_task.return_value = MagicMock(id="fake-task-id")
         data = {"file": SimpleUploadedFile("test.txt", b"test content", content_type="text/plain")}
 

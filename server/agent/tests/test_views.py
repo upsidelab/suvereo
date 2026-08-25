@@ -14,6 +14,7 @@ from rest_framework.test import APIClient
 
 from account.authorization import PERMISSIONS
 from account.models import DatasetRole, DatasetUserRoleAssignment, User
+from account.tests.helpers import grant
 from agent.models import Conversation, Message
 from agent.models.agent import Agent
 from agent.models.agentic_execution import AgenticExecution
@@ -640,7 +641,7 @@ class TestConversationView:
     def test_global_converse_holder_can_post(self, api_client, user, url, conversation):
         # Global grant, no per-dataset role anywhere - the other converse tests all go through
         # a DatasetUserRoleAssignment, so this covers has_dataset_perm's has_perm short-circuit.
-        user.user_permissions.add(_permission(PERMISSIONS.CONVERSATION.CONVERSE))
+        grant(user, PERMISSIONS.CONVERSATION.CONVERSE)
         payload = {
             "data_set_id": conversation.data_set.id,
             "question_message": "Hello?",
@@ -772,7 +773,7 @@ class TestConversationView:
     def test_get_global_view_all_holder_sees_conversations_they_do_not_own(self, api_client, user, conversation, url):
         conversation.user = baker.make(User)
         conversation.save()
-        user.user_permissions.add(_permission(PERMISSIONS.CONVERSATION.VIEW_ALL))
+        grant(user, PERMISSIONS.CONVERSATION.VIEW_ALL)
 
         response = api_client.get(url)
 
@@ -807,7 +808,7 @@ class TestConversationListView:
         assert response.data["agent"]["id"] == agent.id
 
     def test_create_conversation_global_converse_holder_can_create(self, api_client, user, agent, url):
-        user.user_permissions.add(_permission(PERMISSIONS.CONVERSATION.CONVERSE))
+        grant(user, PERMISSIONS.CONVERSATION.CONVERSE)
 
         response = api_client.post(url, {"agent_id": agent.id}, format="json")
 
@@ -997,7 +998,7 @@ class TestConversationListView:
         other_user = baker.make(User)
         agent = baker.make(Agent, deleted_at=None, dataset=dataset)
         others_conversation = baker.make(Conversation, user=other_user, agent=agent, data_set=dataset)
-        user.user_permissions.add(_permission(PERMISSIONS.CONVERSATION.VIEW_ALL))
+        grant(user, PERMISSIONS.CONVERSATION.VIEW_ALL)
 
         response = api_client.get(reverse("conversation-list"))
 
@@ -1040,7 +1041,7 @@ class TestConversationListView:
         agent = baker.make(Agent, deleted_at=None, dataset=dataset)
         baker.make(Conversation, user=user, agent=agent, data_set=dataset)
         baker.make(Conversation, user=other_user, agent=agent, data_set=dataset)
-        user.user_permissions.add(_permission(PERMISSIONS.CONVERSATION.VIEW_ALL))
+        grant(user, PERMISSIONS.CONVERSATION.VIEW_ALL)
 
         response = api_client.get(url)
 

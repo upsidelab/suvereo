@@ -2,13 +2,14 @@ import re
 
 import pytest
 from django.conf import settings
+from django.contrib.auth import authenticate
 from django.contrib.auth.models import AnonymousUser
 from model_bakery import baker
 
-from account.authorization import PERMISSIONS
-from account.authorization.backends import RolePermissionsBackend
+from account.authorization import GLOBAL_SCOPE_PERMISSIONS, PERMISSIONS
+from account.authorization.backends import RoleBackend
 from account.models import User
-from account.tests.helpers import grant, join_global_role, make_global_role
+from account.tests.helpers import join_global_role, make_global_role, permission
 from account.tests.public_permission_codes_contract import DATASET_VIEW, USER_VIEW
 
 pytestmark = pytest.mark.django_db
@@ -16,16 +17,17 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def backend():
-    return RolePermissionsBackend()
+    return RoleBackend()
 
 
-class TestPermissionsReachAUserThroughEveryPath:
-    """`auth.Group` used to resolve global role membership. These paths are ours now."""
+class TestAGlobalRoleIsTheOnlyWayAPermissionReachesAnAccount:
+    def test_a_permission_written_straight_onto_the_account_has_no_effect(self, user):
+        """No endpoint writes `user.user_permissions`, so one that had been written by hand is a
+        grant the product cannot make, cannot show and cannot revoke. It resolves to nothing."""
+        user.user_permissions.add(permission(PERMISSIONS.DATASET.VIEW))
 
-    def test_a_directly_granted_permission_is_held(self, user):
-        grant(user, PERMISSIONS.DATASET.VIEW)
-
-        assert user.has_perm(PERMISSIONS.DATASET.VIEW)
+        assert not user.has_perm(PERMISSIONS.DATASET.VIEW)
+        assert user.get_all_permissions() == set()
 
     def test_a_permission_carried_by_a_global_role_reaches_its_members(self, user):
         join_global_role(user, make_global_role("viewers", PERMISSIONS.DATASET.VIEW))
@@ -44,14 +46,6 @@ class TestPermissionsReachAUserThroughEveryPath:
 
         assert not User.objects.get(pk=user.pk).has_perm(PERMISSIONS.DATASET.VIEW)
 
-    def test_both_paths_at_once_resolve_to_one_union(self, user):
-        grant(user, PERMISSIONS.DATASET.VIEW)
-        join_global_role(user, make_global_role("viewers", PERMISSIONS.DATASET.VIEW, PERMISSIONS.USER.VIEW))
-
-        codes = user.get_all_permissions()
-
-        assert codes == {PERMISSIONS.DATASET.VIEW, PERMISSIONS.USER.VIEW}
-
     def test_two_global_roles_carrying_the_same_permission_do_not_double_it(self, user):
         join_global_role(user, make_global_role("viewers", PERMISSIONS.DATASET.VIEW))
         join_global_role(user, make_global_role("readers", PERMISSIONS.DATASET.VIEW))
@@ -66,10 +60,31 @@ class TestPermissionsReachAUserThroughEveryPath:
         assert sorted(response.data["permissions"]) == sorted([DATASET_VIEW, USER_VIEW])
 
 
+class TestAuthenticationIsStillDjangoS:
+    """The one backend in `AUTHENTICATION_BACKENDS` is also the one that checks passwords."""
+
+    def test_credentials_still_resolve_to_their_account(self):
+        user = baker.make(User, email="who@example.com")
+        user.set_password("s3cret-pass")
+        user.save()
+
+        assert authenticate(username="who@example.com", password="s3cret-pass") == user
+
+    def test_a_wrong_password_resolves_to_nobody(self):
+        user = baker.make(User, email="who@example.com")
+        user.set_password("s3cret-pass")
+        user.save()
+
+        assert authenticate(username="who@example.com", password="wrong") is None
+
+
 class TestWhoTheBackendRefusesToAnswerFor:
-    def test_a_superuser_short_circuits_before_the_backend_runs(self, backend, admin_user):
+    def test_a_superuser_holds_everything_without_belonging_to_a_role(self, admin_user):
+        """`has_perm` short-circuits in `PermissionsMixin`, but `get_all_permissions` does not -
+        an admin's catalog comes from `ModelBackend`'s superuser branch, above the two hooks this
+        backend replaces. It is what `AccountSerializer.permissions` reports to the frontend."""
         assert admin_user.has_perm(PERMISSIONS.DATASET.VIEW)
-        assert backend.get_all_permissions(admin_user) == set()
+        assert admin_user.get_all_permissions() >= set(GLOBAL_SCOPE_PERMISSIONS)
 
     def test_an_inactive_user_holds_nothing(self, backend):
         user = baker.make(User, is_active=False)
@@ -105,8 +120,18 @@ def _project_sources(*, excluding: str) -> list:
 
 
 class TestAuthGroupIsRetired:
-    """`auth_group` survives only because `PermissionsMixin` declares `User.groups`. It is empty,
-    nothing reads it, and the rule that keeps it that way is that nobody imports the model."""
+    """`auth_group` outlives this refactor only because `django.contrib.auth` recreates it on every
+    fresh database. Nothing here can reach it: the accessor is gone from the model, and the rule
+    that keeps it that way is that nobody imports it."""
+
+    def test_the_user_model_has_no_accessor_onto_it(self, user):
+        """`PermissionsMixin` declares `User.groups`, and leaving it in place would have left an
+        always-empty queryset ready to answer as though it knew about global roles. Setting it to
+        `None` drops the field; the name survives as a plain `None`, so reaching for it raises."""
+        assert "groups" not in {field.name for field in User._meta.get_fields()}
+
+        with pytest.raises(AttributeError):
+            user.groups.all()
 
     def test_nothing_imports_django_s_group_model(self):
         reference = re.compile(r"auth\.models import [^\n]*\bGroup\b|auth\.models\.Group|[\"']auth\.Group[\"']")
