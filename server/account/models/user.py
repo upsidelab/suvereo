@@ -38,6 +38,9 @@ class User(AbstractUser):
 
     email = models.EmailField(max_length=255, unique=True)
     username = None
+    # `PermissionsMixin`'s M2M onto `auth.Group`, which `GlobalRole` replaces. Removed rather than
+    # left empty, so it cannot silently answer a question it no longer knows anything about.
+    groups = None
     is_service_account = models.BooleanField(default=False)
 
     objects = UserManager()

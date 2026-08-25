@@ -49,6 +49,10 @@ class Migration(migrations.Migration):
             name="global_role",
             field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="account.globalrole"),
         ),
+        migrations.RemoveField(
+            model_name="user",
+            name="groups",
+        ),
         migrations.AlterModelOptions(
             name="user",
             options={
