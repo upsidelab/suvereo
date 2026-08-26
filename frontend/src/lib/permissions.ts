@@ -8,6 +8,8 @@ export const PERMISSIONS = {
   AGENTIC_EXECUTION: { CREATE: "agentic_execution.create", VIEW_ALL: "agentic_execution.view_all" },
   USER:              { ADD: "user.add", CHANGE: "user.change", VIEW: "user.view" },
   SERVICE_ACCOUNT:   { ADD: "service_account.add", CHANGE: "service_account.change", VIEW: "service_account.view" },
-  GLOBAL_ROLE:       { VIEW: "global_role.view", ASSIGN: "global_role.assign" },
-  DATASET_ROLE:      { VIEW: "dataset_role.view", ASSIGN: "dataset_role.assign" },
+  GLOBAL_ROLE:       { VIEW: "global_role.view", ADD: "global_role.add", CHANGE: "global_role.change",
+                       DELETE: "global_role.delete", ASSIGN: "global_role.assign" },
+  DATASET_ROLE:      { VIEW: "dataset_role.view", ADD: "dataset_role.add", CHANGE: "dataset_role.change",
+                       DELETE: "dataset_role.delete", ASSIGN: "dataset_role.assign" },
 } as const;

@@ -8,12 +8,14 @@ import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { DatasetRoleModal } from "@/components/roles/dataset-roles/dataset-role-modal.tsx";
 import { RevokeConfirmDialog } from "@/components/roles/revoke-confirm-dialog.tsx";
 import { ApiError } from "@/lib/api-error.ts";
+import { PERMISSIONS } from "@/lib/permissions.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 
 export function DatasetRolesList() {
-  const { account } = useApplicationContext()!;
-  const isAdmin = !!account?.isAdmin;
+  const { hasPermission } = useApplicationContext()!;
+  const canAddRoles = hasPermission(PERMISSIONS.DATASET_ROLE.ADD);
+  const canDeleteRoles = hasPermission(PERMISSIONS.DATASET_ROLE.DELETE);
   const [roles, setRoles] = useState<DatasetRoleOption[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -70,7 +72,7 @@ export function DatasetRolesList() {
   return (
     <>
       {error && <p className="text-sm text-destructive mb-4">{error}</p>}
-      {isAdmin && (
+      {canAddRoles && (
         <div className="flex flex-col items-end mb-4">
           <DatasetRoleModal onSaved={load} />
         </div>
@@ -79,7 +81,7 @@ export function DatasetRolesList() {
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
-            <TableHead className={isAdmin ? "w-48" : "w-24"}>Action</TableHead>
+            <TableHead className={canDeleteRoles ? "w-48" : "w-24"}>Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -88,7 +90,7 @@ export function DatasetRolesList() {
               <TableCell>{role.name}</TableCell>
               <TableCell className="flex space-x-4">
                 <DatasetRoleModal role={role} onSaved={load} />
-                {isAdmin && (
+                {canDeleteRoles && (
                   <Button
                     variant="secondary"
                     onClick={() => { setError(null); setRoleToDelete(role); setIsDeleteDialogOpen(true); }}
