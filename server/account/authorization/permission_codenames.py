@@ -61,6 +61,14 @@ class DatasetRolePermission(StrEnum):
     ASSIGN = "account.assign_datasetrole"
 
 
+class UserGroupPermission(StrEnum):
+    VIEW = "account.view_usergroup"
+    ADD = "account.add_usergroup"
+    CHANGE = "account.change_usergroup"
+    DELETE = "account.delete_usergroup"
+    ASSIGN = "account.assign_usergroup"
+
+
 class PERMISSIONS:
     DATASET = DatasetPermission
     AGENT = AgentPermission
@@ -71,3 +79,4 @@ class PERMISSIONS:
     SERVICE_ACCOUNT = ServiceAccountPermission
     GLOBAL_ROLE = GlobalRolePermission
     DATASET_ROLE = DatasetRolePermission
+    GROUP = UserGroupPermission
