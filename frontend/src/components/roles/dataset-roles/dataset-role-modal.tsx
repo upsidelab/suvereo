@@ -14,7 +14,7 @@ import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { PermissionChecklist } from "@/components/roles/permission-checklist.tsx";
 import { PermissionErrors } from "@/components/roles/permission-errors.tsx";
 import { PERMISSIONS } from "@/lib/permissions/codes.ts";
-import { missingDependencies } from "@/lib/permissions/dependencies.ts";
+import { missingDependencies, unresolvedRequirements } from "@/lib/permissions/dependencies.ts";
 
 const formSchema = z.object({
   name: z.string().trim().min(1),
@@ -65,6 +65,10 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
       setSelected([]);
     }
   }, [open, role, form]);
+
+  useEffect(() => {
+    setMissingPermissions((reported) => unresolvedRequirements(reported, selected));
+  }, [selected]);
 
   const save = async (values: DatasetRoleFormSchema) => {
     setError(null);

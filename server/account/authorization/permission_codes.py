@@ -19,8 +19,8 @@ INTERNAL_CODES: dict[str, str] = {public: internal for internal, public in PUBLI
 
 
 def entity_label(entity_name: str) -> str:
-    """The display name for a permission entity - "AGENTIC_EXECUTION" reads as "Agentic execution"."""
-    return entity_name.replace("_", " ").capitalize()
+    """The display name for a permission entity - "AGENTIC_EXECUTION" reads as "Agentic Execution"."""
+    return entity_name.replace("_", " ").title()
 
 
 def permission_label(permission) -> str:

@@ -3,7 +3,8 @@ import { cn } from "@/lib/utils.ts";
 import { ScrollArea } from "@/components/ui/scroll-area.tsx";
 import { Checkbox } from "@/components/ui/checkbox.tsx";
 import { MissingPermission, PermissionEntity } from "@/lib/permissions/types.ts";
-import { permissionActionName, permissionName } from "@/lib/permissions/names.ts";
+import { permissionActionName } from "@/lib/permissions/names.ts";
+import { PermissionLabel } from "@/components/roles/permission-label.tsx";
 
 export interface PermissionChecklistProps {
   entities: PermissionEntity[];
@@ -23,6 +24,8 @@ export function PermissionChecklist({
   className,
 }: PermissionChecklistProps) {
   const instanceId = useId();
+
+  const unmetCodes = new Set(missingPermissions.map((missing) => missing.code));
 
   const missingByEntity = new Map<string, MissingPermission[]>();
   for (const missing of missingPermissions) {
@@ -65,6 +68,7 @@ export function PermissionChecklist({
               <div className="space-y-2">
                 {entity.permissions.map((permission) => {
                   const checkboxId = `${instanceId}-${permission.code}`;
+                  const isUnmet = unmetCodes.has(permission.code);
                   return (
                     <div key={permission.code} className="flex items-start space-x-3">
                       <Checkbox
@@ -72,7 +76,7 @@ export function PermissionChecklist({
                         checked={selected.includes(permission.code)}
                         disabled={disabled}
                         onCheckedChange={(value) => toggleCode(permission.code, value === true)}
-                        className="mt-0.5"
+                        className={cn("mt-0.5", isUnmet && "border-destructive")}
                       />
                       <label htmlFor={checkboxId} className="flex min-w-0 grow items-baseline gap-3">
                         <span className="text-sm w-24 shrink-0">{permissionActionName(permission.code)}</span>
@@ -84,8 +88,13 @@ export function PermissionChecklist({
               </div>
               {missing.map((entry) => (
                 <p key={entry.code} className="text-xs text-destructive mt-1.5">
-                  {permissionName(entry.code, entities)} is required by{" "}
-                  {entry.required_by.map((code) => permissionName(code, entities)).join(", ")}
+                  <PermissionLabel code={entry.code} entities={entities} /> is required by{" "}
+                  {entry.required_by.map((code, index) => (
+                    <span key={code}>
+                      {index > 0 && ", "}
+                      <PermissionLabel code={code} entities={entities} />
+                    </span>
+                  ))}
                 </p>
               ))}
             </fieldset>

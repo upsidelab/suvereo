@@ -1,32 +1,48 @@
 import { PERMISSIONS } from "@/lib/permissions/codes.ts";
+import { EscalationWarning } from "@/lib/permissions/types.ts";
 
-const ROLE_EDITING_CODES: readonly string[] = [
-  PERMISSIONS.GLOBAL_ROLE.ADD,
-  PERMISSIONS.GLOBAL_ROLE.CHANGE,
-  PERMISSIONS.GLOBAL_ROLE.DELETE,
-  PERMISSIONS.DATASET_ROLE.ADD,
-  PERMISSIONS.DATASET_ROLE.CHANGE,
-  PERMISSIONS.DATASET_ROLE.DELETE,
-];
+const ROLE_ADD_CODES: readonly string[] = [PERMISSIONS.GLOBAL_ROLE.ADD, PERMISSIONS.DATASET_ROLE.ADD];
+const ROLE_EDIT_CODES: readonly string[] = [PERMISSIONS.GLOBAL_ROLE.CHANGE, PERMISSIONS.DATASET_ROLE.CHANGE];
+const ROLE_ASSIGN_CODES: readonly string[] = [PERMISSIONS.GLOBAL_ROLE.ASSIGN, PERMISSIONS.DATASET_ROLE.ASSIGN];
 
-const ROLE_GRANTING_CODES: readonly string[] = [
-  PERMISSIONS.GLOBAL_ROLE.ASSIGN,
-  PERMISSIONS.DATASET_ROLE.ASSIGN,
-];
+const ADD_WARNING = "People in this role will be able to create roles carrying any permission in the system, "
+  + "including a role that amounts to administrator access.";
 
-const ROLE_EDITING_WARNING = "People in this role will be able to edit permission sets, including their own, "
-  + "which lets them grant themselves any permission in the system. This is effectively administrator access.";
+const EDIT_WARNING = "People in this role will be able to edit permission sets, including those of roles they "
+  + "hold themselves. Nothing stops them granting themselves every permission in the system, so anyone holding "
+  + "this role can self-promote to an effective administrator.";
 
-const ROLE_GRANTING_WARNING = "People in this role will be able to grant roles to anyone, on every data set, "
-  + "including to themselves.";
+const ASSIGN_WARNING = "People in this role will be able to grant roles to anyone, including to themselves.";
 
-export function permissionEscalationWarnings(submitted: string[], stored: string[]): string[] {
-  const alreadyGranted = new Set(stored);
-  const added = new Set(submitted.filter((code) => !alreadyGranted.has(code)));
-  const warns = (codes: readonly string[]) => codes.some((code) => added.has(code));
+function warningsFor(permissions: Set<string>): EscalationWarning[] {
+  const carried = (codes: readonly string[]) => codes.filter((code) => permissions.has(code));
 
-  return [
-    warns(ROLE_EDITING_CODES) ? ROLE_EDITING_WARNING : null,
-    warns(ROLE_GRANTING_CODES) ? ROLE_GRANTING_WARNING : null,
-  ].filter((warning): warning is string => warning !== null);
+  const edit = carried(ROLE_EDIT_CODES);
+  const add = carried(ROLE_ADD_CODES);
+  const assign = carried(ROLE_ASSIGN_CODES);
+
+  const warnings: EscalationWarning[] = [];
+  if (edit.length > 0) {
+    warnings.push({ message: EDIT_WARNING, codes: edit });
+  } else if (add.length > 0) {
+    warnings.push({ message: ADD_WARNING, codes: add });
+  }
+  if (assign.length > 0) {
+    warnings.push({ message: ASSIGN_WARNING, codes: assign });
+  }
+  return warnings;
+}
+
+export function permissionEscalationWarnings(submitted: string[], stored: string[]): EscalationWarning[] {
+  const warnings = warningsFor(new Set(submitted));
+  const alreadyWarned = new Map(
+    warningsFor(new Set(stored)).map((warning) => [warning.message, new Set(warning.codes)]),
+  );
+
+  const isNew = (warning: EscalationWarning) => {
+    const covered = alreadyWarned.get(warning.message);
+    return covered === undefined || warning.codes.some((code) => !covered.has(code));
+  };
+
+  return warnings.some(isNew) ? warnings : [];
 }

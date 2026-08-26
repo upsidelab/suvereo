@@ -1,5 +1,5 @@
 import { MissingPermission, PermissionEntity } from "@/lib/permissions/types.ts";
-import { permissionName } from "@/lib/permissions/names.ts";
+import { PermissionLabel } from "@/components/roles/permission-label.tsx";
 
 export interface PermissionErrorsProps {
   entities: PermissionEntity[];
@@ -13,20 +13,31 @@ export interface PermissionErrorsProps {
  * carry at all.
  */
 export function PermissionErrors({ entities, missingPermissions, serverMessages }: PermissionErrorsProps) {
-  const messages = missingPermissions.length > 0
-    ? missingPermissions.map((missing) => {
-      const requiredBy = missing.required_by.map((code) => permissionName(code, entities)).join(", ");
-      return `${permissionName(missing.code, entities)} is required by ${requiredBy}.`;
-    })
-    : serverMessages;
+  if (missingPermissions.length > 0) {
+    return (
+      <ul className="text-sm text-destructive mb-4 space-y-1.5">
+        {missingPermissions.map((missing) => (
+          <li key={missing.code}>
+            <PermissionLabel code={missing.code} entities={entities} /> is required by{" "}
+            {missing.required_by.map((code, index) => (
+              <span key={code}>
+                {index > 0 && ", "}
+                <PermissionLabel code={code} entities={entities} />
+              </span>
+            ))}
+          </li>
+        ))}
+      </ul>
+    );
+  }
 
-  if (messages.length === 0) {
+  if (serverMessages.length === 0) {
     return null;
   }
 
   return (
     <ul className="text-sm text-destructive mb-4 space-y-1">
-      {messages.map((message) => <li key={message}>{message}</li>)}
+      {serverMessages.map((message) => <li key={message}>{message}</li>)}
     </ul>
   );
 }

@@ -3,8 +3,10 @@ import { PermissionEntity } from "@/lib/permissions/types.ts";
 
 export function permissionActionName(code: string): string {
   const action = code.split(".")[1] ?? code;
-  const spaced = action.replace(/_/g, " ");
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+  return action
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 }
 
 export function permissionName(code: string, entities: PermissionEntity[]): string {

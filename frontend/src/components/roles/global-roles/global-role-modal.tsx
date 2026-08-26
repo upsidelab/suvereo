@@ -17,7 +17,7 @@ import { AdminMembersPanel } from "@/components/roles/global-roles/admin-members
 import { ADMIN_ROLE, GlobalRole, isAdminRole } from "@/components/roles/global-roles/admin-role.ts";
 import { PermissionEscalationDialog } from "@/components/roles/permission-escalation-dialog.tsx";
 import { permissionEscalationWarnings } from "@/lib/permissions/escalation.ts";
-import { missingDependencies } from "@/lib/permissions/dependencies.ts";
+import { missingDependencies, unresolvedRequirements } from "@/lib/permissions/dependencies.ts";
 import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 
 const formSchema = z.object({
@@ -84,6 +84,10 @@ export function GlobalRoleModal({ role, onSaved }: GlobalRoleModalProps) {
       setStoredPermissions([]);
     }
   }, [open, role, isBuiltIn, form]);
+
+  useEffect(() => {
+    setMissingPermissions((reported) => unresolvedRequirements(reported, selected));
+  }, [selected]);
 
   const warnings = permissionEscalationWarnings(selected, storedPermissions);
 
@@ -215,6 +219,7 @@ export function GlobalRoleModal({ role, onSaved }: GlobalRoleModalProps) {
         <PermissionEscalationDialog
           open={pendingValues !== null}
           warnings={warnings}
+          entities={entities}
           onConfirm={() => { if (pendingValues) void save(pendingValues); }}
           onCancel={() => setPendingValues(null)}
         />

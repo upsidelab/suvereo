@@ -19,3 +19,12 @@ export function missingDependencies(selected: string[], entities: PermissionEnti
     .map(([code, dependents]) => ({ code, required_by: [...dependents].sort() }))
     .sort((first, second) => first.code.localeCompare(second.code));
 }
+
+export function unresolvedRequirements(missing: MissingPermission[], selected: string[]): MissingPermission[] {
+  const granted = new Set(selected);
+  const unresolved = missing.filter(
+    (entry) => !granted.has(entry.code) && entry.required_by.some((code) => granted.has(code)),
+  );
+
+  return unresolved.length === missing.length ? missing : unresolved;
+}
