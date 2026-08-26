@@ -44,6 +44,16 @@ def guarded_writes(existing_global_role, existing_role, target_user):
             {"name": TAKEN_NAME},
         ),
         "POST /api/dataset_roles (name taken)": ("post", reverse("dataset_role_list"), {"name": TAKEN_NAME}),
+        "PATCH /api/dataset_roles/<id> (name taken)": (
+            "patch",
+            reverse("dataset_role_details", args=[existing_role.id]),
+            {"name": TAKEN_NAME},
+        ),
+        "PUT /api/dataset_roles/<id> (name taken)": (
+            "put",
+            reverse("dataset_role_details", args=[existing_role.id]),
+            {"name": TAKEN_NAME},
+        ),
         "POST /api/users (invalid email)": (
             "post",
             reverse("user_list"),
@@ -67,6 +77,8 @@ class TestAnUnauthorisedCallerIsRefusedBeforeValidation:
             "PATCH /api/global_roles/<id> (name taken)",
             "PUT /api/global_roles/<id> (name taken)",
             "POST /api/dataset_roles (name taken)",
+            "PATCH /api/dataset_roles/<id> (name taken)",
+            "PUT /api/dataset_roles/<id> (name taken)",
             "POST /api/users (invalid email)",
             "PATCH /api/users/<id> (invalid email)",
             "POST /api/data_sets (missing name)",
@@ -102,6 +114,22 @@ class TestAnAuthorisedCallerStillSeesValidationErrors:
 
     def test_an_admin_creating_a_dataset_role_with_a_taken_name_gets_400(self, admin_api_client, existing_role):
         response = admin_api_client.post(reverse("dataset_role_list"), {"name": TAKEN_NAME}, format="json")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "name" in response.data
+
+    def test_a_global_role_add_holder_creating_with_a_taken_name_gets_400(self, user, existing_global_role):
+        grant(user, PERMISSIONS.GLOBAL_ROLE.VIEW, PERMISSIONS.GLOBAL_ROLE.ADD)
+
+        response = client_for(user).post(reverse("global_role_list"), {"name": TAKEN_NAME}, format="json")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert str(response.data["name"][0]) == "A global role with this name already exists."
+
+    def test_a_dataset_role_add_holder_creating_with_a_taken_name_gets_400(self, user, existing_role):
+        grant(user, PERMISSIONS.DATASET_ROLE.VIEW, PERMISSIONS.DATASET_ROLE.ADD)
+
+        response = client_for(user).post(reverse("dataset_role_list"), {"name": TAKEN_NAME}, format="json")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "name" in response.data
