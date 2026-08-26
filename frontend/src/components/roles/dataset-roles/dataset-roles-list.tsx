@@ -8,7 +8,7 @@ import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { DatasetRoleModal } from "@/components/roles/dataset-roles/dataset-role-modal.tsx";
 import { RevokeConfirmDialog } from "@/components/roles/revoke-confirm-dialog.tsx";
 import { ApiError } from "@/lib/api-error.ts";
-import { PERMISSIONS } from "@/lib/permissions.ts";
+import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 

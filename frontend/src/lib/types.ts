@@ -143,17 +143,6 @@ export type DatasetRoleDetail = {
   permissions: string[];
 };
 
-export type PermissionOption = {
-  code: string;
-  label: string;
-};
-
-export type PermissionEntity = {
-  entity: string;
-  label: string;
-  permissions: PermissionOption[];
-};
-
 export type DatasetUserRoleAssignment = {
   id: number;
   role: DatasetRoleOption;

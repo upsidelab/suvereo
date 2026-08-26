@@ -7,7 +7,7 @@ import { authenticationProviderInstance } from "@/lib/authentication-provider.ts
 import { useNavigate } from "react-router-dom";
 import { ApiClient } from "@/lib/api.ts";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert.tsx";
-import { PERMISSIONS } from "@/lib/permissions.ts";
+import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 

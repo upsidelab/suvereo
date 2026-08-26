@@ -5,7 +5,7 @@ import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { useLocation, useRouteLoaderData } from "react-router-dom";
 import { ROOT_ROUTE_ID, RootRouteData } from "@/lib/root-route.ts";
-import { PERMISSIONS } from "@/lib/permissions.ts";
+import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 

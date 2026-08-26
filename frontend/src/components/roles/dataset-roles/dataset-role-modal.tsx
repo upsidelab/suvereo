@@ -8,11 +8,13 @@ import { Input } from "@/components/ui/input.tsx";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form.tsx";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
-import { DatasetRoleOption, PermissionEntity } from "@/lib/types.ts";
+import { DatasetRoleOption } from "@/lib/types.ts";
+import { MissingPermission, PermissionEntity } from "@/lib/permissions/types.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
-import { MissingPermission, PermissionChecklist } from "@/components/roles/permission-checklist.tsx";
+import { PermissionChecklist } from "@/components/roles/permission-checklist.tsx";
 import { PermissionErrors } from "@/components/roles/permission-errors.tsx";
-import { PERMISSIONS } from "@/lib/permissions.ts";
+import { PERMISSIONS } from "@/lib/permissions/codes.ts";
+import { missingDependencies } from "@/lib/permissions/dependencies.ts";
 
 const formSchema = z.object({
   name: z.string().trim().min(1),
@@ -64,7 +66,7 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
     }
   }, [open, role, form]);
 
-  const handleSubmit = async (values: DatasetRoleFormSchema) => {
+  const save = async (values: DatasetRoleFormSchema) => {
     setError(null);
     setPermissionErrors([]);
     setMissingPermissions([]);
@@ -84,6 +86,17 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
 
     setOpen(false);
     onSaved();
+  };
+
+  const handleSubmit = (values: DatasetRoleFormSchema) => {
+    const missing = missingDependencies(selected, entities);
+    if (missing.length > 0) {
+      setError(null);
+      setPermissionErrors([]);
+      setMissingPermissions(missing);
+      return;
+    }
+    return save(values);
   };
 
   const triggerLabel = role ? (canEdit ? "Edit" : "View") : "New Role";

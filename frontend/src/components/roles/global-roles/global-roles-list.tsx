@@ -8,7 +8,7 @@ import { GlobalRoleModal } from "@/components/roles/global-roles/global-role-mod
 import { RevokeConfirmDialog } from "@/components/roles/revoke-confirm-dialog.tsx";
 import { ADMIN_ROLE, GlobalRole } from "@/components/roles/global-roles/admin-role.ts";
 import { ApiError } from "@/lib/api-error.ts";
-import { PERMISSIONS } from "@/lib/permissions.ts";
+import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 

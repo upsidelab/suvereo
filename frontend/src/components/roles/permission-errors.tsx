@@ -1,6 +1,5 @@
-import { PermissionEntity } from "@/lib/types.ts";
-import { permissionName } from "@/lib/permission-names.ts";
-import { MissingPermission } from "@/components/roles/permission-checklist.tsx";
+import { MissingPermission, PermissionEntity } from "@/lib/permissions/types.ts";
+import { permissionName } from "@/lib/permissions/names.ts";
 
 export interface PermissionErrorsProps {
   entities: PermissionEntity[];

@@ -2,7 +2,7 @@ import { EditDataSetForm } from "@/components/data-sets/edit-data-set-form.tsx";
 import { PageHeading } from "@/components/util/page-heading.tsx";
 import { PageMain } from "@/components/util/page-main.tsx";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
-import { PERMISSIONS } from "@/lib/permissions.ts";
+import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 
 export function EditDataSet() {
   const { hasPermission } = useApplicationContext()!;

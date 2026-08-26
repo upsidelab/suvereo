@@ -1,5 +1,5 @@
 import { BaseApiClient } from "@/lib/api/base.ts";
-import { PermissionEntity } from "@/lib/types.ts";
+import { PermissionEntity } from "@/lib/permissions/types.ts";
 import { ApiError } from "@/lib/api-error.ts";
 
 export class PermissionsApiClient extends BaseApiClient {

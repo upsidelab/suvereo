@@ -1,4 +1,4 @@
-import { PERMISSIONS } from "@/lib/permissions.ts";
+import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 
 const ROLE_EDITING_CODES: readonly string[] = [
   PERMISSIONS.GLOBAL_ROLE.ADD,

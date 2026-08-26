@@ -14,7 +14,7 @@ import { authenticationProviderInstance } from "@/lib/authentication-provider.ts
 import { ButtonWithTooltip } from "@/components/ui/button-with-tooltip.tsx";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip.tsx";
 import { ApiError } from "@/lib/api-error.ts";
-import { PERMISSIONS } from "@/lib/permissions.ts";
+import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 

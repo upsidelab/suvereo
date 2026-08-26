@@ -8,16 +8,17 @@ import { Input } from "@/components/ui/input.tsx";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form.tsx";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
-import { PermissionEntity } from "@/lib/types.ts";
+import { MissingPermission, PermissionEntity } from "@/lib/permissions/types.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
-import { MissingPermission, PermissionChecklist } from "@/components/roles/permission-checklist.tsx";
+import { PermissionChecklist } from "@/components/roles/permission-checklist.tsx";
 import { PermissionErrors } from "@/components/roles/permission-errors.tsx";
 import { GlobalRoleMembersPanel } from "@/components/roles/global-roles/global-role-members-panel.tsx";
 import { AdminMembersPanel } from "@/components/roles/global-roles/admin-members-panel.tsx";
 import { ADMIN_ROLE, GlobalRole, isAdminRole } from "@/components/roles/global-roles/admin-role.ts";
 import { PermissionEscalationDialog } from "@/components/roles/permission-escalation-dialog.tsx";
-import { permissionEscalationWarnings } from "@/components/roles/permission-escalation.ts";
-import { PERMISSIONS } from "@/lib/permissions.ts";
+import { permissionEscalationWarnings } from "@/lib/permissions/escalation.ts";
+import { missingDependencies } from "@/lib/permissions/dependencies.ts";
+import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 
 const formSchema = z.object({
   name: z.string().trim().min(1),
@@ -110,6 +111,13 @@ export function GlobalRoleModal({ role, onSaved }: GlobalRoleModalProps) {
   };
 
   const handleSubmit = (values: GroupFormSchema) => {
+    const missing = missingDependencies(selected, entities);
+    if (missing.length > 0) {
+      setError(null);
+      setPermissionErrors([]);
+      setMissingPermissions(missing);
+      return;
+    }
     if (warnings.length > 0) {
       setPendingValues(values);
       return;

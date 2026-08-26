@@ -12,7 +12,7 @@ import logoUrl from "@/assets/logo.png";
 import logoSvgUrl from '@/assets/logo.svg';
 import { Separator } from "@/components/ui/separator.tsx";
 import { useNavigate, useLocation } from "react-router-dom";
-import { PERMISSIONS } from "@/lib/permissions.ts";
+import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 
 export function DataSetSelector() {
   const { dataSets, dataSetId, setDataSetId, hasPermission } = useApplicationContext()!;

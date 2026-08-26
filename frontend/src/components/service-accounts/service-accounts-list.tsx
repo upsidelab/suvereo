@@ -9,7 +9,7 @@ import { Check } from "lucide-react";
 import { NewServiceAccountModal } from "@/components/service-accounts/new-service-account-modal.tsx";
 import { TokenResetModal } from "@/components/service-accounts/token-reset-modal.tsx";
 import { ApiError } from "@/lib/api-error.ts";
-import { PERMISSIONS } from "@/lib/permissions.ts";
+import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 
 const api = new ApiClient(authenticationProviderInstance);

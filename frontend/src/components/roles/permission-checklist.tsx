@@ -2,13 +2,8 @@ import { useId } from "react";
 import { cn } from "@/lib/utils.ts";
 import { ScrollArea } from "@/components/ui/scroll-area.tsx";
 import { Checkbox } from "@/components/ui/checkbox.tsx";
-import { PermissionEntity } from "@/lib/types.ts";
-import { permissionActionName, permissionName } from "@/lib/permission-names.ts";
-
-export type MissingPermission = {
-  code: string;
-  required_by: string[];
-};
+import { MissingPermission, PermissionEntity } from "@/lib/permissions/types.ts";
+import { permissionActionName, permissionName } from "@/lib/permissions/names.ts";
 
 export interface PermissionChecklistProps {
   entities: PermissionEntity[];
