@@ -47,11 +47,17 @@ class ServiceAccountPermission(StrEnum):
 
 class GlobalRolePermission(StrEnum):
     VIEW = "account.view_globalrole"
+    ADD = "account.add_globalrole"
+    CHANGE = "account.change_globalrole"
+    DELETE = "account.delete_globalrole"
     ASSIGN = "account.assign_globalrole"
 
 
 class DatasetRolePermission(StrEnum):
     VIEW = "account.view_datasetrole"
+    ADD = "account.add_datasetrole"
+    CHANGE = "account.change_datasetrole"
+    DELETE = "account.delete_datasetrole"
     ASSIGN = "account.assign_datasetrole"
 
 

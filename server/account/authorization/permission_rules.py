@@ -67,8 +67,18 @@ PERMISSION_DEPENDENCIES: dict[str, list[str]] = {
         GlobalRolePermission.ASSIGN,
         DatasetRolePermission.ASSIGN,
     ],
-    GlobalRolePermission.VIEW: [GlobalRolePermission.ASSIGN],
-    DatasetRolePermission.VIEW: [DatasetRolePermission.ASSIGN],
+    GlobalRolePermission.VIEW: [
+        GlobalRolePermission.ADD,
+        GlobalRolePermission.CHANGE,
+        GlobalRolePermission.DELETE,
+        GlobalRolePermission.ASSIGN,
+    ],
+    DatasetRolePermission.VIEW: [
+        DatasetRolePermission.ADD,
+        DatasetRolePermission.CHANGE,
+        DatasetRolePermission.DELETE,
+        DatasetRolePermission.ASSIGN,
+    ],
 }
 
 
