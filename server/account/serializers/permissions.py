@@ -12,10 +12,11 @@ from account.authorization import (
 
 
 class PermissionOptionSerializer(serializers.Serializer):
-    """One checkbox in the role editor."""
+    """One checkbox in the role editor, with the boxes it cannot be ticked without."""
 
     code = serializers.CharField(read_only=True)
     label = serializers.CharField(read_only=True)
+    requires = serializers.ListField(child=serializers.CharField(), read_only=True)
 
 
 class PermissionEntitySerializer(serializers.Serializer):

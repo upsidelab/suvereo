@@ -12,6 +12,7 @@ from account.authorization import (
     PERMISSIONS,
     PUBLIC_CODES,
     any_global_permission_required,
+    dependencies_within,
     entity_label,
     permission_label,
 )
@@ -47,6 +48,7 @@ class PermissionListView(APIView):
 
         in_scope = set(PERMISSION_SCOPES[scope])
         labels = self._labels_for(in_scope)
+        requirements = self._requirements_for(PERMISSION_SCOPES[scope])
 
         entities = []
         for entity_name, permission_set in PERMISSION_ENTITIES.items():
@@ -58,12 +60,24 @@ class PermissionListView(APIView):
                     "entity": entity_name.lower(),
                     "label": entity_label(entity_name),
                     "permissions": [
-                        {"code": PUBLIC_CODES[codename], "label": labels.get(codename, PUBLIC_CODES[codename])}
+                        {
+                            "code": PUBLIC_CODES[codename],
+                            "label": labels.get(codename, PUBLIC_CODES[codename]),
+                            "requires": requirements.get(PUBLIC_CODES[codename], []),
+                        }
                         for codename in codenames
                     ],
                 }
             )
         return Response(PermissionEntitySerializer(entities, many=True).data)
+
+    def _requirements_for(self, scope_permissions) -> dict[str, list[str]]:
+        """What each permission cannot be granted without, keyed by the permission and in public codes."""
+        requirements: dict[str, list[str]] = {}
+        for required, dependents in dependencies_within(scope_permissions).items():
+            for dependent in dependents:
+                requirements.setdefault(PUBLIC_CODES[dependent], []).append(PUBLIC_CODES[required])
+        return {code: sorted(required) for code, required in requirements.items()}
 
     def _labels_for(self, codenames) -> dict[str, str]:
         """Django's own `Permission.name` ("Can add data set") is the label for now. Matched on
