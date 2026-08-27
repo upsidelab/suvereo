@@ -28,7 +28,9 @@ def member():
 
 @pytest.fixture
 def assigner():
-    return grant(baker.make(User, email="assigner@example.com"), PERMISSIONS.GLOBAL_ROLE.VIEW, PERMISSIONS.GLOBAL_ROLE.ASSIGN)
+    return grant(
+        baker.make(User, email="assigner@example.com"), PERMISSIONS.GLOBAL_ROLE.VIEW, PERMISSIONS.GLOBAL_ROLE.ASSIGN
+    )
 
 
 def _member_url(global_role, user) -> str:
@@ -39,7 +41,9 @@ class TestListingMembers:
     def test_returns_401_when_unauthenticated(self, members_url):
         assert APIClient().get(members_url).status_code == status.HTTP_401_UNAUTHORIZED
 
-    def test_a_group_view_holder_sees_the_members_ordered_by_email(self, api_client, user, global_role, members_url):
+    def test_a_global_role_view_holder_sees_the_members_ordered_by_email(
+        self, api_client, user, global_role, members_url
+    ):
         grant(user, PERMISSIONS.GLOBAL_ROLE.VIEW)
         for email in ["carol@example.com", "alice@example.com", "bob@example.com"]:
             global_role.members.add(baker.make(User, email=email))
@@ -53,7 +57,7 @@ class TestListingMembers:
             "carol@example.com",
         ]
 
-    def test_a_user_without_group_view_is_denied(self, api_client, members_url):
+    def test_a_user_without_global_role_view_is_denied(self, api_client, members_url):
         assert api_client.get(members_url).status_code == status.HTTP_403_FORBIDDEN
 
 
@@ -101,7 +105,7 @@ class TestAddingAMember:
         assert response.status_code == expected_status
         assert str(response.data["user_id"][0]) == expected_error
 
-    def test_an_unknown_group_is_a_404(self, assigner, member):
+    def test_an_unknown_global_role_is_a_404(self, assigner, member):
         response = client_for(assigner).post(
             reverse("global_role_member_list", args=[9999]), {"user_id": member.id}, format="json"
         )
@@ -138,13 +142,13 @@ class TestRemovingAMember:
 
 
 class TestWhatMembershipActuallyDoes:
-    def test_an_assigner_may_add_themselves_to_a_group(self, assigner, global_role, members_url):
+    def test_an_assigner_may_add_themselves_to_a_global_role(self, assigner, global_role, members_url):
         response = client_for(assigner).post(members_url, {"user_id": assigner.id}, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
         assert global_role.members.filter(pk=assigner.pk).exists()
 
-    def test_the_group_s_permissions_reach_a_newly_added_member(self, assigner, member):
+    def test_the_global_role_s_permissions_reach_a_newly_added_member(self, assigner, member):
         global_role = make_global_role("user-managers", PERMISSIONS.USER.VIEW)
         url = reverse("global_role_member_list", args=[global_role.id])
 

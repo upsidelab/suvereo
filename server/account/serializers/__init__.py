@@ -6,6 +6,7 @@ from .dataset_roles import (
     DatasetUserRoleAssignmentSerializer,
 )
 from .global_roles import GlobalRoleDetailSerializer, GlobalRoleReferenceSerializer, GlobalRoleSerializer
+from .groups import GroupDetailSerializer, GroupSerializer
 from .permissions import (
     GrantedPermissionsMixin,
     PermissionCodeField,
@@ -39,6 +40,8 @@ __all__ = [
     "GlobalRoleDetailSerializer",
     "GlobalRoleReferenceSerializer",
     "GlobalRoleSerializer",
+    "GroupDetailSerializer",
+    "GroupSerializer",
     "OnlyAdminsManageAdminsMixin",
     "PermissionCodeField",
     "PermissionEntitySerializer",
