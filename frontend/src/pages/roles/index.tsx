@@ -13,7 +13,8 @@ export function RolesIndex() {
     <PageMain>
       <PageHeading
         title="Roles"
-        description="Global roles apply everywhere; dataset roles are granted on individual data sets. Groups hold people, and are granted either kind."
+        description={"Define roles — global, or scoped to a data set. Assign users and service accounts to them "
+          + "directly, or through groups."}
       />
       <RolesTabs active={activeTab} onChange={setActiveTab} />
       {activeTab === "global-roles" && <GlobalRolesList />}

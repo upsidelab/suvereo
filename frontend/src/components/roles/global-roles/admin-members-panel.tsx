@@ -28,7 +28,7 @@ export function AdminMembersPanel() {
       admins = await api.getAdmins();
     } catch {
       setMembers([]);
-      setListError("You don't have access to the list of admins.");
+      setListError("You don't have view access to the list of admins.");
       return;
     }
     setMembers(admins);

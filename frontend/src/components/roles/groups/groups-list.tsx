@@ -66,7 +66,7 @@ export function GroupsList() {
   }
 
   if (isAccessDenied) {
-    return <p className="text-sm text-destructive">You don't have access to the list of groups.</p>;
+    return <p className="text-sm text-destructive">You don't have view access to the list of groups.</p>;
   }
 
   return (

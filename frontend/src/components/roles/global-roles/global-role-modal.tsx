@@ -129,10 +129,10 @@ export function GlobalRoleModal({ role, onSaved }: GlobalRoleModalProps) {
     return save(values);
   };
 
-  const triggerLabel = role ? (canEdit ? "Edit" : "View") : "New Role";
+  const triggerLabel = role ? (canEdit ? "Edit" : "View") : "New global role";
   const title = role
-    ? (canEdit ? `Edit role ${role.name}` : `Role ${role.name}`)
-    : "New Role";
+    ? (canEdit ? `Edit global role ${role.name}` : `Global role ${role.name}`)
+    : "New global role";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

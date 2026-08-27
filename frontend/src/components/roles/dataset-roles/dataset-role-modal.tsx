@@ -103,8 +103,10 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
     return save(values);
   };
 
-  const triggerLabel = role ? (canEdit ? "Edit" : "View") : "New Role";
-  const title = role ? (canEdit ? `Edit role ${role.name}` : `Role ${role.name}`) : "New Dataset Role";
+  const triggerLabel = role ? (canEdit ? "Edit" : "View") : "New dataset role";
+  const title = role
+    ? (canEdit ? `Edit dataset role ${role.name}` : `Dataset role ${role.name}`)
+    : "New dataset role";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -116,7 +118,8 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         <p className="text-sm text-muted-foreground -mt-2 mb-2">
-          This only defines the role. To grant it to a user or global role, go to Data Sets → Manage Access for that data set.
+          This only defines the role. To grant it to a user or a group, go to Data Sets → Manage Access for
+          that data set.
         </p>
         {error && <p className="text-sm text-destructive mb-4">{error}</p>}
         <PermissionErrors

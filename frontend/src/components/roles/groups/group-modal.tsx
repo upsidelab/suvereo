@@ -94,8 +94,8 @@ export function GroupModal({ group, onSaved }: GroupModalProps) {
     onSaved();
   };
 
-  const triggerLabel = group ? (canEdit ? "Edit" : "View") : "New Group";
-  const title = group ? (canEdit ? `Edit group ${group.name}` : `Group ${group.name}`) : "New Group";
+  const triggerLabel = group ? (canEdit ? "Edit" : "View") : "New group";
+  const title = group ? (canEdit ? `Edit group ${group.name}` : `Group ${group.name}`) : "New group";
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>

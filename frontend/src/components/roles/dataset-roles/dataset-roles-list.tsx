@@ -66,7 +66,7 @@ export function DatasetRolesList() {
   }
 
   if (isAccessDenied) {
-    return <p className="text-sm text-destructive">You don't have access to the list of dataset roles.</p>;
+    return <p className="text-sm text-destructive">You don't have view access to the list of dataset roles.</p>;
   }
 
   return (
