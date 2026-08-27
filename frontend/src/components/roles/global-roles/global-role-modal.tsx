@@ -5,6 +5,7 @@ import { z } from "zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
+import { Separator } from "@/components/ui/separator.tsx";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form.tsx";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
@@ -149,7 +150,7 @@ export function GlobalRoleModal({ role, onSaved }: GlobalRoleModalProps) {
           missingPermissions={missingPermissions}
           serverMessages={permissionErrors}
         />
-        <div className="flex items-center space-x-2 border-b pb-2 mb-4">
+        <div className="flex items-center space-x-2 border-b pb-2">
           <Button
             type="button"
             variant={section === "permissions" ? "default" : "ghost"}
@@ -167,7 +168,7 @@ export function GlobalRoleModal({ role, onSaved }: GlobalRoleModalProps) {
         </div>
 
         {/* Both sections share a fixed height, so switching between them cannot resize the dialog. */}
-        <div className="h-[26rem] flex flex-col">
+        <div className="h-[min(62vh,34rem)] flex flex-col">
         {section === "permissions" && (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="flex grow flex-col space-y-4 min-h-0">
@@ -196,16 +197,21 @@ export function GlobalRoleModal({ role, onSaved }: GlobalRoleModalProps) {
                 <p className="text-sm text-muted-foreground">You can't edit this role's permissions.</p>
               )}
 
-              <PermissionChecklist
-                entities={entities}
-                selected={isBuiltIn
-                  ? entities.flatMap((entity) => entity.permissions.map((permission) => permission.code))
-                  : selected}
-                onChange={setSelected}
-                disabled={!canEdit}
-                missingPermissions={missingPermissions}
-                className="h-auto grow min-h-0"
-              />
+              <Separator />
+
+              <div className="flex grow flex-col space-y-2 min-h-0 pt-4">
+                <p className="text-sm font-medium leading-none">Permissions</p>
+                <PermissionChecklist
+                  entities={entities}
+                  selected={isBuiltIn
+                    ? entities.flatMap((entity) => entity.permissions.map((permission) => permission.code))
+                    : selected}
+                  onChange={setSelected}
+                  disabled={!canEdit}
+                  missingPermissions={missingPermissions}
+                  className="h-auto grow min-h-0"
+                />
+              </div>
 
               {canEdit && (
                 <div className="flex justify-end">

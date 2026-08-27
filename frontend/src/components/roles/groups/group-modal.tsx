@@ -107,7 +107,7 @@ export function GroupModal({ group, onSaved }: GroupModalProps) {
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         {error && <p className="text-sm text-destructive mb-4">{error}</p>}
-        <div className="flex items-center space-x-2 border-b pb-2 mb-4">
+        <div className="flex items-center space-x-2 border-b pb-2">
           <Button type="button" variant={section === "details" ? "default" : "ghost"} onClick={() => setSection("details")}>
             Details
           </Button>
@@ -124,7 +124,7 @@ export function GroupModal({ group, onSaved }: GroupModalProps) {
         </div>
 
         {/* All three sections share a fixed height, so switching between them cannot resize the dialog. */}
-        <div className="h-[26rem] flex flex-col">
+        <div className="h-[min(62vh,34rem)] flex flex-col">
           {section === "details" && (
             <Form {...form}>
               <form onSubmit={form.handleSubmit(save)} className="flex grow flex-col space-y-4 min-h-0">

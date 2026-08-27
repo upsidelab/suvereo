@@ -5,6 +5,7 @@ import { z } from "zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
+import { Separator } from "@/components/ui/separator.tsx";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form.tsx";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
@@ -146,13 +147,19 @@ export function DataSetRoleModal({ role, onSaved }: DataSetRoleModalProps) {
             ) : (
               <p className="text-sm text-muted-foreground">You can't edit this role's permissions.</p>
             )}
-            <PermissionChecklist
-              entities={entities}
-              selected={selected}
-              onChange={setSelected}
-              disabled={!canEdit}
-              missingPermissions={missingPermissions}
-            />
+            <Separator />
+
+            <div className="space-y-2 pt-4">
+              <p className="text-sm font-medium leading-none">Permissions</p>
+              <PermissionChecklist
+                entities={entities}
+                selected={selected}
+                onChange={setSelected}
+                disabled={!canEdit}
+                missingPermissions={missingPermissions}
+                className="h-[min(52vh,24rem)]"
+              />
+            </div>
             {canEdit && (
               <div className="flex justify-end">
                 <Button type="submit">Save</Button>
