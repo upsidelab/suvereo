@@ -52,7 +52,7 @@ export function AddAccessSelector({ subjects, roles, grantedRoles, onSubmit }: A
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button variant="outline" role="combobox" aria-expanded={open} className="w-[400px] justify-between">
-            {selectedSubject ? `${subjectTypeLabel(selectedSubject)}: ${selectedSubject.label}` : "Select user or global role..."}
+            {selectedSubject ? subjectDescription(selectedSubject) : "Select user or group..."}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
@@ -60,7 +60,7 @@ export function AddAccessSelector({ subjects, roles, grantedRoles, onSubmit }: A
           <Command>
             <CommandInput placeholder="Search..." />
             <CommandList>
-              <CommandEmpty>No users or global roles found.</CommandEmpty>
+              <CommandEmpty>No users or groups found.</CommandEmpty>
               <CommandGroup>
                 {selectableSubjects.map((subject) => (
                   <CommandItem
@@ -79,7 +79,7 @@ export function AddAccessSelector({ subjects, roles, grantedRoles, onSubmit }: A
                           : "opacity-0"
                       )}
                     />
-                    {subjectTypeLabel(subject)}: {subject.label}
+                    {subjectDescription(subject)}
                   </CommandItem>
                 ))}
               </CommandGroup>
@@ -106,5 +106,12 @@ export function AddAccessSelector({ subjects, roles, grantedRoles, onSubmit }: A
 }
 
 function subjectTypeLabel(subject: AccessSubject): string {
-  return subject.type === "user" ? "User" : "Global role";
+  return subject.type === "user" ? "User" : "Group";
+}
+
+/** A grant to a group reaches everyone inside it, so its size is part of naming it here. */
+function subjectDescription(subject: AccessSubject): string {
+  const label = `${subjectTypeLabel(subject)}: ${subject.label}`;
+  if (subject.type !== "group" || subject.memberCount === undefined) return label;
+  return `${label} (${subject.memberCount} ${subject.memberCount === 1 ? "member" : "members"})`;
 }

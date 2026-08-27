@@ -10,6 +10,7 @@ import { AgenticExecutionsApiClient } from "@/lib/api/agentic-executions.ts";
 import { IntegrationsApiClient } from "@/lib/api/integrations.ts";
 import { EntitiesApiClient } from "@/lib/api/entities.ts";
 import { GlobalRolesApiClient } from "@/lib/api/global-roles.ts";
+import { GroupsApiClient } from "@/lib/api/groups.ts";
 import { DatasetRolesApiClient } from "@/lib/api/dataset-roles.ts";
 import { PermissionsApiClient } from "@/lib/api/permissions.ts";
 import { UserResponse } from "@/lib/api/users.ts";
@@ -119,6 +120,10 @@ export class ApiClient {
 
   globalRoles(): GlobalRolesApiClient {
     return new GlobalRolesApiClient(this.apiBase, this.authenticationProvider);
+  }
+
+  groups(): GroupsApiClient {
+    return new GroupsApiClient(this.apiBase, this.authenticationProvider);
   }
 
   datasetRoles(): DatasetRolesApiClient {

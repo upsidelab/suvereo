@@ -8,6 +8,7 @@ import { DatasetRoleOption } from "@/lib/types.ts";
 import { ApiError } from "@/lib/api-error.ts";
 import { AddAccessSelector } from "@/components/data-sets/add-access-selector.tsx";
 import { AccessRow, AccessSubject } from "@/components/data-sets/access-row.ts";
+import { GroupMembersDialog } from "@/components/data-sets/group-members-dialog.tsx";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -21,6 +22,7 @@ export function DataSetAccessList({ dataSetId }: DataSetAccessListProps) {
   const [roles, setRoles] = useState<DatasetRoleOption[]>([]);
   const [isAccessDenied, setIsAccessDenied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [inspectedGroup, setInspectedGroup] = useState<AccessSubject | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -31,8 +33,13 @@ export function DataSetAccessList({ dataSetId }: DataSetAccessListProps) {
           subject: { type: "user" as const, id: assignment.user.id, label: assignment.user.email },
           role: assignment.role
         })),
-        ...access.globalRoles.map((assignment) => ({
-          subject: { type: "global-role" as const, id: assignment.globalRole.id, label: assignment.globalRole.name },
+        ...access.groups.map((assignment) => ({
+          subject: {
+            type: "group" as const,
+            id: assignment.group.id,
+            label: assignment.group.name,
+            memberCount: assignment.group.memberCount
+          },
           role: assignment.role
         }))
       ]);
@@ -49,10 +56,10 @@ export function DataSetAccessList({ dataSetId }: DataSetAccessListProps) {
     }
 
     try {
-      const [users, serviceAccounts, globalRoles, datasetRoles] = await Promise.all([
+      const [users, serviceAccounts, groups, datasetRoles] = await Promise.all([
         api.getAllUsers(),
         api.serviceAccounts().getAllServiceAccounts(),
-        api.globalRoles().getGlobalRoles(),
+        api.groups().getGroups(),
         api.datasetRoles().getDatasetRoles(),
       ]);
       setSubjects([
@@ -62,13 +69,13 @@ export function DataSetAccessList({ dataSetId }: DataSetAccessListProps) {
           id: serviceAccount.id,
           label: `${serviceAccount.email} (service account)`
         })),
-        ...globalRoles.map((globalRole) => ({
-          type: "global-role" as const, id: globalRole.id, label: globalRole.name
+        ...groups.map((group) => ({
+          type: "group" as const, id: group.id, label: group.name, memberCount: group.memberCount
         })),
       ]);
       setRoles(datasetRoles);
     } catch {
-      setError("Could not load the users, global roles and roles to grant.");
+      setError("Could not load the users, groups and roles to grant.");
     }
   }, [dataSetId]);
 
@@ -79,7 +86,7 @@ export function DataSetAccessList({ dataSetId }: DataSetAccessListProps) {
   const handleGrant = async (subject: AccessSubject, roleId: number) => {
     const response = subject.type === "user"
       ? await api.dataSets().grantRoleToUser(dataSetId, roleId, subject.id)
-      : await api.dataSets().grantRoleToGlobalRole(dataSetId, roleId, subject.id);
+      : await api.dataSets().grantRoleToGroup(dataSetId, roleId, subject.id);
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
       setError(body.detail ?? "Could not grant this role.");
@@ -91,7 +98,7 @@ export function DataSetAccessList({ dataSetId }: DataSetAccessListProps) {
   const handleRevoke = async (row: AccessRow) => {
     const response = row.subject.type === "user"
       ? await api.dataSets().revokeRoleFromUser(dataSetId, row.role.id, row.subject.id)
-      : await api.dataSets().revokeRoleFromGlobalRole(dataSetId, row.role.id, row.subject.id);
+      : await api.dataSets().revokeRoleFromGroup(dataSetId, row.role.id, row.subject.id);
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
       setError(body.detail ?? "Could not revoke this role.");
@@ -130,8 +137,19 @@ export function DataSetAccessList({ dataSetId }: DataSetAccessListProps) {
           <TableBody>
             {rows.map((row) => (
               <TableRow key={`${row.subject.type}-${row.subject.id}-${row.role.id}`}>
-                <TableCell width="15%">{row.subject.type === "user" ? "User" : "Global role"}</TableCell>
-                <TableCell width="45%">{row.subject.label}</TableCell>
+                <TableCell width="15%">{row.subject.type === "user" ? "User" : "Group"}</TableCell>
+                <TableCell width="45%">
+                  {row.subject.label}
+                  {row.subject.type === "group" && (
+                    <Button
+                      variant="link"
+                      className="h-auto p-0 ml-2 text-muted-foreground"
+                      onClick={() => setInspectedGroup(row.subject)}
+                    >
+                      {row.subject.memberCount} {row.subject.memberCount === 1 ? "member" : "members"}
+                    </Button>
+                  )}
+                </TableCell>
                 <TableCell width="20%">{row.role.name}</TableCell>
                 <TableCell className="flex space-x-4" width="20%">
                   <Button onClick={() => handleRevoke(row)} variant="secondary">Remove</Button>
@@ -141,6 +159,11 @@ export function DataSetAccessList({ dataSetId }: DataSetAccessListProps) {
           </TableBody>
         </Table>
       )}
+      <GroupMembersDialog
+        groupId={inspectedGroup?.id ?? null}
+        groupName={inspectedGroup?.label ?? ""}
+        onClose={() => setInspectedGroup(null)}
+      />
     </>
   );
 }
