@@ -2,6 +2,9 @@ import { Button } from "@/components/ui/button.tsx";
 
 export type RolesTab = "global-roles" | "data-set-roles" | "groups";
 
+export const TAB_PARAM = "tab";
+export const DEFAULT_ROLES_TAB: RolesTab = "global-roles";
+
 const TABS: { key: RolesTab; label: string; description: string }[] = [
   {
     key: "global-roles",
