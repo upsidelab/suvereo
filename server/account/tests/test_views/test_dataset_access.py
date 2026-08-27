@@ -35,7 +35,7 @@ def role():
 
 @pytest.fixture
 def global_assigner():
-    return grant(baker.make(User, email="global@example.com"), PERMISSIONS.DATASET_ROLE.ASSIGN)
+    return grant(baker.make(User, email="global@example.com"), PERMISSIONS.DATA_SET_ROLE.ASSIGN)
 
 
 @pytest.fixture
@@ -130,7 +130,7 @@ class TestTheAccessListPayload:
 
         assert response.data["groups"][0]["group"]["member_count"] == 2
         assert response.data["groups"][0]["group"]["global_role_count"] == 1
-        assert response.data["groups"][0]["group"]["dataset_role_count"] == 1
+        assert response.data["groups"][0]["group"]["data_set_role_count"] == 1
 
 
 class TestGrantingARole:
@@ -295,7 +295,7 @@ class TestHowFarAGrantReaches:
         assert response.status_code == status.HTTP_201_CREATED
 
     def test_an_assign_grant_resolves_through_global_role_membership(self, user, data_set):
-        join_global_role(user, make_global_role("access-managers", PERMISSIONS.DATASET_ROLE.ASSIGN))
+        join_global_role(user, make_global_role("access-managers", PERMISSIONS.DATA_SET_ROLE.ASSIGN))
 
         response = client_for(user).get(access_url(data_set))
 
@@ -308,7 +308,7 @@ class TestHowFarAGrantReaches:
         assert not has_dataset_perm(subject, PERMISSIONS.AGENT.VIEW, other_data_set)
 
     def test_a_global_dual_scope_grant_reaches_every_data_set(self, subject, other_data_set):
-        join_global_role(subject, make_global_role("agent-readers", PERMISSIONS.AGENT.VIEW, PERMISSIONS.DATASET.VIEW))
+        join_global_role(subject, make_global_role("agent-readers", PERMISSIONS.AGENT.VIEW, PERMISSIONS.DATA_SET.VIEW))
 
         response = client_for(subject).get(f"{reverse('agents')}?dataset={other_data_set.id}")
 

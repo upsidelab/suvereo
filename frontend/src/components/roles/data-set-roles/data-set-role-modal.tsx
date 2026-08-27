@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input.tsx";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form.tsx";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
-import { DatasetRoleOption } from "@/lib/types.ts";
+import { DataSetRoleOption } from "@/lib/types.ts";
 import { MissingPermission, PermissionEntity } from "@/lib/permissions/types.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { PermissionChecklist } from "@/components/roles/permission-checklist.tsx";
@@ -19,20 +19,20 @@ import { missingDependencies, unresolvedRequirements } from "@/lib/permissions/d
 const formSchema = z.object({
   name: z.string().trim().min(1),
 });
-type DatasetRoleFormSchema = z.infer<typeof formSchema>;
+type DataSetRoleFormSchema = z.infer<typeof formSchema>;
 
 const api = new ApiClient(authenticationProviderInstance);
 
-export interface DatasetRoleModalProps {
-  role?: DatasetRoleOption;
+export interface DataSetRoleModalProps {
+  role?: DataSetRoleOption;
   onSaved: () => void;
 }
 
-export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
+export function DataSetRoleModal({ role, onSaved }: DataSetRoleModalProps) {
   const { hasPermission } = useApplicationContext()!;
   const canEdit = role
-    ? hasPermission(PERMISSIONS.DATASET_ROLE.CHANGE)
-    : hasPermission(PERMISSIONS.DATASET_ROLE.ADD);
+    ? hasPermission(PERMISSIONS.DATA_SET_ROLE.CHANGE)
+    : hasPermission(PERMISSIONS.DATA_SET_ROLE.ADD);
   const [open, setOpen] = useState(false);
   const [entities, setEntities] = useState<PermissionEntity[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
@@ -40,7 +40,7 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
   const [permissionErrors, setPermissionErrors] = useState<string[]>([]);
   const [missingPermissions, setMissingPermissions] = useState<MissingPermission[]>([]);
 
-  const form = useForm<DatasetRoleFormSchema>({
+  const form = useForm<DataSetRoleFormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: role?.name ?? ""
@@ -53,10 +53,10 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
     setPermissionErrors([]);
     setMissingPermissions([]);
 
-    api.permissions().getPermissions("dataset").then(setEntities).catch(() => setEntities([]));
+    api.permissions().getPermissions("data_set").then(setEntities).catch(() => setEntities([]));
 
     if (role) {
-      api.datasetRoles().getDatasetRoleDetail(role.id).then((detail) => {
+      api.dataSetRoles().getDataSetRoleDetail(role.id).then((detail) => {
         form.reset({ name: detail.name });
         setSelected(detail.permissions);
       }).catch(() => setError("Could not load this role."));
@@ -70,14 +70,14 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
     setMissingPermissions((reported) => unresolvedRequirements(reported, selected));
   }, [selected]);
 
-  const save = async (values: DatasetRoleFormSchema) => {
+  const save = async (values: DataSetRoleFormSchema) => {
     setError(null);
     setPermissionErrors([]);
     setMissingPermissions([]);
 
     const response = role
-      ? await api.datasetRoles().updateDatasetRole(role.id, values.name, selected)
-      : await api.datasetRoles().createDatasetRole(values.name, selected);
+      ? await api.dataSetRoles().updateDataSetRole(role.id, values.name, selected)
+      : await api.dataSetRoles().createDataSetRole(values.name, selected);
 
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
@@ -92,7 +92,7 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
     onSaved();
   };
 
-  const handleSubmit = (values: DatasetRoleFormSchema) => {
+  const handleSubmit = (values: DataSetRoleFormSchema) => {
     const missing = missingDependencies(selected, entities);
     if (missing.length > 0) {
       setError(null);
@@ -103,10 +103,10 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
     return save(values);
   };
 
-  const triggerLabel = role ? (canEdit ? "Edit" : "View") : "New dataset role";
+  const triggerLabel = role ? (canEdit ? "Edit" : "View") : "New data set role";
   const title = role
-    ? (canEdit ? `Edit dataset role ${role.name}` : `Dataset role ${role.name}`)
-    : "New dataset role";
+    ? (canEdit ? `Edit data set role ${role.name}` : `Data set role ${role.name}`)
+    : "New data set role";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

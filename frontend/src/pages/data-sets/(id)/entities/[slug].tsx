@@ -33,7 +33,7 @@ export function EntityRecordsPage() {
 
   return (
     <PageMain>
-      <PageHeading title={entityType.label} description={`Browse ${entityType.label.toLowerCase()} in this dataset.`} />
+      <PageHeading title={entityType.label} description={`Browse ${entityType.label.toLowerCase()} in this data set.`} />
       <EntityTable dataSetId={dataSetId} entityType={entityType} />
     </PageMain>
   );

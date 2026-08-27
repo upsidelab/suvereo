@@ -7,10 +7,10 @@ from django.db import migrations
 PERMISSION_NAMES = {
     "account.add_globalrole": "Create global roles",
     "account.change_globalrole": "Edit a global role's name and the permissions it carries",
-    "account.delete_globalrole": "Delete global roles, giving up the roles they hold on data sets",
-    "account.add_datasetrole": "Create dataset roles",
-    "account.change_datasetrole": "Edit a dataset role's name and the permissions it carries",
-    "account.delete_datasetrole": "Delete dataset roles, revoking them from everyone holding them",
+    "account.delete_globalrole": "Delete global roles, revoking their permissions",
+    "account.add_datasetrole": "Create data set roles",
+    "account.change_datasetrole": "Edit a data set role's name and the permissions it carries",
+    "account.delete_datasetrole": "Delete data set roles, revoking their permissions",
 }
 
 

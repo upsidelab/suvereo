@@ -6,7 +6,7 @@ import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 
 export function EditDataSet() {
   const { hasPermission } = useApplicationContext()!;
-  const canChangeDataSets = hasPermission(PERMISSIONS.DATASET.CHANGE);
+  const canChangeDataSets = hasPermission(PERMISSIONS.DATA_SET.CHANGE);
 
   return (
     <PageMain>

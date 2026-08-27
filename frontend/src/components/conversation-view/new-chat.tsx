@@ -20,8 +20,8 @@ interface NewChatProps {
 const api = new ApiClient(authenticationProviderInstance);
 
 export function NewChat({ onPendingMessage }: NewChatProps) {
-  const { availableAgents, isLoadingAgents, hasDatasetPermission } = useApplicationContext()!;
-  const canConverse = hasDatasetPermission(PERMISSIONS.CONVERSATION.CONVERSE);
+  const { availableAgents, isLoadingAgents, hasDataSetPermission } = useApplicationContext()!;
+  const canConverse = hasDataSetPermission(PERMISSIONS.CONVERSATION.CONVERSE);
   const { agent } = useParams();
   const [agentDetails, setAgentDetails] = useState<AgentDetails>();
 

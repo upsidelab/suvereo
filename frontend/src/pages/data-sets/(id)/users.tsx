@@ -10,7 +10,7 @@ export function IndexDataSetUsers() {
   return (
     <PageMain>
       <PageHeading title="Manage Data Set Access"
-                   description={"Control access to this data set by granting a dataset role to individual users "
+                   description={"Control access to this data set by granting a data set role to individual users "
                      + "and service accounts, or to whole groups."}/>
       <DataSetAccessList dataSetId={dataSetId}/>
     </PageMain>

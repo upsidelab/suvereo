@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button.tsx";
 
-export type RolesTab = "global-roles" | "dataset-roles" | "groups";
+export type RolesTab = "global-roles" | "data-set-roles" | "groups";
 
 const TABS: { key: RolesTab; label: string; description: string }[] = [
   {
@@ -10,16 +10,16 @@ const TABS: { key: RolesTab; label: string; description: string }[] = [
       + "user or service account directly, or to a group so that everyone inside it holds it."
   },
   {
-    key: "dataset-roles",
-    label: "Dataset Roles",
-    description: "A dataset role carries permissions that apply only on the data sets it is granted on. Grant it "
+    key: "data-set-roles",
+    label: "Data Set Roles",
+    description: "A data set role carries permissions that apply only on the data sets it is granted on. Grant it "
       + "to a user or service account directly, or to a group, separately on each data set."
   },
   {
     key: "groups",
     label: "Groups",
     description: "A group holds users and service accounts, and no permissions of its own. Grant it a global "
-      + "role or a dataset role and every member holds it — add someone later and they hold it too."
+      + "role or a data set role and every member holds it — add someone later and they hold it too."
   },
 ];
 

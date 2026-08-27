@@ -143,7 +143,7 @@ export function GroupModal({ group, onSaved }: GroupModalProps) {
                 />
                 <p className="text-sm text-muted-foreground">
                   A group holds people, not permissions. It reaches its members through the global roles granted
-                  to it and the dataset roles it is granted on individual data sets.
+                  to it and the data set roles it is granted on individual data sets.
                 </p>
                 {!canEdit && <p className="text-sm text-muted-foreground">You can't rename this group.</p>}
                 {canEdit && (

@@ -7,10 +7,10 @@ export function useApplicationContext() {
 
   const hasPermission = (code: string): boolean => !!context?.account?.permissions.includes(code);
 
-  const hasDatasetPermission = (code: string, dataSetId?: number): boolean => {
+  const hasDataSetPermission = (code: string, dataSetId?: number): boolean => {
     const dataSet = dataSetId === undefined ? currentDataSet : context?.dataSets.find((ds) => ds.id === dataSetId);
     return !!dataSet?.permissions.includes(code);
   };
 
-  return context ? { ...context, currentDataSet, hasPermission, hasDatasetPermission } : null;
+  return context ? { ...context, currentDataSet, hasPermission, hasDataSetPermission } : null;
 }

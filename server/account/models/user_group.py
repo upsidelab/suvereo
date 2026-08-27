@@ -19,7 +19,7 @@ class UserGroupQuerySet(models.QuerySet):
         return self.annotate(
             member_count=models.Count("members", distinct=True),
             global_role_count=models.Count("global_roles", distinct=True),
-            dataset_role_count=models.Count("datasetgrouproleassignment", distinct=True),
+            data_set_role_count=models.Count("datasetgrouproleassignment", distinct=True),
         )
 
 

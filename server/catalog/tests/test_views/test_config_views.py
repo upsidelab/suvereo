@@ -25,7 +25,7 @@ class TestConfigView:
     @patch.object(LanguageModelRegistry, "get_provider_classes", return_value=[])
     @patch.object(EmbeddingProviderRegistry, "get_provider_classes", return_value=[])
     def test_add_dataset_holder_is_allowed(self, _mock_embedding, _mock_language, api_client, user, url):
-        grant(user, PERMISSIONS.DATASET.ADD)
+        grant(user, PERMISSIONS.DATA_SET.ADD)
 
         response = api_client.get(url)
 
@@ -34,7 +34,7 @@ class TestConfigView:
     @patch.object(LanguageModelRegistry, "get_provider_classes", return_value=[])
     @patch.object(EmbeddingProviderRegistry, "get_provider_classes", return_value=[])
     def test_change_dataset_holder_is_allowed(self, _mock_embedding, _mock_language, api_client, user, url):
-        grant(user, PERMISSIONS.DATASET.CHANGE)
+        grant(user, PERMISSIONS.DATA_SET.CHANGE)
 
         response = api_client.get(url)
 
@@ -60,7 +60,7 @@ class TestConfigLanguageModelView:
 
     @patch.object(LanguageModelRegistry, "provider_class_by_name")
     def test_add_dataset_holder_is_allowed(self, mock_provider_class_by_name, api_client, user, url):
-        grant(user, PERMISSIONS.DATASET.ADD)
+        grant(user, PERMISSIONS.DATA_SET.ADD)
         mock_provider = MagicMock()
         mock_provider.available_models.return_value = ["gpt-4o"]
         mock_provider_class_by_name.return_value = mock_provider
@@ -72,7 +72,7 @@ class TestConfigLanguageModelView:
 
     @patch.object(LanguageModelRegistry, "provider_class_by_name")
     def test_change_dataset_holder_is_allowed(self, mock_provider_class_by_name, api_client, user, url):
-        grant(user, PERMISSIONS.DATASET.CHANGE)
+        grant(user, PERMISSIONS.DATA_SET.CHANGE)
         mock_provider = MagicMock()
         mock_provider.available_models.return_value = []
         mock_provider_class_by_name.return_value = mock_provider
@@ -104,7 +104,7 @@ class TestConfigEmbeddingModelView:
 
     @patch.object(EmbeddingProviderRegistry, "provider_class_by_name")
     def test_add_dataset_holder_is_allowed(self, mock_provider_class_by_name, api_client, user, url):
-        grant(user, PERMISSIONS.DATASET.ADD)
+        grant(user, PERMISSIONS.DATA_SET.ADD)
         mock_provider = MagicMock()
         mock_provider.available_models.return_value = ["text-embedding-3-large"]
         mock_provider.vector_size_constraints.return_value = {}
@@ -117,7 +117,7 @@ class TestConfigEmbeddingModelView:
 
     @patch.object(EmbeddingProviderRegistry, "provider_class_by_name")
     def test_change_dataset_holder_is_allowed(self, mock_provider_class_by_name, api_client, user, url):
-        grant(user, PERMISSIONS.DATASET.CHANGE)
+        grant(user, PERMISSIONS.DATA_SET.CHANGE)
         mock_provider = MagicMock()
         mock_provider.available_models.return_value = []
         mock_provider.vector_size_constraints.return_value = {}

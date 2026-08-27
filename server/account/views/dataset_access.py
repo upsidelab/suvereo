@@ -41,7 +41,7 @@ class DatasetAccessListView(_DatasetAccessView):
         operation_description="List the role assignments on a data set",
         manual_parameters=[DATA_SET_ID_PARAMETER],
     )
-    @global_permission_required(PERMISSIONS.DATASET_ROLE.ASSIGN)
+    @global_permission_required(PERMISSIONS.DATA_SET_ROLE.ASSIGN)
     def get(self, request, data_set_id):
         data_set = self._get_dataset(data_set_id)
         users = DatasetUserRoleAssignment.objects.filter(dataset=data_set).select_related("user", "role")
@@ -64,7 +64,7 @@ class DatasetRoleUserListView(_DatasetAccessView):
         request_body=UserReferenceSerializer,
         manual_parameters=[DATA_SET_ID_PARAMETER, ROLE_ID_PARAMETER],
     )
-    @global_permission_required(PERMISSIONS.DATASET_ROLE.ASSIGN)
+    @global_permission_required(PERMISSIONS.DATA_SET_ROLE.ASSIGN)
     def post(self, request, data_set_id, role_id):
         data_set, role = self._get_dataset_and_role(data_set_id, role_id)
         serializer = UserReferenceSerializer(data=request.data)
@@ -88,7 +88,7 @@ class DatasetRoleUserView(_DatasetAccessView):
             openapi.Parameter("user_id", openapi.IN_PATH, description="ID of the user", type=openapi.TYPE_INTEGER),
         ],
     )
-    @global_permission_required(PERMISSIONS.DATASET_ROLE.ASSIGN)
+    @global_permission_required(PERMISSIONS.DATA_SET_ROLE.ASSIGN)
     def delete(self, request, data_set_id, role_id, user_id):
         data_set = self._get_dataset(data_set_id)
         assignment = get_object_or_404(
@@ -104,7 +104,7 @@ class DatasetRoleGroupListView(_DatasetAccessView):
         request_body=GroupReferenceSerializer,
         manual_parameters=[DATA_SET_ID_PARAMETER, ROLE_ID_PARAMETER],
     )
-    @global_permission_required(PERMISSIONS.DATASET_ROLE.ASSIGN)
+    @global_permission_required(PERMISSIONS.DATA_SET_ROLE.ASSIGN)
     def post(self, request, data_set_id, role_id):
         """Granting to a group someone already holds this role through succeeds: the two grants
         are independent, and group membership can change tomorrow."""
@@ -130,7 +130,7 @@ class DatasetRoleGroupView(_DatasetAccessView):
             openapi.Parameter("group_id", openapi.IN_PATH, description="ID of the group", type=openapi.TYPE_INTEGER),
         ],
     )
-    @global_permission_required(PERMISSIONS.DATASET_ROLE.ASSIGN)
+    @global_permission_required(PERMISSIONS.DATA_SET_ROLE.ASSIGN)
     def delete(self, request, data_set_id, role_id, group_id):
         """Removes only this grant, even when the subjects behind it still hold the role another
         way. The client re-fetches, and the remaining path is visible in the response."""

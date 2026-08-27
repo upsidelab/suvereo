@@ -73,7 +73,7 @@ class TestDataSetListViewPost:
         assert not DataSet.objects.filter(name="New DataSet").exists()
 
     def test_user_with_add_dataset_permission_can_create_dataset(self, api_client, user, url, payload):
-        grant(user, PERMISSIONS.DATASET.ADD)
+        grant(user, PERMISSIONS.DATA_SET.ADD)
 
         response = api_client.post(url, payload, format="json")
 
@@ -183,7 +183,7 @@ class TestDataSetListViewGet:
         assert self._ids(response) == {visible.id}
 
     def test_global_view_dataset_holder_sees_all_datasets(self, api_client, user, url):
-        grant(user, PERMISSIONS.DATASET.VIEW)
+        grant(user, PERMISSIONS.DATA_SET.VIEW)
         datasets = baker.make(DataSet, _quantity=2)
 
         response = api_client.get(url)
@@ -231,7 +231,7 @@ class TestDataSetListViewGetPermissionsField:
         }
 
     def test_global_grant_reports_on_every_visible_dataset(self, api_client, user, url):
-        grant(user, PERMISSIONS.DATASET.VIEW, PERMISSIONS.AGENT.VIEW)
+        grant(user, PERMISSIONS.DATA_SET.VIEW, PERMISSIONS.AGENT.VIEW)
         baker.make(DataSet, _quantity=2)
 
         response = api_client.get(url)

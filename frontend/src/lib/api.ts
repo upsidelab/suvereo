@@ -11,7 +11,7 @@ import { IntegrationsApiClient } from "@/lib/api/integrations.ts";
 import { EntitiesApiClient } from "@/lib/api/entities.ts";
 import { GlobalRolesApiClient } from "@/lib/api/global-roles.ts";
 import { GroupsApiClient } from "@/lib/api/groups.ts";
-import { DatasetRolesApiClient } from "@/lib/api/dataset-roles.ts";
+import { DataSetRolesApiClient } from "@/lib/api/data-set-roles.ts";
 import { PermissionsApiClient } from "@/lib/api/permissions.ts";
 import { UserResponse } from "@/lib/api/users.ts";
 import { ApiError } from "@/lib/api-error.ts";
@@ -126,8 +126,8 @@ export class ApiClient {
     return new GroupsApiClient(this.apiBase, this.authenticationProvider);
   }
 
-  datasetRoles(): DatasetRolesApiClient {
-    return new DatasetRolesApiClient(this.apiBase, this.authenticationProvider);
+  dataSetRoles(): DataSetRolesApiClient {
+    return new DataSetRolesApiClient(this.apiBase, this.authenticationProvider);
   }
 
   permissions(): PermissionsApiClient {

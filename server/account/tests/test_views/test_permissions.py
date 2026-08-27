@@ -58,7 +58,7 @@ class TestPermissionListing:
         response = admin_api_client.get(url, {"scope": "nonsense"})
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.data == {"scope": ["Must be one of: global, dataset."]}
+        assert response.data == {"scope": ["Must be one of: global, data_set."]}
 
     def test_rows_expose_a_code_a_label_and_its_requirements_and_nothing_else(self, admin_api_client, url):
         response = admin_api_client.get(url)
@@ -75,7 +75,7 @@ class TestPermissionListing:
 
         labels = {option["code"]: option["label"] for entity in response.data for option in entity["permissions"]}
 
-        assert labels[DATASET_ADD] == permission(PERMISSIONS.DATASET.ADD).name
+        assert labels[DATASET_ADD] == permission(PERMISSIONS.DATA_SET.ADD).name
         assert labels[DATASET_ADD] == "Create data sets"
 
 
@@ -93,11 +93,11 @@ class TestPermissionRequirements:
     def test_the_dataset_scope_drops_a_requirement_it_cannot_grant(self, admin_api_client, url):
         """`dataset.view` is global-only, so a dataset role's `agent.add` requires only `agent.view` -
         the same requirement `dependencies_within` drops for the validator."""
-        requirements = _requirements(admin_api_client.get(url, {"scope": "dataset"}))
+        requirements = _requirements(admin_api_client.get(url, {"scope": "data_set"}))
 
         assert requirements[AGENT_ADD] == [AGENT_VIEW]
 
-    @pytest.mark.parametrize("scope", ["global", "dataset"])
+    @pytest.mark.parametrize("scope", ["global", "data_set"])
     def test_every_requirement_is_itself_grantable_in_the_same_scope(self, admin_api_client, url, scope):
         """A requirement the editor cannot offer as a checkbox would be an error nobody can clear."""
         response = admin_api_client.get(url, {"scope": scope})
@@ -139,9 +139,9 @@ class TestPermissionListingAccess:
         assert DATASET_ADD in _codes(response)
 
     def test_allows_a_dataset_role_view_holder(self, api_client, user, url):
-        grant(user, PERMISSIONS.DATASET_ROLE.VIEW)
+        grant(user, PERMISSIONS.DATA_SET_ROLE.VIEW)
 
-        response = api_client.get(url, {"scope": "dataset"})
+        response = api_client.get(url, {"scope": "data_set"})
 
         assert response.status_code == status.HTTP_200_OK
         assert _codes(response) == DATASET_SCOPED_CONTRACT

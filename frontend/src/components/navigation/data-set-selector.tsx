@@ -16,7 +16,7 @@ import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 
 export function DataSetSelector() {
   const { dataSets, dataSetId, setDataSetId, hasPermission } = useApplicationContext()!;
-  const canAddDataSets = hasPermission(PERMISSIONS.DATASET.ADD);
+  const canAddDataSets = hasPermission(PERMISSIONS.DATA_SET.ADD);
   const canManageDataSets = dataSets.length > 0;
   const navigate = useNavigate();
   const location = useLocation();

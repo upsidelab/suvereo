@@ -70,7 +70,7 @@ class UserGroupPermission(StrEnum):
 
 
 class PERMISSIONS:
-    DATASET = DatasetPermission
+    DATA_SET = DatasetPermission
     AGENT = AgentPermission
     INTEGRATION = IntegrationPermission
     CONVERSATION = ConversationPermission
@@ -78,5 +78,5 @@ class PERMISSIONS:
     USER = UserPermission
     SERVICE_ACCOUNT = ServiceAccountPermission
     GLOBAL_ROLE = GlobalRolePermission
-    DATASET_ROLE = DatasetRolePermission
+    DATA_SET_ROLE = DatasetRolePermission
     GROUP = UserGroupPermission

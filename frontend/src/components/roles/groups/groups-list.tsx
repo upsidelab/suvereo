@@ -128,7 +128,7 @@ export function GroupsList() {
 function describeReach(group: GroupOption): string {
   const parts = [
     counted(group.globalRoleCount, "global role"),
-    counted(group.datasetRoleCount, "dataset role"),
+    counted(group.dataSetRoleCount, "data set role"),
   ].filter((part) => part !== null);
   return parts.length === 0 ? "None" : parts.join(" · ");
 }

@@ -12,12 +12,12 @@ import {
 } from "@/components/ui/command.tsx";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select.tsx";
 import { cn } from "@/lib/utils.ts";
-import { DatasetRoleOption } from "@/lib/types.ts";
+import { DataSetRoleOption } from "@/lib/types.ts";
 import { AccessRow, AccessSubject } from "@/components/data-sets/access-row.ts";
 
 export interface AddAccessSelectorProps {
   subjects: AccessSubject[];
-  roles: DatasetRoleOption[];
+  roles: DataSetRoleOption[];
   grantedRoles: AccessRow[];
   onSubmit: (subject: AccessSubject, roleId: number) => void;
 }

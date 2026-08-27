@@ -53,7 +53,7 @@ class TestEntityListView:
         assert response.status_code == status.HTTP_200_OK
 
     def test_global_view_dataset_holder_is_allowed(self, api_client, user):
-        grant(user, PERMISSIONS.DATASET.VIEW)
+        grant(user, PERMISSIONS.DATA_SET.VIEW)
 
         response = api_client.get(reverse("entity-list"))
 
@@ -99,7 +99,7 @@ class TestEntityRecordsView:
         assert response.status_code == status.HTTP_200_OK
 
     def test_global_view_dataset_holder_is_allowed(self, api_client, user, data_set):
-        grant(user, PERMISSIONS.DATASET.VIEW)
+        grant(user, PERMISSIONS.DATA_SET.VIEW)
 
         response = api_client.get(_url(data_set))
 

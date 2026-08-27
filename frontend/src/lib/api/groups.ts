@@ -7,7 +7,7 @@ type GroupResponse = {
   name: string;
   member_count: number;
   global_role_count: number;
-  dataset_role_count: number;
+  data_set_role_count: number;
 };
 
 type GroupDetailResponse = GroupResponse & {
@@ -26,7 +26,7 @@ function toGroupOption(group: GroupResponse): GroupOption {
     name: group.name,
     memberCount: group.member_count,
     globalRoleCount: group.global_role_count,
-    datasetRoleCount: group.dataset_role_count,
+    dataSetRoleCount: group.data_set_role_count,
   };
 }
 

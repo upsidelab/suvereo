@@ -71,9 +71,9 @@ urlpatterns = [
         account.views.group_global_roles.GroupGlobalRoleDetailView.as_view(),
         name="group_global_role_details",
     ),
-    path("api/dataset_roles", account.views.dataset_roles.DatasetRoleListView.as_view(), name="dataset_role_list"),
+    path("api/data_set_roles", account.views.dataset_roles.DatasetRoleListView.as_view(), name="dataset_role_list"),
     path(
-        "api/dataset_roles/<int:id>",
+        "api/data_set_roles/<int:id>",
         account.views.dataset_roles.DatasetRoleDetailView.as_view(),
         name="dataset_role_details",
     ),

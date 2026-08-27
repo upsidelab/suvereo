@@ -33,7 +33,7 @@ GLOBAL_SCOPE_PERMISSIONS: list[str] = [*_GLOBAL_ONLY_PERMISSIONS, *DATASET_SCOPE
 
 PERMISSION_SCOPES: dict[str, list[str]] = {
     "global": GLOBAL_SCOPE_PERMISSIONS,
-    "dataset": DATASET_SCOPE_PERMISSIONS,
+    "data_set": DATASET_SCOPE_PERMISSIONS,
 }
 
 # What each permission requires, keyed by the requirement: granting anything in the list on the

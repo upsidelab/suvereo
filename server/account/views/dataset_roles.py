@@ -24,14 +24,14 @@ class DatasetRoleListView(ListCreateAPIView):
         return DatasetRoleSerializer
 
     @swagger_auto_schema(operation_description="List dataset-scoped roles")
-    @global_permission_required(PERMISSIONS.DATASET_ROLE.VIEW)
+    @global_permission_required(PERMISSIONS.DATA_SET_ROLE.VIEW)
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @swagger_auto_schema(
         operation_description="Create a new dataset-scoped role", request_body=DatasetRoleDetailSerializer
     )
-    @global_permission_required(PERMISSIONS.DATASET_ROLE.ADD)
+    @global_permission_required(PERMISSIONS.DATA_SET_ROLE.ADD)
     def post(self, request, *args, **kwargs):
         return super().post(request, *args, **kwargs)
 
@@ -47,7 +47,7 @@ class DatasetRoleDetailView(RetrieveUpdateDestroyAPIView):
     @swagger_auto_schema(
         operation_description="Retrieve a dataset-scoped role", manual_parameters=[DATASET_ROLE_ID_PARAMETER]
     )
-    @global_permission_required(PERMISSIONS.DATASET_ROLE.VIEW)
+    @global_permission_required(PERMISSIONS.DATA_SET_ROLE.VIEW)
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
@@ -56,7 +56,7 @@ class DatasetRoleDetailView(RetrieveUpdateDestroyAPIView):
         request_body=DatasetRoleDetailSerializer,
         manual_parameters=[DATASET_ROLE_ID_PARAMETER],
     )
-    @global_permission_required(PERMISSIONS.DATASET_ROLE.CHANGE)
+    @global_permission_required(PERMISSIONS.DATA_SET_ROLE.CHANGE)
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
 
@@ -64,7 +64,7 @@ class DatasetRoleDetailView(RetrieveUpdateDestroyAPIView):
         operation_description="Delete a dataset role, revoking it from everyone who holds it",
         manual_parameters=[DATASET_ROLE_ID_PARAMETER],
     )
-    @global_permission_required(PERMISSIONS.DATASET_ROLE.DELETE)
+    @global_permission_required(PERMISSIONS.DATA_SET_ROLE.DELETE)
     def delete(self, request, *args, **kwargs):
         """Deleting a role takes its assignments with it, the way deleting a global role takes its
         memberships - holding a role is not a reason the role has to stay."""

@@ -19,11 +19,11 @@ import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 const api = new ApiClient(authenticationProviderInstance);
 
 export default function AgentsTable() {
-  const { dataSetId, refetchAgents, hasDatasetPermission } = useApplicationContext()
-    ?? { dataSetId: null, refetchAgents: async () => {}, hasDatasetPermission: () => false };
-  const canAddAgents = hasDatasetPermission(PERMISSIONS.AGENT.ADD);
-  const canChangeAgents = hasDatasetPermission(PERMISSIONS.AGENT.CHANGE);
-  const canDeleteAgents = hasDatasetPermission(PERMISSIONS.AGENT.DELETE);
+  const { dataSetId, refetchAgents, hasDataSetPermission } = useApplicationContext()
+    ?? { dataSetId: null, refetchAgents: async () => {}, hasDataSetPermission: () => false };
+  const canAddAgents = hasDataSetPermission(PERMISSIONS.AGENT.ADD);
+  const canChangeAgents = hasDataSetPermission(PERMISSIONS.AGENT.CHANGE);
+  const canDeleteAgents = hasDataSetPermission(PERMISSIONS.AGENT.DELETE);
   const { agentTypes, loadingTypes } = useAgentTypes(canAddAgents || canChangeAgents);
 
   const [isAccessDenied, setIsAccessDenied] = useState(false);
