@@ -9,6 +9,7 @@ import { GroupModal } from "@/components/roles/groups/group-modal.tsx";
 import { RevokeConfirmDialog } from "@/components/roles/revoke-confirm-dialog.tsx";
 import { ApiError } from "@/lib/api-error.ts";
 import { PERMISSIONS } from "@/lib/permissions/codes.ts";
+import { EmptyState } from "@/components/util/empty-state.tsx";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -78,7 +79,7 @@ export function GroupsList() {
         </div>
       )}
       {groups.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No groups yet.</p>
+        <EmptyState message="No groups yet" />
       ) : (
         <Table className="table-fixed">
           <TableHeader>

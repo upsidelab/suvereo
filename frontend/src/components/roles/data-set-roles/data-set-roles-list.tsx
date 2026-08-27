@@ -9,6 +9,7 @@ import { DataSetRoleModal } from "@/components/roles/data-set-roles/data-set-rol
 import { RevokeConfirmDialog } from "@/components/roles/revoke-confirm-dialog.tsx";
 import { ApiError } from "@/lib/api-error.ts";
 import { PERMISSIONS } from "@/lib/permissions/codes.ts";
+import { EmptyState } from "@/components/util/empty-state.tsx";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -77,32 +78,36 @@ export function DataSetRolesList() {
           <DataSetRoleModal onSaved={load} />
         </div>
       )}
-      <Table className="table-fixed">
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead className={canDeleteRoles ? "w-48" : "w-24"}>Action</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {roles.map((role) => (
-            <TableRow key={role.id}>
-              <TableCell>{role.name}</TableCell>
-              <TableCell className="flex space-x-4">
-                <DataSetRoleModal role={role} onSaved={load} />
-                {canDeleteRoles && (
-                  <Button
-                    variant="secondary"
-                    onClick={() => { setError(null); setRoleToDelete(role); setIsDeleteDialogOpen(true); }}
-                  >
-                    Delete
-                  </Button>
-                )}
-              </TableCell>
+      {roles.length === 0 ? (
+        <EmptyState message="No data set roles yet" />
+      ) : (
+        <Table className="table-fixed">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead className={canDeleteRoles ? "w-48" : "w-24"}>Action</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {roles.map((role) => (
+              <TableRow key={role.id}>
+                <TableCell>{role.name}</TableCell>
+                <TableCell className="flex space-x-4">
+                  <DataSetRoleModal role={role} onSaved={load} />
+                  {canDeleteRoles && (
+                    <Button
+                      variant="secondary"
+                      onClick={() => { setError(null); setRoleToDelete(role); setIsDeleteDialogOpen(true); }}
+                    >
+                      Delete
+                    </Button>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
 
       <RevokeConfirmDialog
         open={isDeleteDialogOpen}

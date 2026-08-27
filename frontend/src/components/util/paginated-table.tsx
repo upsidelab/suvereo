@@ -1,5 +1,6 @@
 import { MouseEvent, ReactNode, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { EmptyState } from "@/components/util/empty-state.tsx";
 import { PaginatedResult } from "@/lib/types.ts";
 import { SkeletonLoader } from "@/components/util/skeleton-loader.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
@@ -77,11 +78,7 @@ export function PaginatedTable<T>({
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
   if (items.length === 0 && !isLoading) {
-    return (
-      <div className="text-center">
-        <h2 className="font-bold">{noItemsMessage}</h2>
-      </div>
-    );
+    return <EmptyState message={noItemsMessage} />;
   }
 
   return (
