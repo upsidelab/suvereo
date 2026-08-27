@@ -4,8 +4,8 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from account.authorization import PERMISSIONS
-from account.models import DatasetGlobalRoleAssignment, GlobalRole, User
-from account.tests.helpers import assign_role, client_for, grant, make_role, permission
+from account.models import GlobalRole, User
+from account.tests.helpers import client_for, grant, make_group, permission
 from account.tests.public_permission_codes_contract import (
     DATASET_VIEW,
     GLOBAL_ROLE_CHANGE,
@@ -139,16 +139,16 @@ class TestGlobalRolePayloads:
 
 
 class TestGlobalRoleDeletion:
-    def test_deleting_a_global_role_gives_up_the_roles_it_held(
-        self, admin_api_client, detail_url, global_role, data_set
+    def test_deleting_a_global_role_takes_it_off_the_groups_holding_it(
+        self, admin_api_client, detail_url, global_role
     ):
-        assign_role(global_role, data_set, make_role("reader", PERMISSIONS.AGENT.VIEW))
+        group = make_group("contractors", global_role)
 
         response = admin_api_client.delete(detail_url)
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert not GlobalRole.objects.filter(pk=global_role.pk).exists()
-        assert not DatasetGlobalRoleAssignment.objects.filter(global_role_id=global_role.pk).exists()
+        assert not group.global_roles.exists()
 
     def test_a_global_role_with_members_can_be_deleted(self, admin_api_client, detail_url, global_role, user):
         global_role.members.add(user)

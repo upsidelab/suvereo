@@ -94,13 +94,13 @@ urlpatterns = [
         name="dataset_role_user_details",
     ),
     path(
-        "api/data_sets/<int:data_set_id>/roles/<int:role_id>/global_roles",
-        account.views.dataset_access.DatasetRoleGlobalRoleListView.as_view(),
-        name="dataset_role_global_role_list",
+        "api/data_sets/<int:data_set_id>/roles/<int:role_id>/groups",
+        account.views.dataset_access.DatasetRoleGroupListView.as_view(),
+        name="dataset_role_group_list",
     ),
     path(
-        "api/data_sets/<int:data_set_id>/roles/<int:role_id>/global_roles/<int:global_role_id>",
-        account.views.dataset_access.DatasetRoleGlobalRoleView.as_view(),
-        name="dataset_role_global_role_details",
+        "api/data_sets/<int:data_set_id>/roles/<int:role_id>/groups/<int:group_id>",
+        account.views.dataset_access.DatasetRoleGroupView.as_view(),
+        name="dataset_role_group_details",
     ),
 ]

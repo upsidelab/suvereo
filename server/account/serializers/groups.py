@@ -35,3 +35,9 @@ class GroupDetailSerializer(GroupSerializer):
 
     class Meta(GroupSerializer.Meta):
         fields = [*GroupSerializer.Meta.fields, "global_roles"]
+
+
+class GroupReferenceSerializer(serializers.Serializer):
+    """A request body that names a group."""
+
+    group_id = serializers.PrimaryKeyRelatedField(source="group", queryset=UserGroup.objects.all())

@@ -10,7 +10,6 @@ from django.contrib.auth.models import Permission
 from rest_framework.test import APIClient
 
 from account.models import (
-    DatasetGlobalRoleAssignment,
     DatasetGroupRoleAssignment,
     DatasetRole,
     DatasetUserRoleAssignment,
@@ -91,9 +90,7 @@ def make_role(name: str = "role", *codenames: str) -> DatasetRole:
 
 
 def assign_role(subject, dataset, role: DatasetRole):
-    """Grant `role` on `dataset` to a user, a group or a global role, whichever `subject` is."""
-    if isinstance(subject, GlobalRole):
-        return DatasetGlobalRoleAssignment.objects.create(global_role=subject, dataset=dataset, role=role)
+    """Grant `role` on `dataset` to a user or a group, whichever `subject` is."""
     if isinstance(subject, UserGroup):
         return DatasetGroupRoleAssignment.objects.create(group=subject, dataset=dataset, role=role)
     return DatasetUserRoleAssignment.objects.create(user=subject, dataset=dataset, role=role)

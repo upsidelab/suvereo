@@ -2,8 +2,8 @@ import pytest
 from django.db import IntegrityError, transaction
 
 from account.authorization import PERMISSIONS
-from account.models import DatasetGlobalRoleAssignment, DatasetUserRoleAssignment
-from account.tests.helpers import make_global_role, make_role
+from account.models import DatasetGroupRoleAssignment, DatasetUserRoleAssignment
+from account.tests.helpers import make_group, make_role
 
 pytestmark = pytest.mark.django_db
 
@@ -13,11 +13,11 @@ def subjects(user, data_set):
     """The same scenario expressed for both assignment tables, so each case runs twice."""
     return {
         "user": (DatasetUserRoleAssignment, {"user": user}),
-        "global_role": (DatasetGlobalRoleAssignment, {"global_role": make_global_role("support")}),
+        "group": (DatasetGroupRoleAssignment, {"group": make_group("contractors")}),
     }
 
 
-@pytest.mark.parametrize("kind", ["user", "global_role"])
+@pytest.mark.parametrize("kind", ["user", "group"])
 def test_several_roles_can_be_held_on_one_data_set(subjects, data_set, kind):
     model, subject = subjects[kind]
 
@@ -27,7 +27,7 @@ def test_several_roles_can_be_held_on_one_data_set(subjects, data_set, kind):
     assert model.objects.filter(**subject, dataset=data_set).count() == 2
 
 
-@pytest.mark.parametrize("kind", ["user", "global_role"])
+@pytest.mark.parametrize("kind", ["user", "group"])
 def test_the_same_role_cannot_be_held_twice_on_one_data_set(subjects, data_set, kind):
     model, subject = subjects[kind]
     role = make_role("reader", PERMISSIONS.AGENT.VIEW)
@@ -40,20 +40,20 @@ def test_the_same_role_cannot_be_held_twice_on_one_data_set(subjects, data_set, 
 def test_deleting_a_data_set_takes_its_assignments_with_it(user, data_set):
     role = make_role("reader", PERMISSIONS.AGENT.VIEW)
     DatasetUserRoleAssignment.objects.create(user=user, dataset=data_set, role=role)
-    DatasetGlobalRoleAssignment.objects.create(global_role=make_global_role("support"), dataset=data_set, role=role)
+    DatasetGroupRoleAssignment.objects.create(group=make_group("contractors"), dataset=data_set, role=role)
 
     data_set.delete()
 
     assert not DatasetUserRoleAssignment.objects.exists()
-    assert not DatasetGlobalRoleAssignment.objects.exists()
+    assert not DatasetGroupRoleAssignment.objects.exists()
 
 
 def test_deleting_a_role_takes_its_assignments_with_it(user, data_set):
     role = make_role("reader", PERMISSIONS.AGENT.VIEW)
     DatasetUserRoleAssignment.objects.create(user=user, dataset=data_set, role=role)
-    DatasetGlobalRoleAssignment.objects.create(global_role=make_global_role("support"), dataset=data_set, role=role)
+    DatasetGroupRoleAssignment.objects.create(group=make_group("contractors"), dataset=data_set, role=role)
 
     role.delete()
 
     assert not DatasetUserRoleAssignment.objects.exists()
-    assert not DatasetGlobalRoleAssignment.objects.exists()
+    assert not DatasetGroupRoleAssignment.objects.exists()

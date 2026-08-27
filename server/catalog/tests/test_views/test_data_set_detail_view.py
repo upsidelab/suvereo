@@ -5,7 +5,7 @@ from model_bakery import baker
 from rest_framework import status
 
 from account.authorization import PERMISSIONS
-from account.models import DatasetGlobalRoleAssignment, DatasetRole, DatasetUserRoleAssignment, GlobalRole
+from account.models import DatasetGroupRoleAssignment, DatasetRole, DatasetUserRoleAssignment, UserGroup
 from account.tests.helpers import grant
 from account.tests.public_permission_codes_contract import (
     AGENT_VIEW,
@@ -44,10 +44,10 @@ class TestDataSetDetailViewGet:
         assert response.data["id"] == data_set.id
 
     def test_global_role_member_can_view_dataset(self, api_client, user, data_set):
-        global_role = baker.make(GlobalRole)
-        global_role.members.add(user)
+        group = baker.make(UserGroup)
+        group.members.add(user)
         role = baker.make(DatasetRole)
-        baker.make(DatasetGlobalRoleAssignment, global_role=global_role, dataset=data_set, role=role)
+        baker.make(DatasetGroupRoleAssignment, group=group, dataset=data_set, role=role)
 
         response = api_client.get(_url(data_set))
 

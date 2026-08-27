@@ -4,9 +4,9 @@ from model_bakery import baker
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from account.authorization import PERMISSIONS
+from account.authorization import PERMISSIONS, has_dataset_perm
 from account.models import User
-from account.tests.helpers import client_for, grant, make_global_role, make_group
+from account.tests.helpers import assign_role, client_for, grant, make_global_role, make_group, make_role
 
 pytestmark = pytest.mark.django_db
 
@@ -179,6 +179,15 @@ class TestWhatMembershipActuallyDoes:
         client_for(assigner).post(members_url, {"user_id": member.id}, format="json")
 
         assert User.objects.get(pk=member.pk).get_all_permissions() == set()
+
+    def test_the_dataset_roles_the_group_holds_reach_a_newly_added_member(
+        self, assigner, member, group, members_url, data_set
+    ):
+        assign_role(group, data_set, make_role("reader", PERMISSIONS.AGENT.VIEW))
+
+        client_for(assigner).post(members_url, {"user_id": member.id}, format="json")
+
+        assert has_dataset_perm(User.objects.get(pk=member.pk), PERMISSIONS.AGENT.VIEW, data_set)
 
     def test_an_assigner_may_add_themselves_to_a_group(self, assigner, group, members_url):
         response = client_for(assigner).post(members_url, {"user_id": assigner.id}, format="json")
