@@ -117,6 +117,21 @@ class TestTheAccessListPayload:
         assert len(response.data["users"]) == 1
         assert len(response.data["groups"]) == 1
 
+    def test_a_group_row_carries_the_counts_that_say_how_far_the_grant_reaches(
+        self, global_assigner, data_set, role, subject
+    ):
+        group = make_group("contractors")
+        join_group(subject, group)
+        join_group(baker.make(User, email="second@example.com"), group)
+        group.global_roles.add(make_global_role("editor"))
+        assign_role(group, data_set, role)
+
+        response = client_for(global_assigner).get(access_url(data_set))
+
+        assert response.data["groups"][0]["group"]["member_count"] == 2
+        assert response.data["groups"][0]["group"]["global_role_count"] == 1
+        assert response.data["groups"][0]["group"]["dataset_role_count"] == 1
+
 
 class TestGrantingARole:
     @pytest.mark.parametrize("kind", ["users", "groups"])
