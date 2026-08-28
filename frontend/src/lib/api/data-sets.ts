@@ -1,5 +1,5 @@
 import { BaseApiClient } from "@/lib/api/base.ts";
-import { DataSet, DatasetAccess, DatasetRoleOption, GlobalRoleOption } from "@/lib/types.ts";
+import { DataSet, DatasetAccess, DatasetRoleOption } from "@/lib/types.ts";
 import { ApiError } from "@/lib/api-error.ts";
 
 export type DataSetResponse = {
@@ -22,9 +22,15 @@ type DatasetAccessResponse = {
     user: { id: number; email: string; is_service_account: boolean };
     role: DatasetRoleOption;
   }[];
-  global_roles: {
+  groups: {
     id: number;
-    global_role: GlobalRoleOption;
+    group: {
+      id: number;
+      name: string;
+      member_count: number;
+      global_role_count: number;
+      dataset_role_count: number;
+    };
     role: DatasetRoleOption;
   }[];
 }
@@ -101,10 +107,16 @@ export class DataSetsApiClient extends BaseApiClient {
           isServiceAccount: assignment.user.is_service_account
         }
       })),
-      globalRoles: result.global_roles.map((assignment) => ({
+      groups: result.groups.map((assignment) => ({
         id: assignment.id,
         role: assignment.role,
-        globalRole: assignment.global_role
+        group: {
+          id: assignment.group.id,
+          name: assignment.group.name,
+          memberCount: assignment.group.member_count,
+          globalRoleCount: assignment.group.global_role_count,
+          datasetRoleCount: assignment.group.dataset_role_count
+        }
       }))
     };
   }
@@ -120,13 +132,13 @@ export class DataSetsApiClient extends BaseApiClient {
     );
   }
 
-  async grantRoleToGlobalRole(dataSetId: number, roleId: number, globalRoleId: number): Promise<Response> {
+  async grantRoleToGroup(dataSetId: number, roleId: number, groupId: number): Promise<Response> {
     return await fetch(
-      `${this.apiBase}/api/data_sets/${dataSetId}/roles/${roleId}/global_roles`,
+      `${this.apiBase}/api/data_sets/${dataSetId}/roles/${roleId}/groups`,
       {
         ...this._requestConfiguration(),
         method: "POST",
-        body: JSON.stringify({ global_role_id: globalRoleId })
+        body: JSON.stringify({ group_id: groupId })
       }
     );
   }
@@ -141,9 +153,9 @@ export class DataSetsApiClient extends BaseApiClient {
     );
   }
 
-  async revokeRoleFromGlobalRole(dataSetId: number, roleId: number, globalRoleId: number): Promise<Response> {
+  async revokeRoleFromGroup(dataSetId: number, roleId: number, groupId: number): Promise<Response> {
     return await fetch(
-      `${this.apiBase}/api/data_sets/${dataSetId}/roles/${roleId}/global_roles/${globalRoleId}`,
+      `${this.apiBase}/api/data_sets/${dataSetId}/roles/${roleId}/groups/${groupId}`,
       {
         ...this._requestConfiguration(),
         method: "DELETE"

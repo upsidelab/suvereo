@@ -1,3 +1,4 @@
+from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -7,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from account.authorization import PERMISSIONS, global_permission_required
-from account.models import DatasetGroupRoleAssignment, DatasetRole, DatasetUserRoleAssignment
+from account.models import DatasetGroupRoleAssignment, DatasetRole, DatasetUserRoleAssignment, UserGroup
 from account.serializers import (
     DatasetGroupRoleAssignmentSerializer,
     DatasetUserRoleAssignmentSerializer,
@@ -44,7 +45,11 @@ class DatasetAccessListView(_DatasetAccessView):
     def get(self, request, data_set_id):
         data_set = self._get_dataset(data_set_id)
         users = DatasetUserRoleAssignment.objects.filter(dataset=data_set).select_related("user", "role")
-        groups = DatasetGroupRoleAssignment.objects.filter(dataset=data_set).select_related("group", "role")
+        groups = (
+            DatasetGroupRoleAssignment.objects.filter(dataset=data_set)
+            .select_related("role")
+            .prefetch_related(Prefetch("group", queryset=UserGroup.objects.with_counts()))
+        )
         return Response(
             {
                 "users": DatasetUserRoleAssignmentSerializer(users, many=True).data,

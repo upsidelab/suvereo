@@ -1,9 +1,10 @@
 import { DatasetRoleOption } from "@/lib/types.ts";
 
 export type AccessSubject = {
-  type: "user" | "global-role";
+  type: "user" | "group";
   id: number;
   label: string;
+  memberCount?: number;
 };
 
 export type AccessRow = {

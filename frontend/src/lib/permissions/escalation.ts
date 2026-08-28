@@ -3,7 +3,11 @@ import { EscalationWarning } from "@/lib/permissions/types.ts";
 
 const ROLE_ADD_CODES: readonly string[] = [PERMISSIONS.GLOBAL_ROLE.ADD, PERMISSIONS.DATASET_ROLE.ADD];
 const ROLE_EDIT_CODES: readonly string[] = [PERMISSIONS.GLOBAL_ROLE.CHANGE, PERMISSIONS.DATASET_ROLE.CHANGE];
-const ROLE_ASSIGN_CODES: readonly string[] = [PERMISSIONS.GLOBAL_ROLE.ASSIGN, PERMISSIONS.DATASET_ROLE.ASSIGN];
+const ROLE_ASSIGN_CODES: readonly string[] = [
+  PERMISSIONS.GLOBAL_ROLE.ASSIGN,
+  PERMISSIONS.DATASET_ROLE.ASSIGN,
+  PERMISSIONS.GROUP.ASSIGN,
+];
 
 const ADD_WARNING = "People in this role will be able to create roles carrying any permission in the system, "
   + "including a role that amounts to administrator access.";
@@ -12,7 +16,7 @@ const EDIT_WARNING = "People in this role will be able to edit permission sets, 
   + "hold themselves. Nothing stops them granting themselves every permission in the system, so anyone holding "
   + "this role can self-promote to an effective administrator.";
 
-const ASSIGN_WARNING = "People in this role will be able to grant roles to anyone, including to themselves.";
+const ASSIGN_WARNING = "People in this role will be able to grant roles to anyone, including to themselves, and to hand out whatever a group holds by adding members to it.";
 
 function warningsFor(permissions: Set<string>): EscalationWarning[] {
   const carried = (codes: readonly string[]) => codes.filter((code) => permissions.has(code));

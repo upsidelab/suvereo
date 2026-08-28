@@ -12,4 +12,6 @@ export const PERMISSIONS = {
                        DELETE: "global_role.delete", ASSIGN: "global_role.assign" },
   DATASET_ROLE:      { VIEW: "dataset_role.view", ADD: "dataset_role.add", CHANGE: "dataset_role.change",
                        DELETE: "dataset_role.delete", ASSIGN: "dataset_role.assign" },
+  GROUP:             { VIEW: "group.view", ADD: "group.add", CHANGE: "group.change",
+                       DELETE: "group.delete", ASSIGN: "group.assign" },
 } as const;
