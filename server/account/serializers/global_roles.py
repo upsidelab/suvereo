@@ -11,7 +11,7 @@ class GlobalRoleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GlobalRole
-        fields = ["id", "name"]
+        fields = ["id", "name", "description"]
 
 
 class GlobalRoleDetailSerializer(GrantedPermissionsMixin, serializers.ModelSerializer):
@@ -19,7 +19,7 @@ class GlobalRoleDetailSerializer(GrantedPermissionsMixin, serializers.ModelSeria
 
     class Meta:
         model = GlobalRole
-        fields = ["id", "name", "permissions"]
+        fields = ["id", "name", "description", "permissions"]
         extra_kwargs = {
             "name": {
                 "validators": [

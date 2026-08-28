@@ -13,7 +13,8 @@ DATASET_ROLE_ID_PARAMETER = openapi.Parameter(
 
 
 class DatasetRoleListView(ListCreateAPIView):
-    """List dataset-scoped roles; create one with a name and a set of dataset-scoped permissions."""
+    """List dataset-scoped roles; create one with a name, a description and a set of dataset-scoped
+    permissions."""
 
     permission_classes = [IsAuthenticated]
     queryset = DatasetRole.objects.prefetch_related("permissions__content_type").order_by("name")
@@ -37,7 +38,7 @@ class DatasetRoleListView(ListCreateAPIView):
 
 
 class DatasetRoleDetailView(RetrieveUpdateDestroyAPIView):
-    """Retrieve a dataset role; update its name and permissions; delete it."""
+    """Retrieve a dataset role; update its name, description and permissions; delete it."""
 
     permission_classes = [IsAuthenticated]
     serializer_class = DatasetRoleDetailSerializer
@@ -52,7 +53,7 @@ class DatasetRoleDetailView(RetrieveUpdateDestroyAPIView):
         return super().get(request, *args, **kwargs)
 
     @swagger_auto_schema(
-        operation_description="Update a dataset role's name and permissions",
+        operation_description="Update a dataset role's name, description and permissions",
         request_body=DatasetRoleDetailSerializer,
         manual_parameters=[DATASET_ROLE_ID_PARAMETER],
     )

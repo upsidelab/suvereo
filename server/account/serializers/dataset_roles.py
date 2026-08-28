@@ -13,7 +13,7 @@ class DatasetRoleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DatasetRole
-        fields = ["id", "name"]
+        fields = ["id", "name", "description"]
 
 
 class DatasetRoleDetailSerializer(GrantedPermissionsMixin, serializers.ModelSerializer):
@@ -26,7 +26,7 @@ class DatasetRoleDetailSerializer(GrantedPermissionsMixin, serializers.ModelSeri
 
     class Meta:
         model = DatasetRole
-        fields = ["id", "name", "permissions"]
+        fields = ["id", "name", "description", "permissions"]
 
 
 class DatasetUserRoleAssignmentSerializer(serializers.ModelSerializer):

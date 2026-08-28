@@ -15,7 +15,7 @@ class GroupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserGroup
-        fields = ["id", "name", "member_count", "global_role_count", "data_set_role_count"]
+        fields = ["id", "name", "description", "member_count", "global_role_count", "data_set_role_count"]
         extra_kwargs = {
             "name": {
                 "validators": [

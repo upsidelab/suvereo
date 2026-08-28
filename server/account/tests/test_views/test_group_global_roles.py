@@ -44,7 +44,7 @@ class TestGrantingAGlobalRoleToAGroup:
         response = client_for(granter).post(grants_url, {"global_role_id": global_role.id}, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
-        assert response.data == {"id": global_role.id, "name": "user-managers"}
+        assert response.data == {"id": global_role.id, "name": "user-managers", "description": ""}
         assert group.global_roles.filter(pk=global_role.pk).exists()
 
     def test_group_change_does_not_carry_it(self, user, group, global_role, grants_url):
