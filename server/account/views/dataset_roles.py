@@ -3,7 +3,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.permissions import IsAuthenticated
 
-from account.authorization import PERMISSIONS, admin_required, global_permission_required
+from account.authorization import PERMISSIONS, global_permission_required
 from account.models import DatasetRole
 from account.serializers import DatasetRoleDetailSerializer, DatasetRoleSerializer
 
@@ -31,7 +31,7 @@ class DatasetRoleListView(ListCreateAPIView):
     @swagger_auto_schema(
         operation_description="Create a new dataset-scoped role", request_body=DatasetRoleDetailSerializer
     )
-    @admin_required
+    @global_permission_required(PERMISSIONS.DATASET_ROLE.ADD)
     def post(self, request, *args, **kwargs):
         return super().post(request, *args, **kwargs)
 
@@ -56,7 +56,7 @@ class DatasetRoleDetailView(RetrieveUpdateDestroyAPIView):
         request_body=DatasetRoleDetailSerializer,
         manual_parameters=[DATASET_ROLE_ID_PARAMETER],
     )
-    @admin_required
+    @global_permission_required(PERMISSIONS.DATASET_ROLE.CHANGE)
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
 
@@ -64,7 +64,7 @@ class DatasetRoleDetailView(RetrieveUpdateDestroyAPIView):
         operation_description="Delete a dataset role, revoking it from everyone who holds it",
         manual_parameters=[DATASET_ROLE_ID_PARAMETER],
     )
-    @admin_required
+    @global_permission_required(PERMISSIONS.DATASET_ROLE.DELETE)
     def delete(self, request, *args, **kwargs):
         """Deleting a role takes its assignments with it, the way deleting a global role takes its
         memberships - holding a role is not a reason the role has to stay."""

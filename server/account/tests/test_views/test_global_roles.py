@@ -4,9 +4,14 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from account.authorization import PERMISSIONS
-from account.models import DatasetGlobalRoleAssignment, GlobalRole
+from account.models import DatasetGlobalRoleAssignment, GlobalRole, User
 from account.tests.helpers import assign_role, client_for, grant, make_role, permission
-from account.tests.public_permission_codes_contract import DATASET_VIEW, USER_VIEW
+from account.tests.public_permission_codes_contract import (
+    DATASET_VIEW,
+    GLOBAL_ROLE_CHANGE,
+    GLOBAL_ROLE_VIEW,
+    USER_VIEW,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -50,12 +55,28 @@ class TestReadingGroupsRequiresGroupView:
         assert api_client.get(detail_url).status_code == status.HTTP_403_FORBIDDEN
 
 
-class TestWritingGroupsIsAdminOnly:
+class TestWritingGlobalRolesNeedsItsOwnLifecycleCode:
+
     @pytest.mark.parametrize(
-        "delegated",
-        [(PERMISSIONS.GLOBAL_ROLE.VIEW,), (PERMISSIONS.GLOBAL_ROLE.ASSIGN, PERMISSIONS.GLOBAL_ROLE.VIEW)],
-        ids=["viewer", "assigner"],
+        ("method", "uses_detail_url", "body", "code", "expected_status"),
+        [
+            ("post", False, {"name": "new-team"}, PERMISSIONS.GLOBAL_ROLE.ADD, status.HTTP_201_CREATED),
+            ("patch", True, {"permissions": [USER_VIEW]}, PERMISSIONS.GLOBAL_ROLE.CHANGE, status.HTTP_200_OK),
+            ("put", True, {"name": "renamed"}, PERMISSIONS.GLOBAL_ROLE.CHANGE, status.HTTP_200_OK),
+            ("delete", True, None, PERMISSIONS.GLOBAL_ROLE.DELETE, status.HTTP_204_NO_CONTENT),
+        ],
+        ids=["create", "patch permissions", "rename", "delete"],
     )
+    def test_a_holder_of_the_code_can_write(
+        self, user, list_url, detail_url, global_role, method, uses_detail_url, body, code, expected_status
+    ):
+        grant(user, PERMISSIONS.GLOBAL_ROLE.VIEW, code)
+        url = detail_url if uses_detail_url else list_url
+
+        response = getattr(client_for(user), method)(url, body, format="json")
+
+        assert response.status_code == expected_status
+
     @pytest.mark.parametrize(
         ("method", "uses_detail_url", "body"),
         [
@@ -64,11 +85,12 @@ class TestWritingGroupsIsAdminOnly:
             ("put", True, {"name": "renamed"}),
             ("delete", True, None),
         ],
+        ids=["create", "patch permissions", "rename", "delete"],
     )
-    def test_a_delegate_cannot_create_edit_or_delete_a_group(
-        self, user, list_url, detail_url, global_role, delegated, method, uses_detail_url, body
+    def test_reading_and_assigning_do_not_carry_the_write(
+        self, user, list_url, detail_url, global_role, method, uses_detail_url, body
     ):
-        grant(user, *delegated)
+        grant(user, PERMISSIONS.GLOBAL_ROLE.VIEW, PERMISSIONS.GLOBAL_ROLE.ASSIGN)
         url = detail_url if uses_detail_url else list_url
 
         response = getattr(client_for(user), method)(url, body, format="json")
@@ -77,11 +99,26 @@ class TestWritingGroupsIsAdminOnly:
         assert GlobalRole.objects.filter(pk=global_role.pk).exists()
         assert not GlobalRole.objects.filter(name__in=["new-team", "renamed"]).exists()
 
-    def test_an_admin_can_create_a_group(self, admin_api_client, list_url):
+    def test_an_admin_still_reaches_every_write(self, admin_api_client, list_url):
         response = admin_api_client.post(list_url, {"name": "new-team"}, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
         assert GlobalRole.objects.filter(name="new-team").exists()
+
+
+class TestGlobalRoleChangeIsSelfPromotion:
+    def test_a_change_holder_can_widen_the_role_they_hold_it_through(self, user):
+        grant(user, PERMISSIONS.GLOBAL_ROLE.VIEW, PERMISSIONS.GLOBAL_ROLE.CHANGE)
+        own_role = GlobalRole.objects.get(members=user)
+
+        response = client_for(user).patch(
+            reverse("global_role_details", args=[own_role.id]),
+            {"permissions": [GLOBAL_ROLE_VIEW, GLOBAL_ROLE_CHANGE, DATASET_VIEW]},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert User.objects.get(pk=user.pk).has_perm(PERMISSIONS.DATASET.VIEW)
 
 
 class TestGroupPayloads:
