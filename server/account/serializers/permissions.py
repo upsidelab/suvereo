@@ -6,7 +6,7 @@ from account.authorization import (
     GLOBAL_SCOPE_PERMISSIONS,
     INTERNAL_CODES,
     PUBLIC_CODES,
-    dependencies_within,
+    missing_dependencies,
     permission_label,
 )
 
@@ -94,14 +94,6 @@ class GrantedPermissionsMixin:
         return super().validate(attrs)
 
     def _missing_dependencies(self, permissions) -> list[dict]:
+        """Adapts `Permission` rows onto the shared rule."""
         granted = {permission_label(permission) for permission in permissions}
-
-        unmet = [
-            {
-                "code": PUBLIC_CODES[required],
-                "required_by": sorted(PUBLIC_CODES[dependent] for dependent in dependents if dependent in granted),
-            }
-            for required, dependents in dependencies_within(self.grantable_permissions).items()
-            if required not in granted
-        ]
-        return sorted((entry for entry in unmet if entry["required_by"]), key=lambda entry: entry["code"])
+        return missing_dependencies(granted, self.grantable_permissions)

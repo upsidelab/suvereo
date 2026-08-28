@@ -12,6 +12,7 @@ from .permission_codenames import (
     UserGroupPermission,
     UserPermission,
 )
+from .permission_codes import PUBLIC_CODES
 
 _GLOBAL_ONLY_PERMISSIONS: list[str] = [
     *DatasetPermission,
@@ -149,3 +150,16 @@ def dependencies_within(scope_permissions: list[str]) -> dict[str, list[str]]:
         for required, dependents in TRANSITIVE_PERMISSION_DEPENDENCIES.items()
         if required in grantable
     }
+
+
+def missing_dependencies(granted: set[str], scope_permissions: list[str]) -> list[dict]:
+    """The requirements `granted` fails to meet, each with the permissions that made it necessary."""
+    unmet = [
+        {
+            "code": PUBLIC_CODES[required],
+            "required_by": sorted(PUBLIC_CODES[dependent] for dependent in dependents if dependent in granted),
+        }
+        for required, dependents in dependencies_within(scope_permissions).items()
+        if required not in granted
+    ]
+    return sorted((entry for entry in unmet if entry["required_by"]), key=lambda entry: entry["code"])

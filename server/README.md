@@ -10,4 +10,6 @@ This directory contains the server and the worker of Enthusiast. You can use it 
 4. Install Poetry
 5. Run `poetry install`
 6. Run `./manage.py migrate`
-7. Run webserver `./manage.py runserver` and Celery `celery -A pecl.celery worker`
+7. Run `./manage.py ensuresuperuser --email=<admin email> --password=<admin password>` to create admin account
+8. (Optional) Run `./manage.py seedroles` to seed pre-configured global and dataset roles.
+9. Run webserver `./manage.py runserver` and Celery `celery -A pecl.celery worker`
