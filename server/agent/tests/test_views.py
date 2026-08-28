@@ -475,7 +475,7 @@ class TestAgentDetailsView:
 
     def test_put_updates_agent(self, api_client, user, agent_instance, url, config):
         _grant_dataset_permission(user, agent_instance.dataset, PERMISSIONS.AGENT.CHANGE)
-        dataset = baker.make(DataSet)
+        dataset = agent_instance.dataset
         updated_config = {
             "agent_args": {
                 "required_test": "required_updated",
@@ -508,6 +508,44 @@ class TestAgentDetailsView:
             agent_instance.refresh_from_db()
             assert agent_instance.name == "updated"
             assert agent_instance.config == updated_config
+
+    def test_put_cannot_move_agent_to_another_dataset(self, api_client, user, agent_instance, url, config):
+        _grant_dataset_permission(user, agent_instance.dataset, PERMISSIONS.AGENT.CHANGE)
+        original_dataset = agent_instance.dataset
+        foreign_dataset = baker.make(DataSet)
+        payload = {
+            "name": "updated",
+            "description": "description",
+            "config": config,
+            "dataset": foreign_dataset.id,
+            "agent_type": "agent_1",
+        }
+
+        with patch("agent.serializers.customs.fields.AgentRegistry.get_plugin_classes", return_value=AGENT_CLASSES):
+            response = api_client.put(url, payload, format="json")
+
+            assert response.status_code == status.HTTP_200_OK
+            assert response.data["dataset"] == original_dataset.id
+            agent_instance.refresh_from_db()
+            assert agent_instance.dataset == original_dataset
+
+    def test_put_without_dataset_in_payload_updates_agent(self, api_client, user, agent_instance, url, config):
+        _grant_dataset_permission(user, agent_instance.dataset, PERMISSIONS.AGENT.CHANGE)
+        original_dataset = agent_instance.dataset
+        payload = {
+            "name": "updated",
+            "description": "description",
+            "config": config,
+            "agent_type": "agent_1",
+        }
+
+        with patch("agent.serializers.customs.fields.AgentRegistry.get_plugin_classes", return_value=AGENT_CLASSES):
+            response = api_client.put(url, payload, format="json")
+
+            assert response.status_code == status.HTTP_200_OK
+            agent_instance.refresh_from_db()
+            assert agent_instance.name == "updated"
+            assert agent_instance.dataset == original_dataset
 
     def test_put_removes_corrupted_flag_for_correct_data(self, api_client, user, url, config):
         dataset = baker.make(DataSet)
