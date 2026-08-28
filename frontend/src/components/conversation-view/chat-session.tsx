@@ -4,6 +4,7 @@ import { PlusIcon } from "lucide-react";
 import { ApiClient, TaskHandle } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
+import { PERMISSIONS } from "@/lib/permissions.ts";
 
 import { PageMain } from "@/components/util/page-main.tsx";
 import { PageHeading } from "@/components/util/page-heading.tsx";
@@ -13,6 +14,8 @@ import { AttachmentBubble } from "@/components/conversation-view/attachment-bubb
 import { MessageError } from "@/components/conversation-view/message-error.tsx";
 import { MessageBubbleTyping } from "@/components/conversation-view/message-bubble-typing.tsx";
 import { ChatWindow } from "@/components/conversation-view/chat-window.tsx";
+import { NotFound } from "@/pages/not-found.tsx";
+import { ApiError } from "@/lib/api-error.ts";
 
 import type { AgentDetails } from "@/lib/types";
 import type { Conversation as ConversationSchema } from '@/lib/types.ts';
@@ -42,10 +45,11 @@ const streamingEnabled = Boolean(import.meta.env.VITE_WS_BASE);
 
 export function ChatSession({ pendingMessage }: ChatSessionProps) {
   const { chatId } = useParams();
-  const { dataSetId } = useApplicationContext()!;
+  const { dataSetId, account, hasDatasetPermission } = useApplicationContext()!;
   const navigate = useNavigate();
 
   const [conversation, setConversation] = useState<ConversationSchema | null>(null);
+  const [isConversationUnavailable, setIsConversationUnavailable] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isAgentLoading, setIsAgentLoading] = useState(false);
   const [statusText, setStatusText] = useState("Thinking...");
@@ -62,6 +66,8 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
   const isAgentDeleted = !!conversation?.agent.deleted_at;
   const isAgentCorrupted = !!conversation?.agent.corrupted;
   const isExecutionConversation = !!conversation?.is_execution_conversation;
+  const isOwnConversation = !conversation || conversation.user_email === account?.email;
+  const canConverse = hasDatasetPermission(PERMISSIONS.CONVERSATION.CONVERSE);
 
   const scrollToLastMessage = (timeout = 0) => {
     setTimeout(() => {
@@ -86,7 +92,16 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
         await onMessageComposerSubmit(pendingMessage);
       }
 
-      const conversation = await api.conversations().getConversation(conversationId);
+      let conversation: ConversationSchema;
+      try {
+        conversation = await api.conversations().getConversation(conversationId);
+      } catch (loadError) {
+        if (loadError instanceof ApiError && [403, 404].includes(loadError.response.status)) {
+          setIsConversationUnavailable(true);
+          return;
+        }
+        throw loadError;
+      }
       setConversation(conversation);
       setAgentId(conversation.agent?.id);
 
@@ -274,7 +289,18 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
     addFileMessages(message.files);
     addUserMessage(message.text);
 
-    const taskHandle = await api.conversations().sendMessage(conversationId, dataSetId!, message.text, streamingEnabled, message.files.map(f => f.id));
+    let taskHandle: TaskHandle;
+    try {
+      taskHandle = await api.conversations().sendMessage(conversationId, dataSetId!, message.text, streamingEnabled, message.files.map(f => f.id));
+    } catch {
+      setIsLoading(false);
+      setIsAgentLoading(false);
+      setMessages((prev) => [
+        ...prev,
+        { type: "system", text: "You don't have permission to converse in this data set", id: null },
+      ]);
+      return;
+    }
     usePolling.current = !taskHandle.streaming;
 
     if (taskHandle.streaming) {
@@ -296,6 +322,10 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
     return message.type === "human" || message.type === "file";
   };
 
+  if (isConversationUnavailable) {
+    return <NotFound />;
+  }
+
   return (
     <PageMain className="h-full py-0">
       {conversation &&
@@ -314,7 +344,7 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
             className="pt-16"
             onSubmit={onMessageComposerSubmit}
             isLoading={isLoading}
-            conversationLocked={isAgentDeleted || isAgentCorrupted || isExecutionConversation}
+            conversationLocked={isAgentDeleted || isAgentCorrupted || isExecutionConversation || !isOwnConversation || !canConverse}
             conversationId={conversationId}
             agentId={agentId}
             fileUploadEnabled={agentDetails?.file_upload}

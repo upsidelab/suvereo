@@ -1,5 +1,6 @@
 import { BaseApiClient } from "@/lib/api/base.ts";
 import { PaginatedResult, User } from "@/lib/types.ts";
+import { ApiError } from "@/lib/api-error.ts";
 
 export type CreateUserParams = {
   email: string;
@@ -41,6 +42,12 @@ export type UserResponse = {
 export class UsersApiClient extends BaseApiClient {
   async getUsers(page: number): Promise<PaginatedResult<User>> {
     const response = await fetch(`${this.apiBase}/api/users?page=${page}`, this._requestConfiguration());
+    if (!response.ok) {
+      throw new ApiError(`Failed to list users: ${response.statusText}`, {
+        data: await response.json().catch(() => ({})),
+        status: response.status,
+      });
+    }
     const result = await response.json() as PaginatedResult<UserResponse>;
 
     return {
@@ -85,6 +92,17 @@ export class UsersApiClient extends BaseApiClient {
         ...this._requestConfiguration(),
         method: "PATCH",
         body: JSON.stringify(payload)
+      }
+    );
+  }
+
+  async setUserAdmin(userId: number, isAdmin: boolean): Promise<Response> {
+    return await fetch(
+      `${this.apiBase}/api/users/${userId}`,
+      {
+        ...this._requestConfiguration(),
+        method: "PATCH",
+        body: JSON.stringify({ is_admin: isAdmin })
       }
     );
   }

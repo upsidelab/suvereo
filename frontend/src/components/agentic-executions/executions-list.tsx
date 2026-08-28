@@ -11,6 +11,8 @@ import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { AgenticExecution } from "@/lib/types.ts";
+import { ApiError } from "@/lib/api-error.ts";
+import { PERMISSIONS } from "@/lib/permissions.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -23,7 +25,9 @@ const STATUS_LABELS: Record<AgenticExecution["status"], string> = {
 };
 
 export function ExecutionsList() {
-  const { availableAgents, dataSetId } = useApplicationContext()!;
+  const { availableAgents, dataSetId, hasDatasetPermission } = useApplicationContext()!;
+  const canCreateExecutions = hasDatasetPermission(PERMISSIONS.AGENTIC_EXECUTION.CREATE);
+  const canViewAllExecutions = hasDatasetPermission(PERMISSIONS.AGENTIC_EXECUTION.VIEW_ALL);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -33,6 +37,7 @@ export function ExecutionsList() {
 
   const [hasItems, setHasItems] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [isAccessDenied, setIsAccessDenied] = useState(false);
 
   const agentName = (id: number) => availableAgents.find(a => a.id === id)?.name ?? `Agent #${id}`;
 
@@ -52,9 +57,18 @@ export function ExecutionsList() {
         return;
       }
 
-      const result = await api.agenticExecutions().list({ datasetId: dataSetId, agentId, status }, page);
-      setHasItems(result.count > 0);
-      return result;
+      try {
+        const result = await api.agenticExecutions().list({ datasetId: dataSetId, agentId, status }, page);
+        setHasItems(result.count > 0);
+        setIsAccessDenied(false);
+        return result;
+      } catch (loadError) {
+        if (loadError instanceof ApiError && [403, 404].includes(loadError.response.status)) {
+          setIsAccessDenied(true);
+          return undefined;
+        }
+        throw loadError;
+      }
     },
     [dataSetId, agentId, status]
   );
@@ -96,32 +110,47 @@ export function ExecutionsList() {
           </>
         )}
 
-        <Button className="ml-auto shrink-0" onClick={() => setModalOpen(true)}>
-          <Plus className="h-4 w-4" />New execution
-        </Button>
+        {canCreateExecutions && (
+          <Button className="ml-auto shrink-0" onClick={() => setModalOpen(true)}>
+            <Plus className="h-4 w-4" />New execution
+          </Button>
+        )}
       </div>
 
-      <PaginatedTable
-        loadItems={loadItems}
-        noItemsMessage={hasActiveFilters ? "No agentic executions match your criteria" : "No agentic executions created yet"}
-        tableHeaders={["Status", "Agent", "Execution definition", "Started", "Duration"]}
-        tableHeaderWidths={["11%", "26%", "26%", "26%", "11%"]}
-        tableRow={(item: AgenticExecution, index) => (
-          <TableRow
-            key={index}
-            onClick={() => navigate(`/data-sets/${dataSetId}/agentic-executions/${item.id}`)}
-            className="cursor-pointer"
-          >
-            <TableCell><ExecutionStatusBadge status={item.status} /></TableCell>
-            <TableCell>{agentName(item.agent)}</TableCell>
-            <TableCell className="font-mono text-sm">{item.execution_key}</TableCell>
-            <TableCell>{new Date(item.started_at).toLocaleString("en-US")}</TableCell>
-            <TableCell>
-              {item.duration_seconds != null ? `${item.duration_seconds.toFixed(1)}s` : "—"}
-            </TableCell>
-          </TableRow>
-        )}
-      />
+      {isAccessDenied ? (
+        <div className="text-center py-12">
+          <p className="text-lg font-medium text-gray-500">
+            You don't have permission to view this data set's agentic executions.
+          </p>
+        </div>
+      ) : (
+        <PaginatedTable
+          loadItems={loadItems}
+          noItemsMessage={hasActiveFilters ? "No agentic executions match your criteria" : "No agentic executions created yet"}
+          tableHeaders={canViewAllExecutions
+            ? ["Status", "Agent", "Execution definition", "Owner", "Started", "Duration"]
+            : ["Status", "Agent", "Execution definition", "Started", "Duration"]}
+          tableHeaderWidths={canViewAllExecutions
+            ? ["11%", "21%", "21%", "21%", "16%", "10%"]
+            : ["11%", "26%", "26%", "26%", "11%"]}
+          tableRow={(item: AgenticExecution, index) => (
+            <TableRow
+              key={index}
+              onClick={() => navigate(`/data-sets/${dataSetId}/agentic-executions/${item.id}`)}
+              className="cursor-pointer"
+            >
+              <TableCell><ExecutionStatusBadge status={item.status} /></TableCell>
+              <TableCell>{agentName(item.agent)}</TableCell>
+              <TableCell className="font-mono text-sm">{item.execution_key}</TableCell>
+              {canViewAllExecutions && <TableCell>{item.user_email}</TableCell>}
+              <TableCell>{new Date(item.started_at).toLocaleString("en-US")}</TableCell>
+              <TableCell>
+                {item.duration_seconds != null ? `${item.duration_seconds.toFixed(1)}s` : "—"}
+              </TableCell>
+            </TableRow>
+          )}
+        />
+      )}
 
       <CreateExecutionModal open={modalOpen} onOpenChange={setModalOpen} />
     </div>

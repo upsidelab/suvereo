@@ -34,7 +34,11 @@ export class AgentsApiClient extends BaseApiClient {
         );
 
         if (!response.ok) {
-            throw new Error(`Failed to fetch available agents: ${response.statusText}`);
+            const errorData = await response.json().catch(() => ({}));
+            throw new ApiError(`Failed to fetch available agents: ${response.statusText}`, {
+                data: errorData,
+                status: response.status
+            });
         }
 
         return await response.json() as Agent[];

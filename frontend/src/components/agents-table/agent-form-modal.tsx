@@ -17,6 +17,7 @@ interface AgentFormModalProps {
   loadingTypes: boolean;
   dataSetId: number | null;
   onSuccess: () => void;
+  readOnly?: boolean;
 }
 
 export function AgentFormModal({
@@ -26,7 +27,8 @@ export function AgentFormModal({
   agentTypes,
   loadingTypes,
   dataSetId,
-  onSuccess
+  onSuccess,
+  readOnly = false
 }: AgentFormModalProps) {
   const {
     name,
@@ -35,6 +37,7 @@ export function AgentFormModal({
     setDescription,
     type,
     setType,
+    agentTypeName,
     config,
     setConfig,
     agentConfigSections,
@@ -45,7 +48,7 @@ export function AgentFormModal({
     submitting,
     handleSubmit,
     resetForm
-  } = useAgentForm(agent, agentTypes, dataSetId, onSuccess);
+  } = useAgentForm(agent, agentTypes, dataSetId, onSuccess, readOnly);
 
   // Reset form when modal closes
   useEffect(() => {
@@ -59,7 +62,13 @@ export function AgentFormModal({
   };
 
   const isEditing = !!agent;
-  const title = isEditing ? `Edit Agent` : `New Agent`;
+  const title = readOnly ? `Agent ${agent?.name ?? ""}`.trim() : (isEditing ? `Edit Agent` : `New Agent`);
+
+  // Read-only, the type catalog needs the change permission, so the Select carries this agent's
+  // type alone - and nothing until its details arrive, since an option cannot have an empty value.
+  const typeOptions = readOnly
+    ? (type ? [{ key: type, name: agentTypeName || type }] : [])
+    : agentTypes.map(agentChoice => ({ key: agentChoice.key, name: agentChoice.name }));
 
   return (
     <FormModal
@@ -71,8 +80,9 @@ export function AgentFormModal({
       submitLabel={isEditing ? "Save" : "Create"}
       submitting={submitting}
       disabled={!name || !type}
-      loading={loadingTypes}
+      loading={readOnly ? false : loadingTypes}
       loadingText="Loading agent types..."
+      readOnly={readOnly}
       dependencies={[type, agentConfigSections, openSections, generalError, fieldErrors]}
     >
       {generalError && (
@@ -83,17 +93,17 @@ export function AgentFormModal({
 
       <div className="flex flex-col gap-1">
         <Label htmlFor="agent-type">Type</Label>
-        <Select value={type} onValueChange={setType} disabled={agentTypes.length == 0 || !!agent}>
+        <Select value={type} onValueChange={setType} disabled={readOnly || agentTypes.length == 0 || !!agent}>
           <SelectTrigger id="agent-type" className={fieldErrors.type ? "border-destructive" : ""}>
             <SelectValue placeholder="Select type"/>
           </SelectTrigger>
           <SelectContent>
-            {agentTypes.map(t => (
+            {typeOptions.map(t => (
               <SelectItem key={t.key} value={t.key}>{t.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
-        {agentTypes.length == 0 &&
+        {!readOnly && agentTypes.length == 0 &&
           <p className="text-[0.8rem] text-muted-foreground">First, you'll need to install an agent.<br /> To get started quickly, you can choose on of our <a href="https://upsidelab.io/tools/enthusiast/agents" className="underline">pre-built ones</a> to get started quick.</p>
         }
         {fieldErrors.type && (
@@ -108,6 +118,7 @@ export function AgentFormModal({
           placeholder="Name"
           value={name}
           onChange={e => setName(e.target.value)}
+          readOnly={readOnly}
           className={fieldErrors.name ? "border-destructive" : ""}
         />
         {fieldErrors.name && (
@@ -122,6 +133,7 @@ export function AgentFormModal({
           placeholder="Description"
           value={description}
           onChange={e => setDescription(e.target.value)}
+          readOnly={readOnly}
         />
         {fieldErrors.description && (
           <p className="text-xs text-destructive">{fieldErrors.description}</p>
@@ -136,6 +148,7 @@ export function AgentFormModal({
           config={config}
           setConfig={setConfig}
           fieldErrors={fieldErrors}
+          readOnly={readOnly}
         />
       )}
     </FormModal>

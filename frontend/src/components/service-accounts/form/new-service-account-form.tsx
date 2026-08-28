@@ -1,17 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Form } from "@/components/ui/form.tsx";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useWatch } from "react-hook-form";
 import { Button } from "@/components/ui/button.tsx";
 import { checkServiceNameAvailability } from "@/components/util/check-service-name-availability.tsx";
 import { TokenGeneratedModal } from "@/components/service-accounts/token-generated-modal.tsx";
 import { DetailsFields } from "@/components/service-accounts/form/details-fields.tsx";
-import { DataSetsFields } from "@/components/service-accounts/form/data-sets-fields.tsx";
 import { ApiClient } from "@/lib/api.ts";
+import { ApiError } from "@/lib/api-error.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
-import { PermissionFields } from "@/components/service-accounts/form/permission-fields.tsx";
+import { AccountAccessFields } from "@/components/service-accounts/form/account-access-fields.tsx";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -21,7 +20,6 @@ const formSchema = z.object({
   }, {
     message: "The name has already been taken"
   }),
-  dataSetIds: z.array(z.number()),
   isActive: z.boolean(),
   isAdmin: z.boolean(),
 });
@@ -36,25 +34,24 @@ export function NewServiceAccountForm({onServiceAccountCreated}: NewServiceAccou
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      dataSetIds: [],
       isActive: true,
       isAdmin: false,
     }
   });
   const [isTokenDialogOpen, setIsTokenDialogOpen] = useState(false);
   const [generatedToken, setGeneratedToken] = useState("");
-  const isAdmin = useWatch({ control: form.control, name: "isAdmin" });
-
-  useEffect(() => {
-    if (isAdmin) {
-      form.setValue("dataSetIds", []);
-    }
-  }, [isAdmin, form]);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (values: CreateServiceAccountFormSchema) => {
-    const {  token } = await api.serviceAccounts().createServiceAccount(values);
-    setGeneratedToken(token);
-    setIsTokenDialogOpen(true);
+    setError(null);
+    try {
+      const { token } = await api.serviceAccounts().createServiceAccount(values);
+      setGeneratedToken(token);
+      setIsTokenDialogOpen(true);
+    } catch (submitError) {
+      const body = submitError instanceof ApiError ? submitError.response.data as { detail?: string } : {};
+      setError(body.detail ?? "Could not create this service account.");
+    }
   };
 
   const handleTokenDialogOpenChange = (value: boolean) => {
@@ -68,9 +65,9 @@ export function NewServiceAccountForm({onServiceAccountCreated}: NewServiceAccou
     <>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          {error && <p className="text-sm text-destructive">{error}</p>}
           <DetailsFields form={form}/>
-          <PermissionFields form={form}/>
-          {!isAdmin && <DataSetsFields form={form}/>}
+          <AccountAccessFields form={form}/>
           <Button type="submit">Create</Button>
         </form>
       </Form>

@@ -1,5 +1,6 @@
 import { BaseApiClient } from "@/lib/api/base.ts";
-import { DataSet, User } from "@/lib/types.ts";
+import { DataSet, DatasetAccess, DatasetRoleOption, GlobalRoleOption } from "@/lib/types.ts";
+import { ApiError } from "@/lib/api-error.ts";
 
 export type DataSetResponse = {
   id: number | undefined;
@@ -14,6 +15,19 @@ export type DataSetResponse = {
 export type CreateDataSetPayload = DataSetResponse & {
   preconfigure_agents: boolean;
 };
+
+type DatasetAccessResponse = {
+  users: {
+    id: number;
+    user: { id: number; email: string; is_service_account: boolean };
+    role: DatasetRoleOption;
+  }[];
+  global_roles: {
+    id: number;
+    global_role: GlobalRoleOption;
+    role: DatasetRoleOption;
+  }[];
+}
 
 export type UpdateDataSetPayload = {
   id: number | undefined;
@@ -37,7 +51,7 @@ export class DataSetsApiClient extends BaseApiClient {
     return results;
   }
 
-  async createDataSet(dataSet: DataSet, preconfigureAgents: boolean): Promise<number> {
+  async createDataSet(dataSet: Omit<DataSet, "id" | "permissions">, preconfigureAgents: boolean): Promise<number> {
     const body: CreateDataSetPayload = {
       id: undefined,
       name: dataSet.name,
@@ -61,25 +75,58 @@ export class DataSetsApiClient extends BaseApiClient {
     return responseJson.id!;
   }
 
-  async getDataSetUsers(dataSetId: number): Promise<User[]> {
-    const response = await fetch(`${this.apiBase}/api/data_sets/${dataSetId}/users`, this._requestConfiguration());
-    return (await response.json()).results as User[];
+  async getDataSetAccess(dataSetId: number): Promise<DatasetAccess> {
+    const response = await fetch(`${this.apiBase}/api/data_sets/${dataSetId}/roles/`, this._requestConfiguration());
+    if (!response.ok) {
+      throw new ApiError(`Failed to load data set access: ${response.statusText}`, {
+        data: await response.json().catch(() => ({})),
+        status: response.status,
+      });
+    }
+    const result = await response.json() as DatasetAccessResponse;
+    return {
+      users: result.users.map((assignment) => ({
+        id: assignment.id,
+        role: assignment.role,
+        user: {
+          id: assignment.user.id,
+          email: assignment.user.email,
+          isServiceAccount: assignment.user.is_service_account
+        }
+      })),
+      globalRoles: result.global_roles.map((assignment) => ({
+        id: assignment.id,
+        role: assignment.role,
+        globalRole: assignment.global_role
+      }))
+    };
   }
 
-  async addDataSetUser(dataSetId: number, userId: number): Promise<void> {
-    await fetch(
-      `${this.apiBase}/api/data_sets/${dataSetId}/users`,
+  async grantRoleToUser(dataSetId: number, roleId: number, userId: number): Promise<Response> {
+    return await fetch(
+      `${this.apiBase}/api/data_sets/${dataSetId}/roles/${roleId}/users`,
       {
         ...this._requestConfiguration(),
         method: "POST",
-        body: JSON.stringify({user_id: userId})
+        body: JSON.stringify({ user_id: userId })
       }
     );
   }
 
-  async removeDataSetUser(dataSetId: number, userId: number): Promise<void> {
-    await fetch(
-      `${this.apiBase}/api/data_sets/${dataSetId}/users/${userId}`,
+  async grantRoleToGlobalRole(dataSetId: number, roleId: number, globalRoleId: number): Promise<Response> {
+    return await fetch(
+      `${this.apiBase}/api/data_sets/${dataSetId}/roles/${roleId}/global_roles`,
+      {
+        ...this._requestConfiguration(),
+        method: "POST",
+        body: JSON.stringify({ global_role_id: globalRoleId })
+      }
+    );
+  }
+
+  async revokeRoleFromUser(dataSetId: number, roleId: number, userId: number): Promise<Response> {
+    return await fetch(
+      `${this.apiBase}/api/data_sets/${dataSetId}/roles/${roleId}/users/${userId}`,
       {
         ...this._requestConfiguration(),
         method: "DELETE"
@@ -87,22 +134,12 @@ export class DataSetsApiClient extends BaseApiClient {
     );
   }
 
-  async syncDataSetAllSources(dataSetId: number | undefined): Promise<void> {
-    await fetch(
-      `${this.apiBase}/api/data_sets/${dataSetId}/sync`,
+  async revokeRoleFromGlobalRole(dataSetId: number, roleId: number, globalRoleId: number): Promise<Response> {
+    return await fetch(
+      `${this.apiBase}/api/data_sets/${dataSetId}/roles/${roleId}/global_roles/${globalRoleId}`,
       {
         ...this._requestConfiguration(),
-        method: "POST"
-      }
-    );
-  }
-
-  async syncAllSources(): Promise<void> {
-    await fetch(
-      `${this.apiBase}/api/sync`,
-      {
-        ...this._requestConfiguration(),
-        method: "POST"
+        method: "DELETE"
       }
     );
   }
@@ -119,6 +156,7 @@ export class DataSetsApiClient extends BaseApiClient {
       embeddingProvider: data.embedding_provider,
       embeddingModel: data.embedding_model,
       embeddingVectorSize: data.embedding_vector_dimensions,
+      permissions: data.permissions,
     } as DataSet;
   }
 

@@ -17,6 +17,7 @@ interface JSONEditorProps {
   label: string;
   description?: string;
   error?: string;
+  readOnly?: boolean;
 }
 
 export const JSONEditor: React.FC<JSONEditorProps> = ({
@@ -24,7 +25,8 @@ export const JSONEditor: React.FC<JSONEditorProps> = ({
   onChange,
   label,
   description,
-  error
+  error,
+  readOnly = false
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [jsonString, setJsonString] = useState(() => {
@@ -134,7 +136,7 @@ export const JSONEditor: React.FC<JSONEditorProps> = ({
             size="sm"
             onClick={handleOpenModal}
           >
-            Edit JSON
+            {readOnly ? "View JSON" : "Edit JSON"}
           </Button>
         </div>
         
@@ -156,7 +158,7 @@ export const JSONEditor: React.FC<JSONEditorProps> = ({
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-4xl" noBackdrop>
           <DialogHeader>
-            <DialogTitle>Edit JSON - {label}</DialogTitle>
+            <DialogTitle>{readOnly ? "View" : "Edit"} JSON - {label}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -168,6 +170,7 @@ export const JSONEditor: React.FC<JSONEditorProps> = ({
                   placeholder='{"key": "value", "nested": {"option": true}}'
                   value={jsonString}
                   onChange={(e) => handleJsonChange(e.target.value)}
+                  readOnly={readOnly}
                   rows={15}
                   className="font-mono text-sm resize-none overflow-auto max-h-96"
                   style={{ minHeight: '300px' }}
@@ -187,11 +190,13 @@ export const JSONEditor: React.FC<JSONEditorProps> = ({
 
           <DialogFooter>
             <Button variant="outline" onClick={handleCancel}>
-              Cancel
+              {readOnly ? "Close" : "Cancel"}
             </Button>
-            <Button onClick={handleSave} disabled={!!jsonError}>
-              Save
-            </Button>
+            {!readOnly && (
+              <Button onClick={handleSave} disabled={!!jsonError}>
+                Save
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

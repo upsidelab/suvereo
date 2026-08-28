@@ -5,9 +5,9 @@ import {AgentChoice} from "@/lib/api/agents.ts";
 
 const apiClient = new ApiClient(authenticationProviderInstance);
 
-export function useAgentTypes() {
+export function useAgentTypes(enabled: boolean = true) {
   const [agentTypes, setAgentTypes] = useState<AgentChoice[]>([]);
-  const [loadingTypes, setLoadingTypes] = useState(true);
+  const [loadingTypes, setLoadingTypes] = useState(enabled);
 
   useEffect(() => {
     const fetchAgentTypes = async () => {
@@ -22,8 +22,10 @@ export function useAgentTypes() {
       }
     };
 
-    fetchAgentTypes();
-  }, []);
+    if (enabled) {
+      fetchAgentTypes();
+    }
+  }, [enabled]);
 
   return {
     agentTypes,

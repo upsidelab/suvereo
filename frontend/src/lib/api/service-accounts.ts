@@ -1,6 +1,7 @@
 import { BaseApiClient } from "@/lib/api/base.ts";
 import { PaginatedResult, ServiceAccount } from "@/lib/types.ts";
 import { Token } from "@/lib/api.ts";
+import { ApiError } from "@/lib/api-error.ts";
 
 export type ServiceAccountResponse = {
   id: number;
@@ -8,12 +9,10 @@ export type ServiceAccountResponse = {
   date_joined: string;
   is_active: boolean;
   is_admin: boolean;
-  data_set_ids: number[];
 }
 
 export type CreateServiceAccountParams = {
   name: string;
-  dataSetIds: number[];
   isActive: boolean;
   isAdmin: boolean;
 }
@@ -22,7 +21,6 @@ export type UpdateServiceAccountParams = CreateServiceAccountParams;
 
 export type CreateServiceAccountPayload = {
   name: string;
-  data_set_ids: number[];
   is_active: boolean;
   is_admin: boolean;
 }
@@ -32,6 +30,12 @@ export type UpdateServiceAccountPayload = CreateServiceAccountPayload;
 export class ServiceAccountsApiClient extends BaseApiClient {
   async getServiceAccounts(page: number): Promise<PaginatedResult<ServiceAccount>> {
     const response = await fetch(`${this.apiBase}/api/service_accounts?page=${page}`, this._requestConfiguration());
+    if (!response.ok) {
+      throw new ApiError(`Failed to list service accounts: ${response.statusText}`, {
+        data: await response.json().catch(() => ({})),
+        status: response.status,
+      });
+    }
     const result = await response.json() as PaginatedResult<ServiceAccountResponse>;
 
     return {
@@ -40,17 +44,49 @@ export class ServiceAccountsApiClient extends BaseApiClient {
         id: item.id,
         email: item.email,
         dateCreated: item.date_joined,
-        dataSetIds: item.data_set_ids,
         isActive: item.is_active,
         isAdmin: item.is_admin
       }))
     };
   }
 
+  async getAllServiceAccounts(): Promise<ServiceAccount[]> {
+    const results: ServiceAccount[] = [];
+    let url: string | null = `${this.apiBase}/api/service_accounts/`;
+
+    while (url) {
+      const response: Response = await fetch(url, this._requestConfiguration());
+      if (!response.ok) {
+        throw new ApiError(`Failed to list service accounts: ${response.statusText}`, {
+          data: await response.json().catch(() => ({})),
+          status: response.status,
+        });
+      }
+      const page = await response.json() as PaginatedResult<ServiceAccountResponse>;
+      results.push(...page.results.map((item) => ({
+        id: item.id,
+        email: item.email,
+        dateCreated: item.date_joined,
+        isActive: item.is_active,
+        isAdmin: item.is_admin
+      })));
+      url = page.next ?? null;
+    }
+
+    return results;
+  }
+
+  async setServiceAccountAdmin(id: number, isAdmin: boolean): Promise<Response> {
+    return await fetch(`${this.apiBase}/api/service_accounts/${id}`, {
+      ...this._requestConfiguration(),
+      method: 'PATCH',
+      body: JSON.stringify({ is_admin: isAdmin })
+    });
+  }
+
   async createServiceAccount(serviceAccount: CreateServiceAccountParams): Promise<Token> {
     const payload: CreateServiceAccountPayload = {
       name: serviceAccount.name,
-      data_set_ids: serviceAccount.dataSetIds,
       is_active: serviceAccount.isActive,
       is_admin: serviceAccount.isAdmin
     };
@@ -61,13 +97,19 @@ export class ServiceAccountsApiClient extends BaseApiClient {
       body: JSON.stringify(payload)
     });
 
+    if (!response.ok) {
+      throw new ApiError(`Failed to create service account: ${response.statusText}`, {
+        data: await response.json().catch(() => ({})),
+        status: response.status,
+      });
+    }
+
     return await response.json() as Token;
   }
 
   async updateServiceAccount(id: number, serviceAccount: UpdateServiceAccountParams): Promise<Response> {
     const payload: UpdateServiceAccountPayload = {
       name: serviceAccount.name,
-      data_set_ids: serviceAccount.dataSetIds,
       is_active: serviceAccount.isActive,
       is_admin: serviceAccount.isAdmin
     };

@@ -1,9 +1,11 @@
-import { ReactNode, useState, useEffect, useRef } from "react";
+import { ReactNode, useState, useEffect, useMemo, useRef } from "react";
 import { ApplicationContext, ApplicationContextValue } from "@/lib/application-context.ts";
-import { Account, DataSet } from "@/lib/types.ts";
+import { Account } from "@/lib/types.ts";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useRouteLoaderData } from "react-router-dom";
+import { ROOT_ROUTE_ID, RootRouteData } from "@/lib/root-route.ts";
+import { PERMISSIONS } from "@/lib/permissions.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -16,16 +18,11 @@ function extractDataSetIdFromPath(path: string): number | null {
   return match ? parseInt(match[1]) : null;
 }
 
-function buildNewUrl(path: string, newDataSetId: number): string {
-  const pathParts = path.split("/data-sets/");
-  const dataSetPath = pathParts[1] || "";
-  const pathSegments = dataSetPath.split("/");
-  const remainingPath = pathSegments.slice(1).join("/") || "";
-  return `/data-sets/${newDataSetId}/${remainingPath}`;
-}
-
 export function ApplicationContextProvider({ children }: ApplicationContextProviderProps) {
-  const [dataSets, setDataSets] = useState<DataSet[]>([]);
+  // Onboarding mounts this provider outside the root route, where there is no loader data - and no
+  // data sets either, since that is the only way onboarding is reached.
+  const rootData = useRouteLoaderData(ROOT_ROUTE_ID) as RootRouteData | undefined;
+  const dataSets = useMemo(() => rootData?.dataSets ?? [], [rootData]);
   const [dataSetId, setDataSetId] = useState<number | null>(null);
   const [availableAgents, setAvailableAgents] = useState<{ name: string; id: number; }[]>([]);
   const [isLoadingAgents, setIsLoadingAgents] = useState(true);
@@ -35,38 +32,34 @@ export function ApplicationContextProvider({ children }: ApplicationContextProvi
   const [fileExtensionsError, setFileExtensionsError] = useState<string | null>(null);
   const hasFetchedFileExtensions = useRef(false);
   const location = useLocation();
-  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchDataSets = async () => {
-      const apiDataSets = await api.dataSets().getDataSets();
-      setDataSets(apiDataSets);
+    if (dataSets.length === 0) {
+      return;
+    }
 
-      if (location.pathname.includes("/data-sets/") && !location.pathname.endsWith("/data-sets/new")) {
-        const urlDataSetId = extractDataSetIdFromPath(location.pathname);
+    const urlDataSetId = extractDataSetIdFromPath(location.pathname);
+    if (urlDataSetId && dataSets.some(dataSet => dataSet.id === urlDataSetId)) {
+      setDataSetId(urlDataSetId);
+      return;
+    }
 
-        if (apiDataSets.length > 0) {
-          if (urlDataSetId && apiDataSets.some(ds => ds.id === urlDataSetId)) {
-            setDataSetId(urlDataSetId);
-          } else {
-            const defaultId = apiDataSets[0].id!;
-            setDataSetId(defaultId);
-            const newUrl = buildNewUrl(location.pathname, defaultId);
-            navigate(newUrl, { replace: true });
-          }
-        }
-      }
-    };
-
-    fetchDataSets();
-  }, [location.pathname, navigate]);
+    if (dataSetId === null) {
+      setDataSetId(dataSets[0].id!);
+    }
+  }, [location.pathname, dataSets, dataSetId]);
 
   const fetchAgentsForDataSet = async () => {
-    if (!dataSetId) return;
+    const dataSet = dataSets.find(candidate => candidate.id === dataSetId);
+    if (!dataSet?.permissions.includes(PERMISSIONS.AGENT.VIEW)) {
+      setAvailableAgents([]);
+      setIsLoadingAgents(false);
+      return;
+    }
 
     setIsLoadingAgents(true);
     try {
-      const agents = await api.agents().getDatasetAvailableAgents(dataSetId);
+      const agents = await api.agents().getDatasetAvailableAgents(dataSet.id!);
       setAvailableAgents(agents.filter(agent => !agent.corrupted));
     } catch (error) {
       console.error("Failed to load agents:", error);
@@ -103,7 +96,6 @@ export function ApplicationContextProvider({ children }: ApplicationContextProvi
 
   const value: ApplicationContextValue = {
     dataSets,
-    setDataSets,
     dataSetId,
     setDataSetId,
     availableAgents,

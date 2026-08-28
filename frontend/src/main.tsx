@@ -2,7 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
-import { createBrowserRouter, redirect, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, LoaderFunctionArgs, redirect, RouterProvider } from "react-router-dom";
 import { ChatHistory } from "@/pages/data-sets/(id)/history.tsx";
 import { Chat } from "@/pages/data-sets/(id)/chat/index.tsx";
 import { LoginPage } from "@/pages/login.tsx";
@@ -17,41 +17,71 @@ import { EditDataSet } from "@/pages/data-sets/(id)/edit.tsx";
 import { IndexDataSetUsers } from "@/pages/data-sets/(id)/users.tsx";
 import { IndexDataSetIntegrations } from "@/pages/data-sets/(id)/integrations.tsx";
 import { UsersIndex } from "@/pages/users";
+import { RolesIndex } from "@/pages/roles";
 import { OnboardingIndex } from "@/pages/onboarding";
 import AgentsPage from "@/pages/data-sets/(id)/agents";
 import { AgenticExecutionsPage } from "@/pages/data-sets/(id)/agentic-executions/index.tsx";
 import { AgenticExecutionDetailPage } from "@/pages/data-sets/(id)/agentic-executions/(id)/index.tsx";
 import { EntityRecordsPage } from "@/pages/data-sets/(id)/entities/[slug].tsx";
+import { PERMISSIONS } from "@/lib/permissions.ts";
+import { ApiError } from "@/lib/api-error.ts";
+import { ROOT_ROUTE_ID } from "@/lib/root-route.ts";
+import { RequirePermission } from "@/components/util/require-permission.tsx";
+import { NotFound } from "@/pages/not-found.tsx";
 
 const api = new ApiClient(authenticationProviderInstance);
 
-const protectedLoginLoader = async () => {
+const NO_DATA_SETS_PATH = "/no-data-sets";
+
+const loginLoader = async () => {
+  return authenticationProviderInstance.isAuthenticated() ? redirect("/") : null;
+};
+
+const signOutAndReturnToLogin = () => {
+  authenticationProviderInstance.logout();
+  return redirect("/login");
+};
+
+const protectedLoginLoader = async ({ request }: LoaderFunctionArgs) => {
   if (!authenticationProviderInstance.isAuthenticated()) {
     return redirect("/login");
   }
 
-  const apiDataSets = await api.dataSets().getDataSets();
-  if (!apiDataSets) {
-    return redirect("/login");
-  }
-
-  if (apiDataSets.length === 0) {
-    const accountData = await api.getAccount();
-    if (accountData.isAdmin) {
-      return redirect("/onboarding");
-    } else {
-      return redirect("/no-data-sets");
+  let apiDataSets;
+  try {
+    apiDataSets = await api.dataSets().getDataSets();
+  } catch (loadError) {
+    // A token that no longer authenticates would otherwise bounce between here and `loginLoader`.
+    if (loadError instanceof ApiError && loadError.response.status === 401) {
+      return signOutAndReturnToLogin();
     }
+    throw loadError;
   }
 
-  return null;
+  if (!apiDataSets) {
+    return signOutAndReturnToLogin();
+  }
+
+  // Without a data set the index has nothing to show, so it becomes onboarding for whoever can
+  // create one and the no-data-sets landing for everyone else. Every other path is left to its own
+  // guard - a global screen the user holds still opens, anything else renders the 404 page.
+  if (apiDataSets.length === 0 && new URL(request.url).pathname === "/") {
+    const accountData = await api.getAccount();
+    return redirect(accountData.permissions.includes(PERMISSIONS.DATASET.ADD) ? "/onboarding" : NO_DATA_SETS_PATH);
+  }
+
+  return { dataSets: apiDataSets };
 };
 
 const router = createBrowserRouter([
   {
+    id: ROOT_ROUTE_ID,
     path: "/",
     element: <App />,
     loader: protectedLoginLoader,
+    // The root match never changes id, so its loader would otherwise run on full loads only -
+    // leaving its redirects unenforced and its data sets stale after a mutation.
+    shouldRevalidate: () => true,
     errorElement: <ErrorPage />,
     children: [
       {
@@ -60,7 +90,11 @@ const router = createBrowserRouter([
       },
       {
         path: '/data-sets/:id/chat',
-        element: <Chat />,
+        element: (
+          <RequirePermission dataSetAnyOf={[PERMISSIONS.CONVERSATION.CONVERSE, PERMISSIONS.CONVERSATION.VIEW_ALL]}>
+            <Chat />
+          </RequirePermission>
+        ),
         children: [
           { path: 'new' },
           { path: 'new/:agent' },
@@ -69,7 +103,11 @@ const router = createBrowserRouter([
       },
       {
         path: '/data-sets/:id/history',
-        element: <ChatHistory />
+        element: (
+          <RequirePermission dataSetAnyOf={[PERMISSIONS.CONVERSATION.CONVERSE, PERMISSIONS.CONVERSATION.VIEW_ALL]}>
+            <ChatHistory />
+          </RequirePermission>
+        )
       },
       {
         path: '/data-sets',
@@ -77,53 +115,110 @@ const router = createBrowserRouter([
       },
       {
         path: '/data-sets/new',
-        element: <NewDataSet />
+        element: (
+          <RequirePermission globalAnyOf={[PERMISSIONS.DATASET.ADD]}>
+            <NewDataSet />
+          </RequirePermission>
+        )
       },
       {
         path: '/data-sets/:id/edit',
-        element: <EditDataSet />
+        element: (
+          <RequirePermission dataSetAccess>
+            <EditDataSet />
+          </RequirePermission>
+        )
       },
       {
         path: '/data-sets/:id/users',
-        element: <IndexDataSetUsers />
+        element: (
+          <RequirePermission globalAnyOf={[PERMISSIONS.DATASET_ROLE.ASSIGN]}>
+            <IndexDataSetUsers />
+          </RequirePermission>
+        )
       },
       {
         path: '/data-sets/:id/integrations',
-        element: <IndexDataSetIntegrations />
+        element: (
+          <RequirePermission dataSetAnyOf={[PERMISSIONS.INTEGRATION.VIEW]}>
+            <IndexDataSetIntegrations />
+          </RequirePermission>
+        )
       },
       {
         path: '/data-sets/:id/entities/:slug',
-        element: <EntityRecordsPage />
+        element: (
+          <RequirePermission dataSetAccess>
+            <EntityRecordsPage />
+          </RequirePermission>
+        )
       },
       {
         path: '/service-accounts',
-        element: <ApiConnectionIndex />
+        element: (
+          <RequirePermission globalAnyOf={[PERMISSIONS.SERVICE_ACCOUNT.VIEW]}>
+            <ApiConnectionIndex />
+          </RequirePermission>
+        )
       },
       {
         path: '/users',
-        element: <UsersIndex />
+        element: (
+          <RequirePermission globalAnyOf={[PERMISSIONS.USER.VIEW]}>
+            <UsersIndex />
+          </RequirePermission>
+        )
+      },
+      {
+        path: '/roles',
+        element: (
+          <RequirePermission globalAnyOf={[PERMISSIONS.GLOBAL_ROLE.VIEW, PERMISSIONS.DATASET_ROLE.VIEW]}>
+            <RolesIndex />
+          </RequirePermission>
+        )
       },
       {
         path: '/data-sets/:dataSetId/agents',
-        element: <AgentsPage />
+        element: (
+          <RequirePermission dataSetAnyOf={[PERMISSIONS.AGENT.VIEW]}>
+            <AgentsPage />
+          </RequirePermission>
+        )
       },
       {
         path: '/data-sets/:id/agentic-executions',
-        element: <AgenticExecutionsPage />
+        element: (
+          <RequirePermission
+            dataSetAnyOf={[PERMISSIONS.AGENTIC_EXECUTION.CREATE, PERMISSIONS.AGENTIC_EXECUTION.VIEW_ALL]}
+          >
+            <AgenticExecutionsPage />
+          </RequirePermission>
+        )
       },
       {
         path: '/data-sets/:id/agentic-executions/:executionId',
-        element: <AgenticExecutionDetailPage />
+        element: (
+          <RequirePermission
+            dataSetAnyOf={[PERMISSIONS.AGENTIC_EXECUTION.CREATE, PERMISSIONS.AGENTIC_EXECUTION.VIEW_ALL]}
+          >
+            <AgenticExecutionDetailPage />
+          </RequirePermission>
+        )
+      },
+      {
+        path: NO_DATA_SETS_PATH,
+        element: <NoDataSets />
+      },
+      {
+        path: '*',
+        element: <NotFound />
       }
     ]
   },
   {
     path: "/login",
-    element: <LoginPage />
-  },
-  {
-    path: "/no-data-sets",
-    element: <NoDataSets />
+    element: <LoginPage />,
+    loader: loginLoader
   },
   {
     path: "/onboarding",

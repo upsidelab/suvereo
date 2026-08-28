@@ -28,6 +28,7 @@ export type Integration = {
   syncable: boolean;
   configurable: boolean;
   config: Record<string, unknown>;
+  config_schema: unknown;
   created_at: string;
   updated_at: string;
 };
@@ -40,6 +41,7 @@ export type DataSet = {
   embeddingProvider: string;
   embeddingModel: string;
   embeddingVectorSize: number;
+  permissions: string[];
 }
 
 export type Product = {
@@ -64,6 +66,7 @@ export type Document = {
 export type Account = {
   email: string;
   isAdmin: boolean;
+  permissions: string[];
 }
 
 export type User = {
@@ -78,6 +81,7 @@ export type Agent = {
   name: string;
   description: string;
   agent_type: string;
+  agent_type_name: string;
   created_at: string;
   updated_at: string;
   deleted_at: string;
@@ -94,6 +98,7 @@ export type Conversation = {
   agent: Agent;
   history?: Message[];
   is_execution_conversation: boolean;
+  user_email: string;
 }
 
 export type Message = {
@@ -108,7 +113,62 @@ export type ServiceAccount = {
   isActive: boolean;
   isAdmin: boolean;
   dateCreated: string;
-  dataSetIds: number[];
+};
+
+export type GlobalRoleOption = {
+  id: number;
+  name: string;
+};
+
+export type GlobalRoleDetail = {
+  id: number;
+  name: string;
+  permissions: string[];
+};
+
+export type GlobalRoleMember = {
+  id: number;
+  email: string;
+  isServiceAccount: boolean;
+};
+
+export type DatasetRoleOption = {
+  id: number;
+  name: string;
+};
+
+export type DatasetRoleDetail = {
+  id: number;
+  name: string;
+  permissions: string[];
+};
+
+export type PermissionOption = {
+  code: string;
+  label: string;
+};
+
+export type PermissionEntity = {
+  entity: string;
+  label: string;
+  permissions: PermissionOption[];
+};
+
+export type DatasetUserRoleAssignment = {
+  id: number;
+  role: DatasetRoleOption;
+  user: GlobalRoleMember;
+};
+
+export type DatasetGlobalRoleAssignment = {
+  id: number;
+  role: DatasetRoleOption;
+  globalRole: GlobalRoleOption;
+};
+
+export type DatasetAccess = {
+  users: DatasetUserRoleAssignment[];
+  globalRoles: DatasetGlobalRoleAssignment[];
 };
 
 export type ProvidersConfig = {
@@ -133,6 +193,7 @@ export type ExtraArgDetail = {
   type: TypeInfo;
   description?: string | null;
   title?: string | null;
+  required?: boolean;
 };
 
 export type AgentConfig = {
@@ -152,6 +213,7 @@ export type ConversationFile = {
 export type AgenticExecution = {
   id: number;
   agent: number;
+  user_email: string;
   execution_key: string;
   conversation: number;
   status: 'pending' | 'in_progress' | 'finished' | 'failed';
@@ -182,8 +244,10 @@ export type AgentDetails = {
   description: string;
   file_upload: boolean;
   config: AgentConfig;
+  config_schema: AgentConfig;
   dataset: number;
   agent_type: string;
+  agent_type_name: string;
   created_at: string;
   updated_at: string;
 };

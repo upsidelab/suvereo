@@ -1,10 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
-import { DataSet } from "@/lib/types.ts";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { DataSetForm } from "./data-set-form.tsx";
 import { DataSetFormSchema } from "./data-set-form-schema.ts";
+import { PERMISSIONS } from "@/lib/permissions.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -13,17 +13,17 @@ export interface CreateDataSetFormProps {
 }
 
 export function CreateDataSetForm({ isOnboarding = false }: CreateDataSetFormProps) {
-  const {setDataSets, setDataSetId} = useApplicationContext()!;
+  const {setDataSetId, hasPermission} = useApplicationContext()!;
   const navigate = useNavigate();
 
   const submitLabel = isOnboarding ? "Continue" : "Create"
 
   const handleSubmit = async (values: DataSetFormSchema) => {
-    const createdDataSetId = await api.dataSets().createDataSet({ ...values, id: undefined } as DataSet, values.preconfigureAgents);
-    const dataSets = await api.dataSets().getDataSets();
-    setDataSets(dataSets);
+    const createdDataSetId = await api.dataSets().createDataSet({ ...values }, values.preconfigureAgents);
     setDataSetId(createdDataSetId);
-    navigate(`/data-sets/${createdDataSetId}/integrations`);
+    navigate(hasPermission(PERMISSIONS.INTEGRATION.VIEW)
+      ? `/data-sets/${createdDataSetId}/integrations`
+      : '/data-sets');
   };
 
   return (

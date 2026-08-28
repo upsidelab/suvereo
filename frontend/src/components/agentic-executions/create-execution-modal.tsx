@@ -59,9 +59,12 @@ export function CreateExecutionModal({ open, onOpenChange }: CreateExecutionModa
         setExecutionDefinitions(definitions);
         setAgentDetails(details);
       })
-      .catch(() => {
+      .catch((err) => {
         setExecutionDefinitions([]);
         setAgentDetails(null);
+        if (err instanceof ApiError && [403, 404].includes(err.response.status)) {
+          setGeneralError("You don't have permission to use this agent.");
+        }
       })
       .finally(() => setLoadingDefinitions(false));
   }, [agentId]);

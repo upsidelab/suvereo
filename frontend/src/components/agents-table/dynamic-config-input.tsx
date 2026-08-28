@@ -13,6 +13,8 @@ interface DynamicConfigInputProps {
   typeInfo?: TypeInfo;
   description?: string;
   error?: string;
+  required?: boolean;
+  readOnly?: boolean;
 }
 
 export function DynamicConfigInput({
@@ -23,7 +25,9 @@ export function DynamicConfigInput({
   onChange,
   typeInfo,
   description,
-  error
+  error,
+  required = false,
+  readOnly = false
 }: DynamicConfigInputProps) {
   const getInputType = () => {
     if (!typeInfo) return 'text';
@@ -33,9 +37,9 @@ export function DynamicConfigInput({
     if (typeInfo.container === 'list') {
       return 'text'; // For now, handle lists as text input
     }
-    
+
     const baseType = typeInfo.inner_type || typeInfo.container;
-    
+
     switch (baseType) {
       case 'int':
       case 'integer':
@@ -81,6 +85,7 @@ export function DynamicConfigInput({
           label={label}
           description={description}
           error={error}
+          readOnly={readOnly}
         />
       );
     }
@@ -92,6 +97,7 @@ export function DynamicConfigInput({
             id={id}
             checked={value === true || value === 'true'}
             onCheckedChange={handleInputChange}
+            disabled={readOnly}
           />
           <Label htmlFor={id} className="text-sm">
             {value === true || value === 'true' ? 'Enabled' : 'Disabled'}
@@ -107,6 +113,7 @@ export function DynamicConfigInput({
         placeholder={placeholder}
         value={value === '' ? '' : String(value)}
         onChange={(e) => handleInputChange(e.target.value)}
+        readOnly={readOnly}
         className={`w-full ${error ? "border-destructive" : ""}`}
       />
     );
@@ -123,6 +130,7 @@ export function DynamicConfigInput({
     <div className="space-y-2">
       <Label htmlFor={id} className="text-sm font-medium">
         {label}
+        {required && <span className="text-destructive ml-1">*</span>}
       </Label>
       {renderInput()}
       {description && (

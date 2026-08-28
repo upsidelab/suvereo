@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { FileIcon } from "lucide-react";
 import { PageMain } from "@/components/util/page-main.tsx";
+import { NotFound } from "@/pages/not-found.tsx";
 import { PageHeading } from "@/components/util/page-heading.tsx";
 import { ExecutionStatusBadge } from "@/components/agentic-executions/execution-status-badge.tsx";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { AgenticExecutionDetail } from "@/lib/types.ts";
+import { ApiError } from "@/lib/api-error.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -17,6 +19,7 @@ export function AgenticExecutionDetailPage() {
   const { id: dataSetId, executionId } = useParams();
   const { availableAgents } = useApplicationContext()!;
   const [execution, setExecution] = useState<AgenticExecutionDetail | null>(null);
+  const [isAccessDenied, setIsAccessDenied] = useState(false);
 
   const agentName = (id: number) => availableAgents.find(a => a.id === id)?.name ?? `Agent #${id}`;
 
@@ -42,13 +45,24 @@ export function AgenticExecutionDetailPage() {
       }
     };
 
-    fetchExecution();
+    fetchExecution().catch(fetchError => {
+      if (!active) return;
+      if (fetchError instanceof ApiError && [403, 404].includes(fetchError.response.status)) {
+        setIsAccessDenied(true);
+        return;
+      }
+      throw fetchError;
+    });
 
     return () => {
       active = false;
       if (interval) clearInterval(interval);
     };
   }, [executionId]);
+
+  if (isAccessDenied) {
+    return <NotFound />;
+  }
 
   if (!execution) {
     return (

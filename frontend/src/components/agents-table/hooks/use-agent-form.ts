@@ -8,17 +8,35 @@ import { flattenConfigForForm, parseFieldErrors as parseFieldErrorsBase } from "
 
 const apiClient = new ApiClient(authenticationProviderInstance);
 
+type ConfigSections = Record<string, Record<string, unknown> | Record<string, unknown>[]>;
+
+function extractConfigSections(schema: Record<string, unknown>): ConfigSections {
+  const configSections: ConfigSections = {};
+  Object.entries(schema).forEach(([section, value]) => {
+    if (section !== 'key' && section !== 'name' && value && typeof value === 'object') {
+      configSections[section] = value as Record<string, unknown> | Record<string, unknown>[];
+    }
+  });
+  return configSections;
+}
+
+function collapsedSections(configSections: ConfigSections): Record<string, boolean> {
+  return Object.fromEntries(Object.keys(configSections).map((section) => [section, false]));
+}
+
 export function useAgentForm(
   agent: Agent | null,
   agentTypes: AgentChoice[],
   dataSetId: number | null,
-  onSuccess: () => void
+  onSuccess: () => void,
+  readOnly: boolean = false
 ) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState("");
   const [config, setConfig] = useState<Record<string, string | number | boolean>>({});
-  const [agentConfigSections, setAgentConfigSections] = useState<Record<string, Record<string, unknown> | Record<string, unknown>[]> >({});
+  const [agentConfigSections, setAgentConfigSections] = useState<ConfigSections>({});
+  const [agentTypeName, setAgentTypeName] = useState("");
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [generalError, setGeneralError] = useState<string>("");
@@ -33,9 +51,18 @@ export function useAgentForm(
         setName(agentDetails.name);
         setDescription(agentDetails.description || "");
         setType(agentDetails.agent_type);
-        
+        setAgentTypeName(agentDetails.agent_type_name);
+
         const flattenedConfig = flattenConfigForForm(agentDetails.config);
         setConfig(flattenedConfig);
+
+        if (readOnly) {
+          // The type catalog needs the change permission, so read-only reads the schema the agent
+          // carries for its own type.
+          const sections = extractConfigSections(agentDetails.config_schema as Record<string, unknown>);
+          setAgentConfigSections(sections);
+          setOpenSections(collapsedSections(sections));
+        }
       } catch (error) {
         console.error('Failed to load agent details:', error);
       }
@@ -73,24 +100,6 @@ export function useAgentForm(
       return false;
     };
 
-    const extractConfigSectionsFromType = (selectedType: AgentChoice) => {
-      const configSections: Record<string, Record<string, unknown> | Record<string, unknown>[]> = {};
-      Object.entries(selectedType).forEach(([section, value]) => {
-        if (section !== 'key' && section !== 'name' && value && typeof value === 'object') {
-          configSections[section] = value;
-        }
-      });
-      return configSections;
-    };
-
-    const initializeCollapsedSections = (configSections: Record<string, unknown>) => {
-      const initialOpenSections: Record<string, boolean> = {};
-      Object.keys(configSections).forEach(section => {
-        initialOpenSections[section] = false;
-      });
-      return initialOpenSections;
-    };
-
     const createDefaultConfigValues = (configSections: Record<string, unknown>) => {
       const defaults: Record<string, string | number | boolean> = {};
       Object.entries(configSections).forEach(([section, sectionData]) => {
@@ -108,17 +117,18 @@ export function useAgentForm(
     };
 
     const updateFormForSelectedType = () => {
+      if (readOnly) return;
+
       const wasCleared = clearFormWhenNoType();
       if (wasCleared) return;
 
       const selected = agentTypes.find((t) => t.key === type);
       if (!selected) return;
 
-      const configSections = extractConfigSectionsFromType(selected);
+      const configSections = extractConfigSections(selected as unknown as Record<string, unknown>);
       setAgentConfigSections(configSections);
-      
-      const initialOpenSections = initializeCollapsedSections(configSections);
-      setOpenSections(initialOpenSections);
+
+      setOpenSections(collapsedSections(configSections));
       
       if (!agent && Object.keys(config).length === 0) {
         const defaults = createDefaultConfigValues(configSections);
@@ -280,6 +290,7 @@ export function useAgentForm(
     setDescription,
     type,
     setType,
+    agentTypeName,
     config,
     setConfig,
     agentConfigSections,

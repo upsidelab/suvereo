@@ -27,6 +27,7 @@ interface AddEditIntegrationModalProps {
   onSuccess: () => void;
   integrationTypeName?: string;
   integration?: Integration | null;
+  readOnly?: boolean;
 }
 
 export function AddEditIntegrationModal({
@@ -36,6 +37,7 @@ export function AddEditIntegrationModal({
   onSuccess,
   integrationTypeName,
   integration,
+  readOnly = false,
 }: AddEditIntegrationModalProps) {
   const [integrationTypes, setIntegrationTypes] = useState<IntegrationType[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(true);
@@ -48,11 +50,16 @@ export function AddEditIntegrationModal({
 
   useEffect(() => {
     if (!open) return;
+    if (readOnly) {
+      setLoadingTypes(false);
+      return;
+    }
     setLoadingTypes(true);
     api.integrations().listTypes()
       .then(setIntegrationTypes)
+      .catch(() => setError("Failed to load the integration types."))
       .finally(() => setLoadingTypes(false));
-  }, [open]);
+  }, [open, readOnly]);
 
   useEffect(() => {
     if (!open) {
@@ -69,14 +76,21 @@ export function AddEditIntegrationModal({
     }
   }, [open, integration]);
 
-  const availableTypes = integrationTypeName
-    ? integrationTypes.filter(t => t.integration_type_name === integrationTypeName)
-    : integrationTypes;
-
   const selectedIntegrationType = integrationTypes.find(t => t.type === selectedType);
-  const schema = selectedIntegrationType?.config_schema as ConfigSchema | undefined;
+  // The type catalog needs the change permission, so read-only reads the schema the integration
+  // carries for its own type.
+  const schema = (readOnly ? integration?.config_schema : selectedIntegrationType?.config_schema) as ConfigSchema | undefined;
   const properties = schema?.properties ?? {};
   const required = schema?.required ?? [];
+
+  const titleTypeName = integration?.integration_type_name ?? integrationTypeName ?? "Integration";
+
+  // `selectedType` is empty until the modal opens, and an option cannot have an empty value.
+  const typeOptions = readOnly
+    ? (selectedType ? [{ type: selectedType, name: titleTypeName }] : [])
+    : (integrationTypeName
+      ? integrationTypes.filter(t => t.integration_type_name === integrationTypeName)
+      : integrationTypes);
 
   const handleFieldChange = (key: string, value: string) => {
     setConfig(prev => ({ ...prev, [key]: value }));
@@ -102,13 +116,11 @@ export function AddEditIntegrationModal({
     }
   };
 
-  const titleTypeName = integration?.integration_type_name ?? integrationTypeName ?? "Integration";
-
   return (
     <FormModal
       open={open}
       onOpenChange={onOpenChange}
-      title={`${isEditing ? "Edit" : "Add"} ${titleTypeName}`}
+      title={readOnly ? titleTypeName : `${isEditing ? "Edit" : "Add"} ${titleTypeName}`}
       onSubmit={handleSubmit}
       onCancel={() => onOpenChange(false)}
       submitLabel={isEditing ? "Save" : "Add"}
@@ -116,6 +128,7 @@ export function AddEditIntegrationModal({
       disabled={!isValid}
       loading={loadingTypes}
       loadingText="Loading integration types..."
+      readOnly={readOnly}
       dependencies={[selectedType, config, error]}
     >
       {error && (
@@ -129,13 +142,13 @@ export function AddEditIntegrationModal({
         <Select
           value={selectedType}
           onValueChange={setSelectedType}
-          disabled={isEditing || availableTypes.length === 0}
+          disabled={readOnly || isEditing || typeOptions.length === 0}
         >
           <SelectTrigger id="integration-type">
             <SelectValue placeholder="Select integration type" />
           </SelectTrigger>
           <SelectContent>
-            {availableTypes.map(t => (
+            {typeOptions.map(t => (
               <SelectItem key={t.type} value={t.type}>{t.name}</SelectItem>
             ))}
           </SelectContent>
@@ -153,6 +166,7 @@ export function AddEditIntegrationModal({
             placeholder={prop.description ?? prop.title ?? key}
             value={config[key] ?? ""}
             onChange={e => handleFieldChange(key, e.target.value)}
+            readOnly={readOnly}
           />
         </div>
       ))}

@@ -12,6 +12,7 @@ interface AgentConfigurationFormProps {
   config: Record<string, string | number | boolean>;
   setConfig: (config: Record<string, string | number | boolean>) => void;
   fieldErrors: Record<string, string>;
+  readOnly?: boolean;
 }
 
 export function AgentConfigurationForm({
@@ -20,7 +21,8 @@ export function AgentConfigurationForm({
   setOpenSections,
   config,
   setConfig,
-  fieldErrors
+  fieldErrors,
+  readOnly = false
 }: AgentConfigurationFormProps) {
   const handleConfigChange = (key: string, value: string | number | boolean) => {
     setConfig({ ...config, [key]: value });
@@ -79,7 +81,7 @@ export function AgentConfigurationForm({
     const typeInfo = s?.type as TypeInfo | undefined;
     const description = typeof s?.description === 'string' ? s.description : undefined;
     const currentValue = config[configKey] ?? '';
-    
+
     return (
       <DynamicConfigInput
         key={key}
@@ -91,6 +93,8 @@ export function AgentConfigurationForm({
         typeInfo={typeInfo}
         description={description}
         error={fieldErrors[configKey]}
+        required={!!s?.required}
+        readOnly={readOnly}
       />
     );
   };
@@ -173,7 +177,9 @@ export function AgentConfigurationForm({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-medium text-foreground">Configuration</h4>
-        <p className="text-xs text-muted-foreground">Configure agent parameters</p>
+        <p className="text-xs text-muted-foreground">
+          {readOnly ? "Read-only" : "Configure agent parameters"}
+        </p>
       </div>
       
       {Object.entries(agentConfigSections).map(([section, fields]) => 
