@@ -1,4 +1,4 @@
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from "@/components/ui/form.tsx";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form.tsx";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input.tsx";
@@ -13,9 +13,27 @@ import { DataSet, EmbeddingModelsConfig, ProvidersConfig } from "@/lib/types.ts"
 import { Alert, AlertDescription } from "@/components/ui/alert.tsx";
 import { InfoIcon } from "lucide-react";
 import { formSchema, DataSetFormSchema } from "./data-set-form-schema.ts";
+import { ApiError } from "@/lib/api-error.ts";
 import { Label } from "@/components/ui/label.tsx";
 
 const api = new ApiClient(authenticationProviderInstance);
+
+const FORM_FIELD_BY_RESPONSE_KEY: Record<string, keyof DataSetFormSchema> = {
+  name: "name",
+  language_model_provider: "languageModelProvider",
+  language_model: "languageModel",
+  embedding_provider: "embeddingProvider",
+  embedding_model: "embeddingModel",
+  embedding_vector_dimensions: "embeddingVectorSize",
+};
+
+const ADVANCED_FIELDS: (keyof DataSetFormSchema)[] = ["embeddingProvider", "embeddingModel", "embeddingVectorSize"];
+
+function errorMessage(value: unknown): string {
+  if (Array.isArray(value)) return value.map(String).join(" ");
+  if (typeof value === "string") return value;
+  return JSON.stringify(value);
+}
 
 function formatList(items: (string | number)[]): string {
   if (items.length <= 1) return String(items[0] ?? "");
@@ -63,6 +81,7 @@ export function DataSetForm({ initialData, onSubmit, submitButtonText, isOnboard
   const [languageModelNames, setLanguageModelNames] = useState<string[] | undefined>(undefined);
   const [embeddingModelsConfig, setEmbeddingModelsConfig] = useState<EmbeddingModelsConfig | undefined>(undefined);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const form = useForm<DataSetFormSchema>({
     resolver: zodResolver(formSchema),
@@ -177,7 +196,38 @@ export function DataSetForm({ initialData, onSubmit, submitButtonText, isOnboard
   const embeddingModelOptions = optionsFor(initialData?.embeddingModel, embeddingModelsConfig?.models);
 
   const handleSubmit = async (values: DataSetFormSchema) => {
-    await onSubmit(values);
+    setSubmitError(null);
+    try {
+      await onSubmit(values);
+    } catch (error) {
+      showSaveError(error);
+    }
+  };
+
+  const showSaveError = (error: unknown) => {
+    const body = error instanceof ApiError ? error.response.data : null;
+    if (!body || typeof body !== "object") {
+      setSubmitError("Could not save this data set.");
+      return;
+    }
+
+    const unattributed: string[] = [];
+    for (const [key, value] of Object.entries(body as Record<string, unknown>)) {
+      const field = FORM_FIELD_BY_RESPONSE_KEY[key];
+      if (!field) {
+        unattributed.push(errorMessage(value));
+        continue;
+      }
+      form.setError(field, { message: errorMessage(value) });
+      if (ADVANCED_FIELDS.includes(field)) {
+        setAdvancedOpen(true);
+      }
+    }
+
+    const attributed = Object.keys(body).some((key) => FORM_FIELD_BY_RESPONSE_KEY[key]);
+    if (unattributed.length > 0 || !attributed) {
+      setSubmitError(unattributed.join(" ") || "Could not save this data set.");
+    }
   };
 
   return (
@@ -186,6 +236,11 @@ export function DataSetForm({ initialData, onSubmit, submitButtonText, isOnboard
         {loadError && (
           <Alert className="mb-4">
             <AlertDescription>{loadError}</AlertDescription>
+          </Alert>
+        )}
+        {submitError && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>{submitError}</AlertDescription>
           </Alert>
         )}
         {readOnly ? <ReadOnlyMessage /> : disabledFields.length > 0 && <DisabledFieldMessage />}
@@ -203,6 +258,7 @@ export function DataSetForm({ initialData, onSubmit, submitButtonText, isOnboard
                   <FormDescription>
                     This is the name of the data set visible to your users
                   </FormDescription>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -233,6 +289,7 @@ export function DataSetForm({ initialData, onSubmit, submitButtonText, isOnboard
                       </SelectContent>
                     </Select>
                     <FormDescription>The language model to be used by the agent</FormDescription>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -258,6 +315,7 @@ export function DataSetForm({ initialData, onSubmit, submitButtonText, isOnboard
                         }
                       </SelectContent>
                     </Select>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -298,6 +356,7 @@ export function DataSetForm({ initialData, onSubmit, submitButtonText, isOnboard
                       </SelectContent>
                     </Select>
                     <FormDescription>The plugin used to create embeddings</FormDescription>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -325,6 +384,7 @@ export function DataSetForm({ initialData, onSubmit, submitButtonText, isOnboard
                       </SelectContent>
                     </Select>
                     <FormDescription>The model provided by the plugin</FormDescription>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -364,6 +424,7 @@ export function DataSetForm({ initialData, onSubmit, submitButtonText, isOnboard
                             ? `This model only supports a fixed vector size of ${formatList(allowedSizes)}.`
                             : "The size of the embedding vector to use"}
                         </FormDescription>
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
