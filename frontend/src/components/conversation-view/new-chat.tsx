@@ -11,7 +11,7 @@ import { NotFound } from "@/pages/not-found.tsx";
 import type { AgentDetails } from "@/lib/types";
 import type { OnPendingMessage } from "@/pages/data-sets/(id)/chat/index.tsx";
 import type { OnSubmit } from "@/components/conversation-view/message-composer.tsx";
-import { PERMISSIONS } from "@/lib/permissions.ts";
+import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 
 interface NewChatProps {
   onPendingMessage: OnPendingMessage;

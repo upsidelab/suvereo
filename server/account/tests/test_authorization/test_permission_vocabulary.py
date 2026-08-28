@@ -24,9 +24,10 @@ class TestPermissionVocabulary:
     def test_dataset_scope_is_a_subset_of_global_scope(self):
         assert set(DATASET_SCOPE_PERMISSIONS) < set(GLOBAL_SCOPE_PERMISSIONS)
 
-    def test_entity_labels_read_as_prose(self):
-        assert entity_label("AGENTIC_EXECUTION") == "Agentic execution"
-        assert entity_label("SERVICE_ACCOUNT") == "Service account"
+    def test_entity_labels_are_title_cased_for_the_entity_permission_form(self):
+        assert entity_label("AGENTIC_EXECUTION") == "Agentic Execution"
+        assert entity_label("SERVICE_ACCOUNT") == "Service Account"
+        assert entity_label("DATASET") == "Dataset"
 
 
 @pytest.mark.django_db

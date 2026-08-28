@@ -5,7 +5,7 @@ import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { useNavigate } from "react-router-dom";
 import { PaginatedTable } from "@/components/util/paginated-table.tsx";
 import { Lock } from "lucide-react";
-import { PERMISSIONS } from "@/lib/permissions.ts";
+import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 

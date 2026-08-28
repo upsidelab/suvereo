@@ -4,7 +4,7 @@ import { PlusIcon } from "lucide-react";
 import { ApiClient, TaskHandle } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
-import { PERMISSIONS } from "@/lib/permissions.ts";
+import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 
 import { PageMain } from "@/components/util/page-main.tsx";
 import { PageHeading } from "@/components/util/page-heading.tsx";

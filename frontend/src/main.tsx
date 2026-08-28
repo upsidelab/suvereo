@@ -23,7 +23,7 @@ import AgentsPage from "@/pages/data-sets/(id)/agents";
 import { AgenticExecutionsPage } from "@/pages/data-sets/(id)/agentic-executions/index.tsx";
 import { AgenticExecutionDetailPage } from "@/pages/data-sets/(id)/agentic-executions/(id)/index.tsx";
 import { EntityRecordsPage } from "@/pages/data-sets/(id)/entities/[slug].tsx";
-import { PERMISSIONS } from "@/lib/permissions.ts";
+import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 import { ApiError } from "@/lib/api-error.ts";
 import { ROOT_ROUTE_ID } from "@/lib/root-route.ts";
 import { RequirePermission } from "@/components/util/require-permission.tsx";

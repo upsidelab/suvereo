@@ -9,7 +9,7 @@ import { ChangePasswordModal } from "@/components/users/change-password-modal.ts
 import { Check } from "lucide-react";
 import { User } from "@/lib/types.ts";
 import { ApiError } from "@/lib/api-error.ts";
-import { PERMISSIONS } from "@/lib/permissions.ts";
+import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 
 const api = new ApiClient(authenticationProviderInstance);

@@ -8,10 +8,13 @@ import { Input } from "@/components/ui/input.tsx";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form.tsx";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
-import { DatasetRoleOption, PermissionEntity } from "@/lib/types.ts";
+import { DatasetRoleOption } from "@/lib/types.ts";
+import { MissingPermission, PermissionEntity } from "@/lib/permissions/types.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
-import { MissingPermission, PermissionChecklist } from "@/components/roles/permission-checklist.tsx";
+import { PermissionChecklist } from "@/components/roles/permission-checklist.tsx";
 import { PermissionErrors } from "@/components/roles/permission-errors.tsx";
+import { PERMISSIONS } from "@/lib/permissions/codes.ts";
+import { missingDependencies, unresolvedRequirements } from "@/lib/permissions/dependencies.ts";
 
 const formSchema = z.object({
   name: z.string().trim().min(1),
@@ -26,8 +29,10 @@ export interface DatasetRoleModalProps {
 }
 
 export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
-  const { account } = useApplicationContext()!;
-  const isAdmin = !!account?.isAdmin;
+  const { hasPermission } = useApplicationContext()!;
+  const canEdit = role
+    ? hasPermission(PERMISSIONS.DATASET_ROLE.CHANGE)
+    : hasPermission(PERMISSIONS.DATASET_ROLE.ADD);
   const [open, setOpen] = useState(false);
   const [entities, setEntities] = useState<PermissionEntity[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
@@ -61,7 +66,11 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
     }
   }, [open, role, form]);
 
-  const handleSubmit = async (values: DatasetRoleFormSchema) => {
+  useEffect(() => {
+    setMissingPermissions((reported) => unresolvedRequirements(reported, selected));
+  }, [selected]);
+
+  const save = async (values: DatasetRoleFormSchema) => {
     setError(null);
     setPermissionErrors([]);
     setMissingPermissions([]);
@@ -83,8 +92,19 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
     onSaved();
   };
 
-  const triggerLabel = role ? (isAdmin ? "Edit" : "View") : "New Role";
-  const title = role ? (isAdmin ? `Edit role ${role.name}` : `Role ${role.name}`) : "New Dataset Role";
+  const handleSubmit = (values: DatasetRoleFormSchema) => {
+    const missing = missingDependencies(selected, entities);
+    if (missing.length > 0) {
+      setError(null);
+      setPermissionErrors([]);
+      setMissingPermissions(missing);
+      return;
+    }
+    return save(values);
+  };
+
+  const triggerLabel = role ? (canEdit ? "Edit" : "View") : "New Role";
+  const title = role ? (canEdit ? `Edit role ${role.name}` : `Role ${role.name}`) : "New Dataset Role";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -106,7 +126,7 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
         />
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            {isAdmin ? (
+            {canEdit ? (
               <FormField
                 control={form.control}
                 name="name"
@@ -121,16 +141,16 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
                 )}
               />
             ) : (
-              <p className="text-sm text-muted-foreground">Only an admin can edit a role's permissions.</p>
+              <p className="text-sm text-muted-foreground">You can't edit this role's permissions.</p>
             )}
             <PermissionChecklist
               entities={entities}
               selected={selected}
               onChange={setSelected}
-              disabled={!isAdmin}
+              disabled={!canEdit}
               missingPermissions={missingPermissions}
             />
-            {isAdmin && (
+            {canEdit && (
               <div className="flex justify-end">
                 <Button type="submit">Save</Button>
               </div>
