@@ -18,7 +18,7 @@ import { GlobalRoleMembersPanel } from "@/components/roles/global-roles/global-r
 import { AdminMembersPanel } from "@/components/roles/global-roles/admin-members-panel.tsx";
 import { ADMIN_ROLE, GlobalRole, isAdminRole } from "@/components/roles/global-roles/admin-role.ts";
 import { PermissionEscalationDialog } from "@/components/roles/permission-escalation-dialog.tsx";
-import { permissionEscalationWarnings } from "@/lib/permissions/escalation.ts";
+import { permissionEscalationRisks } from "@/lib/permissions/escalation.ts";
 import { missingDependencies, unresolvedRequirements } from "@/lib/permissions/dependencies.ts";
 import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 
@@ -96,7 +96,7 @@ export function GlobalRoleModal({ role, onSaved }: GlobalRoleModalProps) {
     setMissingPermissions((reported) => unresolvedRequirements(reported, selected));
   }, [selected]);
 
-  const warnings = permissionEscalationWarnings(selected, storedPermissions);
+  const risks = permissionEscalationRisks(selected, storedPermissions);
 
   const save = async (values: GroupFormSchema) => {
     setPendingValues(null);
@@ -129,7 +129,7 @@ export function GlobalRoleModal({ role, onSaved }: GlobalRoleModalProps) {
       setMissingPermissions(missing);
       return;
     }
-    if (warnings.length > 0) {
+    if (risks.length > 0) {
       setPendingValues(values);
       return;
     }
@@ -215,7 +215,7 @@ export function GlobalRoleModal({ role, onSaved }: GlobalRoleModalProps) {
 
         <PermissionEscalationDialog
           open={pendingValues !== null}
-          warnings={warnings}
+          risks={risks}
           entities={entities}
           onConfirm={() => { if (pendingValues) void save(pendingValues); }}
           onCancel={() => setPendingValues(null)}
