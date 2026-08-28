@@ -39,7 +39,7 @@ class DataSetListView(ListCreateAPIView):
         return datasets_visible_to(self.request.user).order_by("name", "id")
 
     @swagger_auto_schema(operation_description="Create a new data set", request_body=DataSetCreateSerializer)
-    @global_permission_required(PERMISSIONS.DATASET.ADD)
+    @global_permission_required(PERMISSIONS.DATA_SET.ADD)
     def post(self, request, *args, **kwargs):
         return super().post(request, *args, **kwargs)
 
@@ -79,7 +79,7 @@ class DataSetDetailView(RetrieveAPIView):
             )
         ],
     )
-    @global_permission_required(PERMISSIONS.DATASET.CHANGE)
+    @global_permission_required(PERMISSIONS.DATA_SET.CHANGE)
     def patch(self, request, *args, **kwargs):
         instance = self.get_object()
 
@@ -104,7 +104,7 @@ class DataSetDetailView(RetrieveAPIView):
             )
         ],
     )
-    @global_permission_required(PERMISSIONS.DATASET.DELETE)
+    @global_permission_required(PERMISSIONS.DATA_SET.DELETE)
     def delete(self, request, *args, **kwargs):
         instance = self.get_object()
 
@@ -144,7 +144,7 @@ class ConfigView(GenericAPIView):
             )
         },
     )
-    @any_global_permission_required(PERMISSIONS.DATASET.ADD, PERMISSIONS.DATASET.CHANGE)
+    @any_global_permission_required(PERMISSIONS.DATA_SET.ADD, PERMISSIONS.DATA_SET.CHANGE)
     def get(self, request, *args, **kwargs):
         response_body = {
             "language_model_providers": [
@@ -173,7 +173,7 @@ class ConfigLanguageModelView(GenericAPIView):
             )
         },
     )
-    @any_global_permission_required(PERMISSIONS.DATASET.ADD, PERMISSIONS.DATASET.CHANGE)
+    @any_global_permission_required(PERMISSIONS.DATA_SET.ADD, PERMISSIONS.DATA_SET.CHANGE)
     def get(self, request, *args, **kwargs):
         provider_name = kwargs.get("provider_name")
         response_body = LanguageModelRegistry().provider_class_by_name(provider_name).available_models()
@@ -213,7 +213,7 @@ class ConfigEmbeddingModelView(GenericAPIView):
             )
         },
     )
-    @any_global_permission_required(PERMISSIONS.DATASET.ADD, PERMISSIONS.DATASET.CHANGE)
+    @any_global_permission_required(PERMISSIONS.DATA_SET.ADD, PERMISSIONS.DATA_SET.CHANGE)
     def get(self, request, *args, **kwargs):
         provider_name = kwargs.get("provider_name")
         provider_class = EmbeddingProviderRegistry().provider_class_by_name(provider_name)

@@ -1,6 +1,7 @@
 import { BaseApiClient } from "@/lib/api/base.ts";
-import { GlobalRoleDetail, GlobalRoleMember, GlobalRoleOption, PaginatedResult } from "@/lib/types.ts";
+import { GlobalRoleDetail, GlobalRoleMember, GlobalRoleOption, GroupOption, PaginatedResult } from "@/lib/types.ts";
 import { ApiError } from "@/lib/api-error.ts";
+import { GroupResponse, toGroupOption } from "@/lib/api/groups.ts";
 
 type GlobalRoleMemberResponse = {
   id: number;
@@ -85,6 +86,36 @@ export class GlobalRolesApiClient extends BaseApiClient {
 
   async removeGlobalRoleMember(globalRoleId: number, userId: number): Promise<Response> {
     return await fetch(`${this.apiBase}/api/global_roles/${globalRoleId}/members/${userId}`, {
+      ...this._requestConfiguration(),
+      method: "DELETE"
+    });
+  }
+
+  async getGlobalRoleGroups(globalRoleId: number): Promise<GroupOption[]> {
+    const response = await fetch(
+      `${this.apiBase}/api/global_roles/${globalRoleId}/groups`,
+      this._requestConfiguration()
+    );
+    if (!response.ok) {
+      throw new ApiError(`Failed to list the groups holding this global role: ${response.statusText}`, {
+        data: await response.json().catch(() => ({})),
+        status: response.status,
+      });
+    }
+    const result = await response.json() as GroupResponse[];
+    return result.map(toGroupOption);
+  }
+
+  async addGlobalRoleGroup(globalRoleId: number, groupId: number): Promise<Response> {
+    return await fetch(`${this.apiBase}/api/global_roles/${globalRoleId}/groups`, {
+      ...this._requestConfiguration(),
+      method: "POST",
+      body: JSON.stringify({ group_id: groupId })
+    });
+  }
+
+  async removeGlobalRoleGroup(globalRoleId: number, groupId: number): Promise<Response> {
+    return await fetch(`${this.apiBase}/api/global_roles/${globalRoleId}/groups/${groupId}`, {
       ...this._requestConfiguration(),
       method: "DELETE"
     });

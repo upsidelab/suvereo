@@ -1,52 +1,34 @@
 import { PERMISSIONS } from "@/lib/permissions/codes.ts";
-import { EscalationWarning } from "@/lib/permissions/types.ts";
+import { EscalationRisk } from "@/lib/permissions/types.ts";
 
-const ROLE_ADD_CODES: readonly string[] = [PERMISSIONS.GLOBAL_ROLE.ADD, PERMISSIONS.DATASET_ROLE.ADD];
-const ROLE_EDIT_CODES: readonly string[] = [PERMISSIONS.GLOBAL_ROLE.CHANGE, PERMISSIONS.DATASET_ROLE.CHANGE];
-const ROLE_ASSIGN_CODES: readonly string[] = [
-  PERMISSIONS.GLOBAL_ROLE.ASSIGN,
-  PERMISSIONS.DATASET_ROLE.ASSIGN,
-  PERMISSIONS.GROUP.ASSIGN,
-];
 
-const ADD_WARNING = "People in this role will be able to create roles carrying any permission in the system, "
-  + "including a role that amounts to administrator access.";
+const ESCALATION_RISKS: Record<string, string> = {
+  [PERMISSIONS.GLOBAL_ROLE.ADD]:
+    "Create global roles carrying any permission in the system, including one equivalent to an administrator.",
+  [PERMISSIONS.GLOBAL_ROLE.CHANGE]:
+    "Edit any global role's permissions, including one they hold themselves - a direct route to "
+    + "granting themselves full access.",
+  [PERMISSIONS.GLOBAL_ROLE.ASSIGN]:
+    "Grant any global role to any user, service account or group, their own account included.",
+  [PERMISSIONS.DATA_SET_ROLE.ADD]:
+    "Create data set roles carrying any permission available on a data set.",
+  [PERMISSIONS.DATA_SET_ROLE.CHANGE]:
+    "Change the permissions on any data set role, including roles they hold themselves.",
+  [PERMISSIONS.DATA_SET_ROLE.ASSIGN]:
+    "Grant any data set role, on any data set, to any user, service account or group.",
+  [PERMISSIONS.GROUP.ASSIGN]:
+    "Add anyone to any group, handing them every role that group already holds.",
+};
 
-const EDIT_WARNING = "People in this role will be able to edit permission sets, including those of roles they "
-  + "hold themselves. Nothing stops them granting themselves every permission in the system, so anyone holding "
-  + "this role can self-promote to an effective administrator.";
-
-const ASSIGN_WARNING = "People in this role will be able to grant roles to anyone, including to themselves, and to hand out whatever a group holds by adding members to it.";
-
-function warningsFor(permissions: Set<string>): EscalationWarning[] {
-  const carried = (codes: readonly string[]) => codes.filter((code) => permissions.has(code));
-
-  const edit = carried(ROLE_EDIT_CODES);
-  const add = carried(ROLE_ADD_CODES);
-  const assign = carried(ROLE_ASSIGN_CODES);
-
-  const warnings: EscalationWarning[] = [];
-  if (edit.length > 0) {
-    warnings.push({ message: EDIT_WARNING, codes: edit });
-  } else if (add.length > 0) {
-    warnings.push({ message: ADD_WARNING, codes: add });
-  }
-  if (assign.length > 0) {
-    warnings.push({ message: ASSIGN_WARNING, codes: assign });
-  }
-  return warnings;
+function risksIn(permissions: string[]): string[] {
+  const held = new Set(permissions);
+  return Object.keys(ESCALATION_RISKS).filter((code) => held.has(code));
 }
 
-export function permissionEscalationWarnings(submitted: string[], stored: string[]): EscalationWarning[] {
-  const warnings = warningsFor(new Set(submitted));
-  const alreadyWarned = new Map(
-    warningsFor(new Set(stored)).map((warning) => [warning.message, new Set(warning.codes)]),
-  );
+export function permissionEscalationRisks(submitted: string[], stored: string[]): EscalationRisk[] {
+  const submittedRisks = risksIn(submitted);
+  const storedRisks = new Set(risksIn(stored));
 
-  const isNew = (warning: EscalationWarning) => {
-    const covered = alreadyWarned.get(warning.message);
-    return covered === undefined || warning.codes.some((code) => !covered.has(code));
-  };
-
-  return warnings.some(isNew) ? warnings : [];
+  if (!submittedRisks.some((code) => !storedRisks.has(code))) return [];
+  return submittedRisks.map((code) => ({ code, detail: ESCALATION_RISKS[code] }));
 }

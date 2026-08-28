@@ -1,4 +1,4 @@
-import { DatasetRoleOption } from "@/lib/types.ts";
+import { DataSetRoleOption } from "@/lib/types.ts";
 
 export type AccessSubject = {
   type: "user" | "group";
@@ -9,5 +9,5 @@ export type AccessSubject = {
 
 export type AccessRow = {
   subject: AccessSubject;
-  role: DatasetRoleOption;
+  role: DataSetRoleOption;
 };

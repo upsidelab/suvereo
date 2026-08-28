@@ -34,11 +34,11 @@ class _FakeView:
     def permission_denied(self, request, message=None, code=None):
         raise PermissionDenied(detail=message, code=code)
 
-    @global_permission_required(PERMISSIONS.DATASET.ADD)
+    @global_permission_required(PERMISSIONS.DATA_SET.ADD)
     def single_permission_action(self, *args, **kwargs):
         return "single-ok"
 
-    @any_global_permission_required(PERMISSIONS.DATASET.ADD, PERMISSIONS.DATASET.CHANGE)
+    @any_global_permission_required(PERMISSIONS.DATA_SET.ADD, PERMISSIONS.DATA_SET.CHANGE)
     def any_permission_action(self, *args, **kwargs):
         return "any-ok"
 
@@ -57,7 +57,7 @@ class TestGlobalPermissionRequired:
 
     def test_allows_holder_of_the_permission(self):
         user = baker.make(User)
-        grant(user, PERMISSIONS.DATASET.ADD)
+        grant(user, PERMISSIONS.DATA_SET.ADD)
         view = _FakeView(user)
 
         assert view.single_permission_action() == "single-ok"
@@ -79,7 +79,7 @@ class TestGlobalPermissionRequired:
         calls = []
 
         class _View(_FakeView):
-            @global_permission_required(PERMISSIONS.DATASET.ADD)
+            @global_permission_required(PERMISSIONS.DATA_SET.ADD)
             def action(self, *args, **kwargs):
                 calls.append(1)
                 return "ok"
@@ -95,22 +95,22 @@ class TestGlobalPermissionRequired:
 class TestAnyGlobalPermissionRequired:
     def test_allows_holder_of_first_codename(self):
         user = baker.make(User)
-        grant(user, PERMISSIONS.DATASET.ADD)
+        grant(user, PERMISSIONS.DATA_SET.ADD)
         view = _FakeView(user)
 
         assert view.any_permission_action() == "any-ok"
 
     def test_allows_holder_of_second_codename(self):
         user = baker.make(User)
-        grant(user, PERMISSIONS.DATASET.CHANGE)
+        grant(user, PERMISSIONS.DATA_SET.CHANGE)
         view = _FakeView(user)
 
         assert view.any_permission_action() == "any-ok"
 
     def test_allows_holder_of_both_codenames(self):
         user = baker.make(User)
-        grant(user, PERMISSIONS.DATASET.ADD)
-        grant(user, PERMISSIONS.DATASET.CHANGE)
+        grant(user, PERMISSIONS.DATA_SET.ADD)
+        grant(user, PERMISSIONS.DATA_SET.CHANGE)
         view = _FakeView(user)
 
         assert view.any_permission_action() == "any-ok"

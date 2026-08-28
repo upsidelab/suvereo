@@ -25,9 +25,9 @@ const STATUS_LABELS: Record<AgenticExecution["status"], string> = {
 };
 
 export function ExecutionsList() {
-  const { availableAgents, dataSetId, hasDatasetPermission } = useApplicationContext()!;
-  const canCreateExecutions = hasDatasetPermission(PERMISSIONS.AGENTIC_EXECUTION.CREATE);
-  const canViewAllExecutions = hasDatasetPermission(PERMISSIONS.AGENTIC_EXECUTION.VIEW_ALL);
+  const { availableAgents, dataSetId, hasDataSetPermission } = useApplicationContext()!;
+  const canCreateExecutions = hasDataSetPermission(PERMISSIONS.AGENTIC_EXECUTION.CREATE);
+  const canViewAllExecutions = hasDataSetPermission(PERMISSIONS.AGENTIC_EXECUTION.VIEW_ALL);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 

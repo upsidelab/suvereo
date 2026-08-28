@@ -16,8 +16,8 @@ const api = new ApiClient(authenticationProviderInstance);
 
 export function EditDataSetForm() {
   const { hasPermission } = useApplicationContext()!;
-  const canChangeDataSets = hasPermission(PERMISSIONS.DATASET.CHANGE);
-  const canDeleteDataSets = hasPermission(PERMISSIONS.DATASET.DELETE);
+  const canChangeDataSets = hasPermission(PERMISSIONS.DATA_SET.CHANGE);
+  const canDeleteDataSets = hasPermission(PERMISSIONS.DATA_SET.DELETE);
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [dataSet, setDataSet] = useState<DataSet | undefined>(undefined);

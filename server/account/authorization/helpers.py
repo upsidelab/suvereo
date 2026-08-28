@@ -21,7 +21,7 @@ def _permissions(*labels: str) -> QuerySet[Permission]:
 
 
 def is_dataset_member(user: User, dataset: DataSet) -> bool:
-    if user.has_perm(PERMISSIONS.DATASET.VIEW):
+    if user.has_perm(PERMISSIONS.DATA_SET.VIEW):
         return True
     if DatasetUserRoleAssignment.objects.filter(user=user, dataset=dataset).exists():
         return True
@@ -29,7 +29,7 @@ def is_dataset_member(user: User, dataset: DataSet) -> bool:
 
 
 def datasets_visible_to(user: User) -> QuerySet[DataSet]:
-    if user.has_perm(PERMISSIONS.DATASET.VIEW):
+    if user.has_perm(PERMISSIONS.DATA_SET.VIEW):
         return DataSet.objects.all()
     return DataSet.objects.filter(
         Q(datasetuserroleassignment__user=user) | Q(datasetgrouproleassignment__group__members=user)
@@ -79,7 +79,7 @@ def datasets_with_permission(user: User, codename: str) -> QuerySet[DataSet]:
 
 
 def has_any_dataset_access(user: User) -> bool:
-    if user.has_perm(PERMISSIONS.DATASET.VIEW):
+    if user.has_perm(PERMISSIONS.DATA_SET.VIEW):
         return True
     if DatasetUserRoleAssignment.objects.filter(user=user).exists():
         return True

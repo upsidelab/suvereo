@@ -34,11 +34,11 @@ interface IntegrationListProps {
 }
 
 export function IntegrationList({ dataSetId }: IntegrationListProps) {
-  const { hasDatasetPermission } = useApplicationContext()!;
-  const canAddIntegrations = hasDatasetPermission(PERMISSIONS.INTEGRATION.ADD, dataSetId);
-  const canChangeIntegrations = hasDatasetPermission(PERMISSIONS.INTEGRATION.CHANGE, dataSetId);
-  const canDeleteIntegrations = hasDatasetPermission(PERMISSIONS.INTEGRATION.DELETE, dataSetId);
-  const canSyncIntegrations = hasDatasetPermission(PERMISSIONS.INTEGRATION.SYNC, dataSetId);
+  const { hasDataSetPermission } = useApplicationContext()!;
+  const canAddIntegrations = hasDataSetPermission(PERMISSIONS.INTEGRATION.ADD, dataSetId);
+  const canChangeIntegrations = hasDataSetPermission(PERMISSIONS.INTEGRATION.CHANGE, dataSetId);
+  const canDeleteIntegrations = hasDataSetPermission(PERMISSIONS.INTEGRATION.DELETE, dataSetId);
+  const canSyncIntegrations = hasDataSetPermission(PERMISSIONS.INTEGRATION.SYNC, dataSetId);
   const [isViewingIntegration, setIsViewingIntegration] = useState(false);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [integrationTypes, setIntegrationTypes] = useState<IntegrationType[]>([]);

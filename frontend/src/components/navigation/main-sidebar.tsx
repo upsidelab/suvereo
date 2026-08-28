@@ -27,14 +27,14 @@ import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 const api = new ApiClient(authenticationProviderInstance);
 
 export function MainSidebar() {
-  const { account, dataSetId, dataSets, isLoadingAgents, availableAgents, hasPermission, hasDatasetPermission } = useApplicationContext()!;
-  const canViewAgents = hasDatasetPermission(PERMISSIONS.AGENT.VIEW);
-  const canAddAgents = hasDatasetPermission(PERMISSIONS.AGENT.ADD);
-  const canViewSources = hasDatasetPermission(PERMISSIONS.INTEGRATION.VIEW);
-  const canUseExecutions = hasDatasetPermission(PERMISSIONS.AGENTIC_EXECUTION.CREATE)
-    || hasDatasetPermission(PERMISSIONS.AGENTIC_EXECUTION.VIEW_ALL);
-  const canConverse = hasDatasetPermission(PERMISSIONS.CONVERSATION.CONVERSE);
-  const canViewAllConversations = hasDatasetPermission(PERMISSIONS.CONVERSATION.VIEW_ALL);
+  const { account, dataSetId, dataSets, isLoadingAgents, availableAgents, hasPermission, hasDataSetPermission } = useApplicationContext()!;
+  const canViewAgents = hasDataSetPermission(PERMISSIONS.AGENT.VIEW);
+  const canAddAgents = hasDataSetPermission(PERMISSIONS.AGENT.ADD);
+  const canViewSources = hasDataSetPermission(PERMISSIONS.INTEGRATION.VIEW);
+  const canUseExecutions = hasDataSetPermission(PERMISSIONS.AGENTIC_EXECUTION.CREATE)
+    || hasDataSetPermission(PERMISSIONS.AGENTIC_EXECUTION.VIEW_ALL);
+  const canConverse = hasDataSetPermission(PERMISSIONS.CONVERSATION.CONVERSE);
+  const canViewAllConversations = hasDataSetPermission(PERMISSIONS.CONVERSATION.VIEW_ALL);
   const canSeeAsk = canConverse || canViewAllConversations;
   const [entityTypes, setEntityTypes] = useState<EntityType[]>([]);
   const hasDataSetAccess = dataSets.length > 0;
@@ -82,11 +82,11 @@ export function MainSidebar() {
     }
   ];
 
-  const canSeeDataSets = dataSets.length > 0 || hasPermission(PERMISSIONS.DATASET.ADD);
+  const canSeeDataSets = dataSets.length > 0 || hasPermission(PERMISSIONS.DATA_SET.ADD);
   const canSeeUsers = hasPermission(PERMISSIONS.USER.VIEW);
   const canSeeServiceAccounts = hasPermission(PERMISSIONS.SERVICE_ACCOUNT.VIEW);
   const canSeeRoles = hasPermission(PERMISSIONS.GLOBAL_ROLE.VIEW)
-    || hasPermission(PERMISSIONS.DATASET_ROLE.VIEW)
+    || hasPermission(PERMISSIONS.DATA_SET_ROLE.VIEW)
     || hasPermission(PERMISSIONS.GROUP.VIEW);
   const hasManageAccess = canSeeDataSets || canSeeUsers || canSeeServiceAccounts || canSeeRoles;
 

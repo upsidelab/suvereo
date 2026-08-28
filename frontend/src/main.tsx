@@ -67,7 +67,7 @@ const protectedLoginLoader = async ({ request }: LoaderFunctionArgs) => {
   // guard - a global screen the user holds still opens, anything else renders the 404 page.
   if (apiDataSets.length === 0 && new URL(request.url).pathname === "/") {
     const accountData = await api.getAccount();
-    return redirect(accountData.permissions.includes(PERMISSIONS.DATASET.ADD) ? "/onboarding" : NO_DATA_SETS_PATH);
+    return redirect(accountData.permissions.includes(PERMISSIONS.DATA_SET.ADD) ? "/onboarding" : NO_DATA_SETS_PATH);
   }
 
   return { dataSets: apiDataSets };
@@ -116,7 +116,7 @@ const router = createBrowserRouter([
       {
         path: '/data-sets/new',
         element: (
-          <RequirePermission globalAnyOf={[PERMISSIONS.DATASET.ADD]}>
+          <RequirePermission globalAnyOf={[PERMISSIONS.DATA_SET.ADD]}>
             <NewDataSet />
           </RequirePermission>
         )
@@ -132,7 +132,7 @@ const router = createBrowserRouter([
       {
         path: '/data-sets/:id/users',
         element: (
-          <RequirePermission globalAnyOf={[PERMISSIONS.DATASET_ROLE.ASSIGN]}>
+          <RequirePermission globalAnyOf={[PERMISSIONS.DATA_SET_ROLE.ASSIGN]}>
             <IndexDataSetUsers />
           </RequirePermission>
         )
@@ -172,7 +172,7 @@ const router = createBrowserRouter([
       {
         path: '/roles',
         element: (
-          <RequirePermission globalAnyOf={[PERMISSIONS.GLOBAL_ROLE.VIEW, PERMISSIONS.DATASET_ROLE.VIEW, PERMISSIONS.GROUP.VIEW]}>
+          <RequirePermission globalAnyOf={[PERMISSIONS.GLOBAL_ROLE.VIEW, PERMISSIONS.DATA_SET_ROLE.VIEW, PERMISSIONS.GROUP.VIEW]}>
             <RolesIndex />
           </RequirePermission>
         )

@@ -5,42 +5,53 @@ import { z } from "zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
+import { Separator } from "@/components/ui/separator.tsx";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form.tsx";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
-import { DatasetRoleOption } from "@/lib/types.ts";
+import { DataSetRoleOption } from "@/lib/types.ts";
 import { MissingPermission, PermissionEntity } from "@/lib/permissions/types.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { PermissionChecklist } from "@/components/roles/permission-checklist.tsx";
 import { PermissionErrors } from "@/components/roles/permission-errors.tsx";
 import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 import { missingDependencies, unresolvedRequirements } from "@/lib/permissions/dependencies.ts";
+import { ModalSection, ModalSections } from "@/components/roles/modal-sections.tsx";
+import { DataSetRoleMembersPanel } from "@/components/roles/data-set-roles/data-set-role-members-panel.tsx";
 
 const formSchema = z.object({
   name: z.string().trim().min(1),
 });
-type DatasetRoleFormSchema = z.infer<typeof formSchema>;
+type DataSetRoleFormSchema = z.infer<typeof formSchema>;
 
 const api = new ApiClient(authenticationProviderInstance);
 
-export interface DatasetRoleModalProps {
-  role?: DatasetRoleOption;
+type DataSetRoleSection = "permissions" | "members";
+
+const SECTIONS: readonly ModalSection<DataSetRoleSection>[] = [
+  { key: "permissions", label: "Permissions" },
+  { key: "members", label: "Members" },
+];
+
+export interface DataSetRoleModalProps {
+  role?: DataSetRoleOption;
   onSaved: () => void;
 }
 
-export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
+export function DataSetRoleModal({ role, onSaved }: DataSetRoleModalProps) {
   const { hasPermission } = useApplicationContext()!;
   const canEdit = role
-    ? hasPermission(PERMISSIONS.DATASET_ROLE.CHANGE)
-    : hasPermission(PERMISSIONS.DATASET_ROLE.ADD);
+    ? hasPermission(PERMISSIONS.DATA_SET_ROLE.CHANGE)
+    : hasPermission(PERMISSIONS.DATA_SET_ROLE.ADD);
   const [open, setOpen] = useState(false);
+  const [section, setSection] = useState<DataSetRoleSection>("permissions");
   const [entities, setEntities] = useState<PermissionEntity[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [permissionErrors, setPermissionErrors] = useState<string[]>([]);
   const [missingPermissions, setMissingPermissions] = useState<MissingPermission[]>([]);
 
-  const form = useForm<DatasetRoleFormSchema>({
+  const form = useForm<DataSetRoleFormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: role?.name ?? ""
@@ -50,13 +61,14 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
   useEffect(() => {
     if (!open) return;
     setError(null);
+    setSection("permissions");
     setPermissionErrors([]);
     setMissingPermissions([]);
 
-    api.permissions().getPermissions("dataset").then(setEntities).catch(() => setEntities([]));
+    api.permissions().getPermissions("data_set").then(setEntities).catch(() => setEntities([]));
 
     if (role) {
-      api.datasetRoles().getDatasetRoleDetail(role.id).then((detail) => {
+      api.dataSetRoles().getDataSetRoleDetail(role.id).then((detail) => {
         form.reset({ name: detail.name });
         setSelected(detail.permissions);
       }).catch(() => setError("Could not load this role."));
@@ -70,14 +82,14 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
     setMissingPermissions((reported) => unresolvedRequirements(reported, selected));
   }, [selected]);
 
-  const save = async (values: DatasetRoleFormSchema) => {
+  const save = async (values: DataSetRoleFormSchema) => {
     setError(null);
     setPermissionErrors([]);
     setMissingPermissions([]);
 
     const response = role
-      ? await api.datasetRoles().updateDatasetRole(role.id, values.name, selected)
-      : await api.datasetRoles().createDatasetRole(values.name, selected);
+      ? await api.dataSetRoles().updateDataSetRole(role.id, values.name, selected)
+      : await api.dataSetRoles().createDataSetRole(values.name, selected);
 
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
@@ -92,7 +104,7 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
     onSaved();
   };
 
-  const handleSubmit = (values: DatasetRoleFormSchema) => {
+  const handleSubmit = (values: DataSetRoleFormSchema) => {
     const missing = missingDependencies(selected, entities);
     if (missing.length > 0) {
       setError(null);
@@ -103,8 +115,10 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
     return save(values);
   };
 
-  const triggerLabel = role ? (canEdit ? "Edit" : "View") : "New Role";
-  const title = role ? (canEdit ? `Edit role ${role.name}` : `Role ${role.name}`) : "New Dataset Role";
+  const triggerLabel = role ? (canEdit ? "Edit" : "View") : "New data set role";
+  const title = role
+    ? (canEdit ? `Edit data set role ${role.name}` : `Data set role ${role.name}`)
+    : "New data set role";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -115,48 +129,64 @@ export function DatasetRoleModal({ role, onSaved }: DatasetRoleModalProps) {
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <p className="text-sm text-muted-foreground -mt-2 mb-2">
-          This only defines the role. To grant it to a user or global role, go to Data Sets → Manage Access for that data set.
-        </p>
         {error && <p className="text-sm text-destructive mb-4">{error}</p>}
         <PermissionErrors
           entities={entities}
           missingPermissions={missingPermissions}
           serverMessages={permissionErrors}
         />
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            {canEdit ? (
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Role name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+        <ModalSections sections={SECTIONS} active={section} onChange={setSection} />
+
+        {/* Fixed height, so switching sections cannot resize the dialog. */}
+        <div className="h-[min(62vh,34rem)] flex flex-col">
+          {section === "permissions" && (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleSubmit)} className="flex grow flex-col space-y-4 min-h-0">
+                {canEdit ? (
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Role name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ) : (
+                  <p className="text-sm text-muted-foreground">You can't edit this role's permissions.</p>
                 )}
-              />
-            ) : (
-              <p className="text-sm text-muted-foreground">You can't edit this role's permissions.</p>
-            )}
-            <PermissionChecklist
-              entities={entities}
-              selected={selected}
-              onChange={setSelected}
-              disabled={!canEdit}
-              missingPermissions={missingPermissions}
-            />
-            {canEdit && (
-              <div className="flex justify-end">
-                <Button type="submit">Save</Button>
-              </div>
-            )}
-          </form>
-        </Form>
+                <Separator />
+
+                <div className="flex grow flex-col space-y-2 min-h-0 pt-4">
+                  <p className="text-sm font-medium leading-none">Permissions</p>
+                  <PermissionChecklist
+                    entities={entities}
+                    selected={selected}
+                    onChange={setSelected}
+                    disabled={!canEdit}
+                    missingPermissions={missingPermissions}
+                    className="h-auto grow min-h-0"
+                  />
+                </div>
+                {canEdit && (
+                  <div className="flex justify-end">
+                    <Button type="submit">Save</Button>
+                  </div>
+                )}
+              </form>
+            </Form>
+          )}
+
+          {section === "members" && (
+            role
+              ? <DataSetRoleMembersPanel roleId={role.id} />
+              : <p className="text-sm text-muted-foreground">Save the role first to grant it to anyone.</p>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );

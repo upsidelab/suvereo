@@ -35,7 +35,7 @@ class TestReadingRolesRequiresTheViewCode:
         assert APIClient().get(list_url).status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_a_global_dataset_role_view_holder_can_list(self, api_client, user, list_url, role):
-        grant(user, PERMISSIONS.DATASET_ROLE.VIEW)
+        grant(user, PERMISSIONS.DATA_SET_ROLE.VIEW)
 
         response = api_client.get(list_url)
 
@@ -44,7 +44,7 @@ class TestReadingRolesRequiresTheViewCode:
 
     def test_an_assign_holder_reaches_the_catalogue_through_the_view_code_it_requires(self, user, list_url, role):
         """An assigner has to see the catalogue to grant anything from it - `assign` never travels without `view`."""
-        grant(user, PERMISSIONS.DATASET_ROLE.ASSIGN, PERMISSIONS.DATASET_ROLE.VIEW)
+        grant(user, PERMISSIONS.DATA_SET_ROLE.ASSIGN, PERMISSIONS.DATA_SET_ROLE.VIEW)
 
         response = client_for(user).get(list_url)
 
@@ -59,23 +59,23 @@ class TestWritingDatasetRolesNeedsItsOwnLifecycleCode:
     @pytest.mark.parametrize(
         ("method", "uses_detail_url", "body", "code", "expected_status"),
         [
-            ("post", False, {"name": "new-role"}, PERMISSIONS.DATASET_ROLE.ADD, status.HTTP_201_CREATED),
+            ("post", False, {"name": "new-role"}, PERMISSIONS.DATA_SET_ROLE.ADD, status.HTTP_201_CREATED),
             (
                 "patch",
                 True,
                 {"permissions": [AGENT_VIEW, CONVERSATION_CONVERSE]},
-                PERMISSIONS.DATASET_ROLE.CHANGE,
+                PERMISSIONS.DATA_SET_ROLE.CHANGE,
                 status.HTTP_200_OK,
             ),
-            ("put", True, {"name": "renamed"}, PERMISSIONS.DATASET_ROLE.CHANGE, status.HTTP_200_OK),
-            ("delete", True, None, PERMISSIONS.DATASET_ROLE.DELETE, status.HTTP_204_NO_CONTENT),
+            ("put", True, {"name": "renamed"}, PERMISSIONS.DATA_SET_ROLE.CHANGE, status.HTTP_200_OK),
+            ("delete", True, None, PERMISSIONS.DATA_SET_ROLE.DELETE, status.HTTP_204_NO_CONTENT),
         ],
         ids=["create", "patch permissions", "rename", "delete"],
     )
     def test_a_holder_of_the_code_can_write(
         self, user, list_url, detail_url, role, method, uses_detail_url, body, code, expected_status
     ):
-        grant(user, PERMISSIONS.DATASET_ROLE.VIEW, code)
+        grant(user, PERMISSIONS.DATA_SET_ROLE.VIEW, code)
         url = detail_url if uses_detail_url else list_url
 
         response = getattr(client_for(user), method)(url, body, format="json")
@@ -95,7 +95,7 @@ class TestWritingDatasetRolesNeedsItsOwnLifecycleCode:
     def test_reading_and_assigning_do_not_carry_the_write(
         self, user, list_url, detail_url, role, method, uses_detail_url, body
     ):
-        grant(user, PERMISSIONS.DATASET_ROLE.VIEW, PERMISSIONS.DATASET_ROLE.ASSIGN)
+        grant(user, PERMISSIONS.DATA_SET_ROLE.VIEW, PERMISSIONS.DATA_SET_ROLE.ASSIGN)
         url = detail_url if uses_detail_url else list_url
 
         response = getattr(client_for(user), method)(url, body, format="json")
@@ -111,7 +111,7 @@ class TestWritingDatasetRolesNeedsItsOwnLifecycleCode:
         assert DatasetRole.objects.filter(name="new-role").exists()
 
     def test_a_change_holder_can_widen_a_role_reaching_every_dataset_scoped_code(self, user, detail_url, role):
-        grant(user, PERMISSIONS.DATASET_ROLE.VIEW, PERMISSIONS.DATASET_ROLE.CHANGE)
+        grant(user, PERMISSIONS.DATA_SET_ROLE.VIEW, PERMISSIONS.DATA_SET_ROLE.CHANGE)
 
         response = client_for(user).patch(detail_url, {"permissions": list(DATASET_SCOPED_CONTRACT)}, format="json")
 

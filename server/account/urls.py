@@ -4,6 +4,7 @@ import account.views.accounts
 import account.views.admins
 import account.views.dataset_access
 import account.views.dataset_roles
+import account.views.global_role_groups
 import account.views.global_role_members
 import account.views.global_roles
 import account.views.group_global_roles
@@ -49,6 +50,16 @@ urlpatterns = [
         account.views.global_role_members.GlobalRoleMemberDetailView.as_view(),
         name="global_role_member_details",
     ),
+    path(
+        "api/global_roles/<int:id>/groups",
+        account.views.global_role_groups.GlobalRoleGroupListView.as_view(),
+        name="global_role_group_list",
+    ),
+    path(
+        "api/global_roles/<int:id>/groups/<int:group_id>",
+        account.views.global_role_groups.GlobalRoleGroupDetailView.as_view(),
+        name="global_role_group_details",
+    ),
     path("api/groups", account.views.groups.GroupListView.as_view(), name="group_list"),
     path("api/groups/<int:id>", account.views.groups.GroupDetailView.as_view(), name="group_details"),
     path(
@@ -71,9 +82,9 @@ urlpatterns = [
         account.views.group_global_roles.GroupGlobalRoleDetailView.as_view(),
         name="group_global_role_details",
     ),
-    path("api/dataset_roles", account.views.dataset_roles.DatasetRoleListView.as_view(), name="dataset_role_list"),
+    path("api/data_set_roles", account.views.dataset_roles.DatasetRoleListView.as_view(), name="dataset_role_list"),
     path(
-        "api/dataset_roles/<int:id>",
+        "api/data_set_roles/<int:id>",
         account.views.dataset_roles.DatasetRoleDetailView.as_view(),
         name="dataset_role_details",
     ),
@@ -84,14 +95,14 @@ urlpatterns = [
         name="dataset_access_list",
     ),
     path(
-        "api/data_sets/<int:data_set_id>/roles/<int:role_id>/users",
-        account.views.dataset_access.DatasetRoleUserListView.as_view(),
-        name="dataset_role_user_list",
+        "api/data_sets/<int:data_set_id>/roles/<int:role_id>/members",
+        account.views.dataset_access.DatasetRoleMemberListView.as_view(),
+        name="dataset_role_member_list",
     ),
     path(
-        "api/data_sets/<int:data_set_id>/roles/<int:role_id>/users/<int:user_id>",
-        account.views.dataset_access.DatasetRoleUserView.as_view(),
-        name="dataset_role_user_details",
+        "api/data_sets/<int:data_set_id>/roles/<int:role_id>/members/<int:user_id>",
+        account.views.dataset_access.DatasetRoleMemberView.as_view(),
+        name="dataset_role_member_details",
     ),
     path(
         "api/data_sets/<int:data_set_id>/roles/<int:role_id>/groups",

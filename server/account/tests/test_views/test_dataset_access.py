@@ -35,7 +35,7 @@ def role():
 
 @pytest.fixture
 def global_assigner():
-    return grant(baker.make(User, email="global@example.com"), PERMISSIONS.DATASET_ROLE.ASSIGN)
+    return grant(baker.make(User, email="global@example.com"), PERMISSIONS.DATA_SET_ROLE.ASSIGN)
 
 
 @pytest.fixture
@@ -47,11 +47,11 @@ def access_url(data_set) -> str:
     return reverse("dataset_access_list", args=[data_set.id])
 
 
-def grant_url(data_set, role, kind="users") -> str:
+def grant_url(data_set, role, kind="members") -> str:
     return reverse(f"dataset_role_{kind[:-1]}_list", args=[data_set.id, role.id])
 
 
-def revoke_url(data_set, role, subject, kind="users") -> str:
+def revoke_url(data_set, role, subject, kind="members") -> str:
     return reverse(f"dataset_role_{kind[:-1]}_details", args=[data_set.id, role.id, subject.id])
 
 
@@ -100,9 +100,9 @@ class TestTheAccessListPayload:
 
         response = client_for(global_assigner).get(access_url(data_set))
 
-        assert [row["id"] for row in response.data["users"]] == [user_assignment.id]
-        assert response.data["users"][0]["user"]["id"] == subject.id
-        assert response.data["users"][0]["role"]["id"] == role.id
+        assert [row["id"] for row in response.data["members"]] == [user_assignment.id]
+        assert response.data["members"][0]["user"]["id"] == subject.id
+        assert response.data["members"][0]["role"]["id"] == role.id
         assert [row["id"] for row in response.data["groups"]] == [group_assignment.id]
         assert response.data["groups"][0]["group"]["id"] == group.id
 
@@ -114,7 +114,7 @@ class TestTheAccessListPayload:
 
         response = client_for(global_assigner).get(access_url(data_set))
 
-        assert len(response.data["users"]) == 1
+        assert len(response.data["members"]) == 1
         assert len(response.data["groups"]) == 1
 
     def test_a_group_row_carries_the_counts_that_say_how_far_the_grant_reaches(
@@ -130,17 +130,17 @@ class TestTheAccessListPayload:
 
         assert response.data["groups"][0]["group"]["member_count"] == 2
         assert response.data["groups"][0]["group"]["global_role_count"] == 1
-        assert response.data["groups"][0]["group"]["dataset_role_count"] == 1
+        assert response.data["groups"][0]["group"]["data_set_role_count"] == 1
 
 
 class TestGrantingARole:
-    @pytest.mark.parametrize("kind", ["users", "groups"])
+    @pytest.mark.parametrize("kind", ["members", "groups"])
     def test_a_role_granted_to_a_user_or_a_group_reaches_the_subject(
         self, global_assigner, data_set, role, subject, kind
     ):
         """Granted to a group, the role has to reach the group's members - that indirection is the
         only reason granting to a group is worth having."""
-        if kind == "users":
+        if kind == "members":
             body = {"user_id": subject.id}
         else:
             group = make_group("contractors")
@@ -200,7 +200,7 @@ class TestGrantingARole:
 
     def test_an_unknown_role_in_the_path_is_a_404(self, global_assigner, data_set, subject):
         response = client_for(global_assigner).post(
-            reverse("dataset_role_user_list", args=[data_set.id, 9999]), {"user_id": subject.id}, format="json"
+            reverse("dataset_role_member_list", args=[data_set.id, 9999]), {"user_id": subject.id}, format="json"
         )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -227,12 +227,12 @@ class TestRevokingARole:
         assert not has_dataset_perm(subject, PERMISSIONS.AGENT.VIEW, data_set)
         assert has_dataset_perm(subject, PERMISSIONS.CONVERSATION.CONVERSE, data_set)
 
-    @pytest.mark.parametrize("kind", ["users", "groups"])
+    @pytest.mark.parametrize("kind", ["members", "groups"])
     def test_revoking_a_role_the_subject_does_not_hold_reports_that_nothing_matched(
         self, global_assigner, data_set, role, subject, kind
     ):
-        target = subject if kind == "users" else make_group("contractors")
-        model = "DatasetUserRoleAssignment" if kind == "users" else "DatasetGroupRoleAssignment"
+        target = subject if kind == "members" else make_group("contractors")
+        model = "DatasetUserRoleAssignment" if kind == "members" else "DatasetGroupRoleAssignment"
 
         response = client_for(global_assigner).delete(revoke_url(data_set, role, target, kind))
 
@@ -246,14 +246,14 @@ class TestRevokingARole:
         assign_role(subject, data_set, role)
         args = [data_set.id, role.id, 9999] if wrong == "subject" else [data_set.id, 9999, subject.id]
 
-        response = client_for(global_assigner).delete(reverse("dataset_role_user_details", args=args))
+        response = client_for(global_assigner).delete(reverse("dataset_role_member_details", args=args))
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert DatasetUserRoleAssignment.objects.filter(user=subject, dataset=data_set, role=role).exists()
 
-    @pytest.mark.parametrize("kind", ["users", "groups"])
+    @pytest.mark.parametrize("kind", ["members", "groups"])
     def test_revoking_twice_only_succeeds_once(self, global_assigner, data_set, role, subject, kind):
-        target = subject if kind == "users" else make_group("contractors")
+        target = subject if kind == "members" else make_group("contractors")
         assign_role(target, data_set, role)
         client = client_for(global_assigner)
         url = revoke_url(data_set, role, target, kind)
@@ -295,7 +295,7 @@ class TestHowFarAGrantReaches:
         assert response.status_code == status.HTTP_201_CREATED
 
     def test_an_assign_grant_resolves_through_global_role_membership(self, user, data_set):
-        join_global_role(user, make_global_role("access-managers", PERMISSIONS.DATASET_ROLE.ASSIGN))
+        join_global_role(user, make_global_role("access-managers", PERMISSIONS.DATA_SET_ROLE.ASSIGN))
 
         response = client_for(user).get(access_url(data_set))
 
@@ -308,7 +308,7 @@ class TestHowFarAGrantReaches:
         assert not has_dataset_perm(subject, PERMISSIONS.AGENT.VIEW, other_data_set)
 
     def test_a_global_dual_scope_grant_reaches_every_data_set(self, subject, other_data_set):
-        join_global_role(subject, make_global_role("agent-readers", PERMISSIONS.AGENT.VIEW, PERMISSIONS.DATASET.VIEW))
+        join_global_role(subject, make_global_role("agent-readers", PERMISSIONS.AGENT.VIEW, PERMISSIONS.DATA_SET.VIEW))
 
         response = client_for(subject).get(f"{reverse('agents')}?dataset={other_data_set.id}")
 

@@ -9,6 +9,7 @@ import { GroupModal } from "@/components/roles/groups/group-modal.tsx";
 import { RevokeConfirmDialog } from "@/components/roles/revoke-confirm-dialog.tsx";
 import { ApiError } from "@/lib/api-error.ts";
 import { PERMISSIONS } from "@/lib/permissions/codes.ts";
+import { EmptyState } from "@/components/util/empty-state.tsx";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -66,7 +67,7 @@ export function GroupsList() {
   }
 
   if (isAccessDenied) {
-    return <p className="text-sm text-destructive">You don't have access to the list of groups.</p>;
+    return <p className="text-sm text-destructive">You don't have view access to the list of groups.</p>;
   }
 
   return (
@@ -78,7 +79,7 @@ export function GroupsList() {
         </div>
       )}
       {groups.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No groups yet.</p>
+        <EmptyState message="No groups yet" />
       ) : (
         <Table className="table-fixed">
           <TableHeader>
@@ -95,7 +96,7 @@ export function GroupsList() {
                 <TableCell>{group.name}</TableCell>
                 <TableCell>{group.memberCount}</TableCell>
                 <TableCell className="text-muted-foreground">
-                  {describeReach(group)}
+                  {reachLines(group).map((line) => <p key={line}>{line}</p>)}
                 </TableCell>
                 <TableCell className="flex space-x-4">
                   <GroupModal group={group} onSaved={load} />
@@ -125,12 +126,12 @@ export function GroupsList() {
   );
 }
 
-function describeReach(group: GroupOption): string {
-  const parts = [
+function reachLines(group: GroupOption): string[] {
+  const lines = [
     counted(group.globalRoleCount, "global role"),
-    counted(group.datasetRoleCount, "dataset role"),
-  ].filter((part) => part !== null);
-  return parts.length === 0 ? "None" : parts.join(" · ");
+    counted(group.dataSetRoleCount, "data set role"),
+  ].filter((line): line is string => line !== null);
+  return lines.length === 0 ? ["None"] : lines;
 }
 
 function counted(count: number, noun: string): string | null {

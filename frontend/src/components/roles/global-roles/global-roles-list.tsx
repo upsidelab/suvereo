@@ -68,7 +68,7 @@ export function GlobalRolesList() {
   }
 
   if (isAccessDenied) {
-    return <p className="text-sm text-destructive">You don't have access to the list of roles.</p>;
+    return <p className="text-sm text-destructive">You don't have view access to the list of global roles.</p>;
   }
 
   return (
@@ -116,7 +116,8 @@ export function GlobalRolesList() {
       <RevokeConfirmDialog
         open={isDeleteDialogOpen}
         title={`Delete role${groupToDelete ? ` "${groupToDelete.name}"` : ""}`}
-        description="Its members lose everything it granted them, on every data set where it held a role. This action cannot be undone."
+        description={"Everyone holding it loses the permissions it carried, everywhere. The groups, users "
+          + "and service accounts that held it are not deleted. This action cannot be undone."}
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
       />

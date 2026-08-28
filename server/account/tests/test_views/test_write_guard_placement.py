@@ -146,7 +146,7 @@ class TestAnAuthorisedCallerStillSeesValidationErrors:
         assert str(response.data["name"][0]) == "A global role with this name already exists."
 
     def test_a_dataset_role_add_holder_creating_with_a_taken_name_gets_400(self, user, existing_role):
-        grant(user, PERMISSIONS.DATASET_ROLE.VIEW, PERMISSIONS.DATASET_ROLE.ADD)
+        grant(user, PERMISSIONS.DATA_SET_ROLE.VIEW, PERMISSIONS.DATA_SET_ROLE.ADD)
 
         response = client_for(user).post(reverse("dataset_role_list"), {"name": TAKEN_NAME}, format="json")
 

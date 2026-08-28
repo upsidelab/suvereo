@@ -20,10 +20,10 @@ be a deliberate, reviewable diff rather than a side effect of renaming an enum m
 
 from account.authorization import PERMISSIONS
 
-DATASET_ADD = "dataset.add"
-DATASET_CHANGE = "dataset.change"
-DATASET_DELETE = "dataset.delete"
-DATASET_VIEW = "dataset.view"
+DATASET_ADD = "data_set.add"
+DATASET_CHANGE = "data_set.change"
+DATASET_DELETE = "data_set.delete"
+DATASET_VIEW = "data_set.view"
 
 AGENT_ADD = "agent.add"
 AGENT_CHANGE = "agent.change"
@@ -56,11 +56,11 @@ GLOBAL_ROLE_CHANGE = "global_role.change"
 GLOBAL_ROLE_DELETE = "global_role.delete"
 GLOBAL_ROLE_ASSIGN = "global_role.assign"
 
-DATASET_ROLE_VIEW = "dataset_role.view"
-DATASET_ROLE_ADD = "dataset_role.add"
-DATASET_ROLE_CHANGE = "dataset_role.change"
-DATASET_ROLE_DELETE = "dataset_role.delete"
-DATASET_ROLE_ASSIGN = "dataset_role.assign"
+DATASET_ROLE_VIEW = "data_set_role.view"
+DATASET_ROLE_ADD = "data_set_role.add"
+DATASET_ROLE_CHANGE = "data_set_role.change"
+DATASET_ROLE_DELETE = "data_set_role.delete"
+DATASET_ROLE_ASSIGN = "data_set_role.assign"
 
 GROUP_VIEW = "group.view"
 GROUP_ADD = "group.add"
@@ -72,10 +72,10 @@ GROUP_ASSIGN = "group.assign"
 # strings is what catches a code that survives a rename but ends up attached to the wrong
 # permission - the set of values alone would not notice.
 PUBLIC_PERMISSION_CODES_CONTRACT: dict[str, str] = {
-    PERMISSIONS.DATASET.ADD: DATASET_ADD,
-    PERMISSIONS.DATASET.CHANGE: DATASET_CHANGE,
-    PERMISSIONS.DATASET.DELETE: DATASET_DELETE,
-    PERMISSIONS.DATASET.VIEW: DATASET_VIEW,
+    PERMISSIONS.DATA_SET.ADD: DATASET_ADD,
+    PERMISSIONS.DATA_SET.CHANGE: DATASET_CHANGE,
+    PERMISSIONS.DATA_SET.DELETE: DATASET_DELETE,
+    PERMISSIONS.DATA_SET.VIEW: DATASET_VIEW,
     PERMISSIONS.AGENT.ADD: AGENT_ADD,
     PERMISSIONS.AGENT.CHANGE: AGENT_CHANGE,
     PERMISSIONS.AGENT.DELETE: AGENT_DELETE,
@@ -100,11 +100,11 @@ PUBLIC_PERMISSION_CODES_CONTRACT: dict[str, str] = {
     PERMISSIONS.GLOBAL_ROLE.CHANGE: GLOBAL_ROLE_CHANGE,
     PERMISSIONS.GLOBAL_ROLE.DELETE: GLOBAL_ROLE_DELETE,
     PERMISSIONS.GLOBAL_ROLE.ASSIGN: GLOBAL_ROLE_ASSIGN,
-    PERMISSIONS.DATASET_ROLE.VIEW: DATASET_ROLE_VIEW,
-    PERMISSIONS.DATASET_ROLE.ADD: DATASET_ROLE_ADD,
-    PERMISSIONS.DATASET_ROLE.CHANGE: DATASET_ROLE_CHANGE,
-    PERMISSIONS.DATASET_ROLE.DELETE: DATASET_ROLE_DELETE,
-    PERMISSIONS.DATASET_ROLE.ASSIGN: DATASET_ROLE_ASSIGN,
+    PERMISSIONS.DATA_SET_ROLE.VIEW: DATASET_ROLE_VIEW,
+    PERMISSIONS.DATA_SET_ROLE.ADD: DATASET_ROLE_ADD,
+    PERMISSIONS.DATA_SET_ROLE.CHANGE: DATASET_ROLE_CHANGE,
+    PERMISSIONS.DATA_SET_ROLE.DELETE: DATASET_ROLE_DELETE,
+    PERMISSIONS.DATA_SET_ROLE.ASSIGN: DATASET_ROLE_ASSIGN,
     PERMISSIONS.GROUP.VIEW: GROUP_VIEW,
     PERMISSIONS.GROUP.ADD: GROUP_ADD,
     PERMISSIONS.GROUP.CHANGE: GROUP_CHANGE,
@@ -112,7 +112,7 @@ PUBLIC_PERMISSION_CODES_CONTRACT: dict[str, str] = {
     PERMISSIONS.GROUP.ASSIGN: GROUP_ASSIGN,
 }
 
-# The subset a dataset role can carry, as published under `?scope=dataset`. Spelled out rather
+# The subset a data set role can carry, as published under `?scope=data_set`. Spelled out rather
 # than filtered out of the map above, so moving a permission between scopes is a visible edit here
 # too - a scope change is as much a frontend contract change as a rename is.
 DATASET_SCOPED_CONTRACT: frozenset[str] = frozenset(

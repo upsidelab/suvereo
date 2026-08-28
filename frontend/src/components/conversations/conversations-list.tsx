@@ -10,8 +10,8 @@ import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 const api = new ApiClient(authenticationProviderInstance);
 
 export function ConversationsList() {
-  const { dataSetId, hasDatasetPermission } = useApplicationContext()!;
-  const canViewAllConversations = hasDatasetPermission(PERMISSIONS.CONVERSATION.VIEW_ALL);
+  const { dataSetId, hasDataSetPermission } = useApplicationContext()!;
+  const canViewAllConversations = hasDataSetPermission(PERMISSIONS.CONVERSATION.VIEW_ALL);
   const navigate = useNavigate();
 
   const navigateToConversation = (id: number) => {

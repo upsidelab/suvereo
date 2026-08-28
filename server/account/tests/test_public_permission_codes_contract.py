@@ -31,7 +31,7 @@ class TestThePermissionsEndpointServesTheContract:
         assert self._codes(response) == set(PUBLIC_PERMISSION_CODES_CONTRACT.values())
 
     def test_the_dataset_scope_serves_the_published_subset(self, admin_api_client, url):
-        response = admin_api_client.get(url, {"scope": "dataset"})
+        response = admin_api_client.get(url, {"scope": "data_set"})
 
         assert response.status_code == status.HTTP_200_OK
         assert self._codes(response) == set(DATASET_SCOPED_CONTRACT)

@@ -69,9 +69,9 @@ class TestPermissionDependencies:
     def test_a_requirement_of_a_requirement_is_reported_against_the_permission_itself(self):
         within_global = dependencies_within(GLOBAL_SCOPE_PERMISSIONS)
 
-        assert PERMISSIONS.GROUP.ASSIGN in within_global[PERMISSIONS.DATASET_ROLE.ASSIGN]
-        assert PERMISSIONS.GROUP.ASSIGN in within_global[PERMISSIONS.DATASET.VIEW]
-        assert PERMISSIONS.GROUP.ASSIGN not in PERMISSION_DEPENDENCIES[PERMISSIONS.DATASET.VIEW]
+        assert PERMISSIONS.GROUP.ASSIGN in within_global[PERMISSIONS.DATA_SET_ROLE.ASSIGN]
+        assert PERMISSIONS.GROUP.ASSIGN in within_global[PERMISSIONS.DATA_SET.VIEW]
+        assert PERMISSIONS.GROUP.ASSIGN not in PERMISSION_DEPENDENCIES[PERMISSIONS.DATA_SET.VIEW]
 
     def test_the_closure_is_closed(self):
         """The property the walk exists to hold: if A requires B and B requires C, A requires C."""
@@ -106,7 +106,7 @@ class TestPermissionDependencies:
 
         assert set(within_dataset) == set(PERMISSION_DEPENDENCIES) & grantable
         assert all(set(dependents) <= grantable for dependents in within_dataset.values())
-        assert PERMISSIONS.DATASET.VIEW not in within_dataset
+        assert PERMISSIONS.DATA_SET.VIEW not in within_dataset
 
 
 class TestTheClosureRefusesACyclicMap:

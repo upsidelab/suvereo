@@ -45,7 +45,7 @@ const streamingEnabled = Boolean(import.meta.env.VITE_WS_BASE);
 
 export function ChatSession({ pendingMessage }: ChatSessionProps) {
   const { chatId } = useParams();
-  const { dataSetId, account, hasDatasetPermission } = useApplicationContext()!;
+  const { dataSetId, account, hasDataSetPermission } = useApplicationContext()!;
   const navigate = useNavigate();
 
   const [conversation, setConversation] = useState<ConversationSchema | null>(null);
@@ -67,7 +67,7 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
   const isAgentCorrupted = !!conversation?.agent.corrupted;
   const isExecutionConversation = !!conversation?.is_execution_conversation;
   const isOwnConversation = !conversation || conversation.user_email === account?.email;
-  const canConverse = hasDatasetPermission(PERMISSIONS.CONVERSATION.CONVERSE);
+  const canConverse = hasDataSetPermission(PERMISSIONS.CONVERSATION.CONVERSE);
 
   const scrollToLastMessage = (timeout = 0) => {
     setTimeout(() => {

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
-import { DatasetRoleOption } from "@/lib/types.ts";
+import { DataSetRoleOption } from "@/lib/types.ts";
 import { ApiError } from "@/lib/api-error.ts";
 import { AddAccessSelector } from "@/components/data-sets/add-access-selector.tsx";
 import { AccessRow, AccessSubject } from "@/components/data-sets/access-row.ts";
@@ -19,7 +19,7 @@ export interface DataSetAccessListProps {
 export function DataSetAccessList({ dataSetId }: DataSetAccessListProps) {
   const [rows, setRows] = useState<AccessRow[]>([]);
   const [subjects, setSubjects] = useState<AccessSubject[]>([]);
-  const [roles, setRoles] = useState<DatasetRoleOption[]>([]);
+  const [roles, setRoles] = useState<DataSetRoleOption[]>([]);
   const [isAccessDenied, setIsAccessDenied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inspectedGroup, setInspectedGroup] = useState<AccessSubject | null>(null);
@@ -29,7 +29,7 @@ export function DataSetAccessList({ dataSetId }: DataSetAccessListProps) {
     try {
       const access = await api.dataSets().getDataSetAccess(dataSetId);
       setRows([
-        ...access.users.map((assignment) => ({
+        ...access.members.map((assignment) => ({
           subject: { type: "user" as const, id: assignment.user.id, label: assignment.user.email },
           role: assignment.role
         })),
@@ -56,11 +56,11 @@ export function DataSetAccessList({ dataSetId }: DataSetAccessListProps) {
     }
 
     try {
-      const [users, serviceAccounts, groups, datasetRoles] = await Promise.all([
+      const [users, serviceAccounts, groups, dataSetRoles] = await Promise.all([
         api.getAllUsers(),
         api.serviceAccounts().getAllServiceAccounts(),
         api.groups().getGroups(),
-        api.datasetRoles().getDatasetRoles(),
+        api.dataSetRoles().getDataSetRoles(),
       ]);
       setSubjects([
         ...users.map((user) => ({ type: "user" as const, id: user.id, label: user.email })),
@@ -73,7 +73,7 @@ export function DataSetAccessList({ dataSetId }: DataSetAccessListProps) {
           type: "group" as const, id: group.id, label: group.name, memberCount: group.memberCount
         })),
       ]);
-      setRoles(datasetRoles);
+      setRoles(dataSetRoles);
     } catch {
       setError("Could not load the users, groups and roles to grant.");
     }
@@ -85,7 +85,7 @@ export function DataSetAccessList({ dataSetId }: DataSetAccessListProps) {
 
   const handleGrant = async (subject: AccessSubject, roleId: number) => {
     const response = subject.type === "user"
-      ? await api.dataSets().grantRoleToUser(dataSetId, roleId, subject.id)
+      ? await api.dataSets().grantRoleToMember(dataSetId, roleId, subject.id)
       : await api.dataSets().grantRoleToGroup(dataSetId, roleId, subject.id);
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
@@ -97,7 +97,7 @@ export function DataSetAccessList({ dataSetId }: DataSetAccessListProps) {
 
   const handleRevoke = async (row: AccessRow) => {
     const response = row.subject.type === "user"
-      ? await api.dataSets().revokeRoleFromUser(dataSetId, row.role.id, row.subject.id)
+      ? await api.dataSets().revokeRoleFromMember(dataSetId, row.role.id, row.subject.id)
       : await api.dataSets().revokeRoleFromGroup(dataSetId, row.role.id, row.subject.id);
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));

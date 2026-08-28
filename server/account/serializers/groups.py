@@ -11,11 +11,11 @@ class GroupSerializer(serializers.ModelSerializer):
 
     member_count = serializers.IntegerField(read_only=True, default=0)
     global_role_count = serializers.IntegerField(read_only=True, default=0)
-    dataset_role_count = serializers.IntegerField(read_only=True, default=0)
+    data_set_role_count = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = UserGroup
-        fields = ["id", "name", "member_count", "global_role_count", "dataset_role_count"]
+        fields = ["id", "name", "member_count", "global_role_count", "data_set_role_count"]
         extra_kwargs = {
             "name": {
                 "validators": [

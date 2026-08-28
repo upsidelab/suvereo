@@ -131,7 +131,7 @@ class TestGroupPayloads:
                 "name": "contractors",
                 "member_count": 2,
                 "global_role_count": 2,
-                "dataset_role_count": 2,
+                "data_set_role_count": 2,
             }
         ]
 
@@ -140,11 +140,11 @@ class TestGroupPayloads:
 
         assert response.data["member_count"] == 0
         assert response.data["global_role_count"] == 0
-        assert response.data["dataset_role_count"] == 0
+        assert response.data["data_set_role_count"] == 0
 
     def test_the_detail_carries_the_global_roles_the_group_holds(self, api_client, user, detail_url, group):
         grant(user, PERMISSIONS.GROUP.VIEW)
-        global_role = make_global_role("viewers", PERMISSIONS.DATASET.VIEW)
+        global_role = make_global_role("viewers", PERMISSIONS.DATA_SET.VIEW)
         group.global_roles.add(global_role)
 
         response = api_client.get(detail_url)
@@ -155,7 +155,7 @@ class TestGroupPayloads:
         """Granting one is `/api/groups/<id>/global_roles`, gated on `global_role.assign`, so this
         endpoint only reads them - naming the field in a body here changes nothing. DRF drops a
         read-only field silently, so the `200` is a rename that happened to carry extra keys."""
-        global_role = make_global_role("viewers", PERMISSIONS.DATASET.VIEW)
+        global_role = make_global_role("viewers", PERMISSIONS.DATA_SET.VIEW)
 
         response = admin_api_client.patch(detail_url, {"global_roles": [global_role.id]}, format="json")
 
@@ -212,7 +212,7 @@ class TestGroupDeletion:
         assert not DatasetGroupRoleAssignment.objects.filter(group_id=group.pk).exists()
 
     def test_deleting_a_group_leaves_the_global_roles_it_held_alone(self, admin_api_client, detail_url, group):
-        global_role = make_global_role("viewers", PERMISSIONS.DATASET.VIEW)
+        global_role = make_global_role("viewers", PERMISSIONS.DATA_SET.VIEW)
         group.global_roles.add(global_role)
 
         admin_api_client.delete(detail_url)

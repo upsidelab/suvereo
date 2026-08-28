@@ -30,14 +30,14 @@ class PermissionListView(APIView):
             openapi.Parameter(
                 "scope",
                 openapi.IN_QUERY,
-                description=f"'global' or 'dataset'. Defaults to '{DEFAULT_SCOPE}'.",
+                description=f"'global' or 'data_set'. Defaults to '{DEFAULT_SCOPE}'.",
                 type=openapi.TYPE_STRING,
                 required=False,
             )
         ],
         responses={200: PermissionEntitySerializer(many=True)},
     )
-    @any_global_permission_required(PERMISSIONS.GLOBAL_ROLE.VIEW, PERMISSIONS.DATASET_ROLE.VIEW)
+    @any_global_permission_required(PERMISSIONS.GLOBAL_ROLE.VIEW, PERMISSIONS.DATA_SET_ROLE.VIEW)
     def get(self, request):
         scope = request.query_params.get("scope", DEFAULT_SCOPE)
         if scope not in PERMISSION_SCOPES:

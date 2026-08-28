@@ -5,11 +5,11 @@ import { useNavigate } from "react-router-dom";
 import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 
 export function DataSetList() {
-  const {dataSets, hasPermission, hasDatasetPermission} = useApplicationContext()!;
-  const canCreateDataSets = hasPermission(PERMISSIONS.DATASET.ADD);
-  const canEditDataSets = hasPermission(PERMISSIONS.DATASET.CHANGE);
-  const canAssignRoles = hasPermission(PERMISSIONS.DATASET_ROLE.ASSIGN);
-  const canViewSources = (dataSetId: number) => hasDatasetPermission(PERMISSIONS.INTEGRATION.VIEW, dataSetId);
+  const {dataSets, hasPermission, hasDataSetPermission} = useApplicationContext()!;
+  const canCreateDataSets = hasPermission(PERMISSIONS.DATA_SET.ADD);
+  const canEditDataSets = hasPermission(PERMISSIONS.DATA_SET.CHANGE);
+  const canAssignRoles = hasPermission(PERMISSIONS.DATA_SET_ROLE.ASSIGN);
+  const canViewSources = (dataSetId: number) => hasDataSetPermission(PERMISSIONS.INTEGRATION.VIEW, dataSetId);
   const navigate = useNavigate();
 
   return (

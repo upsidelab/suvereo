@@ -41,7 +41,7 @@ class TestIsDatasetMember:
 
     def test_global_view_dataset_holder_is_member_of_any_dataset(self):
         user = baker.make(User)
-        grant(user, PERMISSIONS.DATASET.VIEW)
+        grant(user, PERMISSIONS.DATA_SET.VIEW)
         dataset = baker.make(DataSet)
 
         assert is_dataset_member(user, dataset) is True
@@ -89,7 +89,7 @@ class TestDatasetsVisibleTo:
 
     def test_global_view_dataset_holder_sees_all_datasets(self):
         user = baker.make(User)
-        grant(user, PERMISSIONS.DATASET.VIEW)
+        grant(user, PERMISSIONS.DATA_SET.VIEW)
         baker.make(DataSet, _quantity=2)
 
         assert datasets_visible_to(user).count() == 2
@@ -275,7 +275,7 @@ class TestHasAnyDatasetAccess:
 
     def test_global_view_dataset_holder_has_it_with_no_datasets_at_all(self):
         user = baker.make(User)
-        grant(user, PERMISSIONS.DATASET.VIEW)
+        grant(user, PERMISSIONS.DATA_SET.VIEW)
 
         assert has_any_dataset_access(user) is True
 
@@ -398,7 +398,7 @@ class TestDatasetPermissionCodes:
         # `dataset.view` is what makes the dataset visible in the first place, but it is global-only:
         # it says nothing about what can be done inside this dataset, so it stays off this list.
         user = baker.make(User)
-        grant(user, PERMISSIONS.DATASET.VIEW)
+        grant(user, PERMISSIONS.DATA_SET.VIEW)
         dataset = baker.make(DataSet)
 
         assert DATASET_VIEW not in dataset_permission_codes(user, dataset)

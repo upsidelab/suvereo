@@ -370,7 +370,7 @@ class TestDependenciesAreEnforcedOnUpdate:
 
     def test_patching_can_satisfy_a_requirement_by_adding_to_the_set(self, admin_api_client):
         global_role = GlobalRole.objects.create(name="viewers")
-        global_role.permissions.add(permission(PERMISSIONS.DATASET.VIEW))
+        global_role.permissions.add(permission(PERMISSIONS.DATA_SET.VIEW))
 
         response = admin_api_client.patch(
             reverse("global_role_details", args=[global_role.id]),
@@ -409,7 +409,7 @@ class TestNothingIsSilentlyAdded:
     def test_a_declared_code_whose_row_is_missing_is_reported_rather_than_skipped(self, admin_api_client):
         """The failure mode if a model's `Meta.permissions` is ever edited without a migration.
         Accepting the save would store a grant with a silently missing permission in it."""
-        permission(PERMISSIONS.DATASET.VIEW).delete()
+        permission(PERMISSIONS.DATA_SET.VIEW).delete()
 
         response = admin_api_client.post(
             reverse("global_role_list"), {"name": "team", "permissions": [DATASET_VIEW]}, format="json"

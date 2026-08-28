@@ -16,7 +16,7 @@ export type PermissionEntity = {
   permissions: PermissionOption[];
 };
 
-export type EscalationWarning = {
-  message: string;
-  codes: string[];
+export type EscalationRisk = {
+  code: string;
+  detail: string;
 };

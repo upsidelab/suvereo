@@ -1,5 +1,5 @@
 import { BaseApiClient } from "@/lib/api/base.ts";
-import { DataSet, DatasetAccess, DatasetRoleOption } from "@/lib/types.ts";
+import { DataSet, DataSetAccess, DataSetRoleOption } from "@/lib/types.ts";
 import { ApiError } from "@/lib/api-error.ts";
 
 export type DataSetResponse = {
@@ -16,11 +16,11 @@ export type CreateDataSetPayload = DataSetResponse & {
   preconfigure_agents: boolean;
 };
 
-type DatasetAccessResponse = {
-  users: {
+type DataSetAccessResponse = {
+  members: {
     id: number;
     user: { id: number; email: string; is_service_account: boolean };
-    role: DatasetRoleOption;
+    role: DataSetRoleOption;
   }[];
   groups: {
     id: number;
@@ -29,9 +29,9 @@ type DatasetAccessResponse = {
       name: string;
       member_count: number;
       global_role_count: number;
-      dataset_role_count: number;
+      data_set_role_count: number;
     };
-    role: DatasetRoleOption;
+    role: DataSetRoleOption;
   }[];
 }
 
@@ -88,7 +88,7 @@ export class DataSetsApiClient extends BaseApiClient {
     return responseJson.id!;
   }
 
-  async getDataSetAccess(dataSetId: number): Promise<DatasetAccess> {
+  async getDataSetAccess(dataSetId: number): Promise<DataSetAccess> {
     const response = await fetch(`${this.apiBase}/api/data_sets/${dataSetId}/roles/`, this._requestConfiguration());
     if (!response.ok) {
       throw new ApiError(`Failed to load data set access: ${response.statusText}`, {
@@ -96,9 +96,9 @@ export class DataSetsApiClient extends BaseApiClient {
         status: response.status,
       });
     }
-    const result = await response.json() as DatasetAccessResponse;
+    const result = await response.json() as DataSetAccessResponse;
     return {
-      users: result.users.map((assignment) => ({
+      members: result.members.map((assignment) => ({
         id: assignment.id,
         role: assignment.role,
         user: {
@@ -115,15 +115,15 @@ export class DataSetsApiClient extends BaseApiClient {
           name: assignment.group.name,
           memberCount: assignment.group.member_count,
           globalRoleCount: assignment.group.global_role_count,
-          datasetRoleCount: assignment.group.dataset_role_count
+          dataSetRoleCount: assignment.group.data_set_role_count
         }
       }))
     };
   }
 
-  async grantRoleToUser(dataSetId: number, roleId: number, userId: number): Promise<Response> {
+  async grantRoleToMember(dataSetId: number, roleId: number, userId: number): Promise<Response> {
     return await fetch(
-      `${this.apiBase}/api/data_sets/${dataSetId}/roles/${roleId}/users`,
+      `${this.apiBase}/api/data_sets/${dataSetId}/roles/${roleId}/members`,
       {
         ...this._requestConfiguration(),
         method: "POST",
@@ -143,9 +143,9 @@ export class DataSetsApiClient extends BaseApiClient {
     );
   }
 
-  async revokeRoleFromUser(dataSetId: number, roleId: number, userId: number): Promise<Response> {
+  async revokeRoleFromMember(dataSetId: number, roleId: number, userId: number): Promise<Response> {
     return await fetch(
-      `${this.apiBase}/api/data_sets/${dataSetId}/roles/${roleId}/users/${userId}`,
+      `${this.apiBase}/api/data_sets/${dataSetId}/roles/${roleId}/members/${userId}`,
       {
         ...this._requestConfiguration(),
         method: "DELETE"

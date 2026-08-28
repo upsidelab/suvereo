@@ -137,7 +137,7 @@ export type GroupOption = {
   name: string;
   memberCount: number;
   globalRoleCount: number;
-  datasetRoleCount: number;
+  dataSetRoleCount: number;
 };
 
 export type GroupDetail = GroupOption & {
@@ -146,32 +146,32 @@ export type GroupDetail = GroupOption & {
 
 export type GroupMember = GlobalRoleMember;
 
-export type DatasetRoleOption = {
+export type DataSetRoleOption = {
   id: number;
   name: string;
 };
 
-export type DatasetRoleDetail = {
+export type DataSetRoleDetail = {
   id: number;
   name: string;
   permissions: string[];
 };
 
-export type DatasetUserRoleAssignment = {
+export type DataSetMemberRoleAssignment = {
   id: number;
-  role: DatasetRoleOption;
+  role: DataSetRoleOption;
   user: GlobalRoleMember;
 };
 
-export type DatasetGroupRoleAssignment = {
+export type DataSetGroupRoleAssignment = {
   id: number;
-  role: DatasetRoleOption;
+  role: DataSetRoleOption;
   group: GroupOption;
 };
 
-export type DatasetAccess = {
-  users: DatasetUserRoleAssignment[];
-  groups: DatasetGroupRoleAssignment[];
+export type DataSetAccess = {
+  members: DataSetMemberRoleAssignment[];
+  groups: DataSetGroupRoleAssignment[];
 };
 
 export type ProvidersConfig = {

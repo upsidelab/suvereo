@@ -19,7 +19,7 @@ pytestmark = pytest.mark.django_db
 @pytest.fixture
 def global_role():
     global_role = GlobalRole.objects.create(name="support")
-    global_role.permissions.add(permission(PERMISSIONS.DATASET.VIEW))
+    global_role.permissions.add(permission(PERMISSIONS.DATA_SET.VIEW))
     return global_role
 
 
@@ -118,7 +118,7 @@ class TestGlobalRoleChangeIsSelfPromotion:
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert User.objects.get(pk=user.pk).has_perm(PERMISSIONS.DATASET.VIEW)
+        assert User.objects.get(pk=user.pk).has_perm(PERMISSIONS.DATA_SET.VIEW)
 
 
 class TestGlobalRolePayloads:

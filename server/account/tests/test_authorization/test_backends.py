@@ -24,36 +24,36 @@ class TestAGlobalRoleIsTheOnlyWayAPermissionReachesAnAccount:
     def test_a_permission_written_straight_onto_the_account_has_no_effect(self, user):
         """No endpoint writes `user.user_permissions`, so one that had been written by hand is a
         grant the product cannot make, cannot show and cannot revoke. It resolves to nothing."""
-        user.user_permissions.add(permission(PERMISSIONS.DATASET.VIEW))
+        user.user_permissions.add(permission(PERMISSIONS.DATA_SET.VIEW))
 
-        assert not user.has_perm(PERMISSIONS.DATASET.VIEW)
+        assert not user.has_perm(PERMISSIONS.DATA_SET.VIEW)
         assert user.get_all_permissions() == set()
 
     def test_a_permission_carried_by_a_global_role_reaches_its_members(self, user):
-        join_global_role(user, make_global_role("viewers", PERMISSIONS.DATASET.VIEW))
+        join_global_role(user, make_global_role("viewers", PERMISSIONS.DATA_SET.VIEW))
 
-        assert user.has_perm(PERMISSIONS.DATASET.VIEW)
+        assert user.has_perm(PERMISSIONS.DATA_SET.VIEW)
 
     def test_a_non_member_of_the_global_role_does_not_hold_it(self, user):
-        make_global_role("viewers", PERMISSIONS.DATASET.VIEW)
+        make_global_role("viewers", PERMISSIONS.DATA_SET.VIEW)
 
-        assert not user.has_perm(PERMISSIONS.DATASET.VIEW)
+        assert not user.has_perm(PERMISSIONS.DATA_SET.VIEW)
 
     def test_leaving_a_global_role_gives_up_what_it_carried(self, user):
-        global_role = make_global_role("viewers", PERMISSIONS.DATASET.VIEW)
+        global_role = make_global_role("viewers", PERMISSIONS.DATA_SET.VIEW)
         join_global_role(user, global_role)
         global_role.members.remove(user)
 
-        assert not User.objects.get(pk=user.pk).has_perm(PERMISSIONS.DATASET.VIEW)
+        assert not User.objects.get(pk=user.pk).has_perm(PERMISSIONS.DATA_SET.VIEW)
 
     def test_two_global_roles_carrying_the_same_permission_do_not_double_it(self, user):
-        join_global_role(user, make_global_role("viewers", PERMISSIONS.DATASET.VIEW))
-        join_global_role(user, make_global_role("readers", PERMISSIONS.DATASET.VIEW))
+        join_global_role(user, make_global_role("viewers", PERMISSIONS.DATA_SET.VIEW))
+        join_global_role(user, make_global_role("readers", PERMISSIONS.DATA_SET.VIEW))
 
-        assert user.get_all_permissions() == {PERMISSIONS.DATASET.VIEW}
+        assert user.get_all_permissions() == {PERMISSIONS.DATA_SET.VIEW}
 
     def test_the_public_codes_a_global_role_carries_reach_the_account_payload(self, user, api_client):
-        join_global_role(user, make_global_role("viewers", PERMISSIONS.DATASET.VIEW, PERMISSIONS.USER.VIEW))
+        join_global_role(user, make_global_role("viewers", PERMISSIONS.DATA_SET.VIEW, PERMISSIONS.USER.VIEW))
 
         response = api_client.get("/api/account")
 
@@ -62,14 +62,14 @@ class TestAGlobalRoleIsTheOnlyWayAPermissionReachesAnAccount:
 
 class TestAGroupCarriesTheGlobalRolesItHolds:
     def test_a_permission_a_group_s_global_role_carries_reaches_the_group_s_members(self, user):
-        join_group(user, make_group("contractors", make_global_role("viewers", PERMISSIONS.DATASET.VIEW)))
+        join_group(user, make_group("contractors", make_global_role("viewers", PERMISSIONS.DATA_SET.VIEW)))
 
-        assert user.has_perm(PERMISSIONS.DATASET.VIEW)
+        assert user.has_perm(PERMISSIONS.DATA_SET.VIEW)
 
     def test_a_non_member_of_the_group_does_not_hold_it(self, user):
-        make_group("contractors", make_global_role("viewers", PERMISSIONS.DATASET.VIEW))
+        make_group("contractors", make_global_role("viewers", PERMISSIONS.DATA_SET.VIEW))
 
-        assert not user.has_perm(PERMISSIONS.DATASET.VIEW)
+        assert not user.has_perm(PERMISSIONS.DATA_SET.VIEW)
 
     def test_a_group_holding_no_global_role_carries_nothing(self, user):
         join_group(user, make_group("contractors"))
@@ -77,43 +77,43 @@ class TestAGroupCarriesTheGlobalRolesItHolds:
         assert user.get_all_permissions() == set()
 
     def test_leaving_the_group_gives_up_what_it_carried(self, user):
-        group = make_group("contractors", make_global_role("viewers", PERMISSIONS.DATASET.VIEW))
+        group = make_group("contractors", make_global_role("viewers", PERMISSIONS.DATA_SET.VIEW))
         join_group(user, group)
         group.members.remove(user)
 
-        assert not User.objects.get(pk=user.pk).has_perm(PERMISSIONS.DATASET.VIEW)
+        assert not User.objects.get(pk=user.pk).has_perm(PERMISSIONS.DATA_SET.VIEW)
 
     def test_revoking_the_global_role_from_the_group_gives_it_up_too(self, user):
-        global_role = make_global_role("viewers", PERMISSIONS.DATASET.VIEW)
+        global_role = make_global_role("viewers", PERMISSIONS.DATA_SET.VIEW)
         group = make_group("contractors", global_role)
         join_group(user, group)
         group.global_roles.remove(global_role)
 
-        assert not User.objects.get(pk=user.pk).has_perm(PERMISSIONS.DATASET.VIEW)
+        assert not User.objects.get(pk=user.pk).has_perm(PERMISSIONS.DATA_SET.VIEW)
 
     def test_the_two_paths_union_and_neither_shadows_the_other(self, user):
-        direct = make_global_role("viewers", PERMISSIONS.DATASET.VIEW)
+        direct = make_global_role("viewers", PERMISSIONS.DATA_SET.VIEW)
         join_global_role(user, direct)
         join_group(user, make_group("contractors", make_global_role("auditors", PERMISSIONS.USER.VIEW)))
 
-        assert user.get_all_permissions() == {PERMISSIONS.DATASET.VIEW, PERMISSIONS.USER.VIEW}
+        assert user.get_all_permissions() == {PERMISSIONS.DATA_SET.VIEW, PERMISSIONS.USER.VIEW}
 
     def test_the_same_global_role_held_both_ways_is_not_doubled(self, user):
-        global_role = make_global_role("viewers", PERMISSIONS.DATASET.VIEW)
+        global_role = make_global_role("viewers", PERMISSIONS.DATA_SET.VIEW)
         join_global_role(user, global_role)
         join_group(user, make_group("contractors", global_role))
 
-        assert user.get_all_permissions() == {PERMISSIONS.DATASET.VIEW}
+        assert user.get_all_permissions() == {PERMISSIONS.DATA_SET.VIEW}
 
     def test_losing_one_path_leaves_the_other_in_force(self, user):
-        global_role = make_global_role("viewers", PERMISSIONS.DATASET.VIEW)
+        global_role = make_global_role("viewers", PERMISSIONS.DATA_SET.VIEW)
         join_global_role(user, global_role)
         group = make_group("contractors", global_role)
         join_group(user, group)
 
         group.members.remove(user)
 
-        assert User.objects.get(pk=user.pk).has_perm(PERMISSIONS.DATASET.VIEW)
+        assert User.objects.get(pk=user.pk).has_perm(PERMISSIONS.DATA_SET.VIEW)
 
 
 class TestAuthenticationIsStillDjangoS:
@@ -139,33 +139,33 @@ class TestWhoTheBackendRefusesToAnswerFor:
         """`has_perm` short-circuits in `PermissionsMixin`, but `get_all_permissions` does not -
         an admin's catalog comes from `ModelBackend`'s superuser branch, above the two hooks this
         backend replaces. It is what `AccountSerializer.permissions` reports to the frontend."""
-        assert admin_user.has_perm(PERMISSIONS.DATASET.VIEW)
+        assert admin_user.has_perm(PERMISSIONS.DATA_SET.VIEW)
         assert admin_user.get_all_permissions() >= set(GLOBAL_SCOPE_PERMISSIONS)
 
     def test_an_inactive_user_holds_nothing(self, backend):
         user = baker.make(User, is_active=False)
-        join_global_role(user, make_global_role("viewers", PERMISSIONS.DATASET.VIEW))
+        join_global_role(user, make_global_role("viewers", PERMISSIONS.DATA_SET.VIEW))
 
         assert backend.get_all_permissions(user) == set()
-        assert not user.has_perm(PERMISSIONS.DATASET.VIEW)
+        assert not user.has_perm(PERMISSIONS.DATA_SET.VIEW)
 
     def test_an_anonymous_user_holds_nothing(self, backend):
         assert backend.get_all_permissions(AnonymousUser()) == set()
 
     def test_object_level_questions_are_not_this_backend_s_business(self, backend, user, data_set):
-        join_global_role(user, make_global_role("viewers", PERMISSIONS.DATASET.VIEW))
+        join_global_role(user, make_global_role("viewers", PERMISSIONS.DATA_SET.VIEW))
 
         assert backend.get_all_permissions(user, obj=data_set) == set()
 
 
 class TestTheLookupIsCachedOnTheUser:
     def test_repeated_questions_cost_one_query(self, backend, user, django_assert_num_queries):
-        join_global_role(user, make_global_role("viewers", PERMISSIONS.DATASET.VIEW))
+        join_global_role(user, make_global_role("viewers", PERMISSIONS.DATA_SET.VIEW))
 
         with django_assert_num_queries(1):
             backend.get_all_permissions(user)
             backend.get_all_permissions(user)
-            backend.has_perm(user, PERMISSIONS.DATASET.VIEW)
+            backend.has_perm(user, PERMISSIONS.DATA_SET.VIEW)
             backend.has_perm(user, PERMISSIONS.USER.VIEW)
 
 
