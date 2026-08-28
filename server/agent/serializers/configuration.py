@@ -80,6 +80,13 @@ class AgentSerializer(ParentDataContextSerializerMixin, serializers.ModelSeriali
         ]
         read_only_fields = ["id", "created_at", "updated_at", "file_upload"]
 
+    def get_fields(self):
+        """Return the serializer fields, making `dataset` read-only once the agent exists."""
+        fields = super().get_fields()
+        if self.instance is not None:
+            fields["dataset"] = serializers.PrimaryKeyRelatedField(read_only=True)
+        return fields
+
     def get_agent_type_name(self, agent) -> str:
         return agent_type_display_name(agent)
 
@@ -88,7 +95,7 @@ class AgentSerializer(ParentDataContextSerializerMixin, serializers.ModelSeriali
         return agent_type_config_schema(agent_class) if agent_class else {}
 
     def validate_name(self, name):
-        data_set = self.initial_data["dataset"]
+        data_set = self.instance.dataset if self.instance else self.initial_data.get("dataset")
 
         if Agent.objects.filter(dataset=data_set, name=name).exclude(pk=getattr(self.instance, "pk", None)).exists():
             raise serializers.ValidationError("An agent with this name already exists in this dataset.")
