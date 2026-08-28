@@ -4,6 +4,7 @@ import account.views.accounts
 import account.views.admins
 import account.views.dataset_access
 import account.views.dataset_roles
+import account.views.global_role_groups
 import account.views.global_role_members
 import account.views.global_roles
 import account.views.group_global_roles
@@ -48,6 +49,16 @@ urlpatterns = [
         "api/global_roles/<int:id>/members/<int:user_id>",
         account.views.global_role_members.GlobalRoleMemberDetailView.as_view(),
         name="global_role_member_details",
+    ),
+    path(
+        "api/global_roles/<int:id>/groups",
+        account.views.global_role_groups.GlobalRoleGroupListView.as_view(),
+        name="global_role_group_list",
+    ),
+    path(
+        "api/global_roles/<int:id>/groups/<int:group_id>",
+        account.views.global_role_groups.GlobalRoleGroupDetailView.as_view(),
+        name="global_role_group_details",
     ),
     path("api/groups", account.views.groups.GroupListView.as_view(), name="group_list"),
     path("api/groups/<int:id>", account.views.groups.GroupDetailView.as_view(), name="group_details"),
