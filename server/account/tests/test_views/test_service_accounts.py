@@ -1,5 +1,4 @@
 import pytest
-from django.contrib.auth.models import Permission
 from django.urls import reverse
 from model_bakery import baker
 from rest_framework import status
@@ -8,13 +7,9 @@ from rest_framework.test import APIClient
 
 from account.authorization import PERMISSIONS
 from account.models import User
+from account.tests.helpers import grant
 
 pytestmark = pytest.mark.django_db
-
-
-def _permission(codename: str) -> Permission:
-    app_label, name = codename.split(".")
-    return Permission.objects.get(codename=name, content_type__app_label=app_label)
 
 
 def _client_for(user) -> APIClient:
@@ -53,7 +48,7 @@ class TestServiceAccountListView:
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_view_serviceaccount_holder_can_list_them(self, api_client, user, service_account, url):
-        user.user_permissions.add(_permission(PERMISSIONS.SERVICE_ACCOUNT.VIEW))
+        grant(user, PERMISSIONS.SERVICE_ACCOUNT.VIEW)
 
         response = api_client.get(url)
 
@@ -61,7 +56,7 @@ class TestServiceAccountListView:
         assert service_account.id in [result["id"] for result in response.data["results"]]
 
     def test_view_serviceaccount_holder_cannot_create_one(self, api_client, user, url, payload):
-        user.user_permissions.add(_permission(PERMISSIONS.SERVICE_ACCOUNT.VIEW))
+        grant(user, PERMISSIONS.SERVICE_ACCOUNT.VIEW)
 
         response = api_client.post(url, payload, format="json")
 
@@ -69,7 +64,7 @@ class TestServiceAccountListView:
         assert not User.objects.filter(is_service_account=True).exists()
 
     def test_add_serviceaccount_holder_can_create_one(self, api_client, user, url, payload):
-        user.user_permissions.add(_permission(PERMISSIONS.SERVICE_ACCOUNT.ADD))
+        grant(user, PERMISSIONS.SERVICE_ACCOUNT.ADD)
 
         response = api_client.post(url, payload, format="json")
 
@@ -116,14 +111,14 @@ class TestServiceAccountView:
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_view_serviceaccount_holder_cannot_update_one(self, api_client, user, url, payload):
-        user.user_permissions.add(_permission(PERMISSIONS.SERVICE_ACCOUNT.VIEW))
+        grant(user, PERMISSIONS.SERVICE_ACCOUNT.VIEW)
 
         response = api_client.patch(url, payload, format="json")
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_change_serviceaccount_holder_can_update_one(self, api_client, user, service_account, url, payload):
-        user.user_permissions.add(_permission(PERMISSIONS.SERVICE_ACCOUNT.CHANGE))
+        grant(user, PERMISSIONS.SERVICE_ACCOUNT.CHANGE)
 
         response = api_client.patch(url, payload, format="json")
 
@@ -182,7 +177,7 @@ class TestResetTokenView:
         assert Token.objects.get(user=service_account).key == original.key
 
     def test_view_serviceaccount_holder_cannot_reset_a_token(self, api_client, user, url):
-        user.user_permissions.add(_permission(PERMISSIONS.SERVICE_ACCOUNT.VIEW))
+        grant(user, PERMISSIONS.SERVICE_ACCOUNT.VIEW)
 
         response = api_client.post(url)
 
@@ -190,7 +185,7 @@ class TestResetTokenView:
 
     def test_change_serviceaccount_holder_can_reset_a_token(self, api_client, user, service_account, url):
         original = Token.objects.create(user=service_account)
-        user.user_permissions.add(_permission(PERMISSIONS.SERVICE_ACCOUNT.CHANGE))
+        grant(user, PERMISSIONS.SERVICE_ACCOUNT.CHANGE)
 
         response = api_client.post(url)
 
@@ -212,7 +207,7 @@ class TestCheckServiceNameView:
         "codename", [PERMISSIONS.SERVICE_ACCOUNT.ADD, PERMISSIONS.SERVICE_ACCOUNT.CHANGE]
     )
     def test_either_add_or_change_alone_is_enough_to_check_a_name(self, api_client, user, url, codename):
-        user.user_permissions.add(_permission(codename))
+        grant(user, codename)
 
         response = api_client.post(url, {"name": "reporting-bot"}, format="json")
 
@@ -220,7 +215,7 @@ class TestCheckServiceNameView:
         assert response.data["is_available"] is True
 
     def test_view_serviceaccount_alone_is_not_enough(self, api_client, user, url):
-        user.user_permissions.add(_permission(PERMISSIONS.SERVICE_ACCOUNT.VIEW))
+        grant(user, PERMISSIONS.SERVICE_ACCOUNT.VIEW)
 
         response = api_client.post(url, {"name": "reporting-bot"}, format="json")
 
@@ -230,13 +225,7 @@ class TestCheckServiceNameView:
 class TestOnlyAdminsManageAdminServiceAccounts:
     @pytest.fixture
     def service_account_manager(self, user):
-        user.user_permissions.set(
-            [
-                _permission(PERMISSIONS.SERVICE_ACCOUNT.VIEW),
-                _permission(PERMISSIONS.SERVICE_ACCOUNT.ADD),
-                _permission(PERMISSIONS.SERVICE_ACCOUNT.CHANGE),
-            ]
-        )
+        grant(user, *PERMISSIONS.SERVICE_ACCOUNT)
         return user
 
     @pytest.fixture
@@ -329,13 +318,13 @@ class TestUserAndServiceAccountPermissionsAreIndependent:
     @pytest.fixture
     def user_manager(self):
         manager = baker.make(User, is_service_account=False, is_superuser=False)
-        manager.user_permissions.set([_permission(codename) for codename in PERMISSIONS.USER])
+        grant(manager, *PERMISSIONS.USER)
         return manager
 
     @pytest.fixture
     def service_account_manager(self):
         manager = baker.make(User, is_service_account=False, is_superuser=False)
-        manager.user_permissions.set([_permission(codename) for codename in PERMISSIONS.SERVICE_ACCOUNT])
+        grant(manager, *PERMISSIONS.SERVICE_ACCOUNT)
         return manager
 
     def test_full_user_permissions_grant_no_service_account_access(self, user_manager, service_account):

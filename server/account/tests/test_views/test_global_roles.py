@@ -1,11 +1,10 @@
 import pytest
-from django.contrib.auth.models import Group
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
 from account.authorization import PERMISSIONS
-from account.models import DatasetGlobalRoleAssignment
+from account.models import DatasetGlobalRoleAssignment, GlobalRole
 from account.tests.helpers import assign_role, client_for, grant, make_role, permission
 from account.tests.public_permission_codes_contract import DATASET_VIEW, USER_VIEW
 
@@ -14,7 +13,7 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def global_role():
-    global_role = Group.objects.create(name="support")
+    global_role = GlobalRole.objects.create(name="support")
     global_role.permissions.add(permission(PERMISSIONS.DATASET.VIEW))
     return global_role
 
@@ -75,14 +74,14 @@ class TestWritingGroupsIsAdminOnly:
         response = getattr(client_for(user), method)(url, body, format="json")
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
-        assert Group.objects.filter(pk=global_role.pk).exists()
-        assert not Group.objects.filter(name__in=["new-team", "renamed"]).exists()
+        assert GlobalRole.objects.filter(pk=global_role.pk).exists()
+        assert not GlobalRole.objects.filter(name__in=["new-team", "renamed"]).exists()
 
     def test_an_admin_can_create_a_group(self, admin_api_client, list_url):
         response = admin_api_client.post(list_url, {"name": "new-team"}, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
-        assert Group.objects.filter(name="new-team").exists()
+        assert GlobalRole.objects.filter(name="new-team").exists()
 
 
 class TestGroupPayloads:
@@ -91,7 +90,8 @@ class TestGroupPayloads:
 
         response = api_client.get(list_url)
 
-        assert [set(row) for row in response.data["results"]] == [{"id", "name"}]
+        assert response.data["results"]
+        assert all(set(row) == {"id", "name"} for row in response.data["results"])
 
     def test_the_detail_carries_permissions_as_public_codes(self, api_client, user, detail_url):
         grant(user, PERMISSIONS.GLOBAL_ROLE.VIEW)
@@ -108,13 +108,13 @@ class TestGlobalRoleDeletion:
         response = admin_api_client.delete(detail_url)
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
-        assert not Group.objects.filter(pk=global_role.pk).exists()
+        assert not GlobalRole.objects.filter(pk=global_role.pk).exists()
         assert not DatasetGlobalRoleAssignment.objects.filter(global_role_id=global_role.pk).exists()
 
     def test_a_global_role_with_members_can_be_deleted(self, admin_api_client, detail_url, global_role, user):
-        user.groups.add(global_role)
+        global_role.members.add(user)
 
         response = admin_api_client.delete(detail_url)
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
-        assert not Group.objects.filter(pk=global_role.pk).exists()
+        assert not GlobalRole.objects.filter(pk=global_role.pk).exists()

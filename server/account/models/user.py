@@ -38,6 +38,9 @@ class User(AbstractUser):
 
     email = models.EmailField(max_length=255, unique=True)
     username = None
+    # `PermissionsMixin`'s M2M onto `auth.Group`, which `GlobalRole` replaces. Removed rather than
+    # left empty, so it cannot silently answer a question it no longer knows anything about.
+    groups = None
     is_service_account = models.BooleanField(default=False)
 
     objects = UserManager()
@@ -47,9 +50,6 @@ class User(AbstractUser):
             ("add_serviceaccount", "Can add service account"),
             ("change_serviceaccount", "Can change service account"),
             ("view_serviceaccount", "Can view service account"),
-            # Governs writes to User.groups. Declared here rather than on auth.Group, which cannot
-            # be given a Meta.permissions entry without forking auth's own migrations.
-            ("assign_group", "Can add users to and remove them from groups"),
         ]
 
     def __str__(self):

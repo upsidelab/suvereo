@@ -1,11 +1,10 @@
 import pytest
-from django.contrib.auth.models import Group
 from django.urls import reverse
 from model_bakery import baker
 from rest_framework import status
 
 from account.authorization import PERMISSIONS
-from account.models import DatasetRole, User
+from account.models import DatasetRole, GlobalRole, User
 from account.tests.helpers import client_for, grant
 
 pytestmark = pytest.mark.django_db
@@ -15,7 +14,7 @@ TAKEN_NAME = "already-taken"
 
 @pytest.fixture
 def existing_global_role():
-    return Group.objects.create(name=TAKEN_NAME)
+    return GlobalRole.objects.create(name=TAKEN_NAME)
 
 
 @pytest.fixture

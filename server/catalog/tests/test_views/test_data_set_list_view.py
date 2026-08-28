@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from django.contrib.auth.models import Group, Permission
+from django.contrib.auth.models import Permission
 from django.test import override_settings
 from django.urls import reverse
 from enthusiast_common.utils import RequiredFieldsModel
@@ -10,7 +10,8 @@ from pydantic import Field
 from rest_framework import status
 
 from account.authorization import PERMISSIONS
-from account.models import DatasetGlobalRoleAssignment, DatasetRole, DatasetUserRoleAssignment
+from account.models import DatasetGlobalRoleAssignment, DatasetRole, DatasetUserRoleAssignment, GlobalRole
+from account.tests.helpers import grant
 from account.tests.public_permission_codes_contract import (
     AGENT_VIEW,
     CONVERSATION_CONVERSE,
@@ -72,7 +73,7 @@ class TestDataSetListViewPost:
         assert not DataSet.objects.filter(name="New DataSet").exists()
 
     def test_user_with_add_dataset_permission_can_create_dataset(self, api_client, user, url, payload):
-        user.user_permissions.add(_permission(PERMISSIONS.DATASET.ADD))
+        grant(user, PERMISSIONS.DATASET.ADD)
 
         response = api_client.post(url, payload, format="json")
 
@@ -169,8 +170,8 @@ class TestDataSetListViewGet:
         assert self._ids(response) == {visible.id}
 
     def test_user_sees_dataset_via_global_role_assignment(self, api_client, user, url):
-        global_role = baker.make(Group)
-        user.groups.add(global_role)
+        global_role = baker.make(GlobalRole)
+        global_role.members.add(user)
         visible = baker.make(DataSet)
         baker.make(DataSet)
         role = baker.make(DatasetRole)
@@ -182,7 +183,7 @@ class TestDataSetListViewGet:
         assert self._ids(response) == {visible.id}
 
     def test_global_view_dataset_holder_sees_all_datasets(self, api_client, user, url):
-        user.user_permissions.add(_permission(PERMISSIONS.DATASET.VIEW))
+        grant(user, PERMISSIONS.DATASET.VIEW)
         datasets = baker.make(DataSet, _quantity=2)
 
         response = api_client.get(url)
@@ -230,7 +231,7 @@ class TestDataSetListViewGetPermissionsField:
         }
 
     def test_global_grant_reports_on_every_visible_dataset(self, api_client, user, url):
-        user.user_permissions.add(_permission(PERMISSIONS.DATASET.VIEW), _permission(PERMISSIONS.AGENT.VIEW))
+        grant(user, PERMISSIONS.DATASET.VIEW, PERMISSIONS.AGENT.VIEW)
         baker.make(DataSet, _quantity=2)
 
         response = api_client.get(url)

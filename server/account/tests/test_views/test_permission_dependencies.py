@@ -1,10 +1,9 @@
 import pytest
-from django.contrib.auth.models import Group
 from django.urls import reverse
 from rest_framework import status
 
 from account.authorization import PERMISSIONS
-from account.models import DatasetRole
+from account.models import DatasetRole, GlobalRole
 from account.tests.helpers import permission
 from account.tests.public_permission_codes_contract import (
     AGENT_ADD,
@@ -146,7 +145,7 @@ class TestDependenciesOnAGroup:
         else:
             assert response.status_code == status.HTTP_400_BAD_REQUEST
             assert _errors(response) == expected_errors
-            assert not Group.objects.filter(name="team").exists()
+            assert not GlobalRole.objects.filter(name="team").exists()
 
     def test_permissions_may_be_omitted_entirely(self, admin_api_client, url):
         response = admin_api_client.post(url, {"name": "team"}, format="json")
@@ -225,7 +224,7 @@ class TestDependenciesAreEnforcedOnUpdate:
             {"name": "team", "permissions": [AGENT_CHANGE, AGENT_VIEW, DATASET_VIEW]},
             format="json",
         )
-        return Group.objects.get(pk=response.data["id"])
+        return GlobalRole.objects.get(pk=response.data["id"])
 
     @pytest.fixture
     def url(self, global_role):
@@ -242,7 +241,7 @@ class TestDependenciesAreEnforcedOnUpdate:
         assert set(global_role.permissions.values_list("codename", flat=True)) == before
 
     def test_patching_can_satisfy_a_requirement_by_adding_to_the_set(self, admin_api_client):
-        global_role = Group.objects.create(name="viewers")
+        global_role = GlobalRole.objects.create(name="viewers")
         global_role.permissions.add(permission(PERMISSIONS.DATASET.VIEW))
 
         response = admin_api_client.patch(
@@ -272,7 +271,7 @@ class TestNothingIsSilentlyAdded:
         sent = [AGENT_CHANGE, AGENT_VIEW, DATASET_VIEW]
 
         response = admin_api_client.post(reverse("global_role_list"), {"name": "team", "permissions": sent}, format="json")
-        global_role = Group.objects.get(pk=response.data["id"])
+        global_role = GlobalRole.objects.get(pk=response.data["id"])
 
         assert set(response.data["permissions"]) == set(sent)
         assert global_role.permissions.count() == len(sent)

@@ -78,7 +78,9 @@ def test_a_permission_outside_the_vocabulary_is_dropped_rather_than_crashing(api
     undeclared = next(
         row for row in Permission.objects.select_related("content_type") if permission_label(row) not in PUBLIC_CODES
     )
-    user.user_permissions.add(undeclared)
+    global_role = make_global_role("holds-something-undeclared")
+    global_role.permissions.add(undeclared)
+    join_global_role(user, global_role)
 
     response = api_client.get(url)
 

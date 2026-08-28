@@ -1,5 +1,5 @@
 import pytest
-from django.contrib.auth.models import Group, Permission
+from django.contrib.auth.models import Permission
 from model_bakery import baker
 from rest_framework.exceptions import PermissionDenied
 
@@ -10,7 +10,8 @@ from account.authorization.decorators import (
     any_permission_on_any_dataset_required,
     global_permission_required,
 )
-from account.models import DatasetGlobalRoleAssignment, DatasetRole, DatasetUserRoleAssignment, User
+from account.models import DatasetGlobalRoleAssignment, DatasetRole, DatasetUserRoleAssignment, GlobalRole, User
+from account.tests.helpers import grant
 from catalog.models import DataSet
 
 pytestmark = pytest.mark.django_db
@@ -56,7 +57,7 @@ class TestGlobalPermissionRequired:
 
     def test_allows_holder_of_the_permission(self):
         user = baker.make(User)
-        user.user_permissions.add(_permission(PERMISSIONS.DATASET.ADD))
+        grant(user, PERMISSIONS.DATASET.ADD)
         view = _FakeView(user)
 
         assert view.single_permission_action() == "single-ok"
@@ -94,22 +95,22 @@ class TestGlobalPermissionRequired:
 class TestAnyGlobalPermissionRequired:
     def test_allows_holder_of_first_codename(self):
         user = baker.make(User)
-        user.user_permissions.add(_permission(PERMISSIONS.DATASET.ADD))
+        grant(user, PERMISSIONS.DATASET.ADD)
         view = _FakeView(user)
 
         assert view.any_permission_action() == "any-ok"
 
     def test_allows_holder_of_second_codename(self):
         user = baker.make(User)
-        user.user_permissions.add(_permission(PERMISSIONS.DATASET.CHANGE))
+        grant(user, PERMISSIONS.DATASET.CHANGE)
         view = _FakeView(user)
 
         assert view.any_permission_action() == "any-ok"
 
     def test_allows_holder_of_both_codenames(self):
         user = baker.make(User)
-        user.user_permissions.add(_permission(PERMISSIONS.DATASET.ADD))
-        user.user_permissions.add(_permission(PERMISSIONS.DATASET.CHANGE))
+        grant(user, PERMISSIONS.DATASET.ADD)
+        grant(user, PERMISSIONS.DATASET.CHANGE)
         view = _FakeView(user)
 
         assert view.any_permission_action() == "any-ok"
@@ -131,7 +132,7 @@ class TestAnyGlobalPermissionRequired:
 class TestAnyPermissionOnAnyDatasetRequired:
     def test_allows_global_holder(self):
         user = baker.make(User)
-        user.user_permissions.add(_permission(PERMISSIONS.AGENT.ADD))
+        grant(user, PERMISSIONS.AGENT.ADD)
         view = _FakeView(user)
 
         assert view.any_dataset_permission_action() == "any-dataset-ok"
@@ -148,8 +149,8 @@ class TestAnyPermissionOnAnyDatasetRequired:
 
     def test_allows_holder_via_global_role_on_any_dataset(self):
         user = baker.make(User)
-        global_role = baker.make(Group)
-        user.groups.add(global_role)
+        global_role = baker.make(GlobalRole)
+        global_role.members.add(user)
         dataset = baker.make(DataSet)
         role = baker.make(DatasetRole)
         role.permissions.add(_permission(PERMISSIONS.AGENT.ADD))
@@ -180,7 +181,7 @@ class TestAdminRequired:
 
     def test_denies_a_non_admin_holding_every_declared_permission(self):
         user = baker.make(User)
-        user.user_permissions.set([_permission(codename) for codename in PUBLIC_CODES])
+        grant(user, *PUBLIC_CODES)
         view = _FakeView(user)
 
         with pytest.raises(PermissionDenied):
