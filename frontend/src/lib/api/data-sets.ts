@@ -17,7 +17,7 @@ export type CreateDataSetPayload = DataSetResponse & {
 };
 
 type DataSetAccessResponse = {
-  users: {
+  members: {
     id: number;
     user: { id: number; email: string; is_service_account: boolean };
     role: DataSetRoleOption;
@@ -98,7 +98,7 @@ export class DataSetsApiClient extends BaseApiClient {
     }
     const result = await response.json() as DataSetAccessResponse;
     return {
-      users: result.users.map((assignment) => ({
+      members: result.members.map((assignment) => ({
         id: assignment.id,
         role: assignment.role,
         user: {
@@ -121,9 +121,9 @@ export class DataSetsApiClient extends BaseApiClient {
     };
   }
 
-  async grantRoleToUser(dataSetId: number, roleId: number, userId: number): Promise<Response> {
+  async grantRoleToMember(dataSetId: number, roleId: number, userId: number): Promise<Response> {
     return await fetch(
-      `${this.apiBase}/api/data_sets/${dataSetId}/roles/${roleId}/users`,
+      `${this.apiBase}/api/data_sets/${dataSetId}/roles/${roleId}/members`,
       {
         ...this._requestConfiguration(),
         method: "POST",
@@ -143,9 +143,9 @@ export class DataSetsApiClient extends BaseApiClient {
     );
   }
 
-  async revokeRoleFromUser(dataSetId: number, roleId: number, userId: number): Promise<Response> {
+  async revokeRoleFromMember(dataSetId: number, roleId: number, userId: number): Promise<Response> {
     return await fetch(
-      `${this.apiBase}/api/data_sets/${dataSetId}/roles/${roleId}/users/${userId}`,
+      `${this.apiBase}/api/data_sets/${dataSetId}/roles/${roleId}/members/${userId}`,
       {
         ...this._requestConfiguration(),
         method: "DELETE"

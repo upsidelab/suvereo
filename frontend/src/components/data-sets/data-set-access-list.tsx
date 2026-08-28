@@ -29,7 +29,7 @@ export function DataSetAccessList({ dataSetId }: DataSetAccessListProps) {
     try {
       const access = await api.dataSets().getDataSetAccess(dataSetId);
       setRows([
-        ...access.users.map((assignment) => ({
+        ...access.members.map((assignment) => ({
           subject: { type: "user" as const, id: assignment.user.id, label: assignment.user.email },
           role: assignment.role
         })),
@@ -85,7 +85,7 @@ export function DataSetAccessList({ dataSetId }: DataSetAccessListProps) {
 
   const handleGrant = async (subject: AccessSubject, roleId: number) => {
     const response = subject.type === "user"
-      ? await api.dataSets().grantRoleToUser(dataSetId, roleId, subject.id)
+      ? await api.dataSets().grantRoleToMember(dataSetId, roleId, subject.id)
       : await api.dataSets().grantRoleToGroup(dataSetId, roleId, subject.id);
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
@@ -97,7 +97,7 @@ export function DataSetAccessList({ dataSetId }: DataSetAccessListProps) {
 
   const handleRevoke = async (row: AccessRow) => {
     const response = row.subject.type === "user"
-      ? await api.dataSets().revokeRoleFromUser(dataSetId, row.role.id, row.subject.id)
+      ? await api.dataSets().revokeRoleFromMember(dataSetId, row.role.id, row.subject.id)
       : await api.dataSets().revokeRoleFromGroup(dataSetId, row.role.id, row.subject.id);
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));

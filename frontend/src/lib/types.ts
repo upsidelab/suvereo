@@ -157,7 +157,7 @@ export type DataSetRoleDetail = {
   permissions: string[];
 };
 
-export type DataSetUserRoleAssignment = {
+export type DataSetMemberRoleAssignment = {
   id: number;
   role: DataSetRoleOption;
   user: GlobalRoleMember;
@@ -170,7 +170,7 @@ export type DataSetGroupRoleAssignment = {
 };
 
 export type DataSetAccess = {
-  users: DataSetUserRoleAssignment[];
+  members: DataSetMemberRoleAssignment[];
   groups: DataSetGroupRoleAssignment[];
 };
 

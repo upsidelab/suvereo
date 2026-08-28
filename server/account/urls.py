@@ -95,14 +95,14 @@ urlpatterns = [
         name="dataset_access_list",
     ),
     path(
-        "api/data_sets/<int:data_set_id>/roles/<int:role_id>/users",
-        account.views.dataset_access.DatasetRoleUserListView.as_view(),
-        name="dataset_role_user_list",
+        "api/data_sets/<int:data_set_id>/roles/<int:role_id>/members",
+        account.views.dataset_access.DatasetRoleMemberListView.as_view(),
+        name="dataset_role_member_list",
     ),
     path(
-        "api/data_sets/<int:data_set_id>/roles/<int:role_id>/users/<int:user_id>",
-        account.views.dataset_access.DatasetRoleUserView.as_view(),
-        name="dataset_role_user_details",
+        "api/data_sets/<int:data_set_id>/roles/<int:role_id>/members/<int:user_id>",
+        account.views.dataset_access.DatasetRoleMemberView.as_view(),
+        name="dataset_role_member_details",
     ),
     path(
         "api/data_sets/<int:data_set_id>/roles/<int:role_id>/groups",

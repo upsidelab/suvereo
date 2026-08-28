@@ -32,7 +32,7 @@ export function DataSetRoleMembersPanel({ roleId }: DataSetRoleMembersPanelProps
     const access = await api.dataSets().getDataSetAccess(dataSetId!);
     const forThisRole = <T extends { role: { id: number } }>(assignment: T) => assignment.role.id === roleId;
     return [
-      ...access.users.filter(forThisRole).map((assignment) => subjectOption(assignment.user)),
+      ...access.members.filter(forThisRole).map((assignment) => subjectOption(assignment.user)),
       ...access.groups.filter(forThisRole).map((assignment) => groupOption(assignment.group)),
     ];
   }, [dataSetId, roleId]);
@@ -70,13 +70,13 @@ export function DataSetRoleMembersPanel({ roleId }: DataSetRoleMembersPanelProps
       onAdd={(option) => submit(
         option.kind === "group"
           ? api.dataSets().grantRoleToGroup(dataSetId!, roleId, option.id)
-          : api.dataSets().grantRoleToUser(dataSetId!, roleId, option.id),
+          : api.dataSets().grantRoleToMember(dataSetId!, roleId, option.id),
         "Could not grant this role."
       )}
       onRemove={(option) => submit(
         option.kind === "group"
           ? api.dataSets().revokeRoleFromGroup(dataSetId!, roleId, option.id)
-          : api.dataSets().revokeRoleFromUser(dataSetId!, roleId, option.id),
+          : api.dataSets().revokeRoleFromMember(dataSetId!, roleId, option.id),
         "Could not revoke this role."
       )}
     >

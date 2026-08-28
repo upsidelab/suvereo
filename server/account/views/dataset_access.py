@@ -44,7 +44,7 @@ class DatasetAccessListView(_DatasetAccessView):
     @global_permission_required(PERMISSIONS.DATA_SET_ROLE.ASSIGN)
     def get(self, request, data_set_id):
         data_set = self._get_dataset(data_set_id)
-        users = DatasetUserRoleAssignment.objects.filter(dataset=data_set).select_related("user", "role")
+        members = DatasetUserRoleAssignment.objects.filter(dataset=data_set).select_related("user", "role")
         groups = (
             DatasetGroupRoleAssignment.objects.filter(dataset=data_set)
             .select_related("role")
@@ -52,15 +52,15 @@ class DatasetAccessListView(_DatasetAccessView):
         )
         return Response(
             {
-                "users": DatasetUserRoleAssignmentSerializer(users, many=True).data,
+                "members": DatasetUserRoleAssignmentSerializer(members, many=True).data,
                 "groups": DatasetGroupRoleAssignmentSerializer(groups, many=True).data,
             }
         )
 
 
-class DatasetRoleUserListView(_DatasetAccessView):
+class DatasetRoleMemberListView(_DatasetAccessView):
     @swagger_auto_schema(
-        operation_description="Grant this role on this data set to a user",
+        operation_description="Grant this role on this data set to a user or service account",
         request_body=UserReferenceSerializer,
         manual_parameters=[DATA_SET_ID_PARAMETER, ROLE_ID_PARAMETER],
     )
@@ -79,9 +79,9 @@ class DatasetRoleUserListView(_DatasetAccessView):
         )
 
 
-class DatasetRoleUserView(_DatasetAccessView):
+class DatasetRoleMemberView(_DatasetAccessView):
     @swagger_auto_schema(
-        operation_description="Revoke this role on this data set from a user",
+        operation_description="Revoke this role on this data set from a user or service account",
         manual_parameters=[
             DATA_SET_ID_PARAMETER,
             ROLE_ID_PARAMETER,
