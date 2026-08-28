@@ -34,7 +34,7 @@ class UserGroup(models.Model):
     objects = UserGroupQuerySet.as_manager()
 
     name = models.CharField(max_length=150, unique=True)
-    description = models.CharField(max_length=255, blank=True, default="")
+    description = models.TextField(blank=True, default="")
     members = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="user_groups", blank=True)
     global_roles = models.ManyToManyField(GlobalRole, related_name="holders", blank=True)
 

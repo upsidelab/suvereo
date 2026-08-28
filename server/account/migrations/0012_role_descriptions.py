@@ -8,16 +8,16 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="globalrole",
             name="description",
-            field=models.CharField(blank=True, default="", max_length=255),
+            field=models.TextField(blank=True, default=""),
         ),
         migrations.AddField(
             model_name="datasetrole",
             name="description",
-            field=models.CharField(blank=True, default="", max_length=255),
+            field=models.TextField(blank=True, default=""),
         ),
         migrations.AddField(
             model_name="usergroup",
             name="description",
-            field=models.CharField(blank=True, default="", max_length=255),
+            field=models.TextField(blank=True, default=""),
         ),
     ]

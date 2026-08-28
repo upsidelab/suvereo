@@ -4,7 +4,7 @@ from django.db import models
 
 class DatasetRole(models.Model):
     name = models.CharField(max_length=100, unique=True)
-    description = models.CharField(max_length=255, blank=True, default="")
+    description = models.TextField(blank=True, default="")
     permissions = models.ManyToManyField(Permission, blank=True)
 
     class Meta:
