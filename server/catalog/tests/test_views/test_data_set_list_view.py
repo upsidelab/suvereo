@@ -10,7 +10,7 @@ from pydantic import Field
 from rest_framework import status
 
 from account.authorization import PERMISSIONS
-from account.models import DatasetGlobalRoleAssignment, DatasetRole, DatasetUserRoleAssignment, GlobalRole
+from account.models import DatasetGroupRoleAssignment, DatasetRole, DatasetUserRoleAssignment, UserGroup
 from account.tests.helpers import grant
 from account.tests.public_permission_codes_contract import (
     AGENT_VIEW,
@@ -169,13 +169,13 @@ class TestDataSetListViewGet:
         assert response.status_code == status.HTTP_200_OK
         assert self._ids(response) == {visible.id}
 
-    def test_user_sees_dataset_via_global_role_assignment(self, api_client, user, url):
-        global_role = baker.make(GlobalRole)
-        global_role.members.add(user)
+    def test_user_sees_dataset_via_group_assignment(self, api_client, user, url):
+        group = baker.make(UserGroup)
+        group.members.add(user)
         visible = baker.make(DataSet)
         baker.make(DataSet)
         role = baker.make(DatasetRole)
-        baker.make(DatasetGlobalRoleAssignment, global_role=global_role, dataset=visible, role=role)
+        baker.make(DatasetGroupRoleAssignment, group=group, dataset=visible, role=role)
 
         response = api_client.get(url)
 

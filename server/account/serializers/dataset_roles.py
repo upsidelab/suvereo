@@ -1,9 +1,9 @@
 from rest_framework import serializers
 
 from account.authorization import DATASET_SCOPE_PERMISSIONS
-from account.models import DatasetGlobalRoleAssignment, DatasetRole, DatasetUserRoleAssignment
+from account.models import DatasetGroupRoleAssignment, DatasetRole, DatasetUserRoleAssignment
 
-from .global_roles import GlobalRoleSerializer
+from .groups import GroupSerializer
 from .permissions import GrantedPermissionsMixin, PermissionCodeField
 from .users import UserSummarySerializer
 
@@ -38,10 +38,10 @@ class DatasetUserRoleAssignmentSerializer(serializers.ModelSerializer):
         fields = ["id", "user", "role"]
 
 
-class DatasetGlobalRoleAssignmentSerializer(serializers.ModelSerializer):
-    global_role = GlobalRoleSerializer(read_only=True)
+class DatasetGroupRoleAssignmentSerializer(serializers.ModelSerializer):
+    group = GroupSerializer(read_only=True)
     role = DatasetRoleSerializer(read_only=True)
 
     class Meta:
-        model = DatasetGlobalRoleAssignment
-        fields = ["id", "global_role", "role"]
+        model = DatasetGroupRoleAssignment
+        fields = ["id", "group", "role"]

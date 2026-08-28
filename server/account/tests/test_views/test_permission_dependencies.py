@@ -21,6 +21,11 @@ from account.tests.public_permission_codes_contract import (
     GLOBAL_ROLE_ASSIGN,
     GLOBAL_ROLE_DELETE,
     GLOBAL_ROLE_VIEW,
+    GROUP_ADD,
+    GROUP_ASSIGN,
+    GROUP_CHANGE,
+    GROUP_DELETE,
+    GROUP_VIEW,
     INTEGRATION_SYNC,
     INTEGRATION_VIEW,
     SERVICE_ACCOUNT_VIEW,
@@ -43,7 +48,7 @@ def _errors(response) -> list[str]:
     return [str(error) for error in response.data["permissions"]]
 
 
-class TestDependenciesOnAGroup:
+class TestDependenciesOnAGlobalRole:
     """Global scope - every requirement in the map applies."""
 
     @pytest.fixture
@@ -77,13 +82,14 @@ class TestDependenciesOnAGroup:
                 [GLOBAL_ROLE_ASSIGN],
                 [
                     requires(GLOBAL_ROLE_VIEW, by=[GLOBAL_ROLE_ASSIGN]),
+                    requires(GROUP_VIEW, by=[GLOBAL_ROLE_ASSIGN]),
                     requires(SERVICE_ACCOUNT_VIEW, by=[GLOBAL_ROLE_ASSIGN]),
                     requires(USER_VIEW, by=[GLOBAL_ROLE_ASSIGN]),
                 ],
-                id="assigning members requires seeing the global_role and both kinds of subject",
+                id="assigning members requires seeing the global_role and every kind of subject",
             ),
             pytest.param(
-                [GLOBAL_ROLE_ASSIGN, GLOBAL_ROLE_VIEW, USER_VIEW, SERVICE_ACCOUNT_VIEW],
+                [GLOBAL_ROLE_ASSIGN, GLOBAL_ROLE_VIEW, USER_VIEW, SERVICE_ACCOUNT_VIEW, GROUP_VIEW],
                 None,
                 id="global_role is not dataset-scoped, so no dataset.view is demanded",
             ),
@@ -116,13 +122,14 @@ class TestDependenciesOnAGroup:
                 [
                     requires(DATASET_VIEW, by=[DATASET_ROLE_ASSIGN]),
                     requires(DATASET_ROLE_VIEW, by=[DATASET_ROLE_ASSIGN]),
+                    requires(GROUP_VIEW, by=[DATASET_ROLE_ASSIGN]),
                     requires(SERVICE_ACCOUNT_VIEW, by=[DATASET_ROLE_ASSIGN]),
                     requires(USER_VIEW, by=[DATASET_ROLE_ASSIGN]),
                 ],
                 id="dataset_role.assign requires dataset_role.view, exactly like global_role.assign",
             ),
             pytest.param(
-                [DATASET_ROLE_ASSIGN, DATASET_VIEW, DATASET_ROLE_VIEW, USER_VIEW, SERVICE_ACCOUNT_VIEW],
+                [DATASET_ROLE_ASSIGN, DATASET_VIEW, DATASET_ROLE_VIEW, USER_VIEW, SERVICE_ACCOUNT_VIEW, GROUP_VIEW],
                 None,
                 id="dataset_role.assign satisfied",
             ),
@@ -147,6 +154,16 @@ class TestDependenciesOnAGroup:
                 [DATASET_ROLE_ADD, DATASET_ROLE_CHANGE, DATASET_ROLE_DELETE, DATASET_ROLE_VIEW],
                 None,
                 id="dataset role lifecycle satisfied",
+            ),
+            pytest.param(
+                [GROUP_ADD, GROUP_CHANGE, GROUP_DELETE],
+                [requires(GROUP_VIEW, by=[GROUP_ADD, GROUP_CHANGE, GROUP_DELETE])],
+                id="the group lifecycle codes require their own view, and nothing else",
+            ),
+            pytest.param(
+                [GROUP_ADD, GROUP_CHANGE, GROUP_DELETE, GROUP_VIEW],
+                None,
+                id="group lifecycle satisfied",
             ),
             # Not from the contract module on purpose: these are strings the vocabulary must refuse.
             pytest.param(
@@ -177,6 +194,92 @@ class TestDependenciesOnAGroup:
 
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data["permissions"] == []
+
+
+class TestGroupAssignCannotStandAlone:
+    @pytest.fixture
+    def url(self):
+        return reverse("global_role_list")
+
+    def _post(self, client, url, codes):
+        return client.post(url, {"name": "team", "permissions": codes}, format="json")
+
+    def test_without_global_role_assign_it_is_rejected_naming_that_requirement(self, admin_api_client, url):
+        response = self._post(
+            admin_api_client,
+            url,
+            [GROUP_ASSIGN, GROUP_VIEW, DATASET_ROLE_ASSIGN, USER_VIEW, SERVICE_ACCOUNT_VIEW],
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert requires(GLOBAL_ROLE_ASSIGN, by=[GROUP_ASSIGN]) in _errors(response)
+
+    def test_without_dataset_role_assign_it_is_rejected_naming_that_requirement(self, admin_api_client, url):
+        response = self._post(
+            admin_api_client,
+            url,
+            [GROUP_ASSIGN, GROUP_VIEW, GLOBAL_ROLE_ASSIGN, USER_VIEW, SERVICE_ACCOUNT_VIEW],
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert requires(DATASET_ROLE_ASSIGN, by=[GROUP_ASSIGN]) in _errors(response)
+
+    def test_without_either_one_response_names_both(self, admin_api_client, url):
+        response = self._post(admin_api_client, url, [GROUP_ASSIGN, GROUP_VIEW, USER_VIEW, SERVICE_ACCOUNT_VIEW])
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert requires(GLOBAL_ROLE_ASSIGN, by=[GROUP_ASSIGN]) in _errors(response)
+        assert requires(DATASET_ROLE_ASSIGN, by=[GROUP_ASSIGN]) in _errors(response)
+
+    def test_the_whole_chain_is_named_at_once_against_the_permission_that_was_ticked(self, admin_api_client, url):
+        """`group.assign` requires both assign codes, which require their own views and - through
+        `dataset_role.assign` - `dataset.view`. Every one of them is reported against `group.assign`
+        itself, because that is the box the admin ticked. A one-level walk names three of these and
+        rejects the save four more times as each is answered."""
+        response = self._post(admin_api_client, url, [GROUP_ASSIGN])
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert _errors(response) == [
+            requires(DATASET_VIEW, by=[GROUP_ASSIGN]),
+            requires(DATASET_ROLE_ASSIGN, by=[GROUP_ASSIGN]),
+            requires(DATASET_ROLE_VIEW, by=[GROUP_ASSIGN]),
+            requires(GLOBAL_ROLE_ASSIGN, by=[GROUP_ASSIGN]),
+            requires(GLOBAL_ROLE_VIEW, by=[GROUP_ASSIGN]),
+            requires(GROUP_VIEW, by=[GROUP_ASSIGN]),
+            requires(SERVICE_ACCOUNT_VIEW, by=[GROUP_ASSIGN]),
+            requires(USER_VIEW, by=[GROUP_ASSIGN]),
+        ]
+
+    def test_the_chain_satisfied_in_one_save(self, admin_api_client, url):
+        response = self._post(
+            admin_api_client,
+            url,
+            [
+                GROUP_ASSIGN,
+                GROUP_VIEW,
+                GLOBAL_ROLE_ASSIGN,
+                GLOBAL_ROLE_VIEW,
+                DATASET_ROLE_ASSIGN,
+                DATASET_ROLE_VIEW,
+                DATASET_VIEW,
+                USER_VIEW,
+                SERVICE_ACCOUNT_VIEW,
+            ],
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+
+    def test_attaching_a_role_to_a_group_is_not_what_this_gates(self, admin_api_client, url):
+        """The dependency runs one way only. A `dataset_role.assign` holder could grant that role
+        to each member directly, so routing it through the group is the same effect by a shorter
+        path - and needs nothing `group.assign` does not."""
+        response = self._post(
+            admin_api_client,
+            url,
+            [DATASET_ROLE_ASSIGN, DATASET_VIEW, DATASET_ROLE_VIEW, GROUP_VIEW, USER_VIEW, SERVICE_ACCOUNT_VIEW],
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
 
 
 class TestDependenciesOnADatasetRole:
@@ -295,7 +398,9 @@ class TestNothingIsSilentlyAdded:
         the global_role later - `dataset.view` grants sight of every data set in the system."""
         sent = [AGENT_CHANGE, AGENT_VIEW, DATASET_VIEW]
 
-        response = admin_api_client.post(reverse("global_role_list"), {"name": "team", "permissions": sent}, format="json")
+        response = admin_api_client.post(
+            reverse("global_role_list"), {"name": "team", "permissions": sent}, format="json"
+        )
         global_role = GlobalRole.objects.get(pk=response.data["id"])
 
         assert set(response.data["permissions"]) == set(sent)

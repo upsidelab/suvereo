@@ -9,7 +9,13 @@ asserted. Import those from `public_permission_codes_contract`.
 from django.contrib.auth.models import Permission
 from rest_framework.test import APIClient
 
-from account.models import DatasetGlobalRoleAssignment, DatasetRole, DatasetUserRoleAssignment, GlobalRole
+from account.models import (
+    DatasetGroupRoleAssignment,
+    DatasetRole,
+    DatasetUserRoleAssignment,
+    GlobalRole,
+    UserGroup,
+)
 
 # Django caches a user's resolved permissions on the instance, and `force_authenticate` hands that
 # same instance to the view. Granting anything after the first `has_perm` therefore has to drop the
@@ -61,6 +67,20 @@ def join_global_role(user, global_role: GlobalRole):
     return _reset_permission_cache(user)
 
 
+def make_group(name: str = "group", *global_roles: GlobalRole) -> UserGroup:
+    """A group holding the given global roles."""
+    group = UserGroup.objects.create(name=name)
+    if global_roles:
+        group.global_roles.add(*global_roles)
+    return group
+
+
+def join_group(user, group: UserGroup):
+    """Add a user to a group, so everything the group holds reaches them."""
+    group.members.add(user)
+    return _reset_permission_cache(user)
+
+
 def make_role(name: str = "role", *codenames: str) -> DatasetRole:
     """A dataset role carrying the given dataset-scoped permissions."""
     role = DatasetRole.objects.create(name=name)
@@ -70,9 +90,9 @@ def make_role(name: str = "role", *codenames: str) -> DatasetRole:
 
 
 def assign_role(subject, dataset, role: DatasetRole):
-    """Grant `role` on `dataset` to a user or a global role, whichever `subject` is."""
-    if isinstance(subject, GlobalRole):
-        return DatasetGlobalRoleAssignment.objects.create(global_role=subject, dataset=dataset, role=role)
+    """Grant `role` on `dataset` to a user or a group, whichever `subject` is."""
+    if isinstance(subject, UserGroup):
+        return DatasetGroupRoleAssignment.objects.create(group=subject, dataset=dataset, role=role)
     return DatasetUserRoleAssignment.objects.create(user=subject, dataset=dataset, role=role)
 
 

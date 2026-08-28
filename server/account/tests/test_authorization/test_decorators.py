@@ -10,7 +10,7 @@ from account.authorization.decorators import (
     any_permission_on_any_dataset_required,
     global_permission_required,
 )
-from account.models import DatasetGlobalRoleAssignment, DatasetRole, DatasetUserRoleAssignment, GlobalRole, User
+from account.models import DatasetGroupRoleAssignment, DatasetRole, DatasetUserRoleAssignment, User, UserGroup
 from account.tests.helpers import grant
 from catalog.models import DataSet
 
@@ -147,14 +147,14 @@ class TestAnyPermissionOnAnyDatasetRequired:
 
         assert view.any_dataset_permission_action() == "any-dataset-ok"
 
-    def test_allows_holder_via_global_role_on_any_dataset(self):
+    def test_allows_holder_via_group_on_any_dataset(self):
         user = baker.make(User)
-        global_role = baker.make(GlobalRole)
-        global_role.members.add(user)
+        group = baker.make(UserGroup)
+        group.members.add(user)
         dataset = baker.make(DataSet)
         role = baker.make(DatasetRole)
         role.permissions.add(_permission(PERMISSIONS.AGENT.ADD))
-        baker.make(DatasetGlobalRoleAssignment, global_role=global_role, dataset=dataset, role=role)
+        baker.make(DatasetGroupRoleAssignment, group=group, dataset=dataset, role=role)
         view = _FakeView(user)
 
         assert view.any_dataset_permission_action() == "any-dataset-ok"

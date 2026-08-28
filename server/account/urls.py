@@ -6,6 +6,9 @@ import account.views.dataset_access
 import account.views.dataset_roles
 import account.views.global_role_members
 import account.views.global_roles
+import account.views.group_global_roles
+import account.views.group_members
+import account.views.groups
 import account.views.login
 import account.views.permissions
 import account.views.service_accounts
@@ -46,6 +49,28 @@ urlpatterns = [
         account.views.global_role_members.GlobalRoleMemberDetailView.as_view(),
         name="global_role_member_details",
     ),
+    path("api/groups", account.views.groups.GroupListView.as_view(), name="group_list"),
+    path("api/groups/<int:id>", account.views.groups.GroupDetailView.as_view(), name="group_details"),
+    path(
+        "api/groups/<int:id>/members",
+        account.views.group_members.GroupMemberListView.as_view(),
+        name="group_member_list",
+    ),
+    path(
+        "api/groups/<int:id>/members/<int:user_id>",
+        account.views.group_members.GroupMemberDetailView.as_view(),
+        name="group_member_details",
+    ),
+    path(
+        "api/groups/<int:id>/global_roles",
+        account.views.group_global_roles.GroupGlobalRoleListView.as_view(),
+        name="group_global_role_list",
+    ),
+    path(
+        "api/groups/<int:id>/global_roles/<int:global_role_id>",
+        account.views.group_global_roles.GroupGlobalRoleDetailView.as_view(),
+        name="group_global_role_details",
+    ),
     path("api/dataset_roles", account.views.dataset_roles.DatasetRoleListView.as_view(), name="dataset_role_list"),
     path(
         "api/dataset_roles/<int:id>",
@@ -69,13 +94,13 @@ urlpatterns = [
         name="dataset_role_user_details",
     ),
     path(
-        "api/data_sets/<int:data_set_id>/roles/<int:role_id>/global_roles",
-        account.views.dataset_access.DatasetRoleGlobalRoleListView.as_view(),
-        name="dataset_role_global_role_list",
+        "api/data_sets/<int:data_set_id>/roles/<int:role_id>/groups",
+        account.views.dataset_access.DatasetRoleGroupListView.as_view(),
+        name="dataset_role_group_list",
     ),
     path(
-        "api/data_sets/<int:data_set_id>/roles/<int:role_id>/global_roles/<int:global_role_id>",
-        account.views.dataset_access.DatasetRoleGlobalRoleView.as_view(),
-        name="dataset_role_global_role_details",
+        "api/data_sets/<int:data_set_id>/roles/<int:role_id>/groups/<int:group_id>",
+        account.views.dataset_access.DatasetRoleGroupView.as_view(),
+        name="dataset_role_group_details",
     ),
 ]

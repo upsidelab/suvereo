@@ -1,11 +1,12 @@
 from .accounts import AccountSerializer
 from .dataset_roles import (
-    DatasetGlobalRoleAssignmentSerializer,
+    DatasetGroupRoleAssignmentSerializer,
     DatasetRoleDetailSerializer,
     DatasetRoleSerializer,
     DatasetUserRoleAssignmentSerializer,
 )
 from .global_roles import GlobalRoleDetailSerializer, GlobalRoleReferenceSerializer, GlobalRoleSerializer
+from .groups import GroupDetailSerializer, GroupReferenceSerializer, GroupSerializer
 from .permissions import (
     GrantedPermissionsMixin,
     PermissionCodeField,
@@ -31,7 +32,7 @@ __all__ = [
     "AccountSerializer",
     "AvailabilityResponseSerializer",
     "CreateUpdateServiceAccountSerializer",
-    "DatasetGlobalRoleAssignmentSerializer",
+    "DatasetGroupRoleAssignmentSerializer",
     "DatasetRoleDetailSerializer",
     "DatasetRoleSerializer",
     "DatasetUserRoleAssignmentSerializer",
@@ -39,6 +40,9 @@ __all__ = [
     "GlobalRoleDetailSerializer",
     "GlobalRoleReferenceSerializer",
     "GlobalRoleSerializer",
+    "GroupDetailSerializer",
+    "GroupReferenceSerializer",
+    "GroupSerializer",
     "OnlyAdminsManageAdminsMixin",
     "PermissionCodeField",
     "PermissionEntitySerializer",

@@ -62,6 +62,12 @@ DATASET_ROLE_CHANGE = "dataset_role.change"
 DATASET_ROLE_DELETE = "dataset_role.delete"
 DATASET_ROLE_ASSIGN = "dataset_role.assign"
 
+GROUP_VIEW = "group.view"
+GROUP_ADD = "group.add"
+GROUP_CHANGE = "group.change"
+GROUP_DELETE = "group.delete"
+GROUP_ASSIGN = "group.assign"
+
 # Which capability each published string names. Pairing them here rather than only listing the
 # strings is what catches a code that survives a rename but ends up attached to the wrong
 # permission - the set of values alone would not notice.
@@ -99,6 +105,11 @@ PUBLIC_PERMISSION_CODES_CONTRACT: dict[str, str] = {
     PERMISSIONS.DATASET_ROLE.CHANGE: DATASET_ROLE_CHANGE,
     PERMISSIONS.DATASET_ROLE.DELETE: DATASET_ROLE_DELETE,
     PERMISSIONS.DATASET_ROLE.ASSIGN: DATASET_ROLE_ASSIGN,
+    PERMISSIONS.GROUP.VIEW: GROUP_VIEW,
+    PERMISSIONS.GROUP.ADD: GROUP_ADD,
+    PERMISSIONS.GROUP.CHANGE: GROUP_CHANGE,
+    PERMISSIONS.GROUP.DELETE: GROUP_DELETE,
+    PERMISSIONS.GROUP.ASSIGN: GROUP_ASSIGN,
 }
 
 # The subset a dataset role can carry, as published under `?scope=dataset`. Spelled out rather

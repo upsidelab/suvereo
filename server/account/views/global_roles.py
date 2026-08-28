@@ -55,11 +55,11 @@ class GlobalRoleDetailView(RetrieveUpdateDestroyAPIView):
         return super().update(request, *args, **kwargs)
 
     @swagger_auto_schema(
-        operation_description="Delete a global role, giving up the roles it holds on data sets",
+        operation_description="Delete a global role, revoking it from everyone holding it",
         manual_parameters=[GLOBAL_ROLE_ID_PARAMETER],
     )
     @global_permission_required(PERMISSIONS.GLOBAL_ROLE.DELETE)
     def delete(self, request, *args, **kwargs):
-        """Deleting a global role takes its memberships and its dataset role assignments with it - what
-        the role held is not a reason the role has to stay."""
+        """Deleting a global role takes its memberships with it, and takes it off any group
+        holding it - what the role held is not a reason the role has to stay."""
         return super().delete(request, *args, **kwargs)

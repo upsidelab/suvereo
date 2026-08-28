@@ -12,7 +12,7 @@ from account.authorization.helpers import (
     has_dataset_perm,
     is_dataset_member,
 )
-from account.models import DatasetGlobalRoleAssignment, DatasetRole, DatasetUserRoleAssignment, GlobalRole, User
+from account.models import DatasetGroupRoleAssignment, DatasetRole, DatasetUserRoleAssignment, User, UserGroup
 from account.tests.helpers import grant
 from account.tests.public_permission_codes_contract import (
     AGENT_VIEW,
@@ -54,13 +54,13 @@ class TestIsDatasetMember:
 
         assert is_dataset_member(user, dataset) is True
 
-    def test_user_with_global_role_assignment_is_member(self):
+    def test_user_with_group_assignment_is_member(self):
         user = baker.make(User)
-        global_role = baker.make(GlobalRole)
-        global_role.members.add(user)
+        group = baker.make(UserGroup)
+        group.members.add(user)
         dataset = baker.make(DataSet)
         role = baker.make(DatasetRole)
-        baker.make(DatasetGlobalRoleAssignment, global_role=global_role, dataset=dataset, role=role)
+        baker.make(DatasetGroupRoleAssignment, group=group, dataset=dataset, role=role)
 
         assert is_dataset_member(user, dataset) is True
 
@@ -103,25 +103,25 @@ class TestDatasetsVisibleTo:
 
         assert list(datasets_visible_to(user)) == [visible]
 
-    def test_user_sees_only_datasets_assigned_through_a_global_role(self):
+    def test_user_sees_only_datasets_assigned_through_a_group(self):
         user = baker.make(User)
-        global_role = baker.make(GlobalRole)
-        global_role.members.add(user)
+        group = baker.make(UserGroup)
+        group.members.add(user)
         visible = baker.make(DataSet)
         baker.make(DataSet)
         role = baker.make(DatasetRole)
-        baker.make(DatasetGlobalRoleAssignment, global_role=global_role, dataset=visible, role=role)
+        baker.make(DatasetGroupRoleAssignment, group=group, dataset=visible, role=role)
 
         assert list(datasets_visible_to(user)) == [visible]
 
-    def test_sees_union_of_direct_and_global_role_assignments_without_duplicates(self):
+    def test_sees_union_of_direct_and_group_assignments_without_duplicates(self):
         user = baker.make(User)
-        global_role = baker.make(GlobalRole)
-        global_role.members.add(user)
+        group = baker.make(UserGroup)
+        group.members.add(user)
         dataset = baker.make(DataSet)
         role = baker.make(DatasetRole)
         baker.make(DatasetUserRoleAssignment, user=user, dataset=dataset, role=role)
-        baker.make(DatasetGlobalRoleAssignment, global_role=global_role, dataset=dataset, role=role)
+        baker.make(DatasetGroupRoleAssignment, group=group, dataset=dataset, role=role)
 
         assert list(datasets_visible_to(user)) == [dataset]
 
@@ -157,14 +157,14 @@ class TestHasDatasetPerm:
 
         assert has_dataset_perm(user, self.CODENAME, dataset) is True
 
-    def test_global_role_assignment_with_matching_permission_grants_access(self):
+    def test_group_assignment_with_matching_permission_grants_access(self):
         user = baker.make(User)
-        global_role = baker.make(GlobalRole)
-        global_role.members.add(user)
+        group = baker.make(UserGroup)
+        group.members.add(user)
         dataset = baker.make(DataSet)
         role = baker.make(DatasetRole)
         role.permissions.add(_permission(PERMISSIONS.AGENT.VIEW))
-        baker.make(DatasetGlobalRoleAssignment, global_role=global_role, dataset=dataset, role=role)
+        baker.make(DatasetGroupRoleAssignment, group=group, dataset=dataset, role=role)
 
         assert has_dataset_perm(user, self.CODENAME, dataset) is True
 
@@ -221,36 +221,36 @@ class TestDatasetsWithPermission:
 
         assert list(datasets_with_permission(user, self.CODENAME)) == [dataset]
 
-    def test_global_role_assignment_yields_only_that_dataset(self):
+    def test_group_assignment_yields_only_that_dataset(self):
         user = baker.make(User)
-        global_role = baker.make(GlobalRole)
-        global_role.members.add(user)
+        group = baker.make(UserGroup)
+        group.members.add(user)
         dataset = baker.make(DataSet)
         baker.make(DataSet)
         role = baker.make(DatasetRole)
         role.permissions.add(_permission(PERMISSIONS.CONVERSATION.VIEW_ALL))
-        baker.make(DatasetGlobalRoleAssignment, global_role=global_role, dataset=dataset, role=role)
+        baker.make(DatasetGroupRoleAssignment, group=group, dataset=dataset, role=role)
 
         assert list(datasets_with_permission(user, self.CODENAME)) == [dataset]
 
-    def test_direct_and_global_role_assignments_are_unioned_without_duplicates(self):
+    def test_direct_and_group_assignments_are_unioned_without_duplicates(self):
         user = baker.make(User)
-        global_role = baker.make(GlobalRole)
-        global_role.members.add(user)
+        group = baker.make(UserGroup)
+        group.members.add(user)
         role = baker.make(DatasetRole)
         role.permissions.add(_permission(PERMISSIONS.CONVERSATION.VIEW_ALL))
         direct_dataset = baker.make(DataSet)
-        global_role_dataset = baker.make(DataSet)
+        group_dataset = baker.make(DataSet)
         shared_dataset = baker.make(DataSet)
         baker.make(DatasetUserRoleAssignment, user=user, dataset=direct_dataset, role=role)
         baker.make(DatasetUserRoleAssignment, user=user, dataset=shared_dataset, role=role)
-        baker.make(DatasetGlobalRoleAssignment, global_role=global_role, dataset=global_role_dataset, role=role)
-        baker.make(DatasetGlobalRoleAssignment, global_role=global_role, dataset=shared_dataset, role=role)
+        baker.make(DatasetGroupRoleAssignment, group=group, dataset=group_dataset, role=role)
+        baker.make(DatasetGroupRoleAssignment, group=group, dataset=shared_dataset, role=role)
 
         result = datasets_with_permission(user, self.CODENAME)
 
         assert result.count() == 3
-        assert set(result) == {direct_dataset, global_role_dataset, shared_dataset}
+        assert set(result) == {direct_dataset, group_dataset, shared_dataset}
 
     def test_role_without_matching_permission_yields_nothing(self):
         user = baker.make(User)
@@ -287,13 +287,13 @@ class TestHasAnyDatasetAccess:
 
         assert has_any_dataset_access(user) is True
 
-    def test_global_role_assignment_on_any_dataset_grants_it(self):
+    def test_group_assignment_on_any_dataset_grants_it(self):
         user = baker.make(User)
-        global_role = baker.make(GlobalRole)
-        global_role.members.add(user)
+        group = baker.make(UserGroup)
+        group.members.add(user)
         dataset = baker.make(DataSet)
         role = baker.make(DatasetRole)
-        baker.make(DatasetGlobalRoleAssignment, global_role=global_role, dataset=dataset, role=role)
+        baker.make(DatasetGroupRoleAssignment, group=group, dataset=dataset, role=role)
 
         assert has_any_dataset_access(user) is True
 
@@ -327,14 +327,14 @@ class TestHasAnyPermissionOnAnyDataset:
 
         assert has_any_permission_on_any_dataset(user, *self.CODENAMES) is True
 
-    def test_global_role_assignment_on_any_dataset_grants_it(self):
+    def test_group_assignment_on_any_dataset_grants_it(self):
         user = baker.make(User)
-        global_role = baker.make(GlobalRole)
-        global_role.members.add(user)
+        group = baker.make(UserGroup)
+        group.members.add(user)
         dataset = baker.make(DataSet)
         role = baker.make(DatasetRole)
         role.permissions.add(_permission(PERMISSIONS.AGENT.ADD))
-        baker.make(DatasetGlobalRoleAssignment, global_role=global_role, dataset=dataset, role=role)
+        baker.make(DatasetGroupRoleAssignment, group=group, dataset=dataset, role=role)
 
         assert has_any_permission_on_any_dataset(user, *self.CODENAMES) is True
 
@@ -364,14 +364,14 @@ class TestDatasetPermissionCodes:
         assert dataset_permission_codes(user, assigned) == [AGENT_VIEW, CONVERSATION_CONVERSE]
         assert dataset_permission_codes(user, other) == []
 
-    def test_global_role_assignment_reaches_members(self):
+    def test_group_assignment_reaches_members(self):
         user = baker.make(User)
-        global_role = baker.make(GlobalRole)
-        global_role.members.add(user)
+        group = baker.make(UserGroup)
+        group.members.add(user)
         dataset = baker.make(DataSet)
         role = baker.make(DatasetRole)
         role.permissions.add(_permission(PERMISSIONS.INTEGRATION.VIEW), _permission(PERMISSIONS.INTEGRATION.SYNC))
-        baker.make(DatasetGlobalRoleAssignment, global_role=global_role, dataset=dataset, role=role)
+        baker.make(DatasetGroupRoleAssignment, group=group, dataset=dataset, role=role)
 
         assert dataset_permission_codes(user, dataset) == [INTEGRATION_SYNC, INTEGRATION_VIEW]
 

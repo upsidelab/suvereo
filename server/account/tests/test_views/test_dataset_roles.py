@@ -4,8 +4,8 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from account.authorization import PERMISSIONS
-from account.models import DatasetGlobalRoleAssignment, DatasetRole, DatasetUserRoleAssignment
-from account.tests.helpers import assign_role, client_for, grant, make_global_role, make_role
+from account.models import DatasetGroupRoleAssignment, DatasetRole, DatasetUserRoleAssignment
+from account.tests.helpers import assign_role, client_for, grant, make_group, make_role
 from account.tests.public_permission_codes_contract import (
     AGENT_VIEW,
     CONVERSATION_CONVERSE,
@@ -124,14 +124,14 @@ class TestDatasetRoleDeletion:
         self, admin_api_client, detail_url, role, user, data_set
     ):
         assign_role(user, data_set, role)
-        assign_role(make_global_role("support"), data_set, role)
+        assign_role(make_group("contractors"), data_set, role)
 
         response = admin_api_client.delete(detail_url)
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert not DatasetRole.objects.filter(pk=role.pk).exists()
         assert not DatasetUserRoleAssignment.objects.filter(role_id=role.pk).exists()
-        assert not DatasetGlobalRoleAssignment.objects.filter(role_id=role.pk).exists()
+        assert not DatasetGroupRoleAssignment.objects.filter(role_id=role.pk).exists()
 
     def test_an_unassigned_role_can_be_deleted(self, admin_api_client, detail_url, role):
         response = admin_api_client.delete(detail_url)

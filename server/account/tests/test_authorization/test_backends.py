@@ -9,7 +9,7 @@ from model_bakery import baker
 from account.authorization import GLOBAL_SCOPE_PERMISSIONS, PERMISSIONS
 from account.authorization.backends import RoleBackend
 from account.models import User
-from account.tests.helpers import join_global_role, make_global_role, permission
+from account.tests.helpers import join_global_role, join_group, make_global_role, make_group, permission
 from account.tests.public_permission_codes_contract import DATASET_VIEW, USER_VIEW
 
 pytestmark = pytest.mark.django_db
@@ -58,6 +58,62 @@ class TestAGlobalRoleIsTheOnlyWayAPermissionReachesAnAccount:
         response = api_client.get("/api/account")
 
         assert sorted(response.data["permissions"]) == sorted([DATASET_VIEW, USER_VIEW])
+
+
+class TestAGroupCarriesTheGlobalRolesItHolds:
+    def test_a_permission_a_group_s_global_role_carries_reaches_the_group_s_members(self, user):
+        join_group(user, make_group("contractors", make_global_role("viewers", PERMISSIONS.DATASET.VIEW)))
+
+        assert user.has_perm(PERMISSIONS.DATASET.VIEW)
+
+    def test_a_non_member_of_the_group_does_not_hold_it(self, user):
+        make_group("contractors", make_global_role("viewers", PERMISSIONS.DATASET.VIEW))
+
+        assert not user.has_perm(PERMISSIONS.DATASET.VIEW)
+
+    def test_a_group_holding_no_global_role_carries_nothing(self, user):
+        join_group(user, make_group("contractors"))
+
+        assert user.get_all_permissions() == set()
+
+    def test_leaving_the_group_gives_up_what_it_carried(self, user):
+        group = make_group("contractors", make_global_role("viewers", PERMISSIONS.DATASET.VIEW))
+        join_group(user, group)
+        group.members.remove(user)
+
+        assert not User.objects.get(pk=user.pk).has_perm(PERMISSIONS.DATASET.VIEW)
+
+    def test_revoking_the_global_role_from_the_group_gives_it_up_too(self, user):
+        global_role = make_global_role("viewers", PERMISSIONS.DATASET.VIEW)
+        group = make_group("contractors", global_role)
+        join_group(user, group)
+        group.global_roles.remove(global_role)
+
+        assert not User.objects.get(pk=user.pk).has_perm(PERMISSIONS.DATASET.VIEW)
+
+    def test_the_two_paths_union_and_neither_shadows_the_other(self, user):
+        direct = make_global_role("viewers", PERMISSIONS.DATASET.VIEW)
+        join_global_role(user, direct)
+        join_group(user, make_group("contractors", make_global_role("auditors", PERMISSIONS.USER.VIEW)))
+
+        assert user.get_all_permissions() == {PERMISSIONS.DATASET.VIEW, PERMISSIONS.USER.VIEW}
+
+    def test_the_same_global_role_held_both_ways_is_not_doubled(self, user):
+        global_role = make_global_role("viewers", PERMISSIONS.DATASET.VIEW)
+        join_global_role(user, global_role)
+        join_group(user, make_group("contractors", global_role))
+
+        assert user.get_all_permissions() == {PERMISSIONS.DATASET.VIEW}
+
+    def test_losing_one_path_leaves_the_other_in_force(self, user):
+        global_role = make_global_role("viewers", PERMISSIONS.DATASET.VIEW)
+        join_global_role(user, global_role)
+        group = make_group("contractors", global_role)
+        join_group(user, group)
+
+        group.members.remove(user)
+
+        assert User.objects.get(pk=user.pk).has_perm(PERMISSIONS.DATASET.VIEW)
 
 
 class TestAuthenticationIsStillDjangoS:
