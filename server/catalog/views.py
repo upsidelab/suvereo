@@ -1,13 +1,18 @@
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.generics import GenericAPIView, ListCreateAPIView, RetrieveAPIView
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from account.models import User
-from account.serializers import UserSerializer
+from account.authorization import (
+    PERMISSIONS,
+    any_global_permission_required,
+    datasets_visible_to,
+    global_permission_required,
+)
 from agent.core.registries.embeddings import EmbeddingProviderRegistry
 from agent.core.registries.language_models import LanguageModelRegistry
 from agent.models import AgenticExecution, Message
@@ -31,30 +36,24 @@ class DataSetListView(ListCreateAPIView):
         return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
-        if self.request.user and self.request.user.is_staff:
-            return DataSet.objects.all()
-
-        return DataSet.objects.filter(users=self.request.user)
+        return datasets_visible_to(self.request.user).order_by("name", "id")
 
     @swagger_auto_schema(operation_description="Create a new data set", request_body=DataSetCreateSerializer)
+    @global_permission_required(PERMISSIONS.DATASET.ADD)
     def post(self, request, *args, **kwargs):
         return super().post(request, *args, **kwargs)
 
     def perform_create(self, serializer):
-        if not self.request.user.is_staff:
-            self.permission_denied(self.request)
-
         with transaction.atomic():
             preconfigure_agents = serializer.validated_data.pop("preconfigure_agents")
             data_set = serializer.save()
-            data_set.users.add(self.request.user)
             if preconfigure_agents:
                 AgentPreconfigurationService.preconfigure_available_agents(data_set)
 
 
 class DataSetDetailView(RetrieveAPIView):
     serializer_class = DataSetSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
     lookup_url_kwarg = "data_set_id"
     queryset = DataSet.objects.all()
 
@@ -67,7 +66,9 @@ class DataSetDetailView(RetrieveAPIView):
         ],
     )
     def get(self, request, *args, **kwargs):
-        return super().get(request, *args, **kwargs)
+        instance = get_object_or_404(datasets_visible_to(request.user), pk=kwargs[self.lookup_url_kwarg])
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
     @swagger_auto_schema(
         operation_description="Update a data set (embedding fields are ignored)",
@@ -78,6 +79,7 @@ class DataSetDetailView(RetrieveAPIView):
             )
         ],
     )
+    @global_permission_required(PERMISSIONS.DATASET.CHANGE)
     def patch(self, request, *args, **kwargs):
         instance = self.get_object()
 
@@ -102,6 +104,7 @@ class DataSetDetailView(RetrieveAPIView):
             )
         ],
     )
+    @global_permission_required(PERMISSIONS.DATASET.DELETE)
     def delete(self, request, *args, **kwargs):
         instance = self.get_object()
 
@@ -115,59 +118,8 @@ class DataSetDetailView(RetrieveAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class DataSetUserListView(ListCreateAPIView):
-    serializer_class = UserSerializer
-    permission_classes = [IsAdminUser]
-
-    @swagger_auto_schema(
-        operation_description="List users in a data set",
-        manual_parameters=[
-            openapi.Parameter(
-                "data_set_id", openapi.IN_PATH, description="ID of the data set", type=openapi.TYPE_INTEGER
-            )
-        ],
-    )
-    def get(self, request, *args, **kwargs):
-        return super().get(request, *args, **kwargs)
-
-    def get_queryset(self):
-        return DataSet.objects.get(id=self.kwargs["data_set_id"]).users.all()
-
-    @swagger_auto_schema(
-        operation_description="Add a user to a data set",
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={"user_id": openapi.Schema(type=openapi.TYPE_INTEGER, description="ID of the user")},
-        ),
-    )
-    def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
-
-    def create(self, *args, **kwargs):
-        user = User.objects.get(id=self.request.data["user_id"])
-        DataSet.objects.get(id=self.kwargs["data_set_id"]).users.add(user)
-        return Response({}, status=status.HTTP_201_CREATED)
-
-
-class DataSetUserView(GenericAPIView):
-    permission_classes = [IsAdminUser]
-
-    @swagger_auto_schema(
-        operation_description="Remove a user from a data set",
-        manual_parameters=[
-            openapi.Parameter(
-                "data_set_id", openapi.IN_PATH, description="ID of the data set", type=openapi.TYPE_INTEGER
-            ),
-            openapi.Parameter("user_id", openapi.IN_PATH, description="ID of the user", type=openapi.TYPE_INTEGER),
-        ],
-    )
-    def delete(self, *args, **kwargs):
-        DataSet.objects.get(id=self.kwargs["data_set_id"]).users.remove(self.kwargs["user_id"])
-        return Response({}, status=status.HTTP_204_NO_CONTENT)
-
-
 class ConfigView(GenericAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         operation_description="Get catalog configuration",
@@ -192,6 +144,7 @@ class ConfigView(GenericAPIView):
             )
         },
     )
+    @any_global_permission_required(PERMISSIONS.DATASET.ADD, PERMISSIONS.DATASET.CHANGE)
     def get(self, request, *args, **kwargs):
         response_body = {
             "language_model_providers": [
@@ -206,7 +159,7 @@ class ConfigView(GenericAPIView):
 
 
 class ConfigLanguageModelView(GenericAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         operation_description="Get available language models for a given provider",
@@ -220,6 +173,7 @@ class ConfigLanguageModelView(GenericAPIView):
             )
         },
     )
+    @any_global_permission_required(PERMISSIONS.DATASET.ADD, PERMISSIONS.DATASET.CHANGE)
     def get(self, request, *args, **kwargs):
         provider_name = kwargs.get("provider_name")
         response_body = LanguageModelRegistry().provider_class_by_name(provider_name).available_models()
@@ -228,7 +182,7 @@ class ConfigLanguageModelView(GenericAPIView):
 
 
 class ConfigEmbeddingModelView(GenericAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         operation_description="Get available embedding models and vector size constraints for a given provider",
@@ -259,6 +213,7 @@ class ConfigEmbeddingModelView(GenericAPIView):
             )
         },
     )
+    @any_global_permission_required(PERMISSIONS.DATASET.ADD, PERMISSIONS.DATASET.CHANGE)
     def get(self, request, *args, **kwargs):
         provider_name = kwargs.get("provider_name")
         provider_class = EmbeddingProviderRegistry().provider_class_by_name(provider_name)

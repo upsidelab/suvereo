@@ -12,6 +12,7 @@ from enthusiast_common.repositories import (
 )
 from enthusiast_common.structures import LLMFile
 
+from account.authorization import PERMISSIONS, datasets_with_permission
 from account.models import User
 from agent.models import Conversation, Message
 from agent.models.agent import Agent
@@ -62,7 +63,7 @@ class DjangoUserRepository(
 ):
     def get_user_dataset(self, user_id: int, data_set_id: int) -> DataSet:
         user = self.model.objects.get(pk=user_id)
-        return user.data_sets.get(pk=data_set_id)
+        return datasets_with_permission(user, PERMISSIONS.CONVERSATION.CONVERSE).get(pk=data_set_id)
 
 
 class DjangoMessageRepository(BaseDjangoRepository[Message], BaseMessageRepository[Message]):

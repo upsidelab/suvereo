@@ -31,6 +31,7 @@ class Conversation(models.Model):
             "are mostly questions and answers and have different actors such as end user asking "
             "question and ECL agent answering those questions."
         )
+        permissions = [("converse", "Can converse with agents")]
 
 
 class ConversationFile(models.Model):

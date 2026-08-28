@@ -42,8 +42,15 @@ class User(AbstractUser):
 
     objects = UserManager()
 
+    class Meta(AbstractUser.Meta):
+        permissions = [
+            ("add_serviceaccount", "Can add service account"),
+            ("change_serviceaccount", "Can change service account"),
+            ("view_serviceaccount", "Can view service account"),
+            # Governs writes to User.groups. Declared here rather than on auth.Group, which cannot
+            # be given a Meta.permissions entry without forking auth's own migrations.
+            ("assign_group", "Can add users to and remove them from groups"),
+        ]
+
     def __str__(self):
         return self.email
-
-    def has_dataset_access(self, dataset):
-        return self.is_staff or getattr(self, "data_sets").filter(pk=dataset.pk).exists()

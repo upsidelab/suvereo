@@ -12,7 +12,7 @@ import { User } from "@/lib/types.ts";
 const formSchema = z.object({
   email: z.string().trim().email(),
   isActive: z.boolean(),
-  isStaff: z.boolean(),
+  isAdmin: z.boolean(),
 });
 
 type UserFormSchema = z.infer<typeof formSchema>;
@@ -29,7 +29,7 @@ export function EditUserForm({ user, onUserUpdated }: EditUserFormProps) {
     defaultValues: {
       email: user.email,
       isActive: user.isActive,
-      isStaff: user.isStaff
+      isAdmin: user.isAdmin
     }
   });
 

@@ -14,7 +14,7 @@ const formSchema = z.object({
   password: z.string().min(8),
   confirmPassword: z.string(),
   isActive: z.boolean(),
-  isStaff: z.boolean(),
+  isAdmin: z.boolean(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"]
@@ -34,7 +34,7 @@ export function NewUserForm({ onUserCreated }: NewUserFormProps) {
       email: "",
       password: "",
       isActive: true,
-      isStaff: false
+      isAdmin: false
     }
   });
 

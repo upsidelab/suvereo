@@ -11,9 +11,7 @@ class Command(BaseCommand):
         parser.add_argument("-n", "--name", required=True, help="name of service account")
 
     def handle(self, *args, **options):
-        serializer = CreateUpdateServiceAccountSerializer(
-            data={"name": options["name"], "is_staff": True, "data_set_ids": []}
-        )
+        serializer = CreateUpdateServiceAccountSerializer(data={"name": options["name"], "is_admin": True})
         serializer.is_valid(raise_exception=True)
         service_account = serializer.save()
         token, _ = Token.objects.get_or_create(user=service_account)

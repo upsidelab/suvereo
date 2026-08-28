@@ -21,6 +21,7 @@ class Integration(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["dataset", "type"], name="unique_integration_type_per_dataset")
         ]
+        permissions = [("sync_integration", "Can sync this integration")]
 
     def __str__(self):
         return f"{self.type} on dataset {self.dataset_id}"
