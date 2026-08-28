@@ -64,10 +64,11 @@ class ConversationCreationSerializer(serializers.Serializer):
 
 class ConversationSerializer(serializers.ModelSerializer):
     agent = AgentListSerializer()
+    user_email = serializers.EmailField(source="user.email", read_only=True)
 
     class Meta:
         model = Conversation
-        fields = ["id", "started_at", "summary", "agent"]
+        fields = ["id", "started_at", "summary", "agent", "user_email"]
 
 
 class MessageFeedbackSerializer(serializers.ModelSerializer):
@@ -103,10 +104,11 @@ class ConversationContentSerializer(serializers.ModelSerializer):
 
     agent = AgentListSerializer()
     is_execution_conversation = serializers.SerializerMethodField()
+    user_email = serializers.EmailField(source="user.email", read_only=True)
 
     class Meta:
         model = Conversation
-        fields = ["id", "started_at", "summary", "history", "agent", "is_execution_conversation"]
+        fields = ["id", "started_at", "summary", "history", "agent", "is_execution_conversation", "user_email"]
 
     def get_is_execution_conversation(self, obj) -> bool:
         return hasattr(obj, "agentic_execution")

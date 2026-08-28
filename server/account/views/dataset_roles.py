@@ -1,12 +1,10 @@
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
 
 from account.authorization import PERMISSIONS, admin_required, global_permission_required
-from account.models import DatasetGroupRoleAssignment, DatasetRole, DatasetUserRoleAssignment
+from account.models import DatasetRole
 from account.serializers import DatasetRoleDetailSerializer, DatasetRoleSerializer
 
 DATASET_ROLE_ID_PARAMETER = openapi.Parameter(
@@ -63,21 +61,11 @@ class DatasetRoleDetailView(RetrieveUpdateDestroyAPIView):
         return super().update(request, *args, **kwargs)
 
     @swagger_auto_schema(
-        operation_description="Delete a dataset role, unless it is still assigned anywhere",
+        operation_description="Delete a dataset role, revoking it from everyone who holds it",
         manual_parameters=[DATASET_ROLE_ID_PARAMETER],
     )
     @admin_required
     def delete(self, request, *args, **kwargs):
-        role = self.get_object()
-        user_assignments = DatasetUserRoleAssignment.objects.filter(role=role).count()
-        group_assignments = DatasetGroupRoleAssignment.objects.filter(role=role).count()
-        if user_assignments or group_assignments:
-            return Response(
-                {
-                    "detail": "This role is still assigned. Revoke it everywhere before deleting it.",
-                    "user_assignments": user_assignments,
-                    "group_assignments": group_assignments,
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        """Deleting a role takes its assignments with it, the way deleting a global role takes its
+        memberships - holding a role is not a reason the role has to stay."""
         return super().delete(request, *args, **kwargs)

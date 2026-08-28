@@ -2,10 +2,12 @@ from django.contrib.auth.models import Permission
 from django.db.models import Q, QuerySet
 from django.http import Http404
 
-from account.models import DatasetGroupRoleAssignment, DatasetUserRoleAssignment, User
+from account.models import DatasetGlobalRoleAssignment, DatasetUserRoleAssignment, User
 from catalog.models import DataSet
 
 from .permission_codenames import PERMISSIONS
+from .permission_codes import PUBLIC_CODES
+from .permission_rules import DATASET_SCOPE_PERMISSIONS
 
 
 def _permissions(*labels: str) -> QuerySet[Permission]:
@@ -23,14 +25,14 @@ def is_dataset_member(user: User, dataset: DataSet) -> bool:
         return True
     if DatasetUserRoleAssignment.objects.filter(user=user, dataset=dataset).exists():
         return True
-    return DatasetGroupRoleAssignment.objects.filter(group__in=user.groups.all(), dataset=dataset).exists()
+    return DatasetGlobalRoleAssignment.objects.filter(global_role__in=user.groups.all(), dataset=dataset).exists()
 
 
 def datasets_visible_to(user: User) -> QuerySet[DataSet]:
     if user.has_perm(PERMISSIONS.DATASET.VIEW):
         return DataSet.objects.all()
     return DataSet.objects.filter(
-        Q(datasetuserroleassignment__user=user) | Q(datasetgrouproleassignment__group__in=user.groups.all())
+        Q(datasetuserroleassignment__user=user) | Q(datasetglobalroleassignment__global_role__in=user.groups.all())
     ).distinct()
 
 
@@ -42,9 +44,25 @@ def has_dataset_perm(user: User, codename: str, dataset: DataSet) -> bool:
         user=user, dataset=dataset, role__permissions__in=permissions
     ).exists():
         return True
-    return DatasetGroupRoleAssignment.objects.filter(
-        group__in=user.groups.all(), dataset=dataset, role__permissions__in=permissions
+    return DatasetGlobalRoleAssignment.objects.filter(
+        global_role__in=user.groups.all(), dataset=dataset, role__permissions__in=permissions
     ).exists()
+
+
+def dataset_permission_codes(user: User, dataset: DataSet) -> list[str]:
+    held = {codename for codename in DATASET_SCOPE_PERMISSIONS if user.has_perm(codename)}
+
+    assignment_rows = [
+        *DatasetUserRoleAssignment.objects.filter(user=user, dataset=dataset).values_list(
+            "role__permissions__content_type__app_label", "role__permissions__codename"
+        ),
+        *DatasetGlobalRoleAssignment.objects.filter(global_role__in=user.groups.all(), dataset=dataset).values_list(
+            "role__permissions__content_type__app_label", "role__permissions__codename"
+        ),
+    ]
+    held |= {f"{app_label}.{codename}" for app_label, codename in assignment_rows if codename}
+
+    return sorted(PUBLIC_CODES[codename] for codename in held & set(DATASET_SCOPE_PERMISSIONS))
 
 
 def datasets_with_permission(user: User, codename: str) -> QuerySet[DataSet]:
@@ -54,8 +72,8 @@ def datasets_with_permission(user: User, codename: str) -> QuerySet[DataSet]:
     return DataSet.objects.filter(
         Q(datasetuserroleassignment__user=user, datasetuserroleassignment__role__permissions__in=permissions)
         | Q(
-            datasetgrouproleassignment__group__in=user.groups.all(),
-            datasetgrouproleassignment__role__permissions__in=permissions,
+            datasetglobalroleassignment__global_role__in=user.groups.all(),
+            datasetglobalroleassignment__role__permissions__in=permissions,
         )
     ).distinct()
 
@@ -65,7 +83,7 @@ def has_any_dataset_access(user: User) -> bool:
         return True
     if DatasetUserRoleAssignment.objects.filter(user=user).exists():
         return True
-    return DatasetGroupRoleAssignment.objects.filter(group__in=user.groups.all()).exists()
+    return DatasetGlobalRoleAssignment.objects.filter(global_role__in=user.groups.all()).exists()
 
 
 def has_any_permission_on_any_dataset(user: User, *codenames: str) -> bool:
@@ -74,8 +92,8 @@ def has_any_permission_on_any_dataset(user: User, *codenames: str) -> bool:
     permissions = _permissions(*codenames)
     if DatasetUserRoleAssignment.objects.filter(user=user, role__permissions__in=permissions).exists():
         return True
-    return DatasetGroupRoleAssignment.objects.filter(
-        group__in=user.groups.all(), role__permissions__in=permissions
+    return DatasetGlobalRoleAssignment.objects.filter(
+        global_role__in=user.groups.all(), role__permissions__in=permissions
     ).exists()
 
 

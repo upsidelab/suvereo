@@ -5,7 +5,7 @@ from rest_framework.test import APIClient
 
 from account.authorization import PERMISSIONS
 from account.tests.helpers import grant, permission
-from account.tests.public_permission_codes_contract import DATASET_ADD
+from account.tests.public_permission_codes_contract import DATASET_ADD, DATASET_SCOPED_CONTRACT
 
 pytestmark = pytest.mark.django_db
 
@@ -45,18 +45,32 @@ class TestPermissionListing:
         labels = {option["code"]: option["label"] for entity in response.data for option in entity["permissions"]}
 
         assert labels[DATASET_ADD] == permission(PERMISSIONS.DATASET.ADD).name
-        assert labels[DATASET_ADD] == "Can add data set"
+        assert labels[DATASET_ADD] == "Create data sets"
 
 
-class TestPermissionListingIsAdminOnly:
+class TestPermissionListingAccess:
     def test_returns_401_when_unauthenticated(self, url):
         response = APIClient().get(url)
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    def test_denies_a_non_admin_who_can_view_groups(self, api_client, user, url):
-        grant(user, PERMISSIONS.GROUP.VIEW)
+    def test_allows_a_global_role_view_holder(self, api_client, user, url):
+        grant(user, PERMISSIONS.GLOBAL_ROLE.VIEW)
 
+        response = api_client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert DATASET_ADD in _codes(response)
+
+    def test_allows_a_dataset_role_view_holder(self, api_client, user, url):
+        grant(user, PERMISSIONS.DATASET_ROLE.VIEW)
+
+        response = api_client.get(url, {"scope": "dataset"})
+
+        assert response.status_code == status.HTTP_200_OK
+        assert _codes(response) == DATASET_SCOPED_CONTRACT
+
+    def test_denies_a_user_who_can_read_neither_kind_of_role(self, api_client, url):
         response = api_client.get(url)
 
         assert response.status_code == status.HTTP_403_FORBIDDEN

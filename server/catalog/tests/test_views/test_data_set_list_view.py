@@ -10,7 +10,12 @@ from pydantic import Field
 from rest_framework import status
 
 from account.authorization import PERMISSIONS
-from account.models import DatasetGroupRoleAssignment, DatasetRole, DatasetUserRoleAssignment
+from account.models import DatasetGlobalRoleAssignment, DatasetRole, DatasetUserRoleAssignment
+from account.tests.public_permission_codes_contract import (
+    AGENT_VIEW,
+    CONVERSATION_CONVERSE,
+    DATASET_SCOPED_CONTRACT,
+)
 from agent.core.registries.agents.agent_registry import AgentRegistry
 from agent.core.registries.embeddings.embedding_provider_registry import EmbeddingProviderRegistry
 from agent.models import Agent
@@ -163,13 +168,13 @@ class TestDataSetListViewGet:
         assert response.status_code == status.HTTP_200_OK
         assert self._ids(response) == {visible.id}
 
-    def test_user_sees_dataset_via_group_assignment(self, api_client, user, url):
-        group = baker.make(Group)
-        user.groups.add(group)
+    def test_user_sees_dataset_via_global_role_assignment(self, api_client, user, url):
+        global_role = baker.make(Group)
+        user.groups.add(global_role)
         visible = baker.make(DataSet)
         baker.make(DataSet)
         role = baker.make(DatasetRole)
-        baker.make(DatasetGroupRoleAssignment, group=group, dataset=visible, role=role)
+        baker.make(DatasetGlobalRoleAssignment, global_role=global_role, dataset=visible, role=role)
 
         response = api_client.get(url)
 
@@ -192,3 +197,57 @@ class TestDataSetListViewGet:
 
         assert response.status_code == status.HTTP_200_OK
         assert self._ids(response) == {d.id for d in datasets}
+
+
+class TestDataSetListViewGetPermissionsField:
+    """Every row carries the requesting user's dataset-scoped codes on that data set.
+
+    This is what the frontend gates per-data-set controls on - `GET /api/account` reports global
+    grants only, so a code held through a role would be invisible to it.
+    """
+
+    @pytest.fixture
+    def url(self):
+        return reverse("data_set_list")
+
+    def _permissions_by_id(self, response):
+        return {item["id"]: item["permissions"] for item in response.data["results"]}
+
+    def test_reports_the_codes_a_role_grants_on_the_dataset_it_was_assigned_on(self, api_client, user, url):
+        assigned = baker.make(DataSet)
+        also_visible = baker.make(DataSet)
+        role = baker.make(DatasetRole)
+        role.permissions.add(_permission(PERMISSIONS.AGENT.VIEW), _permission(PERMISSIONS.CONVERSATION.CONVERSE))
+        baker.make(DatasetUserRoleAssignment, user=user, dataset=assigned, role=role)
+        baker.make(DatasetUserRoleAssignment, user=user, dataset=also_visible, role=baker.make(DatasetRole))
+
+        response = api_client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert self._permissions_by_id(response) == {
+            assigned.id: [AGENT_VIEW, CONVERSATION_CONVERSE],
+            also_visible.id: [],
+        }
+
+    def test_global_grant_reports_on_every_visible_dataset(self, api_client, user, url):
+        user.user_permissions.add(_permission(PERMISSIONS.DATASET.VIEW), _permission(PERMISSIONS.AGENT.VIEW))
+        baker.make(DataSet, _quantity=2)
+
+        response = api_client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert list(self._permissions_by_id(response).values()) == [[AGENT_VIEW], [AGENT_VIEW]]
+
+    def test_admin_holds_every_dataset_scoped_code(self, admin_api_client, url):
+        baker.make(DataSet)
+
+        response = admin_api_client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert set(response.data["results"][0]["permissions"]) == DATASET_SCOPED_CONTRACT
+
+    def test_permissions_cannot_be_set_on_create(self, admin_api_client, url):
+        response = admin_api_client.post(url, {"name": "New DataSet", "permissions": [AGENT_VIEW]}, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert set(response.data["permissions"]) == DATASET_SCOPED_CONTRACT

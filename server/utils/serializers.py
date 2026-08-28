@@ -49,3 +49,4 @@ class ExtraArgDetailSerializer(serializers.Serializer):
     type = TypeInfoSerializer()
     description = serializers.CharField(allow_blank=True, required=False, allow_null=True)
     title = serializers.CharField(allow_blank=True, required=False, allow_null=True)
+    required = serializers.BooleanField(required=False, help_text="True if the field has no default")

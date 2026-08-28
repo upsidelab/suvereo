@@ -12,7 +12,6 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from utils.functions import get_model_descriptor_from_class_field
 
 from account.authorization import (
     PERMISSIONS,
@@ -33,6 +32,7 @@ from agent.serializers.configuration import (
     AgentListSerializer,
     AgentSerializer,
     AvailableAgentsResponseSerializer,
+    agent_type_config_schema,
 )
 from agent.serializers.conversation import (
     AskQuestionSerializer,
@@ -236,21 +236,14 @@ class AgentTypesView(APIView):
     @any_permission_on_any_dataset_required(PERMISSIONS.AGENT.ADD, PERMISSIONS.AGENT.CHANGE)
     def get(self, request):
         agent_registry = AgentRegistry()
-        choices = []
-        for agent_class in agent_registry.get_plugin_classes():
-            choices.append(
-                {
-                    "name": agent_class.NAME,
-                    "key": agent_class.AGENT_KEY,
-                    "agent_args": get_model_descriptor_from_class_field(agent_class, "AGENT_ARGS"),
-                    "prompt_input": get_model_descriptor_from_class_field(agent_class, "PROMPT_INPUT"),
-                    "prompt_extension": get_model_descriptor_from_class_field(agent_class, "PROMPT_EXTENSION"),
-                    "tools": [
-                        get_model_descriptor_from_class_field(tool_config.tool_class, "CONFIGURATION_ARGS")
-                        for tool_config in agent_class.TOOLS
-                    ],
-                }
-            )
+        choices = [
+            {
+                "name": agent_class.NAME,
+                "key": agent_class.AGENT_KEY,
+                **agent_type_config_schema(agent_class),
+            }
+            for agent_class in agent_registry.get_plugin_classes()
+        ]
         response_serializer = AvailableAgentsResponseSerializer(data={"choices": choices})
         response_serializer.is_valid(raise_exception=True)
 

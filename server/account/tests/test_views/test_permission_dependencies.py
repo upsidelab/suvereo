@@ -15,8 +15,8 @@ from account.tests.public_permission_codes_contract import (
     DATASET_ROLE_ASSIGN,
     DATASET_ROLE_VIEW,
     DATASET_VIEW,
-    GROUP_ASSIGN,
-    GROUP_VIEW,
+    GLOBAL_ROLE_ASSIGN,
+    GLOBAL_ROLE_VIEW,
     INTEGRATION_SYNC,
     INTEGRATION_VIEW,
     SERVICE_ACCOUNT_VIEW,
@@ -44,7 +44,7 @@ class TestDependenciesOnAGroup:
 
     @pytest.fixture
     def url(self):
-        return reverse("group_list")
+        return reverse("global_role_list")
 
     @pytest.mark.parametrize(
         ("codes", "expected_errors"),
@@ -70,18 +70,18 @@ class TestDependenciesOnAGroup:
             ),
             pytest.param([INTEGRATION_SYNC, INTEGRATION_VIEW, DATASET_VIEW], None, id="sync satisfied"),
             pytest.param(
-                [GROUP_ASSIGN],
+                [GLOBAL_ROLE_ASSIGN],
                 [
-                    requires(GROUP_VIEW, by=[GROUP_ASSIGN]),
-                    requires(SERVICE_ACCOUNT_VIEW, by=[GROUP_ASSIGN]),
-                    requires(USER_VIEW, by=[GROUP_ASSIGN]),
+                    requires(GLOBAL_ROLE_VIEW, by=[GLOBAL_ROLE_ASSIGN]),
+                    requires(SERVICE_ACCOUNT_VIEW, by=[GLOBAL_ROLE_ASSIGN]),
+                    requires(USER_VIEW, by=[GLOBAL_ROLE_ASSIGN]),
                 ],
-                id="assigning members requires seeing the group and both kinds of subject",
+                id="assigning members requires seeing the global_role and both kinds of subject",
             ),
             pytest.param(
-                [GROUP_ASSIGN, GROUP_VIEW, USER_VIEW, SERVICE_ACCOUNT_VIEW],
+                [GLOBAL_ROLE_ASSIGN, GLOBAL_ROLE_VIEW, USER_VIEW, SERVICE_ACCOUNT_VIEW],
                 None,
-                id="group is not dataset-scoped, so no dataset.view is demanded",
+                id="global_role is not dataset-scoped, so no dataset.view is demanded",
             ),
             pytest.param(
                 [USER_ADD],
@@ -90,14 +90,22 @@ class TestDependenciesOnAGroup:
             ),
             pytest.param(
                 [CONVERSATION_CONVERSE],
-                [requires(DATASET_VIEW, by=[CONVERSATION_CONVERSE])],
-                id="converse requires nothing itself but is dataset-scoped",
+                [
+                    requires(AGENT_VIEW, by=[CONVERSATION_CONVERSE]),
+                    requires(DATASET_VIEW, by=[CONVERSATION_CONVERSE]),
+                ],
+                id="conversing requires seeing the agents to converse with",
             ),
-            pytest.param([CONVERSATION_CONVERSE, DATASET_VIEW], None, id="converse satisfied"),
+            pytest.param([CONVERSATION_CONVERSE, AGENT_VIEW, DATASET_VIEW], None, id="converse satisfied"),
+            pytest.param(
+                [AGENTIC_EXECUTION_CREATE, AGENT_VIEW, DATASET_VIEW],
+                None,
+                id="create demands the agents it runs, but still not view_all",
+            ),
             pytest.param(
                 [AGENTIC_EXECUTION_CREATE, DATASET_VIEW],
-                None,
-                id="create is a deliberate absence and does not demand view_all",
+                [requires(AGENT_VIEW, by=[AGENTIC_EXECUTION_CREATE])],
+                id="running an agent requires seeing it",
             ),
             pytest.param(
                 [DATASET_ROLE_ASSIGN],
@@ -107,7 +115,7 @@ class TestDependenciesOnAGroup:
                     requires(SERVICE_ACCOUNT_VIEW, by=[DATASET_ROLE_ASSIGN]),
                     requires(USER_VIEW, by=[DATASET_ROLE_ASSIGN]),
                 ],
-                id="dataset_role.assign requires dataset_role.view, exactly like group.assign",
+                id="dataset_role.assign requires dataset_role.view, exactly like global_role.assign",
             ),
             pytest.param(
                 [DATASET_ROLE_ASSIGN, DATASET_VIEW, DATASET_ROLE_VIEW, USER_VIEW, SERVICE_ACCOUNT_VIEW],
@@ -118,8 +126,8 @@ class TestDependenciesOnAGroup:
             pytest.param([], None, id="an empty set is valid"),
             # Not from the contract module on purpose: these are strings the vocabulary must refuse.
             pytest.param(
-                ["group.add"],
-                ["Unknown permission: group.add."],
+                ["global_role.add"],
+                ["Unknown permission: global_role.add."],
                 id="an undeclared Django permission is not a code",
             ),
             pytest.param(
@@ -160,7 +168,7 @@ class TestDependenciesOnADatasetRole:
             pytest.param(
                 [AGENT_ADD],
                 [requires(AGENT_VIEW, by=[AGENT_ADD])],
-                id="no dataset.view is demanded, unlike on a group",
+                id="no dataset.view is demanded, unlike on a global_role",
             ),
             pytest.param([AGENT_ADD, AGENT_VIEW], None, id="satisfied"),
             pytest.param(
@@ -169,7 +177,17 @@ class TestDependenciesOnADatasetRole:
                 id="within-entity requirements still apply",
             ),
             pytest.param([INTEGRATION_SYNC, INTEGRATION_VIEW], None, id="sync satisfied"),
-            pytest.param([CONVERSATION_CONVERSE], None, id="converse has no requirements in this scope"),
+            pytest.param(
+                [CONVERSATION_CONVERSE],
+                [requires(AGENT_VIEW, by=[CONVERSATION_CONVERSE])],
+                id="converse requires agent.view here too, only dataset.view is dropped",
+            ),
+            pytest.param([CONVERSATION_CONVERSE, AGENT_VIEW], None, id="converse satisfied"),
+            pytest.param(
+                [AGENTIC_EXECUTION_CREATE, AGENT_VIEW],
+                None,
+                id="creating an execution requires agent.view here too",
+            ),
             pytest.param(
                 [DATASET_ROLE_ASSIGN],
                 [NOT_GRANTABLE_ON_A_ROLE.format(codes=DATASET_ROLE_ASSIGN)],
@@ -201,34 +219,34 @@ class TestDependenciesOnADatasetRole:
 
 class TestDependenciesAreEnforcedOnUpdate:
     @pytest.fixture
-    def group(self, admin_api_client):
+    def global_role(self, admin_api_client):
         response = admin_api_client.post(
-            reverse("group_list"),
+            reverse("global_role_list"),
             {"name": "team", "permissions": [AGENT_CHANGE, AGENT_VIEW, DATASET_VIEW]},
             format="json",
         )
         return Group.objects.get(pk=response.data["id"])
 
     @pytest.fixture
-    def url(self, group):
-        return reverse("group_details", args=[group.id])
+    def url(self, global_role):
+        return reverse("global_role_details", args=[global_role.id])
 
     def test_patching_into_a_violating_set_is_refused_and_leaves_the_stored_set_alone(
-        self, admin_api_client, url, group
+        self, admin_api_client, url, global_role
     ):
-        before = set(group.permissions.values_list("codename", flat=True))
+        before = set(global_role.permissions.values_list("codename", flat=True))
 
         response = admin_api_client.patch(url, {"permissions": [AGENT_CHANGE]}, format="json")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert set(group.permissions.values_list("codename", flat=True)) == before
+        assert set(global_role.permissions.values_list("codename", flat=True)) == before
 
     def test_patching_can_satisfy_a_requirement_by_adding_to_the_set(self, admin_api_client):
-        group = Group.objects.create(name="viewers")
-        group.permissions.add(permission(PERMISSIONS.DATASET.VIEW))
+        global_role = Group.objects.create(name="viewers")
+        global_role.permissions.add(permission(PERMISSIONS.DATASET.VIEW))
 
         response = admin_api_client.patch(
-            reverse("group_details", args=[group.id]),
+            reverse("global_role_details", args=[global_role.id]),
             {"permissions": [AGENT_CHANGE, AGENT_VIEW, DATASET_VIEW]},
             format="json",
         )
@@ -250,14 +268,14 @@ class TestDependenciesAreEnforcedOnUpdate:
 class TestNothingIsSilentlyAdded:
     def test_an_accepted_set_is_stored_exactly_as_sent(self, admin_api_client):
         """A requirement quietly appended would hide what was actually decided from whoever reads
-        the group later - `dataset.view` grants sight of every data set in the system."""
+        the global_role later - `dataset.view` grants sight of every data set in the system."""
         sent = [AGENT_CHANGE, AGENT_VIEW, DATASET_VIEW]
 
-        response = admin_api_client.post(reverse("group_list"), {"name": "team", "permissions": sent}, format="json")
-        group = Group.objects.get(pk=response.data["id"])
+        response = admin_api_client.post(reverse("global_role_list"), {"name": "team", "permissions": sent}, format="json")
+        global_role = Group.objects.get(pk=response.data["id"])
 
         assert set(response.data["permissions"]) == set(sent)
-        assert group.permissions.count() == len(sent)
+        assert global_role.permissions.count() == len(sent)
 
     def test_a_declared_code_whose_row_is_missing_is_reported_rather_than_skipped(self, admin_api_client):
         """The failure mode if a model's `Meta.permissions` is ever edited without a migration.
@@ -265,7 +283,7 @@ class TestNothingIsSilentlyAdded:
         permission(PERMISSIONS.DATASET.VIEW).delete()
 
         response = admin_api_client.post(
-            reverse("group_list"), {"name": "team", "permissions": [DATASET_VIEW]}, format="json"
+            reverse("global_role_list"), {"name": "team", "permissions": [DATASET_VIEW]}, format="json"
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST

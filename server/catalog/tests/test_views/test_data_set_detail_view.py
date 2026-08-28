@@ -5,7 +5,12 @@ from model_bakery import baker
 from rest_framework import status
 
 from account.authorization import PERMISSIONS
-from account.models import DatasetGroupRoleAssignment, DatasetRole, DatasetUserRoleAssignment
+from account.models import DatasetGlobalRoleAssignment, DatasetRole, DatasetUserRoleAssignment
+from account.tests.public_permission_codes_contract import (
+    AGENT_VIEW,
+    DATASET_SCOPED_CONTRACT,
+    INTEGRATION_VIEW,
+)
 from catalog.models import DataSet
 
 pytestmark = pytest.mark.django_db
@@ -37,11 +42,11 @@ class TestDataSetDetailViewGet:
         assert response.status_code == status.HTTP_200_OK
         assert response.data["id"] == data_set.id
 
-    def test_group_role_member_can_view_dataset(self, api_client, user, data_set):
-        group = baker.make(Group)
-        user.groups.add(group)
+    def test_global_role_member_can_view_dataset(self, api_client, user, data_set):
+        global_role = baker.make(Group)
+        user.groups.add(global_role)
         role = baker.make(DatasetRole)
-        baker.make(DatasetGroupRoleAssignment, group=group, dataset=data_set, role=role)
+        baker.make(DatasetGlobalRoleAssignment, global_role=global_role, dataset=data_set, role=role)
 
         response = api_client.get(_url(data_set))
 
@@ -65,6 +70,20 @@ class TestDataSetDetailViewGet:
         response = api_client.get(url)
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_response_carries_the_members_codes_on_this_dataset(self, api_client, user, data_set):
+        role = baker.make(DatasetRole)
+        role.permissions.add(_permission(PERMISSIONS.AGENT.VIEW), _permission(PERMISSIONS.INTEGRATION.VIEW))
+        baker.make(DatasetUserRoleAssignment, user=user, dataset=data_set, role=role)
+
+        response = api_client.get(_url(data_set))
+
+        assert response.data["permissions"] == [AGENT_VIEW, INTEGRATION_VIEW]
+
+    def test_admin_response_carries_every_dataset_scoped_code(self, admin_api_client, data_set):
+        response = admin_api_client.get(_url(data_set))
+
+        assert set(response.data["permissions"]) == DATASET_SCOPED_CONTRACT
 
 
 class TestDataSetDetailViewPatch:

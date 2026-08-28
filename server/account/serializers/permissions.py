@@ -64,7 +64,7 @@ class GrantedPermissionsMixin:
     Nothing is auto-added: a silent grant hides what was actually decided from whoever reads the
     stored set later, while a rejection forces the box to be ticked deliberately.
 
-    Mixed into the group and dataset-role serializers, which differ only in the allowed set.
+    Mixed into the global-role and dataset-role serializers, which differ only in the allowed set.
     """
 
     grantable_permissions: list[str] = GLOBAL_SCOPE_PERMISSIONS

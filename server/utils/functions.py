@@ -38,6 +38,7 @@ def get_model_descriptor_from_class_field(class_obj: Any, field_name: str) -> di
             "type": extract_type_info(field.annotation),
             "description": field.description,
             "title": field.title or field_name,
+            "required": field.is_required(),
         }
 
     return args

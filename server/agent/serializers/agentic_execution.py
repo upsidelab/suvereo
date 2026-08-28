@@ -20,6 +20,7 @@ _BASE_FIELDS = [
     "started_at",
     "finished_at",
     "duration_seconds",
+    "user_email",
 ]
 
 
@@ -27,6 +28,7 @@ class AgenticExecutionSerializer(serializers.ModelSerializer):
     """Lightweight read serializer used for list responses."""
 
     duration_seconds = serializers.FloatField(read_only=True)
+    user_email = serializers.EmailField(source="conversation.user.email", read_only=True)
 
     class Meta:
         model = AgenticExecution

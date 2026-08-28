@@ -5,6 +5,7 @@ from .decorators import (
     global_permission_required,
 )
 from .helpers import (
+    dataset_permission_codes,
     datasets_visible_to,
     datasets_with_permission,
     enforce_dataset_scoped_permission,
@@ -43,6 +44,7 @@ __all__ = [
     "admin_required",
     "any_global_permission_required",
     "any_permission_on_any_dataset_required",
+    "dataset_permission_codes",
     "datasets_visible_to",
     "dependencies_within",
     "datasets_with_permission",

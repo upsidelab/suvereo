@@ -78,7 +78,7 @@ class UserUpdatePasswordSerializer(OnlyAdminsManageAdminsMixin, serializers.Seri
 
 
 class UserSummarySerializer(serializers.ModelSerializer):
-    """A user as they appear inside someone else's payload - a group's members, a role assignment."""
+    """A user as they appear inside someone else's payload - a global role's members, a role assignment."""
 
     class Meta:
         model = User
@@ -86,6 +86,6 @@ class UserSummarySerializer(serializers.ModelSerializer):
 
 
 class UserReferenceSerializer(serializers.Serializer):
-    """A request body that names a user - adding one to a group, granting one a role."""
+    """A request body that names a user - adding one to a global role, granting one a role."""
 
     user_id = serializers.PrimaryKeyRelatedField(source="user", queryset=User.objects.all())

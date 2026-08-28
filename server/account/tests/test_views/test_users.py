@@ -89,10 +89,10 @@ class TestUserListView:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    def test_permission_granted_through_a_group_is_honoured(self, api_client, user, url):
-        group = baker.make("auth.Group")
-        group.permissions.add(_permission(PERMISSIONS.USER.VIEW))
-        user.groups.add(group)
+    def test_permission_granted_through_a_global_role_is_honoured(self, api_client, user, url):
+        global_role = baker.make("auth.Group")
+        global_role.permissions.add(_permission(PERMISSIONS.USER.VIEW))
+        user.groups.add(global_role)
 
         response = api_client.get(url)
 
