@@ -200,7 +200,7 @@ export function GlobalRoleModal({ role, onSaved }: GlobalRoleModalProps) {
                         <FormLabel>Description</FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder="What this role is for"
+                            placeholder="Description"
                             rows={4}
                             className="resize-y"
                             disabled={!canEdit}

@@ -147,7 +147,7 @@ export function GroupModal({ group, onSaved }: GroupModalProps) {
                         <FormLabel>Description</FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder="Who belongs in this group"
+                            placeholder="Description"
                             rows={4}
                             className="resize-y"
                             disabled={!canEdit}
