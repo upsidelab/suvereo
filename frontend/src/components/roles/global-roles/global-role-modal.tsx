@@ -5,7 +5,7 @@ import { z } from "zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
-import { Separator } from "@/components/ui/separator.tsx";
+import { Textarea } from "@/components/ui/textarea.tsx";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form.tsx";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
@@ -14,6 +14,7 @@ import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { PermissionChecklist } from "@/components/roles/permission-checklist.tsx";
 import { PermissionErrors } from "@/components/roles/permission-errors.tsx";
 import { ModalSection, ModalSections } from "@/components/roles/modal-sections.tsx";
+import { ModalScrollArea } from "@/components/roles/modal-scroll-area.tsx";
 import { GlobalRoleMembersPanel } from "@/components/roles/global-roles/global-role-members-panel.tsx";
 import { AdminMembersPanel } from "@/components/roles/global-roles/admin-members-panel.tsx";
 import { ADMIN_ROLE, GlobalRole, isAdminRole } from "@/components/roles/global-roles/admin-role.ts";
@@ -24,14 +25,16 @@ import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 
 const formSchema = z.object({
   name: z.string().trim().min(1),
+  description: z.string().trim(),
 });
 type GroupFormSchema = z.infer<typeof formSchema>;
 
 const api = new ApiClient(authenticationProviderInstance);
 
-type Section = "permissions" | "members";
+type Section = "details" | "permissions" | "members";
 
 const SECTIONS: readonly ModalSection<Section>[] = [
+  { key: "details", label: "Details" },
   { key: "permissions", label: "Permissions" },
   { key: "members", label: "Members" },
 ];
@@ -49,7 +52,7 @@ export function GlobalRoleModal({ role, onSaved }: GlobalRoleModalProps) {
     : hasPermission(PERMISSIONS.GLOBAL_ROLE.ADD);
 
   const [open, setOpen] = useState(false);
-  const [section, setSection] = useState<Section>("permissions");
+  const [section, setSection] = useState<Section>("details");
   const [entities, setEntities] = useState<PermissionEntity[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [storedPermissions, setStoredPermissions] = useState<string[]>([]);
@@ -61,7 +64,8 @@ export function GlobalRoleModal({ role, onSaved }: GlobalRoleModalProps) {
   const form = useForm<GroupFormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: role?.name ?? ""
+      name: role?.name ?? "",
+      description: role?.description ?? ""
     }
   });
 
@@ -71,22 +75,22 @@ export function GlobalRoleModal({ role, onSaved }: GlobalRoleModalProps) {
     setPermissionErrors([]);
     setMissingPermissions([]);
     setPendingValues(null);
-    setSection("permissions");
+    setSection("details");
 
     api.permissions().getPermissions("global").then(setEntities).catch(() => setEntities([]));
 
     if (isBuiltIn) {
       setSelected([]);
       setStoredPermissions([]);
-      form.reset({ name: ADMIN_ROLE.name });
+      form.reset({ name: ADMIN_ROLE.name, description: ADMIN_ROLE.description ?? "" });
     } else if (role?.id != null) {
       api.globalRoles().getGlobalRoleDetail(role.id).then((detail) => {
-        form.reset({ name: detail.name });
+        form.reset({ name: detail.name, description: detail.description });
         setSelected(detail.permissions);
         setStoredPermissions(detail.permissions);
       }).catch(() => setError("Could not load this role."));
     } else {
-      form.reset({ name: "" });
+      form.reset({ name: "", description: "" });
       setSelected([]);
       setStoredPermissions([]);
     }
@@ -105,15 +109,21 @@ export function GlobalRoleModal({ role, onSaved }: GlobalRoleModalProps) {
     setMissingPermissions([]);
 
     const response = role?.id != null
-      ? await api.globalRoles().updateGlobalRole(role.id, values.name, selected)
-      : await api.globalRoles().createGlobalRole(values.name, selected);
+      ? await api.globalRoles().updateGlobalRole(role.id, values.name, values.description, selected)
+      : await api.globalRoles().createGlobalRole(values.name, values.description, selected);
 
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
       if (Array.isArray(body.permissions)) setPermissionErrors(body.permissions);
       if (Array.isArray(body.missing_permissions)) setMissingPermissions(body.missing_permissions);
+      if (body.permissions || body.missing_permissions) {
+        setSection("permissions");
+      } else if (body.name || body.description) {
+        setSection("details");
+      }
       if (Array.isArray(body.name)) form.setError("name", { message: body.name[0] });
-      if (!body.permissions && !body.name) setError(body.detail ?? "Could not save this role.");
+      if (Array.isArray(body.description)) form.setError("description", { message: body.description[0] });
+      if (!body.permissions && !body.name && !body.description) setError(body.detail ?? "Could not save this role.");
       return;
     }
 
@@ -127,6 +137,7 @@ export function GlobalRoleModal({ role, onSaved }: GlobalRoleModalProps) {
       setError(null);
       setPermissionErrors([]);
       setMissingPermissions(missing);
+      setSection("permissions");
       return;
     }
     if (risks.length > 0) {
@@ -160,49 +171,71 @@ export function GlobalRoleModal({ role, onSaved }: GlobalRoleModalProps) {
 
         {/* Fixed height, so switching sections cannot resize the dialog. */}
         <div className="h-[min(62vh,34rem)] flex flex-col">
-        {section === "permissions" && (
+        {section !== "members" && (
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="flex grow flex-col space-y-4 min-h-0">
-              {canEdit ? (
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Role name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+            <form
+              onSubmit={form.handleSubmit(handleSubmit, () => setSection("details"))}
+              className="flex grow flex-col space-y-4 min-h-0"
+            >
+              {section === "details" && (
+                <ModalScrollArea className="flex flex-col space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Role name" disabled={!canEdit} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="What this role is for"
+                            rows={4}
+                            className="resize-y"
+                            disabled={!canEdit}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  {isBuiltIn && (
+                    <p className="text-sm text-muted-foreground">
+                      Admins have full access to the system. This can't be edited.
+                    </p>
                   )}
-                />
-              ) : null}
-
-              {isBuiltIn && (
-                <p className="text-sm text-muted-foreground">
-                  Admins have full access to the system. This can't be edited.
-                </p>
-              )}
-              {!isBuiltIn && !canEdit && (
-                <p className="text-sm text-muted-foreground">You can't edit this role's permissions.</p>
+                  {!isBuiltIn && !canEdit && (
+                    <p className="text-sm text-muted-foreground">You can't edit this role's details.</p>
+                  )}
+                </ModalScrollArea>
               )}
 
-              <Separator />
-
-              <div className="flex grow flex-col space-y-2 min-h-0 pt-4">
-                <p className="text-sm font-medium leading-none">Permissions</p>
-                <PermissionChecklist
-                  entities={entities}
-                  selected={isBuiltIn
-                    ? entities.flatMap((entity) => entity.permissions.map((permission) => permission.code))
-                    : selected}
-                  onChange={setSelected}
-                  disabled={!canEdit}
-                  missingPermissions={missingPermissions}
-                  className="h-auto grow min-h-0"
-                />
-              </div>
+              {section === "permissions" && (
+                <div className="flex grow flex-col min-h-0">
+                  <PermissionChecklist
+                    entities={entities}
+                    selected={isBuiltIn
+                      ? entities.flatMap((entity) => entity.permissions.map((permission) => permission.code))
+                      : selected}
+                    onChange={setSelected}
+                    disabled={!canEdit}
+                    missingPermissions={missingPermissions}
+                    className="h-auto grow min-h-0"
+                  />
+                </div>
+              )}
 
               {canEdit && (
                 <div className="flex justify-end">

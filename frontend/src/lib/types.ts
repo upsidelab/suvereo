@@ -118,11 +118,13 @@ export type ServiceAccount = {
 export type GlobalRoleOption = {
   id: number;
   name: string;
+  description: string;
 };
 
 export type GlobalRoleDetail = {
   id: number;
   name: string;
+  description: string;
   permissions: string[];
 };
 
@@ -135,6 +137,7 @@ export type GlobalRoleMember = {
 export type GroupOption = {
   id: number;
   name: string;
+  description: string;
   memberCount: number;
   globalRoleCount: number;
   dataSetRoleCount: number;
@@ -149,11 +152,13 @@ export type GroupMember = GlobalRoleMember;
 export type DataSetRoleOption = {
   id: number;
   name: string;
+  description: string;
 };
 
 export type DataSetRoleDetail = {
   id: number;
   name: string;
+  description: string;
   permissions: string[];
 };
 

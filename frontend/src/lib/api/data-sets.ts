@@ -27,6 +27,7 @@ type DataSetAccessResponse = {
     group: {
       id: number;
       name: string;
+      description: string;
       member_count: number;
       global_role_count: number;
       data_set_role_count: number;
@@ -113,6 +114,7 @@ export class DataSetsApiClient extends BaseApiClient {
         group: {
           id: assignment.group.id,
           name: assignment.group.name,
+          description: assignment.group.description,
           memberCount: assignment.group.member_count,
           globalRoleCount: assignment.group.global_role_count,
           dataSetRoleCount: assignment.group.data_set_role_count

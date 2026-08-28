@@ -5,6 +5,7 @@ import { z } from "zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
+import { Textarea } from "@/components/ui/textarea.tsx";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form.tsx";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
@@ -15,9 +16,11 @@ import { GroupMembersPanel } from "@/components/roles/groups/group-members-panel
 import { GroupGlobalRolesPanel } from "@/components/roles/groups/group-global-roles-panel.tsx";
 import { GroupDataSetRolesPanel } from "@/components/roles/groups/group-data-set-roles-panel.tsx";
 import { ModalSection, ModalSections } from "@/components/roles/modal-sections.tsx";
+import { ModalScrollArea } from "@/components/roles/modal-scroll-area.tsx";
 
 const formSchema = z.object({
   name: z.string().trim().min(1),
+  description: z.string().trim(),
 });
 type GroupFormSchema = z.infer<typeof formSchema>;
 
@@ -49,7 +52,7 @@ export function GroupModal({ group, onSaved }: GroupModalProps) {
 
   const form = useForm<GroupFormSchema>({
     resolver: zodResolver(formSchema),
-    defaultValues: { name: group?.name ?? "" }
+    defaultValues: { name: group?.name ?? "", description: group?.description ?? "" }
   });
 
   useEffect(() => {
@@ -57,7 +60,7 @@ export function GroupModal({ group, onSaved }: GroupModalProps) {
     setError(null);
     setSection("details");
     setMemberCount(group?.memberCount ?? 0);
-    form.reset({ name: group?.name ?? "" });
+    form.reset({ name: group?.name ?? "", description: group?.description ?? "" });
   }, [open, group, form]);
 
   // The list behind the dialog is refreshed on close, not here: a fresh `group` object would
@@ -83,13 +86,15 @@ export function GroupModal({ group, onSaved }: GroupModalProps) {
   const save = async (values: GroupFormSchema) => {
     setError(null);
     const response = group?.id != null
-      ? await api.groups().updateGroup(group.id, values.name)
-      : await api.groups().createGroup(values.name);
+      ? await api.groups().updateGroup(group.id, values.name, values.description)
+      : await api.groups().createGroup(values.name, values.description);
 
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
       if (Array.isArray(body.name)) {
         form.setError("name", { message: body.name[0] });
+      } else if (Array.isArray(body.description)) {
+        form.setError("description", { message: body.description[0] });
       } else {
         setError(body.detail ?? "Could not save this group.");
       }
@@ -120,26 +125,49 @@ export function GroupModal({ group, onSaved }: GroupModalProps) {
           {section === "details" && (
             <Form {...form}>
               <form onSubmit={form.handleSubmit(save)} className="flex grow flex-col space-y-4 min-h-0">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Group name" disabled={!canEdit} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+                <ModalScrollArea className="flex flex-col space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Group name" disabled={!canEdit} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Who belongs in this group"
+                            rows={4}
+                            className="resize-y"
+                            disabled={!canEdit}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    A group holds people, not permissions. It reaches its members through the global roles granted
+                    to it and the data set roles it is granted on individual data sets.
+                  </p>
+                  {!canEdit && (
+                    <p className="text-sm text-muted-foreground">You can't edit this group's details.</p>
                   )}
-                />
-                <p className="text-sm text-muted-foreground">
-                  A group holds people, not permissions. It reaches its members through the global roles granted
-                  to it and the data set roles it is granted on individual data sets.
-                </p>
-                {!canEdit && <p className="text-sm text-muted-foreground">You can't rename this group.</p>}
+                </ModalScrollArea>
                 {canEdit && (
-                  <div className="flex grow items-end justify-end">
+                  <div className="flex justify-end">
                     <Button type="submit">Save</Button>
                   </div>
                 )}

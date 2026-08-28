@@ -34,19 +34,24 @@ export class DataSetRolesApiClient extends BaseApiClient {
     return await response.json() as DataSetRoleDetail;
   }
 
-  async createDataSetRole(name: string, permissions: string[] = []): Promise<Response> {
+  async createDataSetRole(name: string, description: string, permissions: string[] = []): Promise<Response> {
     return await fetch(`${this.apiBase}/api/data_set_roles`, {
       ...this._requestConfiguration(),
       method: "POST",
-      body: JSON.stringify({ name, permissions })
+      body: JSON.stringify({ name, description, permissions })
     });
   }
 
-  async updateDataSetRole(roleId: number, name: string, permissions: string[]): Promise<Response> {
+  async updateDataSetRole(
+    roleId: number,
+    name: string,
+    description: string,
+    permissions: string[]
+  ): Promise<Response> {
     return await fetch(`${this.apiBase}/api/data_set_roles/${roleId}`, {
       ...this._requestConfiguration(),
       method: "PATCH",
-      body: JSON.stringify({ name, permissions })
+      body: JSON.stringify({ name, description, permissions })
     });
   }
 
