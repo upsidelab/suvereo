@@ -2,7 +2,7 @@ import { BaseApiClient } from "@/lib/api/base.ts";
 import { GlobalRoleOption, GroupDetail, GroupMember, GroupOption, PaginatedResult } from "@/lib/types.ts";
 import { ApiError } from "@/lib/api-error.ts";
 
-type GroupResponse = {
+export type GroupResponse = {
   id: number;
   name: string;
   member_count: number;
@@ -20,7 +20,7 @@ type GroupMemberResponse = {
   is_service_account: boolean;
 };
 
-function toGroupOption(group: GroupResponse): GroupOption {
+export function toGroupOption(group: GroupResponse): GroupOption {
   return {
     id: group.id,
     name: group.name,

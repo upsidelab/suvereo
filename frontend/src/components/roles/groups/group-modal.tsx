@@ -13,6 +13,8 @@ import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 import { GroupMembersPanel } from "@/components/roles/groups/group-members-panel.tsx";
 import { GroupGlobalRolesPanel } from "@/components/roles/groups/group-global-roles-panel.tsx";
+import { GroupDataSetRolesPanel } from "@/components/roles/groups/group-data-set-roles-panel.tsx";
+import { ModalSection, ModalSections } from "@/components/roles/modal-sections.tsx";
 
 const formSchema = z.object({
   name: z.string().trim().min(1),
@@ -21,7 +23,14 @@ type GroupFormSchema = z.infer<typeof formSchema>;
 
 const api = new ApiClient(authenticationProviderInstance);
 
-type Section = "details" | "members" | "global-roles";
+type Section = "details" | "members" | "global-roles" | "data-set-roles";
+
+const SECTIONS: readonly ModalSection<Section>[] = [
+  { key: "details", label: "Details" },
+  { key: "members", label: "Members" },
+  { key: "global-roles", label: "Global Roles" },
+  { key: "data-set-roles", label: "Data Set Roles" },
+];
 
 export interface GroupModalProps {
   group?: GroupOption;
@@ -51,18 +60,15 @@ export function GroupModal({ group, onSaved }: GroupModalProps) {
     form.reset({ name: group?.name ?? "" });
   }, [open, group, form]);
 
-  // The panels change what the counts would say, and the count is the whole point of showing it
-  // next to a control that hands out access - so re-read it rather than let it go stale. The list
-  // behind the dialog is refreshed on close instead of now: reloading it here would hand this
-  // component a new `group` object and send the effect above back to the Details section.
+  // The list behind the dialog is refreshed on close, not here: a fresh `group` object would
+  // send the effect above back to the Details section.
   const refreshCounts = async () => {
     if (group?.id == null) return;
     setMembershipChanged(true);
     try {
       setMemberCount((await api.groups().getGroupDetail(group.id)).memberCount);
     } catch {
-      // The panel that just changed something reports its own failure; a stale count is not
-      // worth a second error message.
+      // The panel reports its own failure; a stale count is not worth a second message.
     }
   };
 
@@ -107,23 +113,9 @@ export function GroupModal({ group, onSaved }: GroupModalProps) {
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         {error && <p className="text-sm text-destructive mb-4">{error}</p>}
-        <div className="flex items-center space-x-2 border-b pb-2">
-          <Button type="button" variant={section === "details" ? "default" : "ghost"} onClick={() => setSection("details")}>
-            Details
-          </Button>
-          <Button type="button" variant={section === "members" ? "default" : "ghost"} onClick={() => setSection("members")}>
-            Members
-          </Button>
-          <Button
-            type="button"
-            variant={section === "global-roles" ? "default" : "ghost"}
-            onClick={() => setSection("global-roles")}
-          >
-            Global Roles
-          </Button>
-        </div>
+        <ModalSections sections={SECTIONS} active={section} onChange={setSection} />
 
-        {/* All three sections share a fixed height, so switching between them cannot resize the dialog. */}
+        {/* Fixed height, so switching sections cannot resize the dialog. */}
         <div className="h-[min(62vh,34rem)] flex flex-col">
           {section === "details" && (
             <Form {...form}>
@@ -164,6 +156,12 @@ export function GroupModal({ group, onSaved }: GroupModalProps) {
           {section === "global-roles" && (
             group?.id != null
               ? <GroupGlobalRolesPanel groupId={group.id} memberCount={memberCount} onChanged={refreshCounts} />
+              : <p className="text-sm text-muted-foreground">Save the group first to grant it roles.</p>
+          )}
+
+          {section === "data-set-roles" && (
+            group?.id != null
+              ? <GroupDataSetRolesPanel groupId={group.id} memberCount={memberCount} onChanged={refreshCounts} />
               : <p className="text-sm text-muted-foreground">Save the group first to grant it roles.</p>
           )}
         </div>

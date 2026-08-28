@@ -16,6 +16,8 @@ import { PermissionChecklist } from "@/components/roles/permission-checklist.tsx
 import { PermissionErrors } from "@/components/roles/permission-errors.tsx";
 import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 import { missingDependencies, unresolvedRequirements } from "@/lib/permissions/dependencies.ts";
+import { ModalSection, ModalSections } from "@/components/roles/modal-sections.tsx";
+import { DataSetRoleMembersPanel } from "@/components/roles/data-set-roles/data-set-role-members-panel.tsx";
 
 const formSchema = z.object({
   name: z.string().trim().min(1),
@@ -23,6 +25,13 @@ const formSchema = z.object({
 type DataSetRoleFormSchema = z.infer<typeof formSchema>;
 
 const api = new ApiClient(authenticationProviderInstance);
+
+type DataSetRoleSection = "permissions" | "members";
+
+const SECTIONS: readonly ModalSection<DataSetRoleSection>[] = [
+  { key: "permissions", label: "Permissions" },
+  { key: "members", label: "Members" },
+];
 
 export interface DataSetRoleModalProps {
   role?: DataSetRoleOption;
@@ -35,6 +44,7 @@ export function DataSetRoleModal({ role, onSaved }: DataSetRoleModalProps) {
     ? hasPermission(PERMISSIONS.DATA_SET_ROLE.CHANGE)
     : hasPermission(PERMISSIONS.DATA_SET_ROLE.ADD);
   const [open, setOpen] = useState(false);
+  const [section, setSection] = useState<DataSetRoleSection>("permissions");
   const [entities, setEntities] = useState<PermissionEntity[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +61,7 @@ export function DataSetRoleModal({ role, onSaved }: DataSetRoleModalProps) {
   useEffect(() => {
     if (!open) return;
     setError(null);
+    setSection("permissions");
     setPermissionErrors([]);
     setMissingPermissions([]);
 
@@ -118,55 +129,64 @@ export function DataSetRoleModal({ role, onSaved }: DataSetRoleModalProps) {
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <p className="text-sm text-muted-foreground -mt-2 mb-2">
-          This only defines the role. To grant it to a user or a group, go to Data Sets → Manage Access for
-          that data set.
-        </p>
         {error && <p className="text-sm text-destructive mb-4">{error}</p>}
         <PermissionErrors
           entities={entities}
           missingPermissions={missingPermissions}
           serverMessages={permissionErrors}
         />
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            {canEdit ? (
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Role name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            ) : (
-              <p className="text-sm text-muted-foreground">You can't edit this role's permissions.</p>
-            )}
-            <Separator />
+        <ModalSections sections={SECTIONS} active={section} onChange={setSection} />
 
-            <div className="space-y-2 pt-4">
-              <p className="text-sm font-medium leading-none">Permissions</p>
-              <PermissionChecklist
-                entities={entities}
-                selected={selected}
-                onChange={setSelected}
-                disabled={!canEdit}
-                missingPermissions={missingPermissions}
-                className="h-[min(52vh,24rem)]"
-              />
-            </div>
-            {canEdit && (
-              <div className="flex justify-end">
-                <Button type="submit">Save</Button>
-              </div>
-            )}
-          </form>
-        </Form>
+        {/* Fixed height, so switching sections cannot resize the dialog. */}
+        <div className="h-[min(62vh,34rem)] flex flex-col">
+          {section === "permissions" && (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleSubmit)} className="flex grow flex-col space-y-4 min-h-0">
+                {canEdit ? (
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Role name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ) : (
+                  <p className="text-sm text-muted-foreground">You can't edit this role's permissions.</p>
+                )}
+                <Separator />
+
+                <div className="flex grow flex-col space-y-2 min-h-0 pt-4">
+                  <p className="text-sm font-medium leading-none">Permissions</p>
+                  <PermissionChecklist
+                    entities={entities}
+                    selected={selected}
+                    onChange={setSelected}
+                    disabled={!canEdit}
+                    missingPermissions={missingPermissions}
+                    className="h-auto grow min-h-0"
+                  />
+                </div>
+                {canEdit && (
+                  <div className="flex justify-end">
+                    <Button type="submit">Save</Button>
+                  </div>
+                )}
+              </form>
+            </Form>
+          )}
+
+          {section === "members" && (
+            role
+              ? <DataSetRoleMembersPanel roleId={role.id} />
+              : <p className="text-sm text-muted-foreground">Save the role first to grant it to anyone.</p>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );

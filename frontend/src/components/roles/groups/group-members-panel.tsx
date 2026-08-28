@@ -1,13 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
-import { Button } from "@/components/ui/button.tsx";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table.tsx";
-import { ScrollArea } from "@/components/ui/scroll-area.tsx";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select.tsx";
+import { useCallback } from "react";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
-import { GroupMember } from "@/lib/types.ts";
 import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 import { useApplicationContext } from "@/lib/use-application-context.ts";
+import { AssignmentOption, subjectOption } from "@/components/roles/assignment/assignment-option.ts";
+import { AssignmentPanel } from "@/components/roles/assignment/assignment-panel.tsx";
+import { useAssignments } from "@/components/roles/assignment/use-assignments.ts";
+import { withoutGranted } from "@/components/roles/assignment/use-subject-candidates.ts";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -19,120 +18,47 @@ export interface GroupMembersPanelProps {
 export function GroupMembersPanel({ groupId, onChanged }: GroupMembersPanelProps) {
   const { hasPermission } = useApplicationContext()!;
   const canAssign = hasPermission(PERMISSIONS.GROUP.ASSIGN);
-  const [members, setMembers] = useState<GroupMember[]>([]);
-  const [candidates, setCandidates] = useState<GroupMember[]>([]);
-  const [selectedUserId, setSelectedUserId] = useState<string>("");
-  const [error, setError] = useState<string | null>(null);
-  const [pickerError, setPickerError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setError(null);
-    let currentMembers: GroupMember[];
-    try {
-      currentMembers = await api.groups().getGroupMembers(groupId);
-    } catch {
-      setError("Could not load this group's members.");
-      return;
-    }
-    setMembers(currentMembers);
+  const loadItems = useCallback(
+    async () => (await api.groups().getGroupMembers(groupId)).map(subjectOption),
+    [groupId]
+  );
 
-    if (!canAssign) return;
+  // No group nesting, so this cannot use the shared subject loader.
+  const loadCandidates = useCallback(async (granted: AssignmentOption[]) => {
+    const [users, serviceAccounts] = await Promise.all([
+      api.getAllUsers(),
+      api.serviceAccounts().getAllServiceAccounts(),
+    ]);
+    return withoutGranted([
+      ...users.map((user) => subjectOption({ ...user, isServiceAccount: false })),
+      ...serviceAccounts.map((account) => subjectOption({ ...account, isServiceAccount: true })),
+    ], granted);
+  }, []);
 
-    try {
-      const [users, serviceAccounts] = await Promise.all([
-        api.getAllUsers(),
-        api.serviceAccounts().getAllServiceAccounts(),
-      ]);
-      const memberIds = new Set(currentMembers.map((member) => member.id));
-      setCandidates([
-        ...users.map((user) => ({ id: user.id, email: user.email, isServiceAccount: false })),
-        ...serviceAccounts.map((account) => ({ id: account.id, email: account.email, isServiceAccount: true })),
-      ].filter((candidate) => !memberIds.has(candidate.id)));
-      setPickerError(null);
-    } catch {
-      setCandidates([]);
-      setPickerError("You need the User → View permission to add members by name.");
-    }
-  }, [groupId, canAssign]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const handleAdd = async () => {
-    if (!selectedUserId) return;
-    const response = await api.groups().addGroupMember(groupId, Number(selectedUserId));
-    if (!response.ok) {
-      const body = await response.json().catch(() => ({}));
-      setError(body.detail ?? "Could not add this member.");
-      return;
-    }
-    setSelectedUserId("");
-    await load();
-    onChanged?.();
-  };
-
-  const handleRemove = async (member: GroupMember) => {
-    const response = await api.groups().removeGroupMember(groupId, member.id);
-    if (!response.ok) {
-      const body = await response.json().catch(() => ({}));
-      setError(body.detail ?? "Could not remove this member.");
-      return;
-    }
-    await load();
-    onChanged?.();
-  };
+  const { items, candidates, error, pickerNotice, submit } = useAssignments({
+    canAssign,
+    loadItems,
+    loadCandidates,
+    itemsError: "Could not load this group's members.",
+    candidatesNotice: "You need the User → View permission to add members by name.",
+    onChanged,
+  });
 
   return (
-    <div className="flex flex-col grow min-h-0">
-      {error && <p className="text-sm text-destructive mb-4">{error}</p>}
-      {canAssign && (
-        pickerError
-          ? <p className="text-sm text-muted-foreground mb-4">{pickerError}</p>
-          : (
-            <div className="flex space-x-4 mb-4">
-              <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                <SelectTrigger className="w-[300px]">
-                  <SelectValue placeholder="Select a user..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {candidates.map((candidate) => (
-                    <SelectItem key={`${candidate.isServiceAccount}-${candidate.id}`} value={String(candidate.id)}>
-                      {candidate.email}{candidate.isServiceAccount && " (service account)"}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button onClick={handleAdd} disabled={!selectedUserId}>Add</Button>
-            </div>
-          )
-      )}
-      <ScrollArea className="grow min-h-0 w-full rounded-md border px-4 py-2">
-        {members.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No members yet.</p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-full">Email</TableHead>
-                {canAssign && <TableHead className="whitespace-nowrap">Action</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {members.map((member) => (
-                <TableRow key={member.id}>
-                  <TableCell width="100%">{member.email}{member.isServiceAccount && " (service account)"}</TableCell>
-                  {canAssign && (
-                    <TableCell className="whitespace-nowrap">
-                      <Button variant="secondary" onClick={() => handleRemove(member)}>Remove</Button>
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </ScrollArea>
-    </div>
+    <AssignmentPanel
+      items={items}
+      candidates={candidates}
+      canAssign={canAssign}
+      columnLabel="Name"
+      emptyMessage="No members yet."
+      pickerPlaceholder="Select a member..."
+      error={error}
+      pickerNotice={pickerNotice}
+      onAdd={(option) =>
+        submit(api.groups().addGroupMember(groupId, option.id), "Could not add this member.")}
+      onRemove={(option) =>
+        submit(api.groups().removeGroupMember(groupId, option.id), "Could not remove this member.")}
+    />
   );
 }
