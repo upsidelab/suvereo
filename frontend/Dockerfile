@@ -1,4 +1,4 @@
-FROM node:20
+FROM node:22
 
 ARG VITE_API_BASE
 ARG VITE_WS_BASE
@@ -10,7 +10,7 @@ ENV PORT=$PORT
 
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN npm install -g pnpm
 
 RUN pnpm install
