@@ -63,6 +63,7 @@ export function DataSetRoleMembersPanel({ roleId }: DataSetRoleMembersPanelProps
         empty: "Nobody holds this role on that data set yet.",
       })}
       pickerPlaceholder="Select a member..."
+      pickerEmptyPlaceholder="Nobody left to grant this role to"
       addLabel="Grant"
       removeLabel="Revoke"
       error={error}

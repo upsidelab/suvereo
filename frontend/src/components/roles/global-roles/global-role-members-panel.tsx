@@ -52,6 +52,7 @@ export function GlobalRoleMembersPanel({ globalRoleId }: GlobalRoleMembersPanelP
       columnLabel="Name"
       emptyMessage="Nobody holds this global role yet."
       pickerPlaceholder="Select a member..."
+      pickerEmptyPlaceholder="Nobody left to grant this role to"
       error={error}
       pickerNotice={pickerNotice}
       onAdd={(option) => submit(

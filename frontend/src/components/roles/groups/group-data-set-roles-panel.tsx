@@ -61,6 +61,7 @@ export function GroupDataSetRolesPanel({ groupId, memberCount, onChanged }: Grou
         empty: "This group holds no roles on that data set.",
       })}
       pickerPlaceholder="Select a data set role..."
+      pickerEmptyPlaceholder="No data set roles left to grant"
       addLabel="Grant"
       removeLabel="Revoke"
       error={error}

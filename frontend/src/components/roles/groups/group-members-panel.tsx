@@ -53,6 +53,7 @@ export function GroupMembersPanel({ groupId, onChanged }: GroupMembersPanelProps
       columnLabel="Name"
       emptyMessage="No members yet."
       pickerPlaceholder="Select a member..."
+      pickerEmptyPlaceholder="Everyone is already a member"
       error={error}
       pickerNotice={pickerNotice}
       onAdd={(option) =>

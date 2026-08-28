@@ -49,6 +49,7 @@ export function GroupGlobalRolesPanel({ groupId, memberCount, onChanged }: Group
       columnLabel="Global role"
       emptyMessage="This group holds no global roles."
       pickerPlaceholder="Select a global role..."
+      pickerEmptyPlaceholder="No global roles left to grant"
       addLabel="Grant"
       removeLabel="Revoke"
       error={error}

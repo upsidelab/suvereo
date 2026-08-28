@@ -10,6 +10,8 @@ export interface AssignmentPanelProps {
   columnLabel: string;
   emptyMessage: string;
   pickerPlaceholder: string;
+  /** Shown on the disabled picker when there is nothing left to pick. */
+  pickerEmptyPlaceholder: string;
   addLabel?: string;
   removeLabel?: string;
   error?: string | null;
@@ -28,6 +30,7 @@ export function AssignmentPanel({
   columnLabel,
   emptyMessage,
   pickerPlaceholder,
+  pickerEmptyPlaceholder,
   addLabel = "Add",
   removeLabel = "Remove",
   error,
@@ -47,6 +50,7 @@ export function AssignmentPanel({
             <AssignmentPicker
               candidates={candidates}
               placeholder={pickerPlaceholder}
+              emptyPlaceholder={pickerEmptyPlaceholder}
               addLabel={addLabel}
               onAdd={onAdd}
             />
