@@ -1,6 +1,5 @@
 import os
 
-from celery.result import AsyncResult
 from django.conf import settings
 from django.db.models import Prefetch, Q
 from django.shortcuts import get_object_or_404
@@ -39,7 +38,6 @@ from agent.serializers.conversation import (
     ConversationContentSerializer,
     ConversationCreationSerializer,
     ConversationSerializer,
-    FileUploadStatusResponseSerializer,
     FileUploadTaskResponseSerializer,
     MessageFeedbackSerializer,
     SupportedFileTypesSerializer,
@@ -47,33 +45,6 @@ from agent.serializers.conversation import (
 from agent.services import ConversationFileMessageService
 from agent.tasks import process_file_upload_task, respond_to_user_message_task
 from catalog.models import DataSet
-
-
-class GetTaskStatus(APIView):
-    permission_classes = [IsAuthenticated]
-    """
-    View to check status of an enqueued task that's running in the background.
-    """
-
-    @swagger_auto_schema(
-        operation_description="Check the status of a task",
-        manual_parameters=[
-            openapi.Parameter("task_id", openapi.IN_PATH, description="ID of the task", type=openapi.TYPE_STRING)
-        ],
-        responses={
-            200: openapi.Response(
-                description="Task status",
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT, properties={"state": openapi.Schema(type=openapi.TYPE_STRING)}
-                ),
-            )
-        },
-    )
-    def get(self, request, task_id):
-        task_result = AsyncResult(task_id)
-        response = {"state": task_result.state}
-
-        return Response(response)
 
 
 class ConversationView(APIView):
@@ -408,44 +379,6 @@ class ConversationFileUploadView(APIView):
             response_serializer.validated_data,
             status=status.HTTP_202_ACCEPTED,
         )
-
-
-class FileUploadStatusView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    @swagger_auto_schema(
-        operation_description="Check the status of a file upload task",
-        manual_parameters=[
-            openapi.Parameter(
-                "task_id", openapi.IN_PATH, description="ID of the file upload task", type=openapi.TYPE_STRING
-            )
-        ],
-        responses={200: FileUploadStatusResponseSerializer()},
-    )
-    def get(self, request, task_id, *args, **kwargs):
-        try:
-            task_result = AsyncResult(task_id)
-
-            response_data = {
-                "task_id": task_id,
-                "status": task_result.status,
-            }
-
-            if task_result.status == "SUCCESS":
-                response_data["result"] = task_result.result
-            elif task_result.status == "FAILURE":
-                response_data["result"] = {"error": str(task_result.result)}
-
-            # Use serializer for response validation
-            serializer = FileUploadStatusResponseSerializer(data=response_data)
-            serializer.is_valid(raise_exception=True)
-
-            return Response(serializer.validated_data, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            return Response(
-                {"error": f"Failed to get task status: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
 
 
 class SupportedFileTypesView(APIView):

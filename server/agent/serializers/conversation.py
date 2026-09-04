@@ -138,11 +138,5 @@ class FileUploadTaskResponseSerializer(serializers.Serializer):
     task_id = serializers.CharField()
 
 
-class FileUploadStatusResponseSerializer(serializers.Serializer):
-    task_id = serializers.CharField()
-    status = serializers.CharField()
-    result = serializers.JSONField(required=False, allow_null=True)
-
-
 class SupportedFileTypesSerializer(serializers.Serializer):
     supported_extensions = serializers.ListField(child=serializers.CharField())

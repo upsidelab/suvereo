@@ -22,18 +22,22 @@ export type FileUploadResponse = {
   task_id: string;
 }
 
-export type FileUploadStatusResponse = {
+export type TaskStatusResponse<TResult> = {
   task_id: string;
   status: string;
-  result?: {
-    file_id?: number;
-    error?: string;
-  };
+  result?: TResult;
 }
 
-type TaskState = {
-  state: string;
-}
+export type FileUploadStatusResponse = TaskStatusResponse<{
+  file_id?: number;
+  error?: string;
+}>
+
+export type MessageTaskStatusResponse = TaskStatusResponse<{
+  conversation_id?: number;
+  message_id?: number;
+  error?: string;
+}>
 
 export class ConversationsApiClient extends BaseApiClient {
   async getConversations(dataSetId: number, page: number = 1): Promise<PaginatedResult<Conversation>> {
@@ -81,14 +85,13 @@ export class ConversationsApiClient extends BaseApiClient {
     return await response.json() as TaskHandle;
   }
 
-  async getTaskStatus(taskHandle: TaskHandle): Promise<string> {
-    const response = await fetch(`${this.apiBase}/api/task_status/${taskHandle.task_id}`, {...this._requestConfiguration()});
-    const { state } = await response.json() as TaskState;
-    return state;
+  async getTaskStatus(taskHandle: TaskHandle): Promise<MessageTaskStatusResponse> {
+    const response = await fetch(`${this.apiBase}/api/message-push-status/${taskHandle.task_id}`, {...this._requestConfiguration()});
+    return await response.json() as MessageTaskStatusResponse;
   }
 
   async fetchResponseMessage(conversationId: number, taskHandle: TaskHandle): Promise<Message | null> {
-    const taskStatus = await this.getTaskStatus(taskHandle);
+    const { status: taskStatus } = await this.getTaskStatus(taskHandle);
 
     if (taskStatus === "SUCCESS" || taskStatus === "FAILURE") {
       const conversation = await this.getConversation(conversationId);
