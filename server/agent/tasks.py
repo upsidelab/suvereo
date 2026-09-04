@@ -24,6 +24,12 @@ class TaskType(StrEnum):
     FILE_UPLOAD = "file_upload"
 
 
+class TaskStatus(StrEnum):
+    PENDING = "PENDING"
+    SUCCESS = "SUCCESS"
+    FAILURE = "FAILURE"
+
+
 class SaveMessageOnFailureTask(Task):
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         conversation_id = kwargs.get("conversation_id")
@@ -95,7 +101,7 @@ def process_file_upload_task(conversation_id: int, file_content: bytes, filename
 
         return {
             "task_type": TaskType.FILE_UPLOAD,
-            "status": "SUCCESS",
+            "status": TaskStatus.SUCCESS,
             "conversation_id": conversation_id,
             "uploaded_file": serializer.data,
             "file_id": obj.id,
@@ -104,14 +110,14 @@ def process_file_upload_task(conversation_id: int, file_content: bytes, filename
     except Conversation.DoesNotExist:
         return {
             "task_type": TaskType.FILE_UPLOAD,
-            "status": "FAILURE",
+            "status": TaskStatus.FAILURE,
             "conversation_id": conversation_id,
             "error": f"Conversation {conversation_id} not found",
         }
     except Exception as e:
         return {
             "task_type": TaskType.FILE_UPLOAD,
-            "status": "FAILURE",
+            "status": TaskStatus.FAILURE,
             "conversation_id": conversation_id,
             "error": str(e),
         }

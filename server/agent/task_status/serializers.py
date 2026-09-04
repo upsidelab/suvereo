@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from agent.tasks import TaskStatus
+
 
 class UploadedFileResultSerializer(serializers.Serializer):
     """Shape of the `uploaded_file` entry in a file upload task's result."""
@@ -24,7 +26,7 @@ class FileUploadTaskStatusSerializer(serializers.Serializer):
     """Response of the file-upload-status endpoint."""
 
     task_id = serializers.CharField()
-    status = serializers.CharField()
+    status = serializers.ChoiceField(choices=TaskStatus)
     result = FileUploadTaskResultSerializer(required=False)
 
 
@@ -40,5 +42,5 @@ class MessagePushTaskStatusSerializer(serializers.Serializer):
     """Response of the message-push-status endpoint."""
 
     task_id = serializers.CharField()
-    status = serializers.CharField()
+    status = serializers.ChoiceField(choices=TaskStatus)
     result = MessagePushTaskResultSerializer(required=False)

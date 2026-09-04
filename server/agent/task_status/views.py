@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 
 from account.authorization import PERMISSIONS, has_dataset_perm
 from agent.models import Conversation
-from agent.tasks import TaskType
+from agent.tasks import TaskStatus, TaskType
 
 from .serializers import FileUploadTaskStatusSerializer, MessagePushTaskStatusSerializer
 
@@ -38,13 +38,13 @@ class TaskStatusView(APIView):
                 "status": task_result.status,
             }
 
-            if task_result.status == "SUCCESS":
+            if task_result.status == TaskStatus.SUCCESS:
                 result = task_result.result
                 if self._is_result_visible(request.user, result):
                     response_data["result"] = result
                 else:
-                    response_data["status"] = "PENDING"
-            elif task_result.status == "FAILURE":
+                    response_data["status"] = TaskStatus.PENDING
+            elif task_result.status == TaskStatus.FAILURE:
                 response_data["result"] = {"error": str(task_result.result)}
 
             serializer = self.response_serializer_class(response_data)
