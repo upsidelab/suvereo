@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from enum import StrEnum
 
 from asgiref.sync import async_to_sync
 from celery import Task, shared_task
@@ -13,6 +14,20 @@ from agent.models.conversation import Conversation, ConversationFile
 from agent.serializers.conversation import ConversationFileSerializer
 from agent.services import FileParsingService
 from pecl import settings
+
+
+class TaskType(StrEnum):
+    """Identifies which job produced a background task's result, so a task's status can only be
+    read back through the endpoint meant for that job type."""
+
+    MESSAGE_PUSH = "message_push"
+    FILE_UPLOAD = "file_upload"
+
+
+class TaskStatus(StrEnum):
+    PENDING = "PENDING"
+    SUCCESS = "SUCCESS"
+    FAILURE = "FAILURE"
 
 
 class SaveMessageOnFailureTask(Task):
@@ -60,7 +75,7 @@ def respond_to_user_message_task(
                     "answer_id": answer.id,
                 },
             )
-        return {"conversation_id": conversation_id, "message_id": answer.id}
+        return {"task_type": TaskType.MESSAGE_PUSH, "conversation_id": conversation_id, "message_id": answer.id}
     except Exception:
         self.retry(countdown=1)
 
@@ -85,16 +100,27 @@ def process_file_upload_task(conversation_id: int, file_content: bytes, filename
         serializer = ConversationFileSerializer(obj)
 
         return {
-            "status": "SUCCESS",
+            "task_type": TaskType.FILE_UPLOAD,
+            "status": TaskStatus.SUCCESS,
             "conversation_id": conversation_id,
             "uploaded_file": serializer.data,
             "file_id": obj.id,
         }
 
     except Conversation.DoesNotExist:
-        return {"status": "FAILURE", "error": f"Conversation {conversation_id} not found"}
+        return {
+            "task_type": TaskType.FILE_UPLOAD,
+            "status": TaskStatus.FAILURE,
+            "conversation_id": conversation_id,
+            "error": f"Conversation {conversation_id} not found",
+        }
     except Exception as e:
-        return {"status": "FAILURE", "error": str(e)}
+        return {
+            "task_type": TaskType.FILE_UPLOAD,
+            "status": TaskStatus.FAILURE,
+            "conversation_id": conversation_id,
+            "error": str(e),
+        }
 
 
 @shared_task
