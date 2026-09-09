@@ -104,4 +104,17 @@ class BaseIntegrationPluginResolver(ABC):
 
     @abstractmethod
     def resolve_all(self, data_set_id: Any, plugin_base: type[IntegrationT]) -> list[IntegrationT]:
-        """Return every configured plugin instance of *plugin_base* for the data set."""
+        """Return every configured plugin instance of *plugin_base* for the data set.
+
+        Best-effort: an implementation skips records it cannot instantiate (an unknown type, or a
+        stored config that no longer validates) rather than raising, so that one broken integration
+        does not hide the healthy ones from the caller.
+        """
+
+    @abstractmethod
+    def has_any(self, data_set_id: Any, plugin_base: type[IntegrationT]) -> bool:
+        """Return whether the data set has at least one integration of *plugin_base*.
+
+        Answers the question without instantiating plugins or reading their stored config, so it
+        stays cheap enough to call on every conversation turn.
+        """

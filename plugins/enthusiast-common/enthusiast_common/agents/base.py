@@ -42,7 +42,6 @@ class BaseAgent(ABC, ExtraArgsClassBase):
     TOOLS = []
 
     FILE_UPLOAD = False
-    MCP_TOOLS_ENABLED = False
 
     def __init__(
         self,

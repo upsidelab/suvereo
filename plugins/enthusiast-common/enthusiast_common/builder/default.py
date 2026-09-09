@@ -72,11 +72,11 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
         Runs the existing synchronous build() in a worker thread so ORM calls inside it don't hit
         a "sync call from an async context" guard — that guard only fires when a sync DB call
         happens on a thread that already has a running event loop, and a plain worker thread has
-        none. Only agents that opt in via ``MCP_TOOLS_ENABLED`` pay for the extra tool fetch.
+        none. Callers reach for this only once they know the data set has tools worth fetching,
+        so the fetch is unconditional here.
         """
         agent_instance = await asyncio.to_thread(self.build)
-        if getattr(self._config.agent_class, "MCP_TOOLS_ENABLED", False):
-            agent_instance.set_dynamic_tools(await self._build_dynamic_tools())
+        agent_instance.set_dynamic_tools(await self._build_dynamic_tools())
         return agent_instance
 
     async def _build_dynamic_tools(self) -> list[BaseTool]:
