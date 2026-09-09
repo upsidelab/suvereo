@@ -8,6 +8,7 @@ Custom integrations let you connect Enthusiast to systems that aren’t supporte
 2. Product Source Integration - Enables one-way fetching of product data from an e-commerce or PIM system.
 3. Document Source Integration - Enables one-way fetching of documents such as manuals, FAQs, or internal content.
 4. Language Model Integration - Connects agents to a language model provider.
+5. Tool Providing Integration - Hands agents extra tools to call at runtime, such as the tools exposed by an MCP server.
 
 ## Building an E-Commerce Integration
 
@@ -107,4 +108,53 @@ It should also implement the following method:
 class UpCommerceDocumentSource(DocumentSourcePlugin):
     def fetch(self) -> list[DocumentDetails]:
         return [DocumentDetails( ... )]
+```
+
+## Connecting an MCP Server
+
+Enthusiast ships an MCP (Model Context Protocol) integration in the `enthusiast-integration-mcp` package. Install it
+and add `enthusiast_integration_mcp.MCPServerIntegration` to `CATALOG_INTEGRATION_PLUGINS` in your settings override.
+
+Each connected server is a regular integration configured on a data set, with three configuration fields:
+- `url` - Full URL of the MCP endpoint.
+- `transport` - Either `streamable_http` (the default) or `sse`.
+- `headers` - A JSON object of headers sent on every request, which is where authentication credentials go, for
+  example `{"Authorization": "Bearer <token>"}`.
+
+Unlike other integration types, a data set may hold **any number** of MCP servers - the plugin opts into this by
+declaring `ALLOWS_MULTIPLE_INSTANCES = True`. Each server is contacted independently, so an unreachable or
+mis-configured one is logged and skipped rather than breaking the conversation.
+
+No agent configuration is needed. Once a server is connected, the data set's agents pick up its tools on their next
+conversation turn, as long as they can answer asynchronously - which every agent built on `BaseToolCallingAgent` can.
+Data sets with no MCP server connected are untouched: Enthusiast checks for connected servers before doing any of the
+extra work, so nothing changes for them.
+
+## Building a Tool Providing Integration
+
+MCP is one way to hand agents extra tools, but it isn't the only one. To expose tools from any other system,
+implement [enthusiast_common.integrations.BaseToolProvidingIntegration](https://github.com/upsidelab/enthusiast/blob/main/plugins/enthusiast-common/enthusiast_common/integrations/base.py).
+
+Your integration class must define the same static fields as any other integration (`TYPE`, `NAME`,
+`INTEGRATION_TYPE_NAME`, `CONFIGURATION_ARGS`), and implement one method:
+- `get_tools(self)` - An async method returning the LangChain tools this integration currently makes available.
+
+Set `ALLOWS_MULTIPLE_INSTANCES = True` if a data set should be allowed to hold more than one instance of your type.
+Enthusiast discovers tool providers generically, so agents pick up your tools alongside any connected MCP servers
+without knowing your integration exists.
+
+### Example Implementation
+
+```python
+class UpCommerceToolsConfig(RequiredFieldsModel):
+    base_url: str = Field(title="Base URL", description="Base URL for the API")
+
+class UpCommerceToolsIntegration(BaseToolProvidingIntegration):
+    TYPE = "upcommerce_tools"
+    NAME = "UpCommerce Tools"
+    INTEGRATION_TYPE_NAME = "Tool Provider"
+    CONFIGURATION_ARGS = UpCommerceToolsConfig
+
+    async def get_tools(self) -> list[BaseTool]:
+        return await fetch_upcommerce_tools(self.CONFIGURATION_ARGS.base_url)
 ```
