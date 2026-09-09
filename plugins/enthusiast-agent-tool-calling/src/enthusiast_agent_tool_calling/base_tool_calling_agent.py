@@ -26,47 +26,45 @@ class BaseToolCallingAgent(BaseAgent):
             ]
 
     def get_answer(self, input_text: str) -> str:
-        history = self._injector.chat_history
-        compactor = self._injector.memory_compactor
-
-        agent = self._build_agent()
         context_messages = self._build_context_messages()
-        input_messages = context_messages + [HumanMessage(content=input_text)]
-        result = agent.invoke({"messages": input_messages}, config=self._build_invoke_config())
-
-        new_messages = result["messages"][len(context_messages):]
-        final_message = next(
-            m for m in reversed(new_messages)
-            if isinstance(m, AIMessage) and not m.tool_calls
+        result = self._build_agent().invoke(
+            {"messages": self._build_input_messages(context_messages, input_text)},
+            config=self._build_invoke_config(),
         )
-
-        history.add_messages(new_messages)
-
-        if compactor:
-            compactor.compact_if_needed()
-
-        return final_message.text
+        return self._record_turn(result, context_messages)
 
     async def aget_answer(self, input_text: str) -> str:
-        """Async twin of get_answer(): uses ainvoke() so dynamic tools (e.g. MCP) can be awaited."""
-        history = self._injector.chat_history
-        compactor = self._injector.memory_compactor
+        """Async twin of get_answer(): uses ainvoke() so dynamic tools (e.g. MCP) can be awaited.
 
-        agent = self._build_agent()
+        The steps that touch the database run in a worker thread, since they are the synchronous
+        ORM calls that must not happen on a thread with a running event loop.
+        """
         context_messages = await asyncio.to_thread(self._build_context_messages)
-        input_messages = context_messages + [HumanMessage(content=input_text)]
-        result = await agent.ainvoke({"messages": input_messages}, config=self._build_invoke_config())
+        result = await self._build_agent().ainvoke(
+            {"messages": self._build_input_messages(context_messages, input_text)},
+            config=self._build_invoke_config(),
+        )
+        return await asyncio.to_thread(self._record_turn, result, context_messages)
 
+    def _build_input_messages(self, context_messages: list[BaseMessage], input_text: str) -> list[BaseMessage]:
+        return context_messages + [HumanMessage(content=input_text)]
+
+    def _record_turn(self, result: dict[str, Any], context_messages: list[BaseMessage]) -> str:
+        """Store everything this turn produced and return the agent's final answer.
+
+        The answer is picked out before anything is written, so a run that never produced a final
+        message leaves the history untouched rather than half-written.
+        """
         new_messages = result["messages"][len(context_messages):]
         final_message = next(
             m for m in reversed(new_messages)
             if isinstance(m, AIMessage) and not m.tool_calls
         )
 
-        await asyncio.to_thread(history.add_messages, new_messages)
+        self._injector.chat_history.add_messages(new_messages)
 
-        if compactor:
-            await asyncio.to_thread(compactor.compact_if_needed)
+        if compactor := self._injector.memory_compactor:
+            compactor.compact_if_needed()
 
         return final_message.text
 
