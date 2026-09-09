@@ -46,3 +46,4 @@ class TestMCPServerIntegrationGetTools:
 
         connection = mock_client_cls.call_args[0][0]["mcp_server"]
         assert "headers" not in connection
+
