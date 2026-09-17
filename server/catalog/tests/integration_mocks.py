@@ -20,3 +20,7 @@ class MockMultiInstanceIntegration(BaseIntegration):
     INTEGRATION_TYPE_NAME = "Mock category"
     ALLOWS_MULTIPLE_INSTANCES = True
     CONFIGURATION_ARGS = MockConfigArgs
+
+    def instance_name(self) -> str:
+        """Label by config, the way a real multi-instance plugin distinguishes its instances."""
+        return f"{self.NAME} ({self.CONFIGURATION_ARGS.marker})"
