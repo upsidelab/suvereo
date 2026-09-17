@@ -28,7 +28,7 @@ class BaseIntegration(ABC):
     plugin with that config before use. A DataSet holds at most one integration
     of a given ``TYPE``, unless the type opts into ``ALLOWS_MULTIPLE_INSTANCES``.
     A vertical may add further capabilities in its own subclass; the base only
-    covers config and connection testing.
+    covers configuration and how an instance presents itself.
     """
 
     #: Stable identifier for this integration type. Unique per DataSet unless ALLOWS_MULTIPLE_INSTANCES is True.
@@ -49,6 +49,15 @@ class BaseIntegration(ABC):
     def is_syncable(cls) -> bool:
         """An integration is syncable when its manager pulls data from an external source."""
         return cls.INTEGRATION_MANAGER is not None and issubclass(cls.INTEGRATION_MANAGER, BaseSourceIntegrationManager)
+
+    def instance_name(self) -> str:
+        """Label for this configured instance, shown wherever integrations are listed.
+
+        Defaults to the type's ``NAME``, which reads fine while a DataSet holds only one of each.
+        A type allowing several instances should override this to include whatever distinguishes
+        them — otherwise every one of them shows up under the same label.
+        """
+        return self.NAME
 
     def set_runtime_arguments(self, runtime_arguments: dict[str, Any]) -> None:
         """Populate class-level config fields from a dict of runtime values.

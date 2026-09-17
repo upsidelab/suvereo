@@ -1,4 +1,5 @@
 from typing import Any
+from urllib.parse import urlparse
 
 from enthusiast_common.integrations import BaseToolProvidingIntegration
 from langchain_core.tools import BaseTool
@@ -16,6 +17,11 @@ class MCPServerIntegration(BaseToolProvidingIntegration):
     CONFIGURATION_ARGS = MCPServerConfigArgs
     ALLOWS_MULTIPLE_INSTANCES = True
 
+    def instance_name(self) -> str:
+        """Name this server by its host, so several connected servers are told apart in the UI."""
+        host = urlparse(self.CONFIGURATION_ARGS.url).netloc
+        return f"{self.NAME} ({host})" if host else self.NAME
+
     async def get_tools(self) -> list[BaseTool]:
         """Connect to this server and return its tools as native LangChain tools.
 
@@ -25,7 +31,7 @@ class MCPServerIntegration(BaseToolProvidingIntegration):
         """
         config: MCPServerConfigArgs = self.CONFIGURATION_ARGS
         connection: dict[str, Any] = {"transport": config.transport, "url": config.url}
-        if config.headers:
-            connection["headers"] = config.headers
+        if headers := config.as_headers():
+            connection["headers"] = headers
         client = MultiServerMCPClient({self.TYPE: connection})
         return await client.get_tools()
