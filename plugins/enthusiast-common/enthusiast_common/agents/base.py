@@ -1,3 +1,4 @@
+import logging
 from abc import ABC, ABCMeta, abstractmethod
 from typing import Any
 
@@ -8,6 +9,8 @@ from pydantic import BaseModel
 
 from ..injectors import BaseInjector
 from ..utils import RequiredFieldsModel, validate_required_vars
+
+logger = logging.getLogger(__name__)
 
 
 class ExtraArgsClassBaseMeta(ABCMeta):
@@ -61,8 +64,25 @@ class BaseAgent(ABC, ExtraArgsClassBase):
         self._dynamic_tools: list[BaseTool] = []
 
     def set_dynamic_tools(self, tools: list[BaseTool]) -> None:
-        """Attach tools fetched at build time from tool-providing integrations (e.g. MCP servers)."""
-        self._dynamic_tools = tools
+        """Attach tools fetched at build time from tool-providing integrations (e.g. MCP servers).
+
+        A tool whose name is already taken is dropped, because nothing downstream would complain:
+        a model handed two tools of the same name picks between them arbitrarily. The agent's own
+        tools always win, so connecting a server can never quietly replace built-in behaviour, and
+        among integrations the first one resolved keeps the name.
+        """
+        taken = {tool.NAME for tool in self._tools}
+        kept = []
+        for tool in tools:
+            if tool.name in taken:
+                logger.warning(
+                    "Ignoring tool '%s' from a connected integration: that name is already taken",
+                    tool.name,
+                )
+                continue
+            taken.add(tool.name)
+            kept.append(tool)
+        self._dynamic_tools = kept
 
     @abstractmethod
     def get_answer(self, input_text: str) -> str:

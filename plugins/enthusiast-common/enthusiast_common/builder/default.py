@@ -26,6 +26,10 @@ from .base import BaseAgentBuilder, ConfigT
 
 logger = logging.getLogger(__name__)
 
+#: How long a single tool-providing integration gets to answer before it is skipped for this turn.
+#: Kept well under a conversational attention span: the user is waiting on the reply this blocks.
+DYNAMIC_TOOL_FETCH_TIMEOUT_SECONDS = 10
+
 
 class AgentBuilder(BaseAgentBuilder[ConfigT]):
     """Default, config-driven implementation of :class:`BaseAgentBuilder`.
@@ -82,8 +86,10 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
     async def _build_dynamic_tools(self) -> list[BaseTool]:
         """Fetch tools from every tool-providing integration configured on this dataset.
 
-        Each integration is fetched independently — one unreachable server is logged and skipped
-        rather than failing the whole turn.
+        The fetches run concurrently and each is capped by its own timeout, because this sits on the
+        critical path of a conversation turn: served sequentially, a handful of unresponsive servers
+        would add up to minutes of silence before the user saw any answer. An integration that fails
+        or times out contributes no tools and is logged, leaving the healthy ones unaffected.
         """
         resolver_cls = self._config.integration_plugin_resolver
         if resolver_cls is None:
@@ -91,17 +97,38 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
         integrations = await asyncio.to_thread(
             resolver_cls().resolve_all, self._data_set_id, BaseToolProvidingIntegration
         )
-        tools: list[BaseTool] = []
-        for integration in integrations:
-            try:
-                tools.extend(await integration.get_tools())
-            except Exception:
-                logger.warning(
-                    "Failed to fetch tools from %s integration (dataset %s)",
-                    integration.TYPE,
-                    self._data_set_id,
-                    exc_info=True,
-                )
+        if not integrations:
+            return []
+        fetched = await asyncio.gather(*(self._fetch_integration_tools(i) for i in integrations))
+        return [tool for tools in fetched for tool in tools]
+
+    async def _fetch_integration_tools(self, integration: BaseToolProvidingIntegration) -> list[BaseTool]:
+        """Fetch one integration's tools, returning none if it cannot answer in time."""
+        try:
+            tools = await asyncio.wait_for(integration.get_tools(), timeout=DYNAMIC_TOOL_FETCH_TIMEOUT_SECONDS)
+        except TimeoutError:
+            logger.warning(
+                "Timed out after %ss fetching tools from %s integration (dataset %s)",
+                DYNAMIC_TOOL_FETCH_TIMEOUT_SECONDS,
+                integration.TYPE,
+                self._data_set_id,
+            )
+            return []
+        except Exception:
+            logger.warning(
+                "Failed to fetch tools from %s integration (dataset %s)",
+                integration.TYPE,
+                self._data_set_id,
+                exc_info=True,
+            )
+            return []
+        logger.info(
+            "Fetched %s tool(s) from %s integration (dataset %s): %s",
+            len(tools),
+            integration.TYPE,
+            self._data_set_id,
+            ", ".join(tool.name for tool in tools) or "none",
+        )
         return tools
 
     def _inject_additional_arguments(self, agent_instance: BaseAgent) -> None:
