@@ -7,10 +7,10 @@ from enthusiast_common.agents import ConfigType
 from enthusiast_common.integrations import BaseToolProvidingIntegration
 
 from account.models import User
+from agent.core.agents.default_config import get_default_config
 from agent.core.registries.agents.agent_registry import AgentRegistry
 from agent.models import Conversation, Message
 from agent.models.agent import Agent
-from catalog.integrations.resolver import IntegrationPluginResolver
 from catalog.models import DataSet
 
 
@@ -58,10 +58,16 @@ class ConversationManager:
         data set has to have at least one tool-providing integration (e.g. an MCP server) whose
         tools are worth fetching. Agents that only implement ``get_answer`` keep the sync path, and
         a data set with nothing connected never pays for an event loop it has no use for.
+
+        The resolver comes from the default agent config rather than being imported directly, so a
+        host that swaps its implementation is honoured here as well as in the agent builder.
         """
         if not hasattr(agent_class, "aget_answer"):
             return False
-        return IntegrationPluginResolver().has_any(conversation.data_set_id, BaseToolProvidingIntegration)
+        resolver_class = get_default_config().integration_plugin_resolver
+        if resolver_class is None:
+            return False
+        return resolver_class().has_any(conversation.data_set_id, BaseToolProvidingIntegration)
 
     async def _get_answer_async(
         self,
