@@ -1,8 +1,8 @@
-import asyncio
 from typing import Any
 
 from enthusiast_agent_tools import FileListTool, FileRetrievalTool
 from enthusiast_common.agents import BaseAgent
+from enthusiast_common.utils import run_off_event_loop
 from langchain.agents import create_agent
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langchain_core.tools import BaseTool
@@ -39,12 +39,12 @@ class BaseToolCallingAgent(BaseAgent):
         The steps that touch the database run in a worker thread, since they are the synchronous
         ORM calls that must not happen on a thread with a running event loop.
         """
-        context_messages = await asyncio.to_thread(self._build_context_messages)
+        context_messages = await run_off_event_loop(self._build_context_messages)
         result = await self._build_agent().ainvoke(
             {"messages": self._build_input_messages(context_messages, input_text)},
             config=self._build_invoke_config(),
         )
-        return await asyncio.to_thread(self._record_turn, result, context_messages)
+        return await run_off_event_loop(self._record_turn, result, context_messages)
 
     def _build_input_messages(self, context_messages: list[BaseMessage], input_text: str) -> list[BaseMessage]:
         return context_messages + [HumanMessage(content=input_text)]

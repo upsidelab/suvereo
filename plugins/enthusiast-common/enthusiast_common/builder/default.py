@@ -22,6 +22,7 @@ from ..memory import BaseMemoryCompactor
 from ..registry import BaseDBModelsRegistry, BaseEmbeddingProviderRegistry, BaseLanguageModelRegistry
 from ..structures import RepositoriesInstances
 from ..tools import BaseAgentTool, BaseFileTool, BaseFunctionTool, BaseLLMTool
+from ..utils import run_off_event_loop
 from .base import BaseAgentBuilder, ConfigT
 
 logger = logging.getLogger(__name__)
@@ -79,7 +80,7 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
         none. Callers reach for this only once they know the data set has tools worth fetching,
         so the fetch is unconditional here.
         """
-        agent_instance = await asyncio.to_thread(self.build)
+        agent_instance = await run_off_event_loop(self.build)
         agent_instance.set_dynamic_tools(await self._build_dynamic_tools())
         return agent_instance
 
@@ -94,7 +95,7 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
         resolver_cls = self._config.integration_plugin_resolver
         if resolver_cls is None:
             return []
-        integrations = await asyncio.to_thread(
+        integrations = await run_off_event_loop(
             resolver_cls().resolve_all, self._data_set_id, BaseToolProvidingIntegration
         )
         if not integrations:
