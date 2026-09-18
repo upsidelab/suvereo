@@ -115,15 +115,26 @@ class UpCommerceDocumentSource(DocumentSourcePlugin):
 Enthusiast ships an MCP (Model Context Protocol) integration in the `enthusiast-integration-mcp` package. Install it
 and add `enthusiast_integration_mcp.MCPServerIntegration` to `CATALOG_INTEGRATION_PLUGINS` in your settings override.
 
-Each connected server is a regular integration configured on a data set, with three configuration fields:
+Each connected server is a regular integration configured on a data set, with four configuration fields:
 - `url` - Full URL of the MCP endpoint.
 - `transport` - Either `streamable_http` (the default) or `sse`.
-- `headers` - A JSON object of headers sent on every request, which is where authentication credentials go, for
-  example `{"Authorization": "Bearer <token>"}`.
+- `auth_token` - The full value of the auth header, scheme included, such as `Bearer abc123`. Leave it empty for a
+  server that needs no authentication.
+- `auth_header` - The header the token is sent in, `Authorization` by default. Set it to something like `X-API-Key`
+  for servers that expect a raw key under their own header.
+
+Credentials are two plain fields rather than a header mapping so the admin form, which renders one text input per
+field, can express them. That covers the bearer and API-key schemes servers use in practice.
 
 Unlike other integration types, a data set may hold **any number** of MCP servers - the plugin opts into this by
-declaring `ALLOWS_MULTIPLE_INSTANCES = True`. Each server is contacted independently, so an unreachable or
-mis-configured one is logged and skipped rather than breaking the conversation.
+declaring `ALLOWS_MULTIPLE_INSTANCES = True`. Connected servers are listed by host, so several of them stay
+tellable apart.
+
+Because tools are fetched while a user waits for a reply, servers are contacted concurrently and each one gets its
+own short timeout. A server that is unreachable, mis-configured, or simply slow contributes no tools for that turn
+and is logged; the rest are unaffected. Tool names have to be unique, so a tool whose name is already taken - by
+one of the agent's own tools, or by a server connected ahead of it - is dropped with a warning rather than
+silently shadowing the original.
 
 No agent configuration is needed. Once a server is connected, the data set's agents pick up its tools on their next
 conversation turn, as long as they can answer asynchronously - which every agent built on `BaseToolCallingAgent` can.
