@@ -1,3 +1,5 @@
+import asyncio
+import logging
 from typing import Optional
 
 from langchain_core.callbacks import BaseCallbackHandler
@@ -15,11 +17,19 @@ from ..config.base import (
     LLMToolConfig,
 )
 from ..injectors import BaseInjector
+from ..integrations import BaseToolProvidingIntegration
 from ..memory import BaseMemoryCompactor
 from ..registry import BaseDBModelsRegistry, BaseEmbeddingProviderRegistry, BaseLanguageModelRegistry
 from ..structures import RepositoriesInstances
 from ..tools import BaseAgentTool, BaseFileTool, BaseFunctionTool, BaseLLMTool
+from ..utils import run_off_event_loop
 from .base import BaseAgentBuilder, ConfigT
+
+logger = logging.getLogger(__name__)
+
+#: How long a single tool-providing integration gets to answer before it is skipped for this turn.
+#: Kept well under a conversational attention span: the user is waiting on the reply this blocks.
+DYNAMIC_TOOL_FETCH_TIMEOUT_SECONDS = 10
 
 
 class AgentBuilder(BaseAgentBuilder[ConfigT]):
@@ -60,6 +70,67 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
         agent_instance = self._build_agent(tools, self._llm, agent_callback_handler)
         self._inject_additional_arguments(agent_instance)
         return agent_instance
+
+    async def abuild(self) -> BaseAgent:
+        """Async twin of build(): also attaches this dataset's tool-providing integrations' tools.
+
+        Runs the existing synchronous build() in a worker thread so ORM calls inside it don't hit
+        a "sync call from an async context" guard — that guard only fires when a sync DB call
+        happens on a thread that already has a running event loop, and a plain worker thread has
+        none. Callers reach for this only once they know the data set has tools worth fetching,
+        so the fetch is unconditional here.
+        """
+        agent_instance = await run_off_event_loop(self.build)
+        agent_instance.set_dynamic_tools(await self._build_dynamic_tools())
+        return agent_instance
+
+    async def _build_dynamic_tools(self) -> list[BaseTool]:
+        """Fetch tools from every tool-providing integration configured on this dataset.
+
+        The fetches run concurrently and each is capped by its own timeout, because this sits on the
+        critical path of a conversation turn: served sequentially, a handful of unresponsive servers
+        would add up to minutes of silence before the user saw any answer. An integration that fails
+        or times out contributes no tools and is logged, leaving the healthy ones unaffected.
+        """
+        resolver_cls = self._config.integration_plugin_resolver
+        if resolver_cls is None:
+            return []
+        integrations = await run_off_event_loop(
+            resolver_cls().resolve_all, self._data_set_id, BaseToolProvidingIntegration
+        )
+        if not integrations:
+            return []
+        fetched = await asyncio.gather(*(self._fetch_integration_tools(i) for i in integrations))
+        return [tool for tools in fetched for tool in tools]
+
+    async def _fetch_integration_tools(self, integration: BaseToolProvidingIntegration) -> list[BaseTool]:
+        """Fetch one integration's tools, returning none if it cannot answer in time."""
+        try:
+            tools = await asyncio.wait_for(integration.get_tools(), timeout=DYNAMIC_TOOL_FETCH_TIMEOUT_SECONDS)
+        except TimeoutError:
+            logger.warning(
+                "Timed out after %ss fetching tools from %s integration (dataset %s)",
+                DYNAMIC_TOOL_FETCH_TIMEOUT_SECONDS,
+                integration.TYPE,
+                self._data_set_id,
+            )
+            return []
+        except Exception:
+            logger.warning(
+                "Failed to fetch tools from %s integration (dataset %s)",
+                integration.TYPE,
+                self._data_set_id,
+                exc_info=True,
+            )
+            return []
+        logger.info(
+            "Fetched %s tool(s) from %s integration (dataset %s): %s",
+            len(tools),
+            integration.TYPE,
+            self._data_set_id,
+            ", ".join(tool.name for tool in tools) or "none",
+        )
+        return tools
 
     def _inject_additional_arguments(self, agent_instance: BaseAgent) -> None:
         agent_configuration_id = self._repositories.conversation.get_agent_id(self.conversation_id)

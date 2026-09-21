@@ -9,6 +9,7 @@ from account.authorization import PERMISSIONS, any_permission_on_any_dataset_req
 from catalog.integrations.registry import IntegrationPluginRegistry
 from catalog.integrations.tasks import sync_integration_task
 from catalog.models import DataSet, Integration
+from catalog.models.integration import UNIQUE_INTEGRATION_TYPE_CONSTRAINT
 from catalog.serializers import IntegrationSerializer, IntegrationTypeSerializer, IntegrationUpdateSerializer
 
 
@@ -69,7 +70,11 @@ class IntegrationListView(_DataSetScopedView):
                 integration = serializer.save(
                     dataset=data_set, allows_multiple_instances=plugin_class.ALLOWS_MULTIPLE_INSTANCES
                 )
-        except IntegrityError:
+        except IntegrityError as e:
+            # Only the uniqueness constraint means "already configured"; anything else is a real
+            # database failure and must not be reported to the admin as a duplicate.
+            if UNIQUE_INTEGRATION_TYPE_CONSTRAINT not in str(e):
+                raise
             return Response(
                 {"detail": f"This dataset already has a '{integration_type}' integration."},
                 status=status.HTTP_400_BAD_REQUEST,

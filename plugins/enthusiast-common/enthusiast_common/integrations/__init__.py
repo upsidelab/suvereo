@@ -3,6 +3,7 @@ from .base import (
     BaseIntegrationManager,
     BaseIntegrationPluginResolver,
     BaseSourceIntegrationManager,
+    BaseToolProvidingIntegration,
 )
 
 __all__ = [
@@ -10,4 +11,5 @@ __all__ = [
     "BaseIntegrationManager",
     "BaseIntegrationPluginResolver",
     "BaseSourceIntegrationManager",
+    "BaseToolProvidingIntegration",
 ]

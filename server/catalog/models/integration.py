@@ -3,6 +3,11 @@ from django.db.models import Q
 
 from .data_set import DataSet
 
+#: Name of the partial unique constraint below. Callers that need to tell "this type is already
+#: configured" apart from any other integrity failure match on it, so it lives here rather than
+#: being spelled out again at the point of the check.
+UNIQUE_INTEGRATION_TYPE_CONSTRAINT = "unique_integration_type_per_dataset"
+
 
 class Integration(models.Model):
     """One connection to an external system, configured on a DataSet.
@@ -25,7 +30,7 @@ class Integration(models.Model):
             models.UniqueConstraint(
                 fields=["dataset", "type"],
                 condition=Q(allows_multiple_instances=False),
-                name="unique_integration_type_per_dataset",
+                name=UNIQUE_INTEGRATION_TYPE_CONSTRAINT,
             )
         ]
         permissions = [("sync_integration", "Can sync this integration")]

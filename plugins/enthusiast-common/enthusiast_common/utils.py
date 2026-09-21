@@ -1,9 +1,44 @@
+import asyncio
 import inspect
 import json
-from typing import Any, Dict, List, Union, get_args, get_origin
+from typing import Any, Callable, Dict, List, TypeVar, Union, get_args, get_origin
 
 from pydantic import BaseModel, Json, model_validator
 from pydantic._internal._model_construction import ModelMetaclass
+
+T = TypeVar("T")
+
+
+def _release_thread_local_db_connections() -> None:
+    """Close any database connections the calling thread opened.
+
+    Django keeps connections in thread-local storage and only tidies them up for threads it owns,
+    which a worker thread borrowed from the event loop is not. Without this, each turn that runs
+    sync ORM code off the loop opens a fresh connection and leaves it for garbage collection.
+
+    Does nothing when the host is not a Django application.
+    """
+    try:
+        from django.db import connections
+    except ImportError:
+        return
+    connections.close_all()
+
+
+async def run_off_event_loop(func: Callable[..., T], *args: Any) -> T:
+    """Run blocking, database-touching code in a worker thread and hand back its result.
+
+    Sync ORM calls cannot happen on a thread with a running event loop, so they are pushed onto a
+    worker thread; the connections that opens are released before the thread is handed back.
+    """
+    return await asyncio.to_thread(_call_and_release_connections, func, *args)
+
+
+def _call_and_release_connections(func: Callable[..., T], *args: Any) -> T:
+    try:
+        return func(*args)
+    finally:
+        _release_thread_local_db_connections()
 
 
 def prioritize_items(items: list[str], priorities: list[str]):

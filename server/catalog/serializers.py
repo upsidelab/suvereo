@@ -1,3 +1,6 @@
+from typing import Any
+
+from pydantic import ValidationError as PydanticValidationError
 from rest_framework import serializers
 
 from account.authorization import dataset_permission_codes
@@ -68,7 +71,41 @@ class DataSetCreateSerializer(DataSetSerializer):
         return data
 
 
-class IntegrationSerializer(serializers.ModelSerializer):
+class IntegrationConfigValidationMixin:
+    """Checks a stored ``config`` against the plugin's ``CONFIGURATION_ARGS`` before it is saved.
+
+    Without this the API accepts any JSON, and the mistake only surfaces much later: the plugin
+    cannot be instantiated, the resolver logs and skips it, and the agent quietly runs without the
+    integration's tools. Validating on write turns that silent failure into a 400 the admin can act on.
+    """
+
+    def _validate_config(self, integration_type: str | None, config: Any) -> None:
+        from catalog.integrations.registry import IntegrationPluginRegistry
+
+        if integration_type is None:
+            return
+        try:
+            plugin_class = IntegrationPluginRegistry().get_plugin_class_by_type(integration_type)
+        except KeyError:
+            # An unregistered type is reported by the view, which words it better than we can here.
+            return
+        config_class = plugin_class.CONFIGURATION_ARGS
+        if config_class is None:
+            return
+        try:
+            config_class(**config)
+        except PydanticValidationError as e:
+            raise serializers.ValidationError({"config": self._field_errors(e)}) from e
+        except TypeError as e:
+            raise serializers.ValidationError({"config": "Configuration must be an object."}) from e
+
+    @staticmethod
+    def _field_errors(error: PydanticValidationError) -> dict[str, str]:
+        """Flatten pydantic's errors into ``{field: message}``, which the frontend renders per field."""
+        return {str(item["loc"][0]) if item["loc"] else "config": item["msg"] for item in error.errors()}
+
+
+class IntegrationSerializer(IntegrationConfigValidationMixin, serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     integration_type_name = serializers.SerializerMethodField()
     syncable = serializers.SerializerMethodField()
@@ -92,6 +129,11 @@ class IntegrationSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "dataset", "created_at", "updated_at"]
 
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        self._validate_config(attrs.get("type"), attrs.get("config", {}))
+        return attrs
+
     def _get_plugin_class(self, integration):
         from catalog.integrations.registry import IntegrationPluginRegistry
 
@@ -101,8 +143,20 @@ class IntegrationSerializer(serializers.ModelSerializer):
             return None
 
     def get_name(self, integration):
+        """The instance's own label, so several integrations of one type are distinguishable.
+
+        Falls back to the type's name if the plugin cannot be built from the stored config, since a
+        listing that breaks on one bad record is worse than one that labels it generically.
+        """
+        from catalog.integrations.registry import IntegrationPluginRegistry
+
         plugin_class = self._get_plugin_class(integration)
-        return plugin_class.NAME if plugin_class else integration.type
+        if plugin_class is None:
+            return integration.type
+        try:
+            return IntegrationPluginRegistry().build_instance(integration).instance_name()
+        except Exception:
+            return plugin_class.NAME
 
     def get_integration_type_name(self, integration):
         plugin_class = self._get_plugin_class(integration)
@@ -121,11 +175,18 @@ class IntegrationSerializer(serializers.ModelSerializer):
         return plugin_class is not None and plugin_class.CONFIGURATION_ARGS is not None
 
 
-class IntegrationUpdateSerializer(serializers.ModelSerializer):
+class IntegrationUpdateSerializer(IntegrationConfigValidationMixin, serializers.ModelSerializer):
     class Meta:
         model = Integration
         fields = ["id", "dataset", "type", "config", "created_at", "updated_at"]
         read_only_fields = ["id", "dataset", "type", "created_at", "updated_at"]
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        if "config" in attrs:
+            # type is read-only on update, so the instance is the only source for it.
+            self._validate_config(self.instance.type, attrs["config"])
+        return attrs
 
 
 class IntegrationTypeSerializer(serializers.Serializer):
