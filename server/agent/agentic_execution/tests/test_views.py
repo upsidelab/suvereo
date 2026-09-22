@@ -14,9 +14,9 @@ from account.models import DatasetRole, DatasetUserRoleAssignment, User
 from account.tests.helpers import grant
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
 from agent.agentic_execution.services import FileUploadNotSupportedError, UnsupportedFileTypeError
+from agent.conversation.models.conversation import Conversation
 from agent.models.agent import Agent
 from agent.models.agentic_execution import AgenticExecution
-from agent.models.conversation import Conversation
 from catalog.models import DataSet
 
 pytestmark = pytest.mark.django_db

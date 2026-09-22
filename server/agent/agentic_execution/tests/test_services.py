@@ -11,10 +11,10 @@ from agent.agentic_execution.services import (
     FileUploadNotSupportedError,
     UnsupportedFileTypeError,
 )
+from agent.conversation.models.conversation import ConversationFile
+from agent.conversation.models.message import Message
 from agent.models.agent import Agent
 from agent.models.agentic_execution import AgenticExecution
-from agent.models.conversation import ConversationFile
-from agent.models.message import Message
 from catalog.models import DataSet
 
 pytestmark = pytest.mark.django_db

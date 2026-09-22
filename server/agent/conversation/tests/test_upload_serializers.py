@@ -4,8 +4,8 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from model_bakery import baker
 
-from agent.models.conversation import ConversationFile
-from agent.serializers.conversation import ConversationFileSerializer
+from agent.conversation.models.conversation import ConversationFile
+from agent.conversation.serializers import ConversationFileSerializer
 
 
 @pytest.fixture
@@ -33,7 +33,7 @@ class TestConversationFileSerializer:
         file_obj = SimpleUploadedFile("test.txt", b"test content", content_type="text/plain")
         validated_data = {"conversation": conversation, "file": file_obj}
 
-        with patch("agent.serializers.conversation.ConversationFile.objects.create") as mock_create:
+        with patch("agent.conversation.serializers.ConversationFile.objects.create") as mock_create:
             mock_create.return_value = Mock(id=1, content_type="text/plain")
             serializer = ConversationFileSerializer()
             serializer.create(validated_data)
@@ -49,7 +49,7 @@ class TestConversationFileSerializer:
         file_obj = SimpleUploadedFile("test.txt", b"test content")
         validated_data = {"conversation": conversation, "file": file_obj}
 
-        with patch("agent.serializers.conversation.ConversationFile.objects.create") as mock_create:
+        with patch("agent.conversation.serializers.ConversationFile.objects.create") as mock_create:
             mock_create.return_value = Mock(id=1, content_type=None)
             serializer = ConversationFileSerializer()
             serializer.create(validated_data)

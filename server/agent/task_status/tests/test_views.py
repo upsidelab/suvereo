@@ -8,8 +8,8 @@ from rest_framework.test import APIClient
 
 from account.authorization import PERMISSIONS
 from account.tests.helpers import assign_role, make_role
+from agent.conversation.tasks import TaskStatus
 from agent.models import Conversation
-from agent.tasks import TaskStatus
 
 pytestmark = pytest.mark.django_db
 

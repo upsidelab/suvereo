@@ -7,8 +7,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from account.authorization import PERMISSIONS, has_dataset_perm
+from agent.conversation.tasks import TaskStatus, TaskType
 from agent.models import Conversation
-from agent.tasks import TaskStatus, TaskType
 
 from .serializers import FileUploadTaskStatusSerializer, MessagePushTaskStatusSerializer
 

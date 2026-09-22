@@ -38,7 +38,7 @@ class NoFileUploadAgent:
 class TestConversationFileUploadView:
     @pytest.fixture(autouse=True)
     def agent_class(self):
-        with patch("agent.views.AgentRegistry.get_agent_class_by_type") as mock:
+        with patch("agent.conversation.views.AgentRegistry.get_agent_class_by_type") as mock:
             mock.return_value = FileUploadAgent
             yield mock
 
@@ -55,7 +55,7 @@ class TestConversationFileUploadView:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    @patch("agent.views.process_file_upload_task.apply_async")
+    @patch("agent.conversation.views.process_file_upload_task.apply_async")
     def test_upload_single_file_success(self, mock_task, api_client, user, url, conversation):
         _grant_dataset_permission(user, conversation.data_set, PERMISSIONS.CONVERSATION.CONVERSE)
         mock_task.return_value = MagicMock(id="fake-task-id")
@@ -75,7 +75,7 @@ class TestConversationFileUploadView:
         assert call_kwargs["content_type"] == "text/plain"
         assert call_kwargs["file_content"] == b"test content"
 
-    @patch("agent.views.process_file_upload_task.apply_async")
+    @patch("agent.conversation.views.process_file_upload_task.apply_async")
     def test_upload_global_converse_holder_can_upload(self, mock_task, api_client, user, url):
         # Global grant, no per-dataset role anywhere.
         grant(user, PERMISSIONS.CONVERSATION.CONVERSE)
@@ -87,7 +87,7 @@ class TestConversationFileUploadView:
         assert response.status_code == status.HTTP_202_ACCEPTED
         mock_task.assert_called_once()
 
-    @patch("agent.views.process_file_upload_task.apply_async")
+    @patch("agent.conversation.views.process_file_upload_task.apply_async")
     def test_upload_rejected_when_agent_class_does_not_support_file_upload(
         self, mock_task, api_client, user, url, conversation, agent_class
     ):
@@ -138,7 +138,7 @@ class TestConversationFileUploadView:
         assert "error" in response.data
         assert "No file provided" in response.data["error"]
 
-    @patch("agent.views.process_file_upload_task.apply_async")
+    @patch("agent.conversation.views.process_file_upload_task.apply_async")
     def test_upload_unsupported_file_type_returns_400(self, mock_task, api_client, user, url, conversation):
         _grant_dataset_permission(user, conversation.data_set, PERMISSIONS.CONVERSATION.CONVERSE)
         test_file = SimpleUploadedFile("test.xyz", b"test content", content_type="application/xyz")
@@ -151,7 +151,7 @@ class TestConversationFileUploadView:
         assert "File type .xyz is not supported" in response.data["error"]
         mock_task.assert_not_called()
 
-    @patch("agent.views.process_file_upload_task.apply_async")
+    @patch("agent.conversation.views.process_file_upload_task.apply_async")
     def test_upload_supported_file_type_success(self, mock_task, api_client, user, url, conversation):
         _grant_dataset_permission(user, conversation.data_set, PERMISSIONS.CONVERSATION.CONVERSE)
         mock_task.return_value = MagicMock(id="fake-task-id")
@@ -186,7 +186,7 @@ class TestSupportedFileTypesView:
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     @patch(
-        "agent.views.settings.FILE_PARSER_CLASSES", {(".txt", ".pdf"): "parser_class", (".jpg", ".png"): "image_parser"}
+        "agent.conversation.views.settings.FILE_PARSER_CLASSES", {(".txt", ".pdf"): "parser_class", (".jpg", ".png"): "image_parser"}
     )
     def test_get_supported_file_types_success(self, api_client, url):
         response = api_client.get(url)
@@ -201,7 +201,7 @@ class TestSupportedFileTypesView:
         assert ".jpg" in supported_extensions
         assert ".png" in supported_extensions
 
-    @patch("agent.views.settings.FILE_PARSER_CLASSES", {})
+    @patch("agent.conversation.views.settings.FILE_PARSER_CLASSES", {})
     def test_get_supported_file_types_empty_list(self, api_client, url):
         response = api_client.get(url)
 
@@ -209,7 +209,7 @@ class TestSupportedFileTypesView:
         assert "supported_extensions" in response.data
         assert response.data["supported_extensions"] == []
 
-    @patch("agent.views.settings.FILE_PARSER_CLASSES", {(".txt",): "parser_class"})
+    @patch("agent.conversation.views.settings.FILE_PARSER_CLASSES", {(".txt",): "parser_class"})
     def test_get_supported_file_types_single_extension(self, api_client, url):
         response = api_client.get(url)
 
