@@ -8,10 +8,10 @@ class MCPServerConfigArgs(RequiredFieldsModel):
     """Connection details for one MCP server, supplied by the admin configuring the integration."""
 
     url: str = Field(title="Server URL", description="Full URL of the MCP endpoint, e.g. https://example.com/mcp")
-    transport: Literal["sse", "streamable_http"] = Field(
+    transport: Literal["http", "sse"] = Field(
         title="Transport",
-        description="How to talk to the server: 'streamable_http' (recommended) or 'sse'",
-        default="streamable_http",
+        description="How to talk to the server: 'http' (recommended) or 'sse' for older servers",
+        default="http",
     )
     auth_header: str = Field(
         title="Auth header",

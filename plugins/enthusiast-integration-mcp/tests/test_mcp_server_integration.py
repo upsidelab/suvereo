@@ -24,66 +24,55 @@ class TestMCPServerIntegrationInstanceName:
 
 
 class TestMCPServerIntegrationGetTools:
-    def test_get_tools_builds_client_from_own_config_and_returns_its_tools(self):
+    """The adapter and client are mocked: these pin the config we hand to fastmcp, not fastmcp itself."""
+
+    def _get_tools(self, config, returned=()):
         integration = MCPServerIntegration()
-        integration.set_runtime_arguments(
-            {
-                "configuration_args": {
-                    "url": "https://example.com/mcp",
-                    "transport": "streamable_http",
-                    "auth_token": "Bearer secret",
-                }
-            }
+        integration.set_runtime_arguments({"configuration_args": config})
+        with (
+            patch("enthusiast_integration_mcp.integration.Client") as mock_client_cls,
+            patch("enthusiast_integration_mcp.integration.MCPAdapter") as mock_adapter_cls,
+        ):
+            mock_adapter_cls.return_value.list_tools = AsyncMock(return_value=list(returned))
+            tools = asyncio.run(integration.get_tools())
+        return tools, mock_client_cls, mock_adapter_cls
+
+    def test_get_tools_builds_a_client_from_own_config_and_returns_its_tools(self):
+        tools, mock_client_cls, mock_adapter_cls = self._get_tools(
+            {"url": "https://example.com/mcp", "transport": "http", "auth_token": "Bearer secret"},
+            returned=["tool_a", "tool_b"],
         )
 
-        with patch("enthusiast_integration_mcp.integration.MultiServerMCPClient") as mock_client_cls:
-            mock_client_cls.return_value.get_tools = AsyncMock(return_value=["tool_a", "tool_b"])
-
-            tools = asyncio.run(integration.get_tools())
-
         assert tools == ["tool_a", "tool_b"]
-        mock_client_cls.assert_called_once_with(
-            {
+        assert mock_client_cls.call_args[0][0] == {
+            "mcpServers": {
                 "mcp_server": {
-                    "transport": "streamable_http",
                     "url": "https://example.com/mcp",
+                    "transport": "http",
                     "headers": {"Authorization": "Bearer secret"},
                 }
             }
-        )
+        }
+        # the adapter is handed the configured client, not the raw config
+        mock_adapter_cls.assert_called_once_with(mock_client_cls.return_value)
 
-    def test_get_tools_omits_headers_key_when_no_token_configured(self):
-        integration = MCPServerIntegration()
-        integration.set_runtime_arguments(
-            {"configuration_args": {"url": "https://example.com/mcp", "transport": "sse"}}
-        )
+    def test_get_tools_enables_response_caching(self):
+        _, mock_client_cls, _ = self._get_tools({"url": "https://example.com/mcp"})
 
-        with patch("enthusiast_integration_mcp.integration.MultiServerMCPClient") as mock_client_cls:
-            mock_client_cls.return_value.get_tools = AsyncMock(return_value=[])
+        assert mock_client_cls.call_args[1]["cache"] is True
 
-            asyncio.run(integration.get_tools())
+    def test_get_tools_omits_headers_when_no_token_configured(self):
+        _, mock_client_cls, _ = self._get_tools({"url": "https://example.com/mcp", "transport": "sse"})
 
-        connection = mock_client_cls.call_args[0][0]["mcp_server"]
-        assert "headers" not in connection
+        server = mock_client_cls.call_args[0][0]["mcpServers"]["mcp_server"]
+        assert "headers" not in server
+        assert server["transport"] == "sse"
 
     def test_get_tools_sends_the_token_under_a_custom_header_name(self):
-        integration = MCPServerIntegration()
-        integration.set_runtime_arguments(
-            {
-                "configuration_args": {
-                    "url": "https://example.com/mcp",
-                    "auth_header": "X-API-Key",
-                    "auth_token": "raw-key",
-                }
-            }
+        _, mock_client_cls, _ = self._get_tools(
+            {"url": "https://example.com/mcp", "auth_header": "X-API-Key", "auth_token": "raw-key"}
         )
 
-        with patch("enthusiast_integration_mcp.integration.MultiServerMCPClient") as mock_client_cls:
-            mock_client_cls.return_value.get_tools = AsyncMock(return_value=[])
-
-            asyncio.run(integration.get_tools())
-
-        connection = mock_client_cls.call_args[0][0]["mcp_server"]
-        assert connection["headers"] == {"X-API-Key": "raw-key"}
-        assert connection["transport"] == "streamable_http"
-
+        server = mock_client_cls.call_args[0][0]["mcpServers"]["mcp_server"]
+        assert server["headers"] == {"X-API-Key": "raw-key"}
+        assert server["transport"] == "http"

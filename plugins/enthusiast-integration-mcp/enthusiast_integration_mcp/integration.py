@@ -2,8 +2,9 @@ from typing import Any
 from urllib.parse import urlparse
 
 from enthusiast_common.integrations import BaseToolProvidingIntegration
+from fastmcp import Client
+from langchain.mcp import MCPAdapter
 from langchain_core.tools import BaseTool
-from langchain_mcp_adapters.client import MultiServerMCPClient
 
 from .config import MCPServerConfigArgs
 
@@ -25,13 +26,13 @@ class MCPServerIntegration(BaseToolProvidingIntegration):
     async def get_tools(self) -> list[BaseTool]:
         """Connect to this server and return its tools as native LangChain tools.
 
-        Uses a client scoped to just this one server: MultiServerMCPClient.get_tools() aborts
-        the whole call if any server sharing that client is unreachable, so each integration
-        instance must never share a client with another.
+        The client is scoped to this one server, so an unreachable server cannot take the others
+        down with it. Response caching is enabled; it serves a stored tool list while the server's
+        own TTL hint says it is fresh, and stays inert against servers that publish no hint.
         """
         config: MCPServerConfigArgs = self.CONFIGURATION_ARGS
-        connection: dict[str, Any] = {"transport": config.transport, "url": config.url}
+        server: dict[str, Any] = {"url": config.url, "transport": config.transport}
         if headers := config.as_headers():
-            connection["headers"] = headers
-        client = MultiServerMCPClient({self.TYPE: connection})
-        return await client.get_tools()
+            server["headers"] = headers
+        client = Client({"mcpServers": {self.TYPE: server}}, cache=True)
+        return await MCPAdapter(client).list_tools()

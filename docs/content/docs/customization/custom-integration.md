@@ -117,7 +117,7 @@ and add `enthusiast_integration_mcp.MCPServerIntegration` to `CATALOG_INTEGRATIO
 
 Each connected server is a regular integration configured on a data set, with four configuration fields:
 - `url` - Full URL of the MCP endpoint.
-- `transport` - Either `streamable_http` (the default) or `sse`.
+- `transport` - Either `http` (the default) or `sse` for older servers.
 - `auth_token` - The full value of the auth header, scheme included, such as `Bearer abc123`. Leave it empty for a
   server that needs no authentication.
 - `auth_header` - The header the token is sent in, `Authorization` by default. Set it to something like `X-API-Key`
@@ -125,6 +125,11 @@ Each connected server is a regular integration configured on a data set, with fo
 
 Credentials are two plain fields rather than a header mapping so the admin form, which renders one text input per
 field, can express them. That covers the bearer and API-key schemes servers use in practice.
+
+Connections are made with `langchain[mcp]`, whose `langchain.mcp` module is currently in beta - importing it emits a
+`LangChainBetaWarning`. Client-side response caching is enabled, so a server that publishes a TTL hint has its tool
+list served from cache rather than refetched on every conversation turn. Servers that publish no hint are simply
+fetched as before.
 
 Unlike other integration types, a data set may hold **any number** of MCP servers - the plugin opts into this by
 declaring `ALLOWS_MULTIPLE_INSTANCES = True`. Connected servers are listed by host, so several of them stay

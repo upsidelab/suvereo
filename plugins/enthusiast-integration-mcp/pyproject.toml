@@ -8,7 +8,9 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.10"
 enthusiast-common = ">=1.7.0"
-langchain-mcp-adapters = ">=0.3.2,<0.4.0"
+# Deliberately unpinned at the top end: langchain.mcp is in beta and moving, and pinning would
+# hold this plugin back from fixes. The mcp extra first appears in 1.4.2.
+langchain = { version = ">=1.4.2", extras = ["mcp"] }
 
 
 [build-system]
