@@ -7,23 +7,25 @@ from pydantic import Field
 class MCPServerConfigArgs(RequiredFieldsModel):
     """Connection details for one MCP server, supplied by the admin configuring the integration."""
 
-    url: str = Field(title="Server URL", description="Full URL of the MCP endpoint, e.g. https://example.com/mcp")
+    name: str = Field(
+        title="Name",
+        description="Defaults to the server's host.",
+        default="",
+    )
+    url: str = Field(title="Server URL", description="For example https://example.com/mcp")
     transport: Literal["http", "sse"] = Field(
         title="Transport",
-        description="How to talk to the server: 'http' (recommended) or 'sse' for older servers",
+        description="Use sse only for older servers.",
         default="http",
     )
     auth_header: str = Field(
         title="Auth header",
-        description="Name of the header the credential is sent in. Ignored when no token is given.",
+        description="Ignored when no token is given.",
         default="Authorization",
     )
     auth_token: str = Field(
         title="Auth token",
-        description=(
-            "Full value of the auth header, including any scheme - for example 'Bearer abc123'. "
-            "Leave empty for a server that needs no authentication."
-        ),
+        description="Include the scheme, e.g. 'Bearer abc123'. Leave empty if none is needed.",
         default="",
     )
 

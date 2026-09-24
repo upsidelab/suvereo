@@ -13,6 +13,8 @@ type ConfigSchemaProperty = {
   title?: string;
   type?: string;
   description?: string;
+  enum?: string[];
+  default?: unknown;
 };
 
 type ConfigSchema = {
@@ -92,6 +94,28 @@ export function AddEditIntegrationModal({
       ? integrationTypes.filter(t => t.integration_type_name === integrationTypeName)
       : integrationTypes);
 
+  const showTypeSelect = readOnly || typeOptions.length > 1;
+
+  useEffect(() => {
+    if (!open || readOnly || isEditing) return;
+    const options = integrationTypeName
+      ? integrationTypes.filter(t => t.integration_type_name === integrationTypeName)
+      : integrationTypes;
+    if (selectedType && options.some(t => t.type === selectedType)) return;
+    setSelectedType(options.length === 1 ? options[0].type : "");
+  }, [open, integrationTypes, integrationTypeName, selectedType, readOnly, isEditing]);
+
+  useEffect(() => {
+    if (!open || integration || !selectedType) return;
+    const chosen = integrationTypes.find(t => t.type === selectedType);
+    const props = (chosen?.config_schema as ConfigSchema | undefined)?.properties ?? {};
+    setConfig(Object.fromEntries(
+      Object.entries(props)
+        .filter(([, prop]) => prop.default !== undefined && prop.default !== "")
+        .map(([key, prop]) => [key, String(prop.default)])
+    ));
+  }, [open, integration, selectedType, integrationTypes]);
+
   const handleFieldChange = (key: string, value: string) => {
     setConfig(prev => ({ ...prev, [key]: value }));
   };
@@ -137,23 +161,25 @@ export function AddEditIntegrationModal({
         </div>
       )}
 
-      <div className="flex flex-col gap-1">
-        <Label htmlFor="integration-type">Type</Label>
-        <Select
-          value={selectedType}
-          onValueChange={setSelectedType}
-          disabled={readOnly || isEditing || typeOptions.length === 0}
-        >
-          <SelectTrigger id="integration-type">
-            <SelectValue placeholder="Select integration type" />
-          </SelectTrigger>
-          <SelectContent>
-            {typeOptions.map(t => (
-              <SelectItem key={t.type} value={t.type}>{t.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {showTypeSelect && (
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="integration-type">Type</Label>
+          <Select
+            value={selectedType}
+            onValueChange={setSelectedType}
+            disabled={readOnly || isEditing || typeOptions.length === 0}
+          >
+            <SelectTrigger id="integration-type">
+              <SelectValue placeholder="Select integration type" />
+            </SelectTrigger>
+            <SelectContent>
+              {typeOptions.map(t => (
+                <SelectItem key={t.type} value={t.type}>{t.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       {selectedType && Object.entries(properties).map(([key, prop]) => (
         <div key={key} className="flex flex-col gap-1">
@@ -161,13 +187,33 @@ export function AddEditIntegrationModal({
             {prop.title ?? key}
             {required.includes(key) && <span className="text-destructive ml-1">*</span>}
           </Label>
-          <Input
-            id={`config-${key}`}
-            placeholder={prop.description ?? prop.title ?? key}
-            value={config[key] ?? ""}
-            onChange={e => handleFieldChange(key, e.target.value)}
-            readOnly={readOnly}
-          />
+          {prop.enum ? (
+            <Select
+              value={config[key] ?? ""}
+              onValueChange={value => handleFieldChange(key, value)}
+              disabled={readOnly}
+            >
+              <SelectTrigger id={`config-${key}`}>
+                <SelectValue placeholder={`Select ${(prop.title ?? key).toLowerCase()}`} />
+              </SelectTrigger>
+              <SelectContent>
+                {prop.enum.map(option => (
+                  <SelectItem key={option} value={option}>{option}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input
+              id={`config-${key}`}
+              placeholder={prop.title ?? key}
+              value={config[key] ?? ""}
+              onChange={e => handleFieldChange(key, e.target.value)}
+              readOnly={readOnly}
+            />
+          )}
+          {prop.description && (
+            <p className="text-xs text-muted-foreground">{prop.description}</p>
+          )}
         </div>
       ))}
     </FormModal>

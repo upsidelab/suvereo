@@ -6,10 +6,26 @@ from fastmcp.client.transports import SSETransport, StreamableHttpTransport
 
 
 class TestMCPServerIntegrationInstanceName:
-    def _integration(self, url):
+    def _integration(self, url, **config):
         integration = MCPServerIntegration()
-        integration.set_runtime_arguments({"configuration_args": {"url": url}})
+        integration.set_runtime_arguments({"configuration_args": {"url": url, **config}})
         return integration
+
+    def test_instance_name_uses_the_configured_name(self):
+        integration = self._integration("https://tools.example.com/mcp", name="Warehouse (staging)")
+
+        assert integration.instance_name() == "Warehouse (staging)"
+
+    def test_two_servers_on_one_host_are_told_apart_by_name(self):
+        first = self._integration("https://tools.example.com/mcp", name="Warehouse").instance_name()
+        second = self._integration("https://tools.example.com/mcp", name="Reviews").instance_name()
+
+        assert first != second
+
+    def test_instance_name_ignores_a_blank_name(self):
+        integration = self._integration("https://tools.example.com/mcp", name="   ")
+
+        assert integration.instance_name() == "MCP Server (tools.example.com)"
 
     def test_instance_name_identifies_the_server_by_host(self):
         assert self._integration("https://tools.example.com/mcp").instance_name() == "MCP Server (tools.example.com)"

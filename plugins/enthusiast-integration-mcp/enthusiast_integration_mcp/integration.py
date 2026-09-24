@@ -24,7 +24,9 @@ class MCPServerIntegration(BaseToolProvidingIntegration):
     ALLOWS_MULTIPLE_INSTANCES = True
 
     def instance_name(self) -> str:
-        """Name this server by its host, so several connected servers are told apart in the UI."""
+        """The admin-supplied name, falling back to the host for servers configured without one."""
+        if name := self.CONFIGURATION_ARGS.name.strip():
+            return name
         host = urlparse(self.CONFIGURATION_ARGS.url).netloc
         return f"{self.NAME} ({host})" if host else self.NAME
 
