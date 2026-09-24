@@ -1,6 +1,7 @@
 from django.contrib.auth.models import Permission
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
+from django.db.models import Q
 
 from account.authorization import (
     DATASET_SCOPE_PERMISSIONS,
@@ -89,10 +90,15 @@ class Command(BaseCommand):
         return " and ".join(differences)
 
     def _permission_rows(self, codenames: list[str]) -> list[Permission]:
-        rows = []
+        query = Q()
         for codename in codenames:
             app_label, bare_codename = codename.split(".")
-            rows.append(Permission.objects.get(content_type__app_label=app_label, codename=bare_codename))
+            query |= Q(content_type__app_label=app_label, codename=bare_codename)
+        rows = list(Permission.objects.filter(query).select_related("content_type"))
+
+        missing = set(codenames) - {permission_label(row) for row in rows}
+        if missing:
+            raise CommandError(f"Unknown permissions: {', '.join(sorted(missing))}.")
         return rows
 
     def _report(self, name: str, outcome: str, detail: str) -> None:
