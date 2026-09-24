@@ -1,12 +1,17 @@
-from typing import Any
 from urllib.parse import urlparse
 
 from enthusiast_common.integrations import BaseToolProvidingIntegration
 from fastmcp import Client
+from fastmcp.client.transports import ClientTransport, SSETransport, StreamableHttpTransport
 from langchain.mcp import MCPAdapter
 from langchain_core.tools import BaseTool
 
 from .config import MCPServerConfigArgs
+
+TRANSPORTS: dict[str, type[ClientTransport]] = {
+    "http": StreamableHttpTransport,
+    "sse": SSETransport,
+}
 
 
 class MCPServerIntegration(BaseToolProvidingIntegration):
@@ -31,8 +36,5 @@ class MCPServerIntegration(BaseToolProvidingIntegration):
         own TTL hint says it is fresh, and stays inert against servers that publish no hint.
         """
         config: MCPServerConfigArgs = self.CONFIGURATION_ARGS
-        server: dict[str, Any] = {"url": config.url, "transport": config.transport}
-        if headers := config.as_headers():
-            server["headers"] = headers
-        client = Client({"mcpServers": {self.TYPE: server}}, cache=True)
-        return await MCPAdapter(client).list_tools()
+        transport = TRANSPORTS[config.transport](url=config.url, headers=config.as_headers() or None)
+        return await MCPAdapter(Client(transport, cache=True)).list_tools()

@@ -2,6 +2,7 @@ import asyncio
 from unittest.mock import AsyncMock, patch
 
 from enthusiast_integration_mcp.integration import MCPServerIntegration
+from fastmcp.client.transports import SSETransport, StreamableHttpTransport
 
 
 class TestMCPServerIntegrationInstanceName:
@@ -44,16 +45,11 @@ class TestMCPServerIntegrationGetTools:
         )
 
         assert tools == ["tool_a", "tool_b"]
-        assert mock_client_cls.call_args[0][0] == {
-            "mcpServers": {
-                "mcp_server": {
-                    "url": "https://example.com/mcp",
-                    "transport": "http",
-                    "headers": {"Authorization": "Bearer secret"},
-                }
-            }
-        }
-        # the adapter is handed the configured client, not the raw config
+        transport = mock_client_cls.call_args[0][0]
+        assert isinstance(transport, StreamableHttpTransport)
+        assert transport.url == "https://example.com/mcp"
+        assert transport.headers == {"Authorization": "Bearer secret"}
+        # the adapter is handed the configured client, not the transport
         mock_adapter_cls.assert_called_once_with(mock_client_cls.return_value)
 
     def test_get_tools_enables_response_caching(self):
@@ -64,15 +60,15 @@ class TestMCPServerIntegrationGetTools:
     def test_get_tools_omits_headers_when_no_token_configured(self):
         _, mock_client_cls, _ = self._get_tools({"url": "https://example.com/mcp", "transport": "sse"})
 
-        server = mock_client_cls.call_args[0][0]["mcpServers"]["mcp_server"]
-        assert "headers" not in server
-        assert server["transport"] == "sse"
+        transport = mock_client_cls.call_args[0][0]
+        assert isinstance(transport, SSETransport)
+        assert transport.headers == {}
 
     def test_get_tools_sends_the_token_under_a_custom_header_name(self):
         _, mock_client_cls, _ = self._get_tools(
             {"url": "https://example.com/mcp", "auth_header": "X-API-Key", "auth_token": "raw-key"}
         )
 
-        server = mock_client_cls.call_args[0][0]["mcpServers"]["mcp_server"]
-        assert server["headers"] == {"X-API-Key": "raw-key"}
-        assert server["transport"] == "http"
+        transport = mock_client_cls.call_args[0][0]
+        assert isinstance(transport, StreamableHttpTransport)
+        assert transport.headers == {"X-API-Key": "raw-key"}
