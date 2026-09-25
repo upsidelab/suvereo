@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
@@ -13,6 +12,7 @@ import { MissingPermission, PermissionEntity } from "@/lib/permissions/types.ts"
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { PermissionChecklist } from "@/components/roles/permission-checklist.tsx";
 import { PermissionErrors } from "@/components/roles/permission-errors.tsx";
+import { GLOBAL_ROLE_NAME_MAX_LENGTH, roleFormSchema, RoleFormSchema } from "@/lib/permissions/role-form-schema.ts";
 import { ModalSection, ModalSections } from "@/components/roles/modal-sections.tsx";
 import { ModalScrollArea } from "@/components/roles/modal-scroll-area.tsx";
 import { GlobalRoleMembersPanel } from "@/components/roles/global-roles/global-role-members-panel.tsx";
@@ -23,11 +23,7 @@ import { permissionEscalationRisks } from "@/lib/permissions/escalation.ts";
 import { missingDependencies, unresolvedRequirements } from "@/lib/permissions/dependencies.ts";
 import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 
-const formSchema = z.object({
-  name: z.string().trim().min(1),
-  description: z.string().trim(),
-});
-type GroupFormSchema = z.infer<typeof formSchema>;
+type GroupFormSchema = RoleFormSchema;
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -41,10 +37,11 @@ const SECTIONS: readonly ModalSection<Section>[] = [
 
 export interface GlobalRoleModalProps {
   role?: GlobalRole;
+  takenNames: readonly string[];
   onSaved: () => void;
 }
 
-export function GlobalRoleModal({ role, onSaved }: GlobalRoleModalProps) {
+export function GlobalRoleModal({ role, takenNames, onSaved }: GlobalRoleModalProps) {
   const { hasPermission } = useApplicationContext()!;
   const isBuiltIn = isAdminRole(role);
   const canEdit = role
@@ -60,6 +57,11 @@ export function GlobalRoleModal({ role, onSaved }: GlobalRoleModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [permissionErrors, setPermissionErrors] = useState<string[]>([]);
   const [missingPermissions, setMissingPermissions] = useState<MissingPermission[]>([]);
+
+  const formSchema = useMemo(
+    () => roleFormSchema(GLOBAL_ROLE_NAME_MAX_LENGTH, takenNames.filter((name) => name !== role?.name)),
+    [takenNames, role?.name]
+  );
 
   const form = useForm<GroupFormSchema>({
     resolver: zodResolver(formSchema),
@@ -131,6 +133,12 @@ export function GlobalRoleModal({ role, onSaved }: GlobalRoleModalProps) {
     onSaved();
   };
 
+  const handleInvalid = () => {
+    const missing = missingDependencies(selected, entities);
+    setMissingPermissions(missing);
+    setSection(missing.length > 0 ? "permissions" : "details");
+  };
+
   const handleSubmit = (values: GroupFormSchema) => {
     const missing = missingDependencies(selected, entities);
     if (missing.length > 0) {
@@ -174,7 +182,7 @@ export function GlobalRoleModal({ role, onSaved }: GlobalRoleModalProps) {
         {section !== "members" && (
           <Form {...form}>
             <form
-              onSubmit={form.handleSubmit(handleSubmit, () => setSection("details"))}
+              onSubmit={form.handleSubmit(handleSubmit, handleInvalid)}
               className="flex grow flex-col space-y-4 min-h-0"
             >
               {section === "details" && (

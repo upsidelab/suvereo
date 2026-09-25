@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
@@ -16,15 +15,12 @@ import { PermissionChecklist } from "@/components/roles/permission-checklist.tsx
 import { PermissionErrors } from "@/components/roles/permission-errors.tsx";
 import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 import { missingDependencies, unresolvedRequirements } from "@/lib/permissions/dependencies.ts";
+import { DATA_SET_ROLE_NAME_MAX_LENGTH, roleFormSchema, RoleFormSchema } from "@/lib/permissions/role-form-schema.ts";
 import { ModalSection, ModalSections } from "@/components/roles/modal-sections.tsx";
 import { ModalScrollArea } from "@/components/roles/modal-scroll-area.tsx";
 import { DataSetRoleMembersPanel } from "@/components/roles/data-set-roles/data-set-role-members-panel.tsx";
 
-const formSchema = z.object({
-  name: z.string().trim().min(1),
-  description: z.string().trim(),
-});
-type DataSetRoleFormSchema = z.infer<typeof formSchema>;
+type DataSetRoleFormSchema = RoleFormSchema;
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -38,10 +34,11 @@ const SECTIONS: readonly ModalSection<DataSetRoleSection>[] = [
 
 export interface DataSetRoleModalProps {
   role?: DataSetRoleOption;
+  takenNames: readonly string[];
   onSaved: () => void;
 }
 
-export function DataSetRoleModal({ role, onSaved }: DataSetRoleModalProps) {
+export function DataSetRoleModal({ role, takenNames, onSaved }: DataSetRoleModalProps) {
   const { hasPermission } = useApplicationContext()!;
   const canEdit = role
     ? hasPermission(PERMISSIONS.DATA_SET_ROLE.CHANGE)
@@ -53,6 +50,11 @@ export function DataSetRoleModal({ role, onSaved }: DataSetRoleModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [permissionErrors, setPermissionErrors] = useState<string[]>([]);
   const [missingPermissions, setMissingPermissions] = useState<MissingPermission[]>([]);
+
+  const formSchema = useMemo(
+    () => roleFormSchema(DATA_SET_ROLE_NAME_MAX_LENGTH, takenNames.filter((name) => name !== role?.name)),
+    [takenNames, role?.name]
+  );
 
   const form = useForm<DataSetRoleFormSchema>({
     resolver: zodResolver(formSchema),
@@ -114,6 +116,12 @@ export function DataSetRoleModal({ role, onSaved }: DataSetRoleModalProps) {
     onSaved();
   };
 
+  const handleInvalid = () => {
+    const missing = missingDependencies(selected, entities);
+    setMissingPermissions(missing);
+    setSection(missing.length > 0 ? "permissions" : "details");
+  };
+
   const handleSubmit = (values: DataSetRoleFormSchema) => {
     const missing = missingDependencies(selected, entities);
     if (missing.length > 0) {
@@ -153,7 +161,7 @@ export function DataSetRoleModal({ role, onSaved }: DataSetRoleModalProps) {
           {section !== "members" && (
             <Form {...form}>
               <form
-                onSubmit={form.handleSubmit(handleSubmit, () => setSection("details"))}
+                onSubmit={form.handleSubmit(handleSubmit, handleInvalid)}
                 className="flex grow flex-col space-y-4 min-h-0"
               >
                 {section === "details" && (

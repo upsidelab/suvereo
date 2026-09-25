@@ -62,6 +62,7 @@ export function GlobalRolesList() {
   };
 
   const rows: GlobalRole[] = [ADMIN_ROLE, ...groups];
+  const takenNames = groups.map((role) => role.name);
 
   if (isLoading) {
     return null;
@@ -76,7 +77,7 @@ export function GlobalRolesList() {
       {error && <p className="text-sm text-destructive mb-4">{error}</p>}
       {canAddRoles && (
         <div className="flex flex-col items-end mb-4">
-          <GlobalRoleModal onSaved={load} />
+          <GlobalRoleModal takenNames={takenNames} onSaved={load} />
         </div>
       )}
       <Table className="table-fixed">
@@ -98,7 +99,7 @@ export function GlobalRolesList() {
                 )}
               </TableCell>
               <TableCell className="flex space-x-4">
-                <GlobalRoleModal role={role} onSaved={load} />
+                <GlobalRoleModal role={role} takenNames={takenNames} onSaved={load} />
                 {canDeleteRoles && !role.isBuiltIn && (
                   <Button
                     variant="secondary"
