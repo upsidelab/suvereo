@@ -99,6 +99,17 @@ class TestWritingGlobalRolesNeedsItsOwnLifecycleCode:
         assert GlobalRole.objects.filter(pk=global_role.pk).exists()
         assert not GlobalRole.objects.filter(name__in=["new-team", "renamed"]).exists()
 
+    def test_an_update_changes_the_name_and_the_description(self, user, detail_url, global_role):
+        grant(user, PERMISSIONS.GLOBAL_ROLE.VIEW, PERMISSIONS.GLOBAL_ROLE.CHANGE)
+
+        response = client_for(user).patch(
+            detail_url, {"name": "renamed", "description": "What it is for."}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        global_role.refresh_from_db()
+        assert (global_role.name, global_role.description) == ("renamed", "What it is for.")
+
     def test_an_admin_still_reaches_every_write(self, admin_api_client, list_url):
         response = admin_api_client.post(list_url, {"name": "new-team"}, format="json")
 
@@ -122,13 +133,13 @@ class TestGlobalRoleChangeIsSelfPromotion:
 
 
 class TestGlobalRolePayloads:
-    def test_the_listing_carries_only_an_id_and_a_name(self, api_client, user, list_url, global_role):
+    def test_the_listing_carries_only_an_id_a_name_and_a_description(self, api_client, user, list_url, global_role):
         grant(user, PERMISSIONS.GLOBAL_ROLE.VIEW)
 
         response = api_client.get(list_url)
 
         assert response.data["results"]
-        assert all(set(row) == {"id", "name"} for row in response.data["results"])
+        assert all(set(row) == {"id", "name", "description"} for row in response.data["results"])
 
     def test_the_detail_carries_permissions_as_public_codes(self, api_client, user, detail_url):
         grant(user, PERMISSIONS.GLOBAL_ROLE.VIEW)

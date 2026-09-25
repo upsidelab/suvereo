@@ -11,7 +11,7 @@ GLOBAL_ROLE_ID_PARAMETER = openapi.Parameter("id", openapi.IN_PATH, description=
 
 
 class GlobalRoleListView(ListCreateAPIView):
-    """List global roles; create one with a name and a set of global permissions."""
+    """List global roles; create one with a name, a description and a set of global permissions."""
 
     permission_classes = [IsAuthenticated]
     queryset = GlobalRole.objects.prefetch_related("permissions__content_type").order_by("name")
@@ -33,7 +33,7 @@ class GlobalRoleListView(ListCreateAPIView):
 
 
 class GlobalRoleDetailView(RetrieveUpdateDestroyAPIView):
-    """Retrieve a global role; update its name and permissions; delete it."""
+    """Retrieve a global role; update its name, description and permissions; delete it."""
 
     permission_classes = [IsAuthenticated]
     serializer_class = GlobalRoleDetailSerializer
@@ -46,7 +46,7 @@ class GlobalRoleDetailView(RetrieveUpdateDestroyAPIView):
         return super().get(request, *args, **kwargs)
 
     @swagger_auto_schema(
-        operation_description="Update a global role's name and permissions",
+        operation_description="Update a global role's name, description and permissions",
         request_body=GlobalRoleDetailSerializer,
         manual_parameters=[GLOBAL_ROLE_ID_PARAMETER],
     )

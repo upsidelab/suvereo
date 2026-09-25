@@ -5,6 +5,7 @@ from django.db import models
 
 class GlobalRole(models.Model):
     name = models.CharField(max_length=150, unique=True)
+    description = models.TextField(blank=True, default="")
     permissions = models.ManyToManyField(Permission, blank=True)
     members = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="global_roles", blank=True)
 

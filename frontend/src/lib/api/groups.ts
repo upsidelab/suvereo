@@ -5,6 +5,7 @@ import { ApiError } from "@/lib/api-error.ts";
 export type GroupResponse = {
   id: number;
   name: string;
+  description: string;
   member_count: number;
   global_role_count: number;
   data_set_role_count: number;
@@ -24,6 +25,7 @@ export function toGroupOption(group: GroupResponse): GroupOption {
   return {
     id: group.id,
     name: group.name,
+    description: group.description,
     memberCount: group.member_count,
     globalRoleCount: group.global_role_count,
     dataSetRoleCount: group.data_set_role_count,
@@ -51,11 +53,11 @@ export class GroupsApiClient extends BaseApiClient {
     return results;
   }
 
-  async createGroup(name: string): Promise<Response> {
+  async createGroup(name: string, description: string): Promise<Response> {
     return await fetch(`${this.apiBase}/api/groups`, {
       ...this._requestConfiguration(),
       method: "POST",
-      body: JSON.stringify({ name })
+      body: JSON.stringify({ name, description })
     });
   }
 
@@ -71,11 +73,11 @@ export class GroupsApiClient extends BaseApiClient {
     return { ...toGroupOption(result), globalRoles: result.global_roles };
   }
 
-  async updateGroup(groupId: number, name: string): Promise<Response> {
+  async updateGroup(groupId: number, name: string, description: string): Promise<Response> {
     return await fetch(`${this.apiBase}/api/groups/${groupId}`, {
       ...this._requestConfiguration(),
       method: "PATCH",
-      body: JSON.stringify({ name })
+      body: JSON.stringify({ name, description })
     });
   }
 

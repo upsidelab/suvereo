@@ -104,6 +104,17 @@ class TestWritingDatasetRolesNeedsItsOwnLifecycleCode:
         assert DatasetRole.objects.filter(pk=role.pk).exists()
         assert not DatasetRole.objects.filter(name__in=["new-role", "renamed"]).exists()
 
+    def test_an_update_changes_the_name_and_the_description(self, user, detail_url, role):
+        grant(user, PERMISSIONS.DATA_SET_ROLE.VIEW, PERMISSIONS.DATA_SET_ROLE.CHANGE)
+
+        response = client_for(user).patch(
+            detail_url, {"name": "renamed", "description": "What it is for."}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        role.refresh_from_db()
+        assert (role.name, role.description) == ("renamed", "What it is for.")
+
     def test_an_admin_still_reaches_every_write(self, admin_api_client, list_url):
         response = admin_api_client.post(list_url, {"name": "new-role"}, format="json")
 

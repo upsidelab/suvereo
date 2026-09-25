@@ -30,11 +30,11 @@ export class GlobalRolesApiClient extends BaseApiClient {
     return results;
   }
 
-  async createGlobalRole(name: string, permissions: string[] = []): Promise<Response> {
+  async createGlobalRole(name: string, description: string, permissions: string[] = []): Promise<Response> {
     return await fetch(`${this.apiBase}/api/global_roles`, {
       ...this._requestConfiguration(),
       method: "POST",
-      body: JSON.stringify({ name, permissions })
+      body: JSON.stringify({ name, description, permissions })
     });
   }
 
@@ -49,11 +49,16 @@ export class GlobalRolesApiClient extends BaseApiClient {
     return await response.json() as GlobalRoleDetail;
   }
 
-  async updateGlobalRole(globalRoleId: number, name: string, permissions: string[]): Promise<Response> {
+  async updateGlobalRole(
+    globalRoleId: number,
+    name: string,
+    description: string,
+    permissions: string[]
+  ): Promise<Response> {
     return await fetch(`${this.apiBase}/api/global_roles/${globalRoleId}`, {
       ...this._requestConfiguration(),
       method: "PATCH",
-      body: JSON.stringify({ name, permissions })
+      body: JSON.stringify({ name, description, permissions })
     });
   }
 

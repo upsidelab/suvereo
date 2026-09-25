@@ -11,7 +11,7 @@ GROUP_ID_PARAMETER = openapi.Parameter("id", openapi.IN_PATH, description="ID of
 
 
 class GroupListView(ListCreateAPIView):
-    """List groups; create one with a name."""
+    """List groups; create one with a name and a description."""
 
     permission_classes = [IsAuthenticated]
     queryset = UserGroup.objects.with_counts().order_by("name")
@@ -31,7 +31,7 @@ class GroupListView(ListCreateAPIView):
 
 
 class GroupDetailView(RetrieveUpdateDestroyAPIView):
-    """Retrieve a group with the global roles it holds; rename it; delete it."""
+    """Retrieve a group with the global roles it holds; edit its name and description; delete it."""
 
     permission_classes = [IsAuthenticated]
     serializer_class = GroupDetailSerializer
@@ -44,7 +44,7 @@ class GroupDetailView(RetrieveUpdateDestroyAPIView):
         return super().get(request, *args, **kwargs)
 
     @swagger_auto_schema(
-        operation_description="Rename a group",
+        operation_description="Update a group's name and description",
         request_body=GroupDetailSerializer,
         manual_parameters=[GROUP_ID_PARAMETER],
     )

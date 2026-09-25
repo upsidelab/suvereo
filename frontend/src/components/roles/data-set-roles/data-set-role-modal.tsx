@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
-import { Separator } from "@/components/ui/separator.tsx";
+import { Textarea } from "@/components/ui/textarea.tsx";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form.tsx";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
@@ -16,52 +15,59 @@ import { PermissionChecklist } from "@/components/roles/permission-checklist.tsx
 import { PermissionErrors } from "@/components/roles/permission-errors.tsx";
 import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 import { missingDependencies, unresolvedRequirements } from "@/lib/permissions/dependencies.ts";
+import { roleFormSchema, RoleFormSchema } from "@/lib/permissions/role-form-schema.ts";
 import { ModalSection, ModalSections } from "@/components/roles/modal-sections.tsx";
+import { ModalScrollArea } from "@/components/roles/modal-scroll-area.tsx";
 import { DataSetRoleMembersPanel } from "@/components/roles/data-set-roles/data-set-role-members-panel.tsx";
 
-const formSchema = z.object({
-  name: z.string().trim().min(1),
-});
-type DataSetRoleFormSchema = z.infer<typeof formSchema>;
+type DataSetRoleFormSchema = RoleFormSchema;
 
 const api = new ApiClient(authenticationProviderInstance);
 
-type DataSetRoleSection = "permissions" | "members";
+type DataSetRoleSection = "details" | "permissions" | "members";
 
 const SECTIONS: readonly ModalSection<DataSetRoleSection>[] = [
+  { key: "details", label: "Details" },
   { key: "permissions", label: "Permissions" },
   { key: "members", label: "Members" },
 ];
 
 export interface DataSetRoleModalProps {
   role?: DataSetRoleOption;
+  takenNames: readonly string[];
   onSaved: () => void;
 }
 
-export function DataSetRoleModal({ role, onSaved }: DataSetRoleModalProps) {
+export function DataSetRoleModal({ role, takenNames, onSaved }: DataSetRoleModalProps) {
   const { hasPermission } = useApplicationContext()!;
   const canEdit = role
     ? hasPermission(PERMISSIONS.DATA_SET_ROLE.CHANGE)
     : hasPermission(PERMISSIONS.DATA_SET_ROLE.ADD);
   const [open, setOpen] = useState(false);
-  const [section, setSection] = useState<DataSetRoleSection>("permissions");
+  const [section, setSection] = useState<DataSetRoleSection>("details");
   const [entities, setEntities] = useState<PermissionEntity[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [permissionErrors, setPermissionErrors] = useState<string[]>([]);
   const [missingPermissions, setMissingPermissions] = useState<MissingPermission[]>([]);
 
+  const formSchema = useMemo(
+    () => roleFormSchema(takenNames.filter((name) => name !== role?.name)),
+    [takenNames, role?.name]
+  );
+
   const form = useForm<DataSetRoleFormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: role?.name ?? ""
+      name: role?.name ?? "",
+      description: role?.description ?? ""
     }
   });
 
   useEffect(() => {
     if (!open) return;
     setError(null);
-    setSection("permissions");
+    setSection("details");
     setPermissionErrors([]);
     setMissingPermissions([]);
 
@@ -69,11 +75,11 @@ export function DataSetRoleModal({ role, onSaved }: DataSetRoleModalProps) {
 
     if (role) {
       api.dataSetRoles().getDataSetRoleDetail(role.id).then((detail) => {
-        form.reset({ name: detail.name });
+        form.reset({ name: detail.name, description: detail.description });
         setSelected(detail.permissions);
       }).catch(() => setError("Could not load this role."));
     } else {
-      form.reset({ name: "" });
+      form.reset({ name: "", description: "" });
       setSelected([]);
     }
   }, [open, role, form]);
@@ -88,20 +94,32 @@ export function DataSetRoleModal({ role, onSaved }: DataSetRoleModalProps) {
     setMissingPermissions([]);
 
     const response = role
-      ? await api.dataSetRoles().updateDataSetRole(role.id, values.name, selected)
-      : await api.dataSetRoles().createDataSetRole(values.name, selected);
+      ? await api.dataSetRoles().updateDataSetRole(role.id, values.name, values.description, selected)
+      : await api.dataSetRoles().createDataSetRole(values.name, values.description, selected);
 
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
       if (Array.isArray(body.permissions)) setPermissionErrors(body.permissions);
       if (Array.isArray(body.missing_permissions)) setMissingPermissions(body.missing_permissions);
+      if (body.permissions || body.missing_permissions) {
+        setSection("permissions");
+      } else if (body.name || body.description) {
+        setSection("details");
+      }
       if (Array.isArray(body.name)) form.setError("name", { message: body.name[0] });
-      if (!body.permissions && !body.name) setError(body.detail ?? "Could not save this role.");
+      if (Array.isArray(body.description)) form.setError("description", { message: body.description[0] });
+      if (!body.permissions && !body.name && !body.description) setError(body.detail ?? "Could not save this role.");
       return;
     }
 
     setOpen(false);
     onSaved();
+  };
+
+  const handleInvalid = () => {
+    const missing = missingDependencies(selected, entities);
+    setMissingPermissions(missing);
+    setSection(missing.length > 0 ? "permissions" : "details");
   };
 
   const handleSubmit = (values: DataSetRoleFormSchema) => {
@@ -110,6 +128,7 @@ export function DataSetRoleModal({ role, onSaved }: DataSetRoleModalProps) {
       setError(null);
       setPermissionErrors([]);
       setMissingPermissions(missing);
+      setSection("permissions");
       return;
     }
     return save(values);
@@ -139,39 +158,65 @@ export function DataSetRoleModal({ role, onSaved }: DataSetRoleModalProps) {
 
         {/* Fixed height, so switching sections cannot resize the dialog. */}
         <div className="h-[min(62vh,34rem)] flex flex-col">
-          {section === "permissions" && (
+          {section !== "members" && (
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSubmit)} className="flex grow flex-col space-y-4 min-h-0">
-                {canEdit ? (
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Role name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
+              <form
+                onSubmit={form.handleSubmit(handleSubmit, handleInvalid)}
+                className="flex grow flex-col space-y-4 min-h-0"
+              >
+                {section === "details" && (
+                  <ModalScrollArea className="flex flex-col space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Role name" disabled={!canEdit} {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Description</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Description"
+                              rows={4}
+                              className="resize-y"
+                              disabled={!canEdit}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    {!canEdit && (
+                      <p className="text-sm text-muted-foreground">You can't edit this role's details.</p>
                     )}
-                  />
-                ) : (
-                  <p className="text-sm text-muted-foreground">You can't edit this role's permissions.</p>
+                  </ModalScrollArea>
                 )}
-                <Separator />
 
-                <div className="flex grow flex-col space-y-2 min-h-0 pt-4">
-                  <p className="text-sm font-medium leading-none">Permissions</p>
-                  <PermissionChecklist
-                    entities={entities}
-                    selected={selected}
-                    onChange={setSelected}
-                    disabled={!canEdit}
-                    missingPermissions={missingPermissions}
-                    className="h-auto grow min-h-0"
-                  />
-                </div>
+                {section === "permissions" && (
+                  <div className="flex grow flex-col min-h-0">
+                    <PermissionChecklist
+                      entities={entities}
+                      selected={selected}
+                      onChange={setSelected}
+                      disabled={!canEdit}
+                      missingPermissions={missingPermissions}
+                      className="h-auto grow min-h-0"
+                    />
+                  </div>
+                )}
+
                 {canEdit && (
                   <div className="flex justify-end">
                     <Button type="submit">Save</Button>

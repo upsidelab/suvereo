@@ -62,6 +62,8 @@ export function DataSetRolesList() {
     setRoleToDelete(null);
   };
 
+  const takenNames = roles.map((role) => role.name);
+
   if (isLoading) {
     return null;
   }
@@ -75,7 +77,7 @@ export function DataSetRolesList() {
       {error && <p className="text-sm text-destructive mb-4">{error}</p>}
       {canAddRoles && (
         <div className="flex flex-col items-end mb-4">
-          <DataSetRoleModal onSaved={load} />
+          <DataSetRoleModal takenNames={takenNames} onSaved={load} />
         </div>
       )}
       {roles.length === 0 ? (
@@ -93,7 +95,7 @@ export function DataSetRolesList() {
               <TableRow key={role.id}>
                 <TableCell>{role.name}</TableCell>
                 <TableCell className="flex space-x-4">
-                  <DataSetRoleModal role={role} onSaved={load} />
+                  <DataSetRoleModal role={role} takenNames={takenNames} onSaved={load} />
                   {canDeleteRoles && (
                     <Button
                       variant="secondary"

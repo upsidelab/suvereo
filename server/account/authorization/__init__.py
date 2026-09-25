@@ -28,6 +28,7 @@ from .permission_rules import (
     PERMISSION_DEPENDENCIES,
     PERMISSION_SCOPES,
     dependencies_within,
+    missing_dependencies,
 )
 from .permissions import IsAdmin
 
@@ -55,5 +56,6 @@ __all__ = [
     "has_any_permission_on_any_dataset",
     "has_dataset_perm",
     "is_dataset_member",
+    "missing_dependencies",
     "permission_label",
 ]

@@ -101,6 +101,17 @@ class TestWritingGroupsNeedsItsOwnLifecycleCode:
         assert UserGroup.objects.filter(pk=group.pk, name="contractors").exists()
         assert not UserGroup.objects.filter(name__in=["new-bucket", "renamed"]).exists()
 
+    def test_an_update_changes_the_name_and_the_description(self, user, detail_url, group):
+        grant(user, PERMISSIONS.GROUP.VIEW, PERMISSIONS.GROUP.CHANGE)
+
+        response = client_for(user).patch(
+            detail_url, {"name": "renamed", "description": "Who belongs here."}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        group.refresh_from_db()
+        assert (group.name, group.description) == ("renamed", "Who belongs here.")
+
     def test_an_admin_still_reaches_every_write(self, admin_api_client, list_url):
         response = admin_api_client.post(list_url, {"name": "new-bucket"}, format="json")
 
@@ -129,6 +140,7 @@ class TestGroupPayloads:
             {
                 "id": group.id,
                 "name": "contractors",
+                "description": "",
                 "member_count": 2,
                 "global_role_count": 2,
                 "data_set_role_count": 2,
@@ -149,7 +161,7 @@ class TestGroupPayloads:
 
         response = api_client.get(detail_url)
 
-        assert response.data["global_roles"] == [{"id": global_role.id, "name": "viewers"}]
+        assert response.data["global_roles"] == [{"id": global_role.id, "name": "viewers", "description": ""}]
 
     def test_the_global_roles_a_group_holds_are_read_only_on_this_endpoint(self, admin_api_client, detail_url, group):
         """Granting one is `/api/groups/<id>/global_roles`, gated on `global_role.assign`, so this
