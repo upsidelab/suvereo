@@ -15,7 +15,7 @@ import { PermissionChecklist } from "@/components/roles/permission-checklist.tsx
 import { PermissionErrors } from "@/components/roles/permission-errors.tsx";
 import { PERMISSIONS } from "@/lib/permissions/codes.ts";
 import { missingDependencies, unresolvedRequirements } from "@/lib/permissions/dependencies.ts";
-import { DATA_SET_ROLE_NAME_MAX_LENGTH, roleFormSchema, RoleFormSchema } from "@/lib/permissions/role-form-schema.ts";
+import { roleFormSchema, RoleFormSchema } from "@/lib/permissions/role-form-schema.ts";
 import { ModalSection, ModalSections } from "@/components/roles/modal-sections.tsx";
 import { ModalScrollArea } from "@/components/roles/modal-scroll-area.tsx";
 import { DataSetRoleMembersPanel } from "@/components/roles/data-set-roles/data-set-role-members-panel.tsx";
@@ -52,7 +52,7 @@ export function DataSetRoleModal({ role, takenNames, onSaved }: DataSetRoleModal
   const [missingPermissions, setMissingPermissions] = useState<MissingPermission[]>([]);
 
   const formSchema = useMemo(
-    () => roleFormSchema(DATA_SET_ROLE_NAME_MAX_LENGTH, takenNames.filter((name) => name !== role?.name)),
+    () => roleFormSchema(takenNames.filter((name) => name !== role?.name)),
     [takenNames, role?.name]
   );
 

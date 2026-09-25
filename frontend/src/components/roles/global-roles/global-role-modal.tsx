@@ -12,7 +12,7 @@ import { MissingPermission, PermissionEntity } from "@/lib/permissions/types.ts"
 import { useApplicationContext } from "@/lib/use-application-context.ts";
 import { PermissionChecklist } from "@/components/roles/permission-checklist.tsx";
 import { PermissionErrors } from "@/components/roles/permission-errors.tsx";
-import { GLOBAL_ROLE_NAME_MAX_LENGTH, roleFormSchema, RoleFormSchema } from "@/lib/permissions/role-form-schema.ts";
+import { roleFormSchema, RoleFormSchema } from "@/lib/permissions/role-form-schema.ts";
 import { ModalSection, ModalSections } from "@/components/roles/modal-sections.tsx";
 import { ModalScrollArea } from "@/components/roles/modal-scroll-area.tsx";
 import { GlobalRoleMembersPanel } from "@/components/roles/global-roles/global-role-members-panel.tsx";
@@ -59,7 +59,7 @@ export function GlobalRoleModal({ role, takenNames, onSaved }: GlobalRoleModalPr
   const [missingPermissions, setMissingPermissions] = useState<MissingPermission[]>([]);
 
   const formSchema = useMemo(
-    () => roleFormSchema(GLOBAL_ROLE_NAME_MAX_LENGTH, takenNames.filter((name) => name !== role?.name)),
+    () => roleFormSchema(takenNames.filter((name) => name !== role?.name)),
     [takenNames, role?.name]
   );
 
