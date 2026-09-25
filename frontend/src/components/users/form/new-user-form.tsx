@@ -45,7 +45,7 @@ export function NewUserForm({ onUserCreated }: NewUserFormProps) {
     const response = await api.users().createUser(values);
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
-      setError(body.detail ?? "Could not create this user.");
+      setError(body.email?.[0] ?? body.detail ?? "Could not create this user.");
       return;
     }
     onUserCreated();
