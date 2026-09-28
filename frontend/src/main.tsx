@@ -222,8 +222,6 @@ const router = createBrowserRouter([
     loader: loginLoader
   },
   {
-    // Where an integration's OAuth popup lands. Deliberately outside the authenticated tree: it
-    // only announces that a flow finished, and the form it notifies fetches the result itself.
     path: "/oauth/complete",
     element: <OAuthCompletePage />
   },

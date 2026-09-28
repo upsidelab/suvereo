@@ -201,13 +201,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CORS_ALLOWED_ORIGINS = json.loads(os.environ.get("ECL_DJANGO_CORS_ALLOWED_ORIGINS", default="[]"))
 
-# Redis rather than Django's per-process default: cached state is written by one request and read
-# by another, which need not land on the same worker. Celery and Channels already require Redis,
-# so this adds no infrastructure.
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        # An empty value counts as unset, so the sample env can carry the key without a value.
         "LOCATION": env.str("ECL_CACHE_URL", default="") or env.str("ECL_CELERY_BROKER_URL"),
     },
 }

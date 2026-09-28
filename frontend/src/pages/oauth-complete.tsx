@@ -1,7 +1,5 @@
 import { useEffect } from "react";
 
-//: Channel the integration form listens on. Same-origin by definition, so the popup can reach the
-//: window that opened it without depending on window.opener, which a provider may have severed.
 export const OAUTH_CHANNEL = "enthusiast-oauth";
 
 export function OAuthCompletePage() {

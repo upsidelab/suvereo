@@ -51,6 +51,7 @@ export function AddEditIntegrationModal({
   const [connecting, setConnecting] = useState(false);
   const [connected, setConnected] = useState(false);
   const [flowState, setFlowState] = useState<string>("");
+  const [flowExpiresInMs, setFlowExpiresInMs] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const popupRef = useRef<Window | null>(null);
 
@@ -75,6 +76,10 @@ export function AddEditIntegrationModal({
       setConfig({});
       setError(null);
       setConnected(false);
+      setConnecting(false);
+      setFlowState("");
+      setFlowExpiresInMs(0);
+      popupRef.current?.close();
       return;
     }
     if (integration) {
@@ -101,7 +106,8 @@ export function AddEditIntegrationModal({
       ? integrationTypes.filter(t => t.integration_type_name === integrationTypeName)
       : integrationTypes);
 
-  const showTypeSelect = readOnly || typeOptions.length > 1;  const oauthField = selectedIntegrationType?.supports_oauth ? selectedIntegrationType.oauth_field : "";
+  const showTypeSelect = readOnly || typeOptions.length > 1;
+  const oauthField = selectedIntegrationType?.supports_oauth ? selectedIntegrationType.oauth_field : "";
   const canConnect = !readOnly && !!selectedType && !!oauthField;
 
   useEffect(() => {
@@ -128,20 +134,24 @@ export function AddEditIntegrationModal({
     setConfig(prev => ({ ...prev, [key]: value }));
   };
 
-  // The popup announces itself on a channel once it lands back on our origin, so the result is
-  // fetched exactly once, when there is something to fetch.
   useEffect(() => {
     if (!connecting || !flowState) return;
-    let cancelled = false;
+    let settled = false;
     const channel = new BroadcastChannel(OAUTH_CHANNEL);
 
-    channel.onmessage = async (event: MessageEvent<{ state?: string }>) => {
-      if (cancelled || event.data?.state !== flowState) return;
-      const result = await api.integrations().getOAuthResult(flowState);
-      if (cancelled) return;
-      cancelled = true;
+    const stop = () => {
+      settled = true;
+      window.clearInterval(watchClosed);
+      window.clearTimeout(giveUp);
       setConnecting(false);
       popupRef.current?.close();
+    };
+
+    channel.onmessage = async (event: MessageEvent<{ state?: string }>) => {
+      if (settled || event.data?.state !== flowState) return;
+      settled = true;
+      const result = await api.integrations().getOAuthResult(flowState);
+      stop();
       if (result.error) {
         setError(result.error);
       } else if (result.config) {
@@ -152,17 +162,32 @@ export function AddEditIntegrationModal({
       }
     };
 
+    let closedTicks = 0;
+    const watchClosed = window.setInterval(() => {
+      if (settled || !popupRef.current?.closed) return;
+      if (++closedTicks < 4) return;
+      stop();
+      setError("Authorization was cancelled before it finished.");
+    }, 500);
+
+    const giveUp = window.setTimeout(() => {
+      if (settled) return;
+      stop();
+      setError("Authorization timed out. Try again.");
+    }, flowExpiresInMs);
+
     return () => {
-      cancelled = true;
+      settled = true;
       channel.close();
+      window.clearInterval(watchClosed);
+      window.clearTimeout(giveUp);
     };
-  }, [connecting, flowState]);
+  }, [connecting, flowState, flowExpiresInMs]);
 
   const handleConnect = async () => {
     setError(null);
     setConnected(false);
     setConnecting(true);
-    // Opened before the await, or a popup blocker rejects it.
     const popup = window.open("", "_blank", "width=600,height=760");
     popupRef.current = popup;
     if (!popup) {
@@ -171,8 +196,13 @@ export function AddEditIntegrationModal({
       return;
     }
     try {
-      const { authorizationUrl, state } = await api.integrations().startOAuth(dataSetId, selectedType, config);
+      const { authorizationUrl, state, expiresInMs } = await api.integrations().startOAuth(
+        dataSetId,
+        selectedType,
+        config
+      );
       popup.location.href = authorizationUrl;
+      setFlowExpiresInMs(expiresInMs);
       setFlowState(state);
     } catch (e) {
       popup.close();

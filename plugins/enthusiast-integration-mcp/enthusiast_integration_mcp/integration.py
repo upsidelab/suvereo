@@ -27,19 +27,23 @@ class MCPServerIntegration(BaseToolProvidingIntegration):
     CONFIGURATION_ARGS = MCPServerConfigArgs
     ALLOWS_MULTIPLE_INSTANCES = True
     SUPPORTS_OAUTH = True
-    #: Config field the handshake is driven from; Connect sits with it and needs it filled.
     OAUTH_FIELD = "url"
 
     @classmethod
-    def oauth_start(cls, config: dict[str, Any], redirect_uri: str) -> tuple[str, dict[str, Any]]:
+    def oauth_start(
+        cls, config: dict[str, Any], redirect_uri: str, client: dict[str, Any] | None = None
+    ) -> tuple[str, dict[str, Any]]:
         """Discover the server's authorization server and build the URL to send the admin to.
 
         Args:
             config: The configuration entered so far; only ``url`` is needed.
             redirect_uri: Where the authorization server must send the admin back to.
+            client: Credentials from a previous registration against this server, reused when
+                given so that pressing Connect again does not register another client.
 
         Returns:
-            The authorization URL, and the state the callback needs to finish the exchange.
+            The authorization URL, and the state the callback needs to finish the exchange. The
+            state carries ``client`` back out, for the caller to keep and pass in next time.
 
         Raises:
             MCPOAuthError: If the server needs no token, or cannot be registered with.
@@ -49,13 +53,14 @@ class MCPServerIntegration(BaseToolProvidingIntegration):
             raise MCPOAuthError("Enter the server URL before connecting.")
 
         server = discover(url)
-        credentials = register_client(server, redirect_uri, client_name=OAUTH_CLIENT_NAME)
+        credentials = client or register_client(server, redirect_uri, client_name=OAUTH_CLIENT_NAME)
         authorization_url, verifier, state = build_authorization_url(
             server, credentials["client_id"], redirect_uri
         )
         pending = {
             "state": state,
             "verifier": verifier,
+            "client": credentials,
             "client_id": credentials["client_id"],
             "client_secret": credentials.get("client_secret"),
             "token_endpoint": server.token_endpoint,

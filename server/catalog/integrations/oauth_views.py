@@ -29,6 +29,8 @@ logger = logging.getLogger(__name__)
 
 CALLBACK_URL_NAME = "integration-oauth-callback"
 
+CLIENT_REJECTED_ERRORS = frozenset({"invalid_client", "unauthorized_client"})
+
 
 def callback_uri(request) -> str:
     """The redirect URI, which must match byte for byte across registration, authorize and exchange."""
@@ -74,12 +76,18 @@ class IntegrationOAuthStartView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        redirect_uri = callback_uri(request)
+        target = str(config.get(getattr(plugin_class, "OAUTH_FIELD", ""), ""))
+        known_client = oauth_flows.read_client(integration_type, target, redirect_uri)
+
         try:
-            authorization_url, pending = plugin_class.oauth_start(config, callback_uri(request))
+            authorization_url, pending = plugin_class.oauth_start(config, redirect_uri, known_client)
         except Exception as e:
-            # The provider is a third party: a failure here is a message for the admin, not a bug.
             logger.info("OAuth start failed for %s: %s", integration_type, e)
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        if issued := pending.get("client"):
+            oauth_flows.store_client(integration_type, target, redirect_uri, issued)
 
         oauth_flows.store(
             pending["state"],
@@ -88,9 +96,16 @@ class IntegrationOAuthStartView(APIView):
                 "pending": pending,
                 "origin": _return_origin(request),
                 "user_id": request.user.pk,
+                "client_key": [integration_type, target, redirect_uri],
             },
         )
-        return Response({"authorization_url": authorization_url, "state": pending["state"]})
+        return Response(
+            {
+                "authorization_url": authorization_url,
+                "state": pending["state"],
+                "expires_in": oauth_config.FLOW_LIFETIME_SECONDS,
+            }
+        )
 
 
 class IntegrationOAuthResultView(APIView):
@@ -103,15 +118,14 @@ class IntegrationOAuthResultView(APIView):
 
     def get(self, request):
         state = request.query_params.get("state") or ""
-        result = oauth_flows.pop_result(state)
-        if result is None:
+        result = oauth_flows.read_result(state)
+        if result is None or result.get("user_id") != request.user.pk:
             return Response({"status": "pending"})
-        if result.get("user_id") != request.user.pk:
-            return Response({"status": "pending"})
+
+        oauth_flows.discard_result(state)
         return Response({"status": "ready", "config": result.get("config"), "error": result.get("error")})
 
 
-#: Path on the frontend the popup is handed back to once the exchange is done.
 COMPLETE_PATH = "/oauth/complete"
 
 
@@ -139,13 +153,11 @@ def _message_page(text: str) -> HttpResponse:
 class IntegrationOAuthCallbackView(APIView):
     """Receive the provider's redirect, exchange the code and pass the credentials back."""
 
-    # The provider redirects the browser here with no token of ours; `state` proves the call.
     permission_classes = [AllowAny]
     authentication_classes = []
 
     def get(self, request):
         state = request.query_params.get("state") or ""
-        # Taken whatever the outcome, so a code cannot be replayed.
         flow = oauth_flows.pop(state)
         if flow is None:
             return _message_page("This authorization has expired or was never started.")
@@ -156,6 +168,8 @@ class IntegrationOAuthCallbackView(APIView):
 
     def _outcome(self, request, flow: dict) -> dict:
         if error := request.query_params.get("error"):
+            if error in CLIENT_REJECTED_ERRORS:
+                self._forget_registration(flow)
             return {"error": request.query_params.get("error_description") or error}
 
         code = request.query_params.get("code")
@@ -167,4 +181,9 @@ class IntegrationOAuthCallbackView(APIView):
             return {"config": plugin_class.oauth_finish(flow["pending"], code)}
         except Exception as e:
             logger.info("OAuth callback failed for %s: %s", flow["integration_type"], e)
+            self._forget_registration(flow)
             return {"error": str(e)}
+
+    def _forget_registration(self, flow: dict) -> None:
+        if key := flow.get("client_key"):
+            oauth_flows.discard_client(*key)

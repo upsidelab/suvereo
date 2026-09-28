@@ -65,7 +65,6 @@ class TestMCPServerIntegrationGetTools:
         assert isinstance(transport, StreamableHttpTransport)
         assert transport.url == "https://example.com/mcp"
         assert transport.headers == {"Authorization": "Bearer secret"}
-        # the adapter is handed the configured client, not the transport
         mock_adapter_cls.assert_called_once_with(mock_client_cls.return_value)
 
     def test_get_tools_enables_response_caching(self):

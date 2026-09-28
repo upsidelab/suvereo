@@ -1,20 +1,26 @@
 import base64
 import hashlib
+import ipaddress
 import json
 import re
 import secrets
+import socket
 from dataclasses import dataclass, field
 from typing import Any
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 
 import httpx
 
+# Required Notion, Asana, Atlassian, Sentry and PayPal all sit behind a WAF that
+# answers 403 to non-browser clients, so discovery fails before any OAuth question is asked.
 USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
 )
 
 TIMEOUT = 15.0
+
+MAX_REDIRECTS = 5
 
 
 class MCPOAuthError(Exception):
@@ -32,12 +38,68 @@ class AuthorizationServer:
     resource: str | None = None
 
 
+def require_public_url(url: str) -> str:
+    """Reject anything that would make the server fetch from its own network.
+
+    The URL comes from a form, and everything here is fetched by the server rather than the
+    browser, so without this an admin could read cloud metadata endpoints or internal services
+    through it. Providers that need authorizing are public by nature, so nothing legitimate is
+    lost - a server on a private address simply has no OAuth to discover.
+
+    Returns:
+        The URL, unchanged, when it is safe to fetch.
+
+    Raises:
+        MCPOAuthError: If the scheme is not HTTP(S), the host is unresolvable, or it resolves to
+            an address that is not publicly routable.
+    """
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise MCPOAuthError("Enter an http:// or https:// URL.")
+    if not parsed.hostname:
+        raise MCPOAuthError("That URL has no host.")
+
+    try:
+        resolved = socket.getaddrinfo(parsed.hostname, None)
+    except socket.gaierror as e:
+        raise MCPOAuthError(f"Could not resolve {parsed.hostname}.") from e
+
+    for family, _, _, _, address in resolved:
+        ip = ipaddress.ip_address(address[0])
+        if not ip.is_global:
+            raise MCPOAuthError(
+                f"{parsed.hostname} resolves to a private address. Connect only works with servers "
+                "reachable on the public internet."
+            )
+    return url
+
+
 def _client() -> httpx.Client:
-    return httpx.Client(timeout=TIMEOUT, follow_redirects=True, headers={"User-Agent": USER_AGENT})
+    return httpx.Client(timeout=TIMEOUT, follow_redirects=False, headers={"User-Agent": USER_AGENT})
+
+
+def _send(client: httpx.Client, method: str, url: str, **kwargs: Any) -> httpx.Response:
+    """Make a request, following redirects one vetted hop at a time.
+
+    Providers do redirect - a ``.well-known`` document served from a canonical host, say - so
+    refusing outright would turn them away. Letting httpx follow them silently would instead let a
+    public URL bounce the server onto its own network, so every hop is checked in turn.
+
+    Raises:
+        MCPOAuthError: If a hop fails the public-address check, or the chain does not settle.
+    """
+    for _ in range(MAX_REDIRECTS):
+        response = client.request(method, require_public_url(url), **kwargs)
+        if not response.is_redirect or not (location := response.headers.get("Location")):
+            return response
+        url = str(response.next_request.url) if response.next_request else location
+        if response.status_code not in (307, 308):
+            method, kwargs = "GET", {k: v for k, v in kwargs.items() if k == "headers"}
+    raise MCPOAuthError("That server redirected too many times.")
 
 
 def _get_json(client: httpx.Client, url: str) -> dict[str, Any]:
-    response = client.get(url, headers={"Accept": "application/json"})
+    response = _send(client, "GET", url, headers={"Accept": "application/json"})
     response.raise_for_status()
     return response.json()
 
@@ -55,7 +117,9 @@ def discover(url: str) -> AuthorizationServer:
         MCPOAuthError: If the server needs no authorization, or publishes no usable metadata.
     """
     with _client() as client:
-        probe = client.post(
+        probe = _send(
+            client,
+            "POST",
             url,
             headers={"Accept": "application/json, text/event-stream", "Content-Type": "application/json"},
             content=json.dumps({"jsonrpc": "2.0", "id": 1, "method": "tools/list"}),
@@ -82,7 +146,6 @@ def discover(url: str) -> AuthorizationServer:
             except httpx.HTTPError:
                 issuers = []
 
-        # A server publishing no protected-resource metadata may still be its own issuer.
         origin = re.match(r"(https?://[^/]+)", url)
         if not issuers and origin:
             issuers = [origin.group(1)]
@@ -134,7 +197,7 @@ def register_client(server: AuthorizationServer, redirect_uri: str, client_name:
         payload["scope"] = " ".join(server.scopes)
 
     with _client() as client:
-        response = client.post(server.registration_endpoint, json=payload)
+        response = _send(client, "POST", server.registration_endpoint, json=payload)
     if response.status_code >= 400:
         raise MCPOAuthError(f"The server refused client registration (HTTP {response.status_code}).")
     credentials = response.json()
@@ -197,7 +260,7 @@ def exchange_code(
         data["resource"] = resource
 
     with _client() as client:
-        response = client.post(token_endpoint, data=data, headers={"Accept": "application/json"})
+        response = _send(client, "POST", token_endpoint, data=data, headers={"Accept": "application/json"})
     if response.status_code >= 400:
         raise MCPOAuthError(f"The server refused the token exchange (HTTP {response.status_code}).")
     tokens = response.json()

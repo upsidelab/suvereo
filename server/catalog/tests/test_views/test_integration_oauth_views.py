@@ -12,7 +12,6 @@ from catalog.tests.integration_mocks import MockOAuthIntegration, MockSingleInst
 
 pytestmark = pytest.mark.django_db
 
-#: Stands in for whatever front end is deployed; the trusted set is a setting, not a fixed value.
 ORIGIN = "https://app.example.com"
 
 
@@ -60,6 +59,7 @@ class TestIntegrationOAuthStartView:
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["authorization_url"].startswith("https://provider.example.com/authorize")
+        assert response.data["expires_in"] == oauth_config.FLOW_LIFETIME_SECONDS
         flow = oauth_flows.pop("state-123")
         assert flow["integration_type"] == "mock_oauth"
         assert flow["origin"] == ORIGIN
@@ -100,6 +100,56 @@ class TestIntegrationOAuthStartView:
         assert oauth_flows.pop("state-123") is None
 
 
+class TestClientRegistrationIsReused:
+    """Each registration leaves a record with the provider, so pressing Connect twice must not make two."""
+
+    @pytest.fixture
+    def url(self, data_set):
+        return reverse("integration-oauth-start", kwargs={"data_set_id": data_set.pk})
+
+    @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
+    def test_a_second_connect_reuses_the_first_registration(self, mock_get_plugin_class, admin_api_client, url):
+        mock_get_plugin_class.return_value = MockOAuthIntegration
+
+        with patch.object(MockOAuthIntegration, "oauth_start", wraps=MockOAuthIntegration.oauth_start) as spy:
+            admin_api_client.post(url, {"type": "mock_oauth", "config": {}}, format="json")
+            admin_api_client.post(url, {"type": "mock_oauth", "config": {}}, format="json")
+
+        assert spy.call_args_list[0].args[2] is None
+        assert spy.call_args_list[1].args[2] == {"client_id": "registered-once"}
+
+    @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
+    def test_a_failed_start_keeps_the_registration(self, mock_get_plugin_class, admin_api_client, url):
+        """Starting never exercises the registration, so a failure there says nothing about it."""
+        mock_get_plugin_class.return_value = MockOAuthIntegration
+        admin_api_client.post(url, {"type": "mock_oauth", "config": {}}, format="json")
+
+        with patch.object(MockOAuthIntegration, "oauth_start", side_effect=RuntimeError("network blip")):
+            admin_api_client.post(url, {"type": "mock_oauth", "config": {}}, format="json")
+
+        with patch.object(MockOAuthIntegration, "oauth_start", wraps=MockOAuthIntegration.oauth_start) as spy:
+            admin_api_client.post(url, {"type": "mock_oauth", "config": {}}, format="json")
+
+        assert spy.call_args_list[0].args[2] == {"client_id": "registered-once"}
+
+    @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
+    def test_a_registration_carrying_a_secret_is_not_kept(self, mock_get_plugin_class, admin_api_client, url):
+        """We register as a public client; a secret coming back is a credential, not cache content."""
+        mock_get_plugin_class.return_value = MockOAuthIntegration
+        confidential = ("https://provider.example.com/authorize", {
+            "state": "state-123",
+            "client": {"client_id": "abc", "client_secret": "s3cret"},
+        })
+
+        with patch.object(MockOAuthIntegration, "oauth_start", return_value=confidential):
+            admin_api_client.post(url, {"type": "mock_oauth", "config": {}}, format="json")
+
+        with patch.object(MockOAuthIntegration, "oauth_start", wraps=MockOAuthIntegration.oauth_start) as spy:
+            admin_api_client.post(url, {"type": "mock_oauth", "config": {}}, format="json")
+
+        assert spy.call_args_list[0].args[2] is None
+
+
 class TestCallbackUri:
     """The redirect URI must match across registration, authorize and exchange, or providers refuse it."""
 
@@ -127,6 +177,10 @@ class TestIntegrationOAuthCallbackView:
         return reverse("integration-oauth-callback")
 
     @pytest.fixture
+    def start_url(self, data_set):
+        return reverse("integration-oauth-start", kwargs={"data_set_id": data_set.pk})
+
+    @pytest.fixture
     def flow(self, admin_user):
         oauth_flows.store(
             "state-123",
@@ -146,7 +200,7 @@ class TestIntegrationOAuthCallbackView:
 
         client.get(url, {"state": "state-123", "code": "abc"})
 
-        assert oauth_flows.pop_result("state-123")["config"]["auth_token"] == "Bearer token-for-abc"
+        assert oauth_flows.read_result("state-123")["config"]["auth_token"] == "Bearer token-for-abc"
 
     @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
     def test_get_hands_the_popup_back_to_the_origin_that_began_the_flow(
@@ -196,10 +250,39 @@ class TestIntegrationOAuthCallbackView:
         assert response.status_code == status.HTTP_200_OK
         assert "expired or was never started" in response.content.decode()
 
+    @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
+    def test_a_rejected_client_is_forgotten_so_the_next_attempt_registers_again(
+        self, mock_get_plugin_class, client, url, start_url, admin_api_client
+    ):
+        mock_get_plugin_class.return_value = MockOAuthIntegration
+        admin_api_client.post(start_url, {"type": "mock_oauth", "config": {}}, format="json")
+
+        client.get(url, {"state": "state-123", "error": "invalid_client"})
+
+        with patch.object(MockOAuthIntegration, "oauth_start", wraps=MockOAuthIntegration.oauth_start) as spy:
+            admin_api_client.post(start_url, {"type": "mock_oauth", "config": {}}, format="json")
+
+        assert spy.call_args_list[0].args[2] is None
+
+    @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
+    def test_a_person_declining_leaves_the_registration_alone(
+        self, mock_get_plugin_class, client, url, start_url, admin_api_client
+    ):
+        """Refusing consent says nothing about the client, and re-registering would be wasted."""
+        mock_get_plugin_class.return_value = MockOAuthIntegration
+        admin_api_client.post(start_url, {"type": "mock_oauth", "config": {}}, format="json")
+
+        client.get(url, {"state": "state-123", "error": "access_denied"})
+
+        with patch.object(MockOAuthIntegration, "oauth_start", wraps=MockOAuthIntegration.oauth_start) as spy:
+            admin_api_client.post(start_url, {"type": "mock_oauth", "config": {}}, format="json")
+
+        assert spy.call_args_list[0].args[2] == {"client_id": "registered-once"}
+
     def test_a_provider_refusal_is_kept_for_the_form_to_report(self, client, url, flow):
         client.get(url, {"state": "state-123", "error": "access_denied", "error_description": "User said no"})
 
-        assert oauth_flows.pop_result("state-123")["error"] == "User said no"
+        assert oauth_flows.read_result("state-123")["error"] == "User said no"
 
     @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
     def test_a_callback_without_a_code_is_kept_as_an_error(self, mock_get_plugin_class, client, url, flow):
@@ -207,7 +290,7 @@ class TestIntegrationOAuthCallbackView:
 
         client.get(url, {"state": "state-123"})
 
-        assert "no authorization code" in oauth_flows.pop_result("state-123")["error"]
+        assert "no authorization code" in oauth_flows.read_result("state-123")["error"]
 
     def test_get_needs_no_authentication(self, client, url):
         """The provider redirects the admin's browser here with no token of ours attached."""
@@ -276,6 +359,20 @@ class TestIntegrationOAuthResultView:
 
         assert response.data["status"] == "pending"
         assert "config" not in response.data or response.data.get("config") is None
+
+    @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
+    def test_another_user_asking_does_not_destroy_the_result(
+        self, mock_get_plugin_class, api_client, admin_api_client, client, url, callback_url, flow
+    ):
+        """Consuming on a failed ownership check would let anyone strand the rightful owner."""
+        mock_get_plugin_class.return_value = MockOAuthIntegration
+        client.get(callback_url, {"state": "state-123", "code": "abc"})
+
+        api_client.get(url, {"state": "state-123"})
+        owner = admin_api_client.get(url, {"state": "state-123"})
+
+        assert owner.data["status"] == "ready"
+        assert owner.data["config"]["auth_token"] == "Bearer token-for-abc"
 
     def test_get_requires_a_known_state(self, admin_api_client, url):
         response = admin_api_client.get(url, {"state": "never-issued"})

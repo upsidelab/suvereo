@@ -34,11 +34,14 @@ class MockOAuthIntegration(BaseIntegration):
     INTEGRATION_TYPE_NAME = "Mock category"
     SUPPORTS_OAUTH = True
 
+    OAUTH_FIELD = "url"
+
     @classmethod
-    def oauth_start(cls, config, redirect_uri):
+    def oauth_start(cls, config, redirect_uri, client=None):
         return "https://provider.example.com/authorize?state=state-123", {
             "state": "state-123",
             "redirect_uri": redirect_uri,
+            "client": client or {"client_id": "registered-once"},
         }
 
     @classmethod
