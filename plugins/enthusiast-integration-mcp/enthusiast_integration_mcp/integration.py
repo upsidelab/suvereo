@@ -1,3 +1,4 @@
+from typing import Any
 from urllib.parse import urlparse
 
 from enthusiast_common.integrations import BaseToolProvidingIntegration
@@ -7,11 +8,14 @@ from langchain.mcp import MCPAdapter
 from langchain_core.tools import BaseTool
 
 from .config import MCPServerConfigArgs
+from .oauth import MCPOAuthError, build_authorization_url, discover, exchange_code, register_client
 
 TRANSPORTS: dict[str, type[ClientTransport]] = {
     "http": StreamableHttpTransport,
     "sse": SSETransport,
 }
+
+OAUTH_CLIENT_NAME = "Enthusiast"
 
 
 class MCPServerIntegration(BaseToolProvidingIntegration):
@@ -22,6 +26,69 @@ class MCPServerIntegration(BaseToolProvidingIntegration):
     INTEGRATION_TYPE_NAME = "MCP Server"
     CONFIGURATION_ARGS = MCPServerConfigArgs
     ALLOWS_MULTIPLE_INSTANCES = True
+    SUPPORTS_OAUTH = True
+    #: Config field the handshake is driven from; Connect sits with it and needs it filled.
+    OAUTH_FIELD = "url"
+
+    @classmethod
+    def oauth_start(cls, config: dict[str, Any], redirect_uri: str) -> tuple[str, dict[str, Any]]:
+        """Discover the server's authorization server and build the URL to send the admin to.
+
+        Args:
+            config: The configuration entered so far; only ``url`` is needed.
+            redirect_uri: Where the authorization server must send the admin back to.
+
+        Returns:
+            The authorization URL, and the state the callback needs to finish the exchange.
+
+        Raises:
+            MCPOAuthError: If the server needs no token, or cannot be registered with.
+        """
+        url = (config.get("url") or "").strip()
+        if not url:
+            raise MCPOAuthError("Enter the server URL before connecting.")
+
+        server = discover(url)
+        credentials = register_client(server, redirect_uri, client_name=OAUTH_CLIENT_NAME)
+        authorization_url, verifier, state = build_authorization_url(
+            server, credentials["client_id"], redirect_uri
+        )
+        pending = {
+            "state": state,
+            "verifier": verifier,
+            "client_id": credentials["client_id"],
+            "client_secret": credentials.get("client_secret"),
+            "token_endpoint": server.token_endpoint,
+            "resource": server.resource,
+            "redirect_uri": redirect_uri,
+        }
+        return authorization_url, pending
+
+    @classmethod
+    def oauth_finish(cls, pending: dict[str, Any], code: str) -> dict[str, Any]:
+        """Exchange the authorization code for a token, as fields to merge into the config.
+
+        Args:
+            pending: The state returned by ``oauth_start``.
+            code: The authorization code the callback received.
+
+        Returns:
+            The ``auth_header``/``auth_token`` pair, ready to drop into the form.
+        """
+        tokens = exchange_code(
+            token_endpoint=pending["token_endpoint"],
+            code=code,
+            verifier=pending["verifier"],
+            client_id=pending["client_id"],
+            redirect_uri=pending["redirect_uri"],
+            client_secret=pending.get("client_secret"),
+            resource=pending.get("resource"),
+        )
+        token_type = tokens.get("token_type") or "Bearer"
+        return {
+            "auth_header": "Authorization",
+            "auth_token": f"{token_type.title()} {tokens['access_token']}",
+        }
 
     def instance_name(self) -> str:
         """The admin-supplied name, falling back to the host for servers configured without one."""

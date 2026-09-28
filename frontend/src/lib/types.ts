@@ -16,6 +16,8 @@ export type IntegrationType = {
   name: string;
   integration_type_name: string;
   syncable: boolean;
+  supports_oauth: boolean;
+  oauth_field: string;
   config_schema: unknown;
 };
 

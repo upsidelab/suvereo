@@ -26,6 +26,8 @@ class IntegrationTypeListView(APIView):
                 "name": cls.NAME,
                 "integration_type_name": cls.INTEGRATION_TYPE_NAME,
                 "syncable": cls.is_syncable(),
+                "supports_oauth": getattr(cls, "SUPPORTS_OAUTH", False),
+                "oauth_field": getattr(cls, "OAUTH_FIELD", ""),
                 "config_schema": cls().get_config_schema(),
             }
             for cls in IntegrationPluginRegistry().get_plugin_classes()

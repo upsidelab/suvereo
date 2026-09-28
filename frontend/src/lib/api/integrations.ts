@@ -15,6 +15,38 @@ export class IntegrationsApiClient extends BaseApiClient {
     return await response.json() as IntegrationType[];
   }
 
+  async startOAuth(
+    dataSetId: number,
+    type: string,
+    config: Record<string, unknown>
+  ): Promise<{ authorizationUrl: string; state: string }> {
+    const response = await fetch(`${this.apiBase}/api/data_sets/${dataSetId}/integrations/oauth/start/`, {
+      ...this._requestConfiguration(),
+      method: "POST",
+      body: JSON.stringify({ type, config }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new ApiError(data.detail ?? `Failed to start authorization: ${response.statusText}`, {
+        data,
+        status: response.status,
+      });
+    }
+    const body = data as { authorization_url: string; state: string };
+    return { authorizationUrl: body.authorization_url, state: body.state };
+  }
+
+  async getOAuthResult(state: string): Promise<{ status: string; config?: Record<string, string>; error?: string }> {
+    const response = await fetch(
+      `${this.apiBase}/api/integrations/oauth/result/?state=${encodeURIComponent(state)}`,
+      this._requestConfiguration()
+    );
+    if (!response.ok) {
+      return { status: "pending" };
+    }
+    return await response.json();
+  }
+
   async list(dataSetId: number): Promise<Integration[]> {
     const response = await fetch(
       `${this.apiBase}/api/data_sets/${dataSetId}/integrations/`,

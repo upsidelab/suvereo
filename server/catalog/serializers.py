@@ -194,4 +194,6 @@ class IntegrationTypeSerializer(serializers.Serializer):
     name = serializers.CharField()
     integration_type_name = serializers.CharField()
     syncable = serializers.BooleanField()
+    supports_oauth = serializers.BooleanField()
+    oauth_field = serializers.CharField(allow_blank=True)
     config_schema = serializers.JSONField()

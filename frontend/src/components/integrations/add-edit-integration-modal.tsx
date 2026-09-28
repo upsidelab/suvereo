@@ -1,11 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Label } from "@/components/ui/label.tsx";
 import { Input } from "@/components/ui/input.tsx";
+import { Button } from "@/components/ui/button.tsx";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select.tsx";
 import { FormModal } from "@/components/ui/form-modal.tsx";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { Integration, IntegrationType } from "@/lib/types.ts";
+import { OAUTH_CHANNEL } from "@/pages/oauth-complete.tsx";
 
 const api = new ApiClient(authenticationProviderInstance);
 
@@ -46,7 +48,11 @@ export function AddEditIntegrationModal({
   const [selectedType, setSelectedType] = useState<string>("");
   const [config, setConfig] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const [connected, setConnected] = useState(false);
+  const [flowState, setFlowState] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+  const popupRef = useRef<Window | null>(null);
 
   const isEditing = !!integration;
 
@@ -68,6 +74,7 @@ export function AddEditIntegrationModal({
       setSelectedType("");
       setConfig({});
       setError(null);
+      setConnected(false);
       return;
     }
     if (integration) {
@@ -94,7 +101,8 @@ export function AddEditIntegrationModal({
       ? integrationTypes.filter(t => t.integration_type_name === integrationTypeName)
       : integrationTypes);
 
-  const showTypeSelect = readOnly || typeOptions.length > 1;
+  const showTypeSelect = readOnly || typeOptions.length > 1;  const oauthField = selectedIntegrationType?.supports_oauth ? selectedIntegrationType.oauth_field : "";
+  const canConnect = !readOnly && !!selectedType && !!oauthField;
 
   useEffect(() => {
     if (!open || readOnly || isEditing) return;
@@ -118,6 +126,59 @@ export function AddEditIntegrationModal({
 
   const handleFieldChange = (key: string, value: string) => {
     setConfig(prev => ({ ...prev, [key]: value }));
+  };
+
+  // The popup announces itself on a channel once it lands back on our origin, so the result is
+  // fetched exactly once, when there is something to fetch.
+  useEffect(() => {
+    if (!connecting || !flowState) return;
+    let cancelled = false;
+    const channel = new BroadcastChannel(OAUTH_CHANNEL);
+
+    channel.onmessage = async (event: MessageEvent<{ state?: string }>) => {
+      if (cancelled || event.data?.state !== flowState) return;
+      const result = await api.integrations().getOAuthResult(flowState);
+      if (cancelled) return;
+      cancelled = true;
+      setConnecting(false);
+      popupRef.current?.close();
+      if (result.error) {
+        setError(result.error);
+      } else if (result.config) {
+        setConfig(prev => ({ ...prev, ...result.config }));
+        setConnected(true);
+      } else {
+        setError("Authorization did not complete.");
+      }
+    };
+
+    return () => {
+      cancelled = true;
+      channel.close();
+    };
+  }, [connecting, flowState]);
+
+  const handleConnect = async () => {
+    setError(null);
+    setConnected(false);
+    setConnecting(true);
+    // Opened before the await, or a popup blocker rejects it.
+    const popup = window.open("", "_blank", "width=600,height=760");
+    popupRef.current = popup;
+    if (!popup) {
+      setConnecting(false);
+      setError("Allow pop-ups for this site to connect, or paste a token manually.");
+      return;
+    }
+    try {
+      const { authorizationUrl, state } = await api.integrations().startOAuth(dataSetId, selectedType, config);
+      popup.location.href = authorizationUrl;
+      setFlowState(state);
+    } catch (e) {
+      popup.close();
+      setConnecting(false);
+      setError(e instanceof Error ? e.message : "Failed to start authorization");
+    }
   };
 
   const isValid = !!selectedType && required.every(key => !!config[key]);
@@ -213,6 +274,18 @@ export function AddEditIntegrationModal({
           )}
           {prop.description && (
             <p className="text-xs text-muted-foreground">{prop.description}</p>
+          )}
+          {canConnect && key === oauthField && config[key] && (
+            <div className="flex items-center gap-3 pt-1">
+              <Button type="button" variant="outline" size="sm" onClick={handleConnect} disabled={connecting}>
+                {connecting ? "Waiting for authorization…" : connected ? "Reconnect" : "Connect"}
+              </Button>
+              {connected ? (
+                <p className="text-xs text-green-700">Connected — token filled in below.</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">Sign in to fill the token in automatically.</p>
+              )}
+            </div>
           )}
         </div>
       ))}
