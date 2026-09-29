@@ -34,6 +34,37 @@ def _refresh(refresh_token):
     return APIClient().post(reverse("token_refresh"), {"refresh": str(refresh_token)}, format="json")
 
 
+class TestLogin:
+    @pytest.fixture
+    def url(self):
+        return reverse("login")
+
+    def test_returns_a_token_pair(self, human_user, url):
+        response = APIClient().post(url, {"email": human_user.email, "password": "old-password"}, format="json")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert {"access", "refresh"} <= response.data.keys()
+        assert _bearer_client(response.data["access"]).get(reverse("account")).status_code == status.HTTP_200_OK
+
+    def test_does_not_issue_an_api_key(self, human_user, url):
+        APIClient().post(url, {"email": human_user.email, "password": "old-password"}, format="json")
+
+        assert not Token.objects.filter(user=human_user).exists()
+
+    def test_wrong_password_is_rejected(self, human_user, url):
+        response = APIClient().post(url, {"email": human_user.email, "password": "wrong"}, format="json")
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_inactive_user_is_rejected(self, human_user, url):
+        human_user.is_active = False
+        human_user.save()
+
+        response = APIClient().post(url, {"email": human_user.email, "password": "old-password"}, format="json")
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
 class TestAuthentication:
     def test_access_token_authenticates(self, refresh_token):
         response = _bearer_client(refresh_token.access_token).get(reverse("account"))
