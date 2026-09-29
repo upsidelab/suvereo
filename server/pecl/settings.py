@@ -17,6 +17,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from environ import Env
+from utils.functions import parse_duration
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -72,6 +73,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "rest_framework.authtoken",
+    "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "catalog",
     "agent",
@@ -209,7 +212,10 @@ CACHES = {
 }
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.TokenAuthentication"],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "rest_framework.authentication.TokenAuthentication",
+    ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 25,
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
@@ -218,8 +224,21 @@ REST_FRAMEWORK = {
 # SWAGGER
 
 SWAGGER_SETTINGS = {
-    "SECURITY_DEFINITIONS": {"Token": {"type": "apiKey", "name": "Authorization", "in": "header"}},
+    "SECURITY_DEFINITIONS": {
+        "Bearer": {"type": "apiKey", "name": "Authorization", "in": "header"},
+        "Token": {"type": "apiKey", "name": "Authorization", "in": "header"},
+    },
     "USE_SESSION_AUTH": False,
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": parse_duration(env.str("ECL_AUTH_ACCESS_TOKEN_TTL", "15m")),
+    "REFRESH_TOKEN_LIFETIME": parse_duration(env.str("ECL_AUTH_REFRESH_TOKEN_TTL", "7d")),
+    "SIGNING_KEY": env.str("ECL_AUTH_SIGNING_KEY"),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "CHECK_REVOKE_TOKEN": True,
+    "UPDATE_LAST_LOGIN": True,
 }
 
 # CELERY
@@ -231,6 +250,10 @@ CELERY_BEAT_SCHEDULE = {
     "clean_uploaded_files": {
         "task": "agent.conversation.tasks.clean_uploaded_files",
         "schedule": timedelta(hours=1),
+    },
+    "flush_expired_tokens": {
+        "task": "account.tasks.flush_expired_tokens",
+        "schedule": timedelta(days=1),
     },
 }
 

@@ -1,10 +1,16 @@
 import sys
+from datetime import timedelta
 from types import ModuleType
 from typing import Dict, List
 
 import pytest
 from pydantic import BaseModel, Field
-from utils.functions import extract_type_info, get_model_descriptor_from_class_field, import_from_string
+from utils.functions import (
+    extract_type_info,
+    get_model_descriptor_from_class_field,
+    import_from_string,
+    parse_duration,
+)
 
 
 class SimpleModel(BaseModel):
@@ -111,3 +117,23 @@ def test_get_model_descriptor_from_class_field_dict():
     assert "mapping" in desc
     assert desc["mapping"]["type"] == {"container": "dict", "key_type": "str", "value_type": "int"}
     assert desc["mapping"]["title"] == "Mapping field"
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("30s", timedelta(seconds=30)),
+        ("15m", timedelta(minutes=15)),
+        ("12h", timedelta(hours=12)),
+        ("7d", timedelta(days=7)),
+        (" 7d ", timedelta(days=7)),
+    ],
+)
+def test_parses_supported_units(value, expected):
+    assert parse_duration(value) == expected
+
+
+@pytest.mark.parametrize("value", ["", "15", "m", "15 m", "1.5h", "2w", "-5m"])
+def test_rejects_malformed_values(value):
+    with pytest.raises(ValueError):
+        parse_duration(value)

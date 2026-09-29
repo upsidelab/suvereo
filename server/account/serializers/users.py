@@ -3,6 +3,7 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.validators import UniqueValidator
 
 from account.models import User
+from account.services import RefreshTokenRevocationService
 
 
 def unique_email_field():
@@ -74,6 +75,7 @@ class UserUpdatePasswordSerializer(OnlyAdminsManageAdminsMixin, serializers.Seri
     def update(self, instance, validated_data):
         instance.set_password(validated_data["password"])
         instance.save()
+        RefreshTokenRevocationService().revoke_all(instance)
         return instance
 
 

@@ -1,7 +1,12 @@
 import importlib
+import re
+from datetime import timedelta
 from typing import Any, get_args, get_origin
 
 from pydantic_core import PydanticUndefined
+
+_DURATION_UNITS = {"s": "seconds", "m": "minutes", "h": "hours", "d": "days"}
+_DURATION_PATTERN = re.compile(r"^(\d+)([smhd])$")
 
 
 def import_from_string(path: str):
@@ -53,3 +58,12 @@ def get_model_descriptor_default_value_from_class(class_obj: Any, field_name: st
             continue
         args[field_name] = field.default
     return args
+
+
+def parse_duration(value: str) -> timedelta:
+    """Parse a compact duration such as `30s`, `15m`, `12h` or `7d` into a `timedelta`."""
+    match = _DURATION_PATTERN.match(value.strip())
+    if match is None:
+        raise ValueError(f"Invalid duration {value!r}, expected a number followed by one of: s, m, h, d")
+    amount, unit = match.groups()
+    return timedelta(**{_DURATION_UNITS[unit]: int(amount)})
