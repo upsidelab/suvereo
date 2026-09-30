@@ -3,7 +3,7 @@
 import django.db.models.deletion
 from django.db import migrations, models
 
-import agent.conversation.models.conversation
+import agent.models.conversation
 
 
 class Migration(migrations.Migration):
@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
             name="ConversationFile",
             fields=[
                 ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
-                ("file", models.FileField(upload_to=agent.conversation.models.conversation.conversation_file_path)),
+                ("file", models.FileField(upload_to=agent.models.conversation.conversation_file_path)),
                 ("content_type", models.CharField(max_length=255, null=True)),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 ("updated_at", models.DateTimeField(auto_now=True)),

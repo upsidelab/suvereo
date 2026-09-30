@@ -4,8 +4,8 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from model_bakery import baker
 
-from agent.conversation.models.conversation import ConversationFile
 from agent.conversation.serializers import ConversationFileSerializer
+from agent.models.conversation import ConversationFile
 
 
 @pytest.fixture

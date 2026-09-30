@@ -6,10 +6,10 @@ from django.core.files.uploadedfile import UploadedFile
 
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
 from agent.agentic_execution.tasks import run_agentic_execution_task
-from agent.conversation.models.conversation import Conversation, ConversationFile
 from agent.conversation.services import ConversationFileMessageService, FileParsingService
 from agent.models.agent import Agent
 from agent.models.agentic_execution import AgenticExecution
+from agent.models.conversation import Conversation, ConversationFile
 from pecl import settings
 
 User = get_user_model()

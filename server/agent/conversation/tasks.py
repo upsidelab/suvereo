@@ -8,11 +8,11 @@ from django.core.files.base import ContentFile
 from django.utils import timezone
 
 from agent.conversation.manager import ConversationManager
-from agent.conversation.models.conversation import Conversation, ConversationFile
 from agent.conversation.serializers import ConversationFileSerializer
 from agent.conversation.services import FileParsingService
 from agent.core.callbacks import BaseWebSocketHandler
 from agent.models import Message
+from agent.models.conversation import Conversation, ConversationFile
 from pecl import settings
 
 

@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from agent.conversation.models.conversation import ConversationFile
-from agent.conversation.models.message import Message
+from agent.models.conversation import ConversationFile
+from agent.models.message import Message
 
 
 class ConversationFileMessageService:

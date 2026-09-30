@@ -13,10 +13,10 @@ from account.authorization import (
     datasets_visible_to,
     global_permission_required,
 )
-from agent.conversation.models.conversation import ConversationFile
 from agent.core.registries.embeddings import EmbeddingProviderRegistry
 from agent.core.registries.language_models import LanguageModelRegistry
 from agent.models import AgenticExecution, Message
+from agent.models.conversation import ConversationFile
 from agent.services import AgentPreconfigurationService
 
 from .models import DataSet

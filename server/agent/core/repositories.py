@@ -14,9 +14,9 @@ from enthusiast_common.structures import LLMFile
 
 from account.authorization import PERMISSIONS, datasets_with_permission
 from account.models import User
-from agent.conversation.models.conversation import ConversationFile
 from agent.models import Conversation, Message
 from agent.models.agent import Agent
+from agent.models.conversation import ConversationFile
 from catalog.models import DataSet
 
 T = TypeVar("T", bound=models.Model)

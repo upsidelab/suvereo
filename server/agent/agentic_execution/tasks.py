@@ -5,8 +5,8 @@ from enthusiast_common.agents import ConfigType
 
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
 from agent.conversation.manager import ConversationManager
-from agent.conversation.models.conversation import Conversation
 from agent.models.agentic_execution import AgenticExecution
+from agent.models.conversation import Conversation
 
 
 class ExecutionConversation(ExecutionConversationInterface):

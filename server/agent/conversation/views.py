@@ -19,7 +19,6 @@ from account.authorization import (
     has_dataset_perm,
 )
 from agent.conversation.manager import ConversationManager
-from agent.conversation.models import Conversation, ConversationFile, Message
 from agent.conversation.serializers import (
     AskQuestionSerializer,
     ConversationContentSerializer,
@@ -34,7 +33,9 @@ from agent.conversation.tasks import process_file_upload_task, respond_to_user_m
 from agent.core.registries.agents.agent_registry import AgentRegistry, AgentRegistryError
 from agent.core.registries.language_models import LanguageModelRegistry
 from agent.core.repositories import DjangoDataSetRepository
+from agent.models import Conversation, Message
 from agent.models.agent import Agent
+from agent.models.conversation import ConversationFile
 from catalog.models import DataSet
 
 

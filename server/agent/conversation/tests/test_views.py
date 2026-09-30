@@ -11,7 +11,7 @@ from rest_framework.test import APIClient
 from account.authorization import PERMISSIONS
 from account.models import DatasetRole, DatasetUserRoleAssignment, User
 from account.tests.helpers import grant
-from agent.conversation.models import Conversation, Message
+from agent.models import Conversation, Message
 from agent.models.agent import Agent
 from agent.models.agentic_execution import AgenticExecution
 from catalog.models import DataSet

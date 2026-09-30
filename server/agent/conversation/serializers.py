@@ -2,8 +2,8 @@ import logging
 
 from rest_framework import serializers
 
-from agent.conversation.models.conversation import ConversationFile
 from agent.models import Conversation, Message
+from agent.models.conversation import ConversationFile
 from agent.serializers.configuration import AgentListSerializer
 
 logger = logging.getLogger(__name__)
