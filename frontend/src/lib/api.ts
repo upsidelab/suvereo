@@ -1,4 +1,5 @@
-import { AuthenticationProvider } from "./authentication-provider.ts";
+import { AuthenticationProvider, TokenPair } from "./authentication-provider.ts";
+import { BaseApiClient } from "@/lib/api/base.ts";
 import { UsersApiClient } from "@/lib/api/users.ts";
 import { DataSetsApiClient } from "@/lib/api/data-sets.ts";
 import { ConversationsApiClient } from "@/lib/api/conversations.ts";
@@ -36,14 +37,12 @@ export type TaskHandle = {
   streaming: boolean;
 }
 
-export class ApiClient {
-  private readonly apiBase: string;
-
-  constructor(private readonly authenticationProvider: AuthenticationProvider) {
-    this.apiBase = import.meta.env.VITE_API_BASE;
+export class ApiClient extends BaseApiClient {
+  constructor(authenticationProvider: AuthenticationProvider) {
+    super(import.meta.env.VITE_API_BASE, authenticationProvider);
   }
 
-  async login(email: string, password: string): Promise<Token> {
+  async login(email: string, password: string): Promise<TokenPair> {
     const response = await fetch(`${this.apiBase}/api/auth/login`, {
       headers: {
         'Content-Type': 'application/json'
@@ -56,11 +55,30 @@ export class ApiClient {
       throw 'Could not sign in';
     }
 
-    return await response.json() as Promise<Token>;
+    return await response.json() as TokenPair;
+  }
+
+  async logout(): Promise<void> {
+    const refresh = this.authenticationProvider.refreshToken;
+    if (refresh === null) {
+      return;
+    }
+
+    try {
+      await fetch(`${this.apiBase}/api/auth/logout`, {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        method: 'POST',
+        body: JSON.stringify({ refresh })
+      });
+    } catch {
+      // The refresh token expires on its own.
+    }
   }
 
   async getAccount(): Promise<Account> {
-    const response = await fetch(`${this.apiBase}/api/account`, this._requestConfiguration());
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/account`);
     const responseJson = await response.json() as AccountResponse;
     return {
       email: responseJson.email,
@@ -78,7 +96,7 @@ export class ApiClient {
     let url: string | null = `${this.apiBase}/api/users`;
 
     while (url) {
-      const response: Response = await fetch(url, this._requestConfiguration());
+      const response: Response = await this.authenticatedFetch(url);
       if (!response.ok) {
         throw new ApiError(`Failed to list users: ${response.statusText}`, {
           data: await response.json().catch(() => ({})),
@@ -99,7 +117,7 @@ export class ApiClient {
   }
 
   async getAdmins(): Promise<GlobalRoleMember[]> {
-    const response = await fetch(`${this.apiBase}/api/admins`, this._requestConfiguration());
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/admins`);
     if (!response.ok) {
       throw new ApiError(`Failed to list admins: ${response.statusText}`, {
         data: await response.json().catch(() => ({})),
@@ -156,14 +174,5 @@ export class ApiClient {
 
   entities(): EntitiesApiClient {
     return new EntitiesApiClient(this.apiBase, this.authenticationProvider);
-  }
-
-  _requestConfiguration(): RequestInit {
-    return {
-      headers: {
-        'Authorization': `Token ${this.authenticationProvider.token}`,
-        "Content-Type": "application/json"
-      }
-    }
   }
 }
