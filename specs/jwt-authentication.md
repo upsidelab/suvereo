@@ -49,7 +49,6 @@ The refresh window is **sliding**: each rotation issues a refresh token with a f
 
 ### 4. Security
 - Injected script (XSS) can read a refresh token kept in `localStorage`. The damage is limited by rotation: once the victim or the attacker refreshes, the other side's copy of the token is rejected.
-- A Content Security Policy on the frontend (`script-src 'self'`, no inline scripts) blocks most injected scripts.
 - The sanitizing of rendered agent output (markdown via `marked` + `DOMPurify`) must be kept on every rendering path. Agent output can be steered by prompt injection in synced product data and documents.
 - Tokens are signed with a dedicated `SIGNING_KEY` from env, separate from `SECRET_KEY`, so each key can be rotated on its own.
 - The browser never attaches tokens to requests on its own, so the API can't be the target of CSRF attacks. CORS allows only the configured frontend origins.
@@ -146,12 +145,6 @@ Implemented together with 2b: the method is `BaseApiClient.authenticatedFetch()`
 - `signOutAndReturnToLogin` (line 40): redirect to `/login?expired=1&next=<current path>`.
 - Refresh failures outside loaders (inside components) need the same redirect: the auth provider exposes `onSessionEnded(reason)`, which `main.tsx` wires to `router.navigate(...)`.
 - Login page (`frontend/src/pages/login.tsx` / `login-form.tsx`): show "Your session has expired, please log in again" when `expired=1`.
-
-### Phase 2c — Frontend: Content Security Policy
-
-- The frontend container serves the build with `vite preview` (`frontend/docker-entrypoint.sh`), so the header is set in `preview.headers` in `frontend/vite.config.ts`. The entrypoint builds at container start, so `connect-src` picks up the deploy's `VITE_API_BASE` / `VITE_WS_BASE`. `img-src` allows `https:` (agent answers embed product images from store hosts) plus the API origin (media), and `style-src` needs `'unsafe-inline'` for Radix.
-- Verify no inline scripts in `frontend/index.html` (none today) and that Vite's build emits none. Dev server is left without CSP.
-- Check `message-bubble.tsx:22` is the only place rendering agent HTML (`dangerouslySetInnerHTML`); grep for other uses and route them through the same `marked` + `DOMPurify` helper — extract it into `frontend/src/lib/render-markdown.ts` so every path uses it.
 
 ### Phase 3 — Secure the WebSocket
 
