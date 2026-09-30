@@ -8,7 +8,7 @@ export class DataSetRolesApiClient extends BaseApiClient {
     let url: string | null = `${this.apiBase}/api/data_set_roles`;
 
     while (url) {
-      const response: Response = await fetch(url, this._requestConfiguration());
+      const response: Response = await this.authenticatedFetch(url);
       if (!response.ok) {
         throw new ApiError(`Failed to list data set roles: ${response.statusText}`, {
           data: await response.json().catch(() => ({})),
@@ -24,7 +24,7 @@ export class DataSetRolesApiClient extends BaseApiClient {
   }
 
   async getDataSetRoleDetail(roleId: number): Promise<DataSetRoleDetail> {
-    const response = await fetch(`${this.apiBase}/api/data_set_roles/${roleId}`, this._requestConfiguration());
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/data_set_roles/${roleId}`);
     if (!response.ok) {
       throw new ApiError(`Failed to load data set role: ${response.statusText}`, {
         data: await response.json().catch(() => ({})),
@@ -35,8 +35,7 @@ export class DataSetRolesApiClient extends BaseApiClient {
   }
 
   async createDataSetRole(name: string, description: string, permissions: string[] = []): Promise<Response> {
-    return await fetch(`${this.apiBase}/api/data_set_roles`, {
-      ...this._requestConfiguration(),
+    return await this.authenticatedFetch(`${this.apiBase}/api/data_set_roles`, {
       method: "POST",
       body: JSON.stringify({ name, description, permissions })
     });
@@ -48,16 +47,14 @@ export class DataSetRolesApiClient extends BaseApiClient {
     description: string,
     permissions: string[]
   ): Promise<Response> {
-    return await fetch(`${this.apiBase}/api/data_set_roles/${roleId}`, {
-      ...this._requestConfiguration(),
+    return await this.authenticatedFetch(`${this.apiBase}/api/data_set_roles/${roleId}`, {
       method: "PATCH",
       body: JSON.stringify({ name, description, permissions })
     });
   }
 
   async deleteDataSetRole(roleId: number): Promise<Response> {
-    return await fetch(`${this.apiBase}/api/data_set_roles/${roleId}`, {
-      ...this._requestConfiguration(),
+    return await this.authenticatedFetch(`${this.apiBase}/api/data_set_roles/${roleId}`, {
       method: "DELETE"
     });
   }

@@ -38,14 +38,24 @@ const loginLoader = async () => {
   return authenticationProviderInstance.isAuthenticated() ? redirect("/") : null;
 };
 
-const signOutAndReturnToLogin = () => {
+const loginPath = (returnTo: string, sessionExpired: boolean) => {
+  const params = new URLSearchParams({ next: returnTo });
+  if (sessionExpired) {
+    params.set("expired", "1");
+  }
+  return `/login?${params}`;
+};
+
+const pathOf = (url: URL | Location) => `${url.pathname}${url.search}`;
+
+const signOutAndReturnToLogin = (request: Request) => {
   authenticationProviderInstance.logout();
-  return redirect("/login");
+  return redirect(loginPath(pathOf(new URL(request.url)), true));
 };
 
 const protectedLoginLoader = async ({ request }: LoaderFunctionArgs) => {
   if (!authenticationProviderInstance.isAuthenticated()) {
-    return redirect("/login");
+    return redirect(loginPath(pathOf(new URL(request.url)), false));
   }
 
   let apiDataSets;
@@ -54,13 +64,13 @@ const protectedLoginLoader = async ({ request }: LoaderFunctionArgs) => {
   } catch (loadError) {
     // A token that no longer authenticates would otherwise bounce between here and `loginLoader`.
     if (loadError instanceof ApiError && loadError.response.status === 401) {
-      return signOutAndReturnToLogin();
+      return signOutAndReturnToLogin(request);
     }
     throw loadError;
   }
 
   if (!apiDataSets) {
-    return signOutAndReturnToLogin();
+    return signOutAndReturnToLogin(request);
   }
 
   // Without a data set the index has nothing to show, so it becomes onboarding for whoever can
@@ -230,6 +240,13 @@ const router = createBrowserRouter([
     element: <OnboardingIndex />
   }
 ]);
+
+authenticationProviderInstance.onSessionEnded((reason) => {
+  if (window.location.pathname === "/login") {
+    return;
+  }
+  void router.navigate(reason === "expired" ? loginPath(pathOf(window.location), true) : "/login");
+});
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

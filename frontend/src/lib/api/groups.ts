@@ -38,7 +38,7 @@ export class GroupsApiClient extends BaseApiClient {
     let url: string | null = `${this.apiBase}/api/groups`;
 
     while (url) {
-      const response: Response = await fetch(url, this._requestConfiguration());
+      const response: Response = await this.authenticatedFetch(url);
       if (!response.ok) {
         throw new ApiError(`Failed to list groups: ${response.statusText}`, {
           data: await response.json().catch(() => ({})),
@@ -54,15 +54,14 @@ export class GroupsApiClient extends BaseApiClient {
   }
 
   async createGroup(name: string, description: string): Promise<Response> {
-    return await fetch(`${this.apiBase}/api/groups`, {
-      ...this._requestConfiguration(),
+    return await this.authenticatedFetch(`${this.apiBase}/api/groups`, {
       method: "POST",
       body: JSON.stringify({ name, description })
     });
   }
 
   async getGroupDetail(groupId: number): Promise<GroupDetail> {
-    const response = await fetch(`${this.apiBase}/api/groups/${groupId}`, this._requestConfiguration());
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/groups/${groupId}`);
     if (!response.ok) {
       throw new ApiError(`Failed to load group: ${response.statusText}`, {
         data: await response.json().catch(() => ({})),
@@ -74,22 +73,20 @@ export class GroupsApiClient extends BaseApiClient {
   }
 
   async updateGroup(groupId: number, name: string, description: string): Promise<Response> {
-    return await fetch(`${this.apiBase}/api/groups/${groupId}`, {
-      ...this._requestConfiguration(),
+    return await this.authenticatedFetch(`${this.apiBase}/api/groups/${groupId}`, {
       method: "PATCH",
       body: JSON.stringify({ name, description })
     });
   }
 
   async deleteGroup(groupId: number): Promise<Response> {
-    return await fetch(`${this.apiBase}/api/groups/${groupId}`, {
-      ...this._requestConfiguration(),
+    return await this.authenticatedFetch(`${this.apiBase}/api/groups/${groupId}`, {
       method: "DELETE"
     });
   }
 
   async getGroupMembers(groupId: number): Promise<GroupMember[]> {
-    const response = await fetch(`${this.apiBase}/api/groups/${groupId}/members`, this._requestConfiguration());
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/groups/${groupId}/members`);
     if (!response.ok) {
       throw new ApiError(`Failed to list group members: ${response.statusText}`, {
         data: await response.json().catch(() => ({})),
@@ -101,31 +98,27 @@ export class GroupsApiClient extends BaseApiClient {
   }
 
   async addGroupMember(groupId: number, userId: number): Promise<Response> {
-    return await fetch(`${this.apiBase}/api/groups/${groupId}/members`, {
-      ...this._requestConfiguration(),
+    return await this.authenticatedFetch(`${this.apiBase}/api/groups/${groupId}/members`, {
       method: "POST",
       body: JSON.stringify({ user_id: userId })
     });
   }
 
   async removeGroupMember(groupId: number, userId: number): Promise<Response> {
-    return await fetch(`${this.apiBase}/api/groups/${groupId}/members/${userId}`, {
-      ...this._requestConfiguration(),
+    return await this.authenticatedFetch(`${this.apiBase}/api/groups/${groupId}/members/${userId}`, {
       method: "DELETE"
     });
   }
 
   async grantGlobalRoleToGroup(groupId: number, globalRoleId: number): Promise<Response> {
-    return await fetch(`${this.apiBase}/api/groups/${groupId}/global_roles`, {
-      ...this._requestConfiguration(),
+    return await this.authenticatedFetch(`${this.apiBase}/api/groups/${groupId}/global_roles`, {
       method: "POST",
       body: JSON.stringify({ global_role_id: globalRoleId })
     });
   }
 
   async revokeGlobalRoleFromGroup(groupId: number, globalRoleId: number): Promise<Response> {
-    return await fetch(`${this.apiBase}/api/groups/${groupId}/global_roles/${globalRoleId}`, {
-      ...this._requestConfiguration(),
+    return await this.authenticatedFetch(`${this.apiBase}/api/groups/${groupId}/global_roles/${globalRoleId}`, {
       method: "DELETE"
     });
   }

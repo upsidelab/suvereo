@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button.tsx";
 import { HTMLAttributes, SyntheticEvent, useState } from "react";
 import { Spinner } from "@/components/util/spinner.tsx";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ApiClient } from "@/lib/api.ts";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert.tsx";
 import { PERMISSIONS } from "@/lib/permissions/codes.ts";
@@ -40,10 +40,19 @@ async function landingPage(): Promise<string> {
     : `/data-sets/${dataSet.id}/chat/new`;
 }
 
+function returnPath(next: string | null): string | null {
+  if (!next || !next.startsWith('/') || next.startsWith('//') || next.startsWith('/\\')) {
+    return null;
+  }
+  return next;
+}
+
 export function LoginForm({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isSessionExpired = searchParams.get('expired') === '1';
 
   async function onSubmit(event: SyntheticEvent) {
     event.preventDefault();
@@ -53,8 +62,7 @@ export function LoginForm({ className, ...props }: HTMLAttributes<HTMLDivElement
     const password = (event.target as HTMLFormElement).password.value;
 
     try {
-      const { token } = await api.login(email, password);
-      authenticationProviderInstance.login(token);
+      authenticationProviderInstance.login(await api.login(email, password));
     } catch {
       setIsError(true);
       setIsLoading(false);
@@ -62,7 +70,7 @@ export function LoginForm({ className, ...props }: HTMLAttributes<HTMLDivElement
     }
 
     try {
-      navigate(await landingPage());
+      navigate(returnPath(searchParams.get('next')) ?? await landingPage());
     } catch {
       // Signing in worked, so this is never a credentials error - the root loader takes over from
       // the start page.
@@ -77,6 +85,10 @@ export function LoginForm({ className, ...props }: HTMLAttributes<HTMLDivElement
       <form onSubmit={onSubmit}>
         <div className="grid gap-2">
           <div className="grid gap-1">
+            {isSessionExpired && !isError && <Alert>
+              <AlertTitle>Your session has expired</AlertTitle>
+              <AlertDescription>Please log in again to continue.</AlertDescription>
+            </Alert>}
             {isError && <Alert variant="destructive">
               <AlertTitle>Invalid email or password</AlertTitle>
               <AlertDescription>Make sure that the credentials that you've provided are correct and try again.</AlertDescription>

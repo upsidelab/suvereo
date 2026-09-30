@@ -13,7 +13,7 @@ type EmbeddingModelsConfigResponse = {
 
 export class ConfigApiClient extends BaseApiClient {
   async getAvailableProviders(): Promise<ProvidersConfig> {
-    const response = await fetch(`${this.apiBase}/api/config`, this._requestConfiguration());
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/config`);
     const result = await response.json() as ProvidersConfigResponse;
 
     return {
@@ -23,12 +23,12 @@ export class ConfigApiClient extends BaseApiClient {
   }
 
   async getLanguageModelsForProvider(name: string): Promise<string[]> {
-    const response = await fetch(`${this.apiBase}/api/config/language_model_providers/${name}`, this._requestConfiguration());
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/config/language_model_providers/${name}`);
     return await response.json() as string[];
   }
 
   async getEmbeddingModelsForProvider(name: string): Promise<EmbeddingModelsConfig> {
-    const response = await fetch(`${this.apiBase}/api/config/embedding_providers/${name}`, this._requestConfiguration());
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/config/embedding_providers/${name}`);
     const result = await response.json() as EmbeddingModelsConfigResponse;
 
     return {

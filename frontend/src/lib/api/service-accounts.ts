@@ -29,7 +29,7 @@ export type UpdateServiceAccountPayload = CreateServiceAccountPayload;
 
 export class ServiceAccountsApiClient extends BaseApiClient {
   async getServiceAccounts(page: number): Promise<PaginatedResult<ServiceAccount>> {
-    const response = await fetch(`${this.apiBase}/api/service_accounts?page=${page}`, this._requestConfiguration());
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/service_accounts?page=${page}`);
     if (!response.ok) {
       throw new ApiError(`Failed to list service accounts: ${response.statusText}`, {
         data: await response.json().catch(() => ({})),
@@ -55,7 +55,7 @@ export class ServiceAccountsApiClient extends BaseApiClient {
     let url: string | null = `${this.apiBase}/api/service_accounts/`;
 
     while (url) {
-      const response: Response = await fetch(url, this._requestConfiguration());
+      const response: Response = await this.authenticatedFetch(url);
       if (!response.ok) {
         throw new ApiError(`Failed to list service accounts: ${response.statusText}`, {
           data: await response.json().catch(() => ({})),
@@ -77,8 +77,7 @@ export class ServiceAccountsApiClient extends BaseApiClient {
   }
 
   async setServiceAccountAdmin(id: number, isAdmin: boolean): Promise<Response> {
-    return await fetch(`${this.apiBase}/api/service_accounts/${id}`, {
-      ...this._requestConfiguration(),
+    return await this.authenticatedFetch(`${this.apiBase}/api/service_accounts/${id}`, {
       method: 'PATCH',
       body: JSON.stringify({ is_admin: isAdmin })
     });
@@ -91,8 +90,7 @@ export class ServiceAccountsApiClient extends BaseApiClient {
       is_admin: serviceAccount.isAdmin
     };
 
-    const response = await fetch(`${this.apiBase}/api/service_accounts/`, {
-      ...this._requestConfiguration(),
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/service_accounts/`, {
       method: 'POST',
       body: JSON.stringify(payload)
     });
@@ -114,16 +112,14 @@ export class ServiceAccountsApiClient extends BaseApiClient {
       is_admin: serviceAccount.isAdmin
     };
 
-    return await fetch(`${this.apiBase}/api/service_accounts/${id}`, {
-      ...this._requestConfiguration(),
+    return await this.authenticatedFetch(`${this.apiBase}/api/service_accounts/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(payload)
     });
   }
 
   async checkServiceNameAvailability(name: string): Promise<boolean> {
-    const response = await fetch(`${this.apiBase}/api/service_accounts/check_name`, {
-      ...this._requestConfiguration(),
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/service_accounts/check_name`, {
       method: 'POST',
       body: JSON.stringify({ name })
     });
@@ -133,8 +129,7 @@ export class ServiceAccountsApiClient extends BaseApiClient {
   }
 
   async resetServiceAccountToken(id: number): Promise<Token> {
-    const response = await fetch(`${this.apiBase}/api/service_accounts/${id}/reset_token`, {
-      ...this._requestConfiguration(),
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/service_accounts/${id}/reset_token`, {
       method: 'POST'
     });
 

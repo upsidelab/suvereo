@@ -4,7 +4,7 @@ import { ApiError } from "@/lib/api-error.ts";
 
 export class PermissionsApiClient extends BaseApiClient {
   async getPermissions(scope: "global" | "data_set"): Promise<PermissionEntity[]> {
-    const response = await fetch(`${this.apiBase}/api/permissions?scope=${scope}`, this._requestConfiguration());
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/permissions?scope=${scope}`);
     if (!response.ok) {
       throw new ApiError(`Failed to list permissions: ${response.statusText}`, {
         data: await response.json().catch(() => ({})),

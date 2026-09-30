@@ -15,7 +15,7 @@ export class GlobalRolesApiClient extends BaseApiClient {
     let url: string | null = `${this.apiBase}/api/global_roles`;
 
     while (url) {
-      const response: Response = await fetch(url, this._requestConfiguration());
+      const response: Response = await this.authenticatedFetch(url);
       if (!response.ok) {
         throw new ApiError(`Failed to list global roles: ${response.statusText}`, {
           data: await response.json().catch(() => ({})),
@@ -31,15 +31,14 @@ export class GlobalRolesApiClient extends BaseApiClient {
   }
 
   async createGlobalRole(name: string, description: string, permissions: string[] = []): Promise<Response> {
-    return await fetch(`${this.apiBase}/api/global_roles`, {
-      ...this._requestConfiguration(),
+    return await this.authenticatedFetch(`${this.apiBase}/api/global_roles`, {
       method: "POST",
       body: JSON.stringify({ name, description, permissions })
     });
   }
 
   async getGlobalRoleDetail(globalRoleId: number): Promise<GlobalRoleDetail> {
-    const response = await fetch(`${this.apiBase}/api/global_roles/${globalRoleId}`, this._requestConfiguration());
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/global_roles/${globalRoleId}`);
     if (!response.ok) {
       throw new ApiError(`Failed to load global role: ${response.statusText}`, {
         data: await response.json().catch(() => ({})),
@@ -55,22 +54,20 @@ export class GlobalRolesApiClient extends BaseApiClient {
     description: string,
     permissions: string[]
   ): Promise<Response> {
-    return await fetch(`${this.apiBase}/api/global_roles/${globalRoleId}`, {
-      ...this._requestConfiguration(),
+    return await this.authenticatedFetch(`${this.apiBase}/api/global_roles/${globalRoleId}`, {
       method: "PATCH",
       body: JSON.stringify({ name, description, permissions })
     });
   }
 
   async deleteGlobalRole(globalRoleId: number): Promise<Response> {
-    return await fetch(`${this.apiBase}/api/global_roles/${globalRoleId}`, {
-      ...this._requestConfiguration(),
+    return await this.authenticatedFetch(`${this.apiBase}/api/global_roles/${globalRoleId}`, {
       method: "DELETE"
     });
   }
 
   async getGlobalRoleMembers(globalRoleId: number): Promise<GlobalRoleMember[]> {
-    const response = await fetch(`${this.apiBase}/api/global_roles/${globalRoleId}/members`, this._requestConfiguration());
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/global_roles/${globalRoleId}/members`);
     if (!response.ok) {
       throw new ApiError(`Failed to list global role members: ${response.statusText}`, {
         data: await response.json().catch(() => ({})),
@@ -82,25 +79,20 @@ export class GlobalRolesApiClient extends BaseApiClient {
   }
 
   async addGlobalRoleMember(globalRoleId: number, userId: number): Promise<Response> {
-    return await fetch(`${this.apiBase}/api/global_roles/${globalRoleId}/members`, {
-      ...this._requestConfiguration(),
+    return await this.authenticatedFetch(`${this.apiBase}/api/global_roles/${globalRoleId}/members`, {
       method: "POST",
       body: JSON.stringify({ user_id: userId })
     });
   }
 
   async removeGlobalRoleMember(globalRoleId: number, userId: number): Promise<Response> {
-    return await fetch(`${this.apiBase}/api/global_roles/${globalRoleId}/members/${userId}`, {
-      ...this._requestConfiguration(),
+    return await this.authenticatedFetch(`${this.apiBase}/api/global_roles/${globalRoleId}/members/${userId}`, {
       method: "DELETE"
     });
   }
 
   async getGlobalRoleGroups(globalRoleId: number): Promise<GroupOption[]> {
-    const response = await fetch(
-      `${this.apiBase}/api/global_roles/${globalRoleId}/groups`,
-      this._requestConfiguration()
-    );
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/global_roles/${globalRoleId}/groups`);
     if (!response.ok) {
       throw new ApiError(`Failed to list the groups holding this global role: ${response.statusText}`, {
         data: await response.json().catch(() => ({})),
@@ -112,16 +104,14 @@ export class GlobalRolesApiClient extends BaseApiClient {
   }
 
   async addGlobalRoleGroup(globalRoleId: number, groupId: number): Promise<Response> {
-    return await fetch(`${this.apiBase}/api/global_roles/${globalRoleId}/groups`, {
-      ...this._requestConfiguration(),
+    return await this.authenticatedFetch(`${this.apiBase}/api/global_roles/${globalRoleId}/groups`, {
       method: "POST",
       body: JSON.stringify({ group_id: groupId })
     });
   }
 
   async removeGlobalRoleGroup(globalRoleId: number, groupId: number): Promise<Response> {
-    return await fetch(`${this.apiBase}/api/global_roles/${globalRoleId}/groups/${groupId}`, {
-      ...this._requestConfiguration(),
+    return await this.authenticatedFetch(`${this.apiBase}/api/global_roles/${globalRoleId}/groups/${groupId}`, {
       method: "DELETE"
     });
   }
