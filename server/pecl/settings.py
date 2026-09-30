@@ -17,7 +17,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from environ import Env
-from utils.functions import parse_duration
+from utils.functions import DurationUnit, parse_duration
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -131,6 +131,13 @@ CHANNEL_LAYERS = {
     },
 }
 
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": os.environ.get("ECL_CELERY_BROKER_URL"),
+    },
+}
+
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
@@ -232,14 +239,16 @@ SWAGGER_SETTINGS = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": parse_duration(env.str("ECL_AUTH_ACCESS_TOKEN_TTL", "15m")),
-    "REFRESH_TOKEN_LIFETIME": parse_duration(env.str("ECL_AUTH_REFRESH_TOKEN_TTL", "7d")),
+    "ACCESS_TOKEN_LIFETIME": timedelta(milliseconds=parse_duration(env.str("ECL_AUTH_ACCESS_TOKEN_TTL", "15m"))),
+    "REFRESH_TOKEN_LIFETIME": timedelta(milliseconds=parse_duration(env.str("ECL_AUTH_REFRESH_TOKEN_TTL", "7d"))),
     "SIGNING_KEY": env.str("ECL_AUTH_SIGNING_KEY"),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
     "CHECK_REVOKE_TOKEN": True,
     "UPDATE_LAST_LOGIN": True,
 }
+
+WS_TICKET_TTL = parse_duration(env.str("ECL_AUTH_WS_TICKET_TTL", "10s"), unit=DurationUnit.SECONDS)
 
 # CELERY
 CELERY_BROKER_URL = env.str("ECL_CELERY_BROKER_URL")

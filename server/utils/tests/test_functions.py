@@ -1,11 +1,11 @@
 import sys
-from datetime import timedelta
 from types import ModuleType
 from typing import Dict, List
 
 import pytest
 from pydantic import BaseModel, Field
 from utils.functions import (
+    DurationUnit,
     extract_type_info,
     get_model_descriptor_from_class_field,
     import_from_string,
@@ -122,15 +122,54 @@ def test_get_model_descriptor_from_class_field_dict():
 @pytest.mark.parametrize(
     ("value", "expected"),
     [
-        ("30s", timedelta(seconds=30)),
-        ("15m", timedelta(minutes=15)),
-        ("12h", timedelta(hours=12)),
-        ("7d", timedelta(days=7)),
-        (" 7d ", timedelta(days=7)),
+        ("500ms", 500),
+        ("30s", 30_000),
+        ("15m", 15 * 60_000),
+        ("12h", 12 * 3_600_000),
+        ("7d", 7 * 86_400_000),
+        (" 7d ", 7 * 86_400_000),
     ],
 )
-def test_parses_supported_units(value, expected):
+def test_parses_supported_units_into_milliseconds_by_default(value, expected):
     assert parse_duration(value) == expected
+
+
+@pytest.mark.parametrize(
+    ("value", "unit", "expected"),
+    [
+        ("10s", DurationUnit.SECONDS, 10),
+        ("2h", DurationUnit.MINUTES, 120),
+        ("7d", DurationUnit.DAYS, 7),
+    ],
+)
+def test_converts_into_the_requested_unit(value, unit, expected):
+    assert parse_duration(value, unit=unit) == expected
+
+
+def test_rejects_a_duration_that_is_not_a_whole_number_of_the_unit():
+    with pytest.raises(ValueError):
+        parse_duration("90s", unit=DurationUnit.MINUTES)
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("250msec", 250),
+        ("5sec", 5_000),
+        ("15min", 15 * 60_000),
+        ("15minutes", 15 * 60_000),
+        ("1minute", 60_000),
+        ("2hrs", 2 * 3_600_000),
+        ("1day", 86_400_000),
+    ],
+)
+def test_accepts_unit_aliases(value, expected):
+    assert parse_duration(value) == expected
+
+
+def test_error_lists_every_accepted_suffix():
+    with pytest.raises(ValueError, match="ms, msec, .*, days$"):
+        parse_duration("2w")
 
 
 @pytest.mark.parametrize("value", ["", "15", "m", "15 m", "1.5h", "2w", "-5m"])

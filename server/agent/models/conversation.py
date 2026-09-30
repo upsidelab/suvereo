@@ -1,13 +1,23 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.db.models import Q
 from enthusiast_common.structures import LLMFile
 
+from account.authorization import PERMISSIONS, datasets_with_permission
 from agent.models.agent import Agent
 from catalog.models import DataSet
 
 
 def conversation_file_path(instance, filename):
     return f"conversations/{instance.conversation.id}/{filename}"
+
+
+class ConversationQuerySet(models.QuerySet):
+    def visible_to(self, user) -> "ConversationQuerySet":
+        """Conversations `user` owns or may view through `CONVERSATION.VIEW_ALL` on their data set."""
+        return self.filter(
+            Q(user=user) | Q(data_set__in=datasets_with_permission(user, PERMISSIONS.CONVERSATION.VIEW_ALL))
+        )
 
 
 class Conversation(models.Model):
@@ -24,6 +34,8 @@ class Conversation(models.Model):
         related_name="+",
     )
     agent = models.ForeignKey(Agent, on_delete=models.PROTECT, null=False)
+
+    objects = ConversationQuerySet.as_manager()
 
     class Meta:
         db_table_comment = (

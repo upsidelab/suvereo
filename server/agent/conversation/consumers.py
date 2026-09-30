@@ -1,18 +1,38 @@
 import json
 
+from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
+
+from agent.models import Conversation
+
+CLOSE_UNAUTHENTICATED = 4401
+CLOSE_FORBIDDEN = 4403
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.conversation_id = self.scope["url_route"]["kwargs"]["conversation_id"]
+        user = self.scope["user"]
+        if not user.is_authenticated:
+            await self.close(code=CLOSE_UNAUTHENTICATED)
+            return
+        if not await self._is_conversation_visible(user):
+            await self.close(code=CLOSE_FORBIDDEN)
+            return
+
         self.group_name = f"conversation_{self.conversation_id}"
 
         # Join the conversation group
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
 
+    @database_sync_to_async
+    def _is_conversation_visible(self, user) -> bool:
+        return Conversation.objects.visible_to(user).filter(id=self.conversation_id).exists()
+
     async def disconnect(self, close_code):
+        if not hasattr(self, "group_name"):
+            return
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
     async def chat_message(self, event):
@@ -51,4 +71,3 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def handle_error(self, event):
         await self.send(json.dumps({"event": "error", "data": {"output": event.get("output")}}))
-
