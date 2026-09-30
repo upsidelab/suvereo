@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from collections.abc import Awaitable, Callable
 from typing import Any, Optional, TypeVar
 
 from enthusiast_common.indexing import BaseEntityIndexer
@@ -101,6 +102,8 @@ class BaseOAuthIntegration(BaseIntegration):
     #: The config field identifying what is being authorized; its value is passed to ``oauth_start``.
     OAUTH_FIELD: str
 
+    _config_writer: Callable[[dict[str, Any]], Awaitable[None]] | None = None
+
     @classmethod
     @abstractmethod
     def oauth_start(
@@ -119,7 +122,7 @@ class BaseOAuthIntegration(BaseIntegration):
 
     @classmethod
     @abstractmethod
-    def oauth_exchange_code(cls, pending: OAuthPendingAuthorization, code: str) -> dict[str, str]:
+    def oauth_exchange_code(cls, pending: OAuthPendingAuthorization, code: str) -> dict[str, Any]:
         """Exchange an authorization code for credentials.
 
         Args:
@@ -129,6 +132,23 @@ class BaseOAuthIntegration(BaseIntegration):
         Returns:
             Config field values to merge into the form.
         """
+
+    @classmethod
+    @abstractmethod
+    def oauth_refresh(cls, config: dict[str, Any]) -> dict[str, Any]:
+        """Renew stored credentials, as config fields to merge in.
+
+        Raises ``OAuthError`` when this config was not obtained in a way that can be renewed, so a
+        caller never has to ask whether renewal is possible before trying.
+        """
+
+    def set_config_writer(self, writer: Callable[[dict[str, Any]], Awaitable[None]]) -> None:
+        """Accept a way to persist config this instance renews for itself mid-conversation."""
+        self._config_writer = writer
+
+    def needs_reconnect(self) -> bool:
+        """Whether renewal has failed often enough that only a fresh authorization will fix it."""
+        return False
 
 
 # Bound to BaseIntegration, defined above — kept local to its only use below

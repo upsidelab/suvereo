@@ -1,6 +1,11 @@
 from django.urls import path
 
-from .oauth import IntegrationOAuthCallbackView, IntegrationOAuthResultView, IntegrationOAuthStartView
+from .oauth import (
+    IntegrationOAuthCallbackView,
+    IntegrationOAuthRefreshView,
+    IntegrationOAuthResultView,
+    IntegrationOAuthStartView,
+)
 from .views import (
     IntegrationListView,
     IntegrationSyncView,
@@ -14,6 +19,11 @@ urlpatterns = [
         "api/data_sets/<int:data_set_id>/integrations/oauth/start/",
         IntegrationOAuthStartView.as_view(),
         name="integration-oauth-start",
+    ),
+    path(
+        "api/data_sets/<int:data_set_id>/integrations/oauth/refresh/",
+        IntegrationOAuthRefreshView.as_view(),
+        name="integration-oauth-refresh",
     ),
     path(
         "api/integrations/oauth/callback/",

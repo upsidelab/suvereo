@@ -17,6 +17,7 @@ type ConfigSchemaProperty = {
   description?: string;
   enum?: string[];
   default?: unknown;
+  hidden?: boolean;
 };
 
 type ConfigSchema = {
@@ -50,6 +51,8 @@ export function AddEditIntegrationModal({
   const [submitting, setSubmitting] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [connected, setConnected] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [flowState, setFlowState] = useState<string>("");
   const [flowExpiresInMs, setFlowExpiresInMs] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +78,7 @@ export function AddEditIntegrationModal({
       setSelectedType("");
       setConfig({});
       setError(null);
+      setNotice(null);
       setConnected(false);
       setConnecting(false);
       setFlowState("");
@@ -109,6 +113,7 @@ export function AddEditIntegrationModal({
   const showTypeSelect = readOnly || typeOptions.length > 1;
   const oauthField = selectedIntegrationType?.supports_oauth ? selectedIntegrationType.oauth_field : "";
   const canConnect = !readOnly && !!selectedType && !!oauthField;
+  const canRefresh = canConnect && !!config.refresh_token;
 
   useEffect(() => {
     if (!open || readOnly || isEditing) return;
@@ -184,8 +189,23 @@ export function AddEditIntegrationModal({
     };
   }, [connecting, flowState, flowExpiresInMs]);
 
+  const handleRefresh = async () => {
+    setError(null);
+    setRefreshing(true);
+    try {
+      const renewed = await api.integrations().refreshOAuth(dataSetId, selectedType, config, integration?.id);
+      setConfig(prev => ({ ...prev, ...renewed }));
+      setConnected(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to renew the token");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const handleConnect = async () => {
     setError(null);
+    setNotice(null);
     setConnected(false);
     setConnecting(true);
     const popup = window.open("", "_blank", "width=600,height=760");
@@ -196,14 +216,16 @@ export function AddEditIntegrationModal({
       return;
     }
     try {
-      const { authorizationUrl, state, expiresInMs } = await api.integrations().startOAuth(
-        dataSetId,
-        selectedType,
-        config
-      );
-      popup.location.href = authorizationUrl;
-      setFlowExpiresInMs(expiresInMs);
-      setFlowState(state);
+      const started = await api.integrations().startOAuth(dataSetId, selectedType, config);
+      if (!started.authorizationRequired || !started.authorizationUrl) {
+        popup.close();
+        setConnecting(false);
+        setNotice(started.detail ?? "This server needs no token.");
+        return;
+      }
+      popup.location.href = started.authorizationUrl;
+      setFlowExpiresInMs(started.expiresInMs);
+      setFlowState(started.state ?? "");
     } catch (e) {
       popup.close();
       setConnecting(false);
@@ -211,7 +233,7 @@ export function AddEditIntegrationModal({
     }
   };
 
-  const isValid = !!selectedType && required.every(key => !!config[key]);
+  const isValid = !!selectedType && required.every(key => !!config[key] || !!properties[key]?.hidden);
 
   const handleSubmit = async () => {
     setSubmitting(true);
@@ -252,6 +274,20 @@ export function AddEditIntegrationModal({
         </div>
       )}
 
+      {integration?.needs_reconnect && !connected && (
+        <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+          <p className="text-sm text-destructive">
+            This server stopped renewing its token. Press Connect to authorize it again.
+          </p>
+        </div>
+      )}
+
+      {notice && (
+        <div className="p-3 bg-muted border rounded-md">
+          <p className="text-sm text-muted-foreground">{notice}</p>
+        </div>
+      )}
+
       {showTypeSelect && (
         <div className="flex flex-col gap-1">
           <Label htmlFor="integration-type">Type</Label>
@@ -272,7 +308,7 @@ export function AddEditIntegrationModal({
         </div>
       )}
 
-      {selectedType && Object.entries(properties).map(([key, prop]) => (
+      {selectedType && Object.entries(properties).filter(([, prop]) => !prop.hidden).map(([key, prop]) => (
         <div key={key} className="flex flex-col gap-1">
           <Label htmlFor={`config-${key}`}>
             {prop.title ?? key}
@@ -310,6 +346,17 @@ export function AddEditIntegrationModal({
               <Button type="button" variant="outline" size="sm" onClick={handleConnect} disabled={connecting}>
                 {connecting ? "Waiting for authorization…" : connected ? "Reconnect" : "Connect"}
               </Button>
+              {canRefresh && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefresh}
+                  disabled={connecting || refreshing}
+                >
+                  {refreshing ? "Renewing…" : "Refresh token"}
+                </Button>
+              )}
               {connected ? (
                 <p className="text-xs text-green-700">Connected — token filled in below.</p>
               ) : (

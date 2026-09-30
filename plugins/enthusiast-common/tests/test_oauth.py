@@ -208,3 +208,43 @@ class TestExchangeCode:
         with patch("enthusiast_common.oauth.http.open_client", return_value=client):
             with pytest.raises(OAuthError, match="refused the token exchange"):
                 exchange_code("https://a/token", "code-1", "verifier-1", "abc123", REDIRECT)
+
+
+class TestWhatTheServerSaysAboutRenewal:
+    """Providers differ on whether they renew at all, and on what must be asked for to get it."""
+
+    def _server(self, **kwargs):
+        return AuthorizationServer("https://a/authorize", "https://a/token", "https://a/register", **kwargs)
+
+    def test_offline_access_is_requested_where_the_server_offers_it(self):
+        """Some servers only issue a refresh token when asked, and omit it from the resource scopes."""
+        server = self._server(scopes=["mcp:read"], offers_offline_access=True)
+
+        url, _, _ = build_authorization_url(server, "abc", REDIRECT)
+
+        assert "offline_access" in parse_qs(urlparse(url).query)["scope"][0]
+
+    def test_offline_access_is_not_invented_where_it_is_not_offered(self):
+        server = self._server(scopes=["read", "write"], offers_offline_access=False)
+
+        url, _, _ = build_authorization_url(server, "abc", REDIRECT)
+
+        assert "offline_access" not in parse_qs(urlparse(url).query)["scope"][0]
+
+    def test_it_is_not_asked_for_twice(self):
+        server = self._server(scopes=["offline_access", "read"], offers_offline_access=True)
+
+        url, _, _ = build_authorization_url(server, "abc", REDIRECT)
+
+        assert parse_qs(urlparse(url).query)["scope"][0].split().count("offline_access") == 1
+
+    @pytest.mark.parametrize(
+        "grants,expected",
+        [
+            (["authorization_code", "refresh_token"], True),
+            (["authorization_code"], False),
+            ([], True),
+        ],
+    )
+    def test_a_server_publishing_no_grants_is_given_the_benefit_of_the_doubt(self, grants, expected):
+        assert self._server(grants=grants).issues_refresh_tokens() is expected

@@ -4,12 +4,14 @@ import logging
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404
+from enthusiast_common.oauth import NoAuthorizationRequired
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from account.authorization import PERMISSIONS, enforce_any_dataset_scoped_permission
+from account.authorization import PERMISSIONS, enforce_any_dataset_scoped_permission, enforce_dataset_scoped_permission
+from catalog.integrations.config_patch import merge_into_integration
 from catalog.integrations.oauth import storage
 from catalog.integrations.oauth.config import FLOW_LIFETIME_SECONDS
 from catalog.integrations.oauth.helpers import (
@@ -57,6 +59,8 @@ class IntegrationOAuthStartView(APIView):
 
         try:
             authorization = plugin_class.oauth_start(target, redirect_uri, known_client)
+        except NoAuthorizationRequired as e:
+            return Response({"authorization_required": False, "detail": str(e)})
         except Exception as e:
             logger.info("OAuth start failed for %s: %s", integration_type, e)
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -82,6 +86,37 @@ class IntegrationOAuthStartView(APIView):
                 "expires_in": FLOW_LIFETIME_SECONDS,
             }
         )
+
+
+class IntegrationOAuthRefreshView(APIView):
+    """Renew a stored token on demand, without sending the admin through the provider again."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, data_set_id):
+        data_set = get_object_or_404(DataSet, pk=data_set_id)
+        enforce_dataset_scoped_permission(self, PERMISSIONS.INTEGRATION.CHANGE, data_set)
+
+        integration_type = request.data.get("type")
+        try:
+            plugin_class = plugin_supporting_oauth(integration_type)
+        except KeyError:
+            return Response(
+                {"detail": f"Unknown integration type '{integration_type}'."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        if plugin_class is None:
+            return Response(
+                {"detail": f"'{integration_type}' cannot renew a token."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            renewed = plugin_class.oauth_refresh(request.data.get("config") or {})
+        except Exception as e:
+            logger.info("OAuth refresh failed for %s: %s", integration_type, e)
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        merge_into_integration(request.data.get("integration_id"), renewed, dataset=data_set)
+        return Response({"config": renewed})
 
 
 class IntegrationOAuthResultView(APIView):

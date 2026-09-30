@@ -157,7 +157,12 @@ export function IntegrationList({ dataSetId }: IntegrationListProps) {
           <TableBody>
             {integrations.map(integration => (
               <TableRow key={integration.id}>
-                <TableCell className="font-medium">{integration.name}</TableCell>
+                <TableCell className="font-medium">
+                  {integration.name}
+                  {integration.needs_reconnect && (
+                    <span className="ml-2 text-xs font-normal text-destructive">Needs reconnecting</span>
+                  )}
+                </TableCell>
                 <TableCell>
                   <IntegrationTypeBadge typeName={integration.integration_type_name} />
                 </TableCell>

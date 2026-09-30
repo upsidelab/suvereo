@@ -15,6 +15,8 @@ class OAuthTokens(BaseModel):
 
     access_token: str
     token_type: str | None = None
+    refresh_token: str | None = None
+    expires_in: float | None = None
 
 
 class OAuthPendingAuthorization(BaseModel):
@@ -27,6 +29,7 @@ class OAuthPendingAuthorization(BaseModel):
         token_endpoint: Where the code is exchanged.
         redirect_uri: The redirect URI the code was issued for, sent again on exchange.
         resource: The RFC 8707 resource indicator, when the server asked for one.
+        renewable: Whether the server says it will renew the token later.
     """
 
     state: str
@@ -35,6 +38,7 @@ class OAuthPendingAuthorization(BaseModel):
     token_endpoint: str
     redirect_uri: str
     resource: str | None = None
+    renewable: bool = True
 
 
 class OAuthAuthorizationRequest(BaseModel):

@@ -16,7 +16,8 @@ USER_AGENT = (
     "(KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
 )
 
-TIMEOUT = 15.0
+# Kept short because a lapsed token is renewed inline while an agent is answering.
+TIMEOUT = 5.0
 
 MAX_REDIRECTS = 5
 

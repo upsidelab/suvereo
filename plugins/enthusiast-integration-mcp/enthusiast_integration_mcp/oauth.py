@@ -2,7 +2,12 @@
 
 import json
 
-from enthusiast_common.oauth import AuthorizationServer, OAuthError, discover_from_challenge, request
+from enthusiast_common.oauth import (
+    AuthorizationServer,
+    NoAuthorizationRequired,
+    discover_from_challenge,
+    request,
+)
 
 
 def discover(url: str) -> AuthorizationServer:
@@ -14,8 +19,5 @@ def discover(url: str) -> AuthorizationServer:
         content=json.dumps({"jsonrpc": "2.0", "id": 1, "method": "tools/list"}),
     )
     if probe.status_code != 401:
-        raise OAuthError(
-            f"This server did not ask for authorization (HTTP {probe.status_code}). "
-            "Connect is only needed for servers that require a token."
-        )
+        raise NoAuthorizationRequired("This server needs no token - it can be saved as it is.")
     return discover_from_challenge(url, probe.headers.get("WWW-Authenticate", ""))

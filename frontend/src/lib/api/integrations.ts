@@ -19,7 +19,7 @@ export class IntegrationsApiClient extends BaseApiClient {
     dataSetId: number,
     type: string,
     config: Record<string, unknown>
-  ): Promise<{ authorizationUrl: string; state: string; expiresInMs: number }> {
+  ): Promise<{ authorizationUrl?: string; state?: string; expiresInMs: number; authorizationRequired: boolean; detail?: string }> {
     const response = await fetch(`${this.apiBase}/api/data_sets/${dataSetId}/integrations/oauth/start/`, {
       ...this._requestConfiguration(),
       method: "POST",
@@ -32,12 +32,41 @@ export class IntegrationsApiClient extends BaseApiClient {
         status: response.status,
       });
     }
-    const body = data as { authorization_url: string; state: string; expires_in: number };
+    const body = data as {
+      authorization_url?: string;
+      state?: string;
+      expires_in?: number;
+      authorization_required?: boolean;
+      detail?: string;
+    };
     return {
       authorizationUrl: body.authorization_url,
       state: body.state,
-      expiresInMs: body.expires_in * 1000,
+      expiresInMs: (body.expires_in ?? 0) * 1000,
+      authorizationRequired: body.authorization_required !== false,
+      detail: body.detail,
     };
+  }
+
+  async refreshOAuth(
+    dataSetId: number,
+    type: string,
+    config: Record<string, unknown>,
+    integrationId?: number
+  ): Promise<Record<string, string>> {
+    const response = await fetch(`${this.apiBase}/api/data_sets/${dataSetId}/integrations/oauth/refresh/`, {
+      ...this._requestConfiguration(),
+      method: "POST",
+      body: JSON.stringify({ type, config, integration_id: integrationId }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new ApiError(data.detail ?? `Failed to renew the token: ${response.statusText}`, {
+        data,
+        status: response.status,
+      });
+    }
+    return (data as { config: Record<string, string> }).config;
   }
 
   async getOAuthResult(state: string): Promise<{ status: string; config?: Record<string, string>; error?: string }> {

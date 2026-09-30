@@ -4,7 +4,7 @@ import pytest
 from django.contrib.auth.models import Permission
 from django.core.cache import caches
 from django.urls import reverse
-from enthusiast_common.oauth import OAuthAuthorizationRequest, OAuthClientCredentials
+from enthusiast_common.oauth import NoAuthorizationRequired, OAuthAuthorizationRequest, OAuthClientCredentials
 from model_bakery import baker
 from rest_framework import status
 
@@ -14,6 +14,7 @@ from catalog.integrations.oauth import config as oauth_config
 from catalog.integrations.oauth import storage as oauth_storage
 from catalog.integrations.oauth.helpers import callback_uri
 from catalog.integrations.registry import IntegrationPluginRegistry
+from catalog.models import Integration
 from catalog.tests.integration_mocks import (
     MockOAuthIntegration,
     MockSingleInstanceIntegration,
@@ -86,6 +87,21 @@ class TestIntegrationOAuthStartView:
         )
 
         assert oauth_storage.pop("state-123")["origin"] == ""
+
+    @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
+    def test_a_server_needing_no_token_is_not_reported_as_a_failure(
+        self, mock_get_plugin_class, admin_api_client, url
+    ):
+        """Nothing to authorize is good news, so it must not reach the admin as an error."""
+        mock_get_plugin_class.return_value = MockOAuthIntegration
+        nothing_to_do = NoAuthorizationRequired("This server needs no token - it can be saved as it is.")
+
+        with patch.object(MockOAuthIntegration, "oauth_start", side_effect=nothing_to_do):
+            response = admin_api_client.post(url, {"type": "mock_oauth", "config": {}}, format="json")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["authorization_required"] is False
+        assert "needs no token" in response.data["detail"]
 
     @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
     def test_post_reports_a_provider_failure_as_a_message(self, mock_get_plugin_class, admin_api_client, url):
@@ -459,3 +475,126 @@ class TestCollectingAResultNeedsTheRightToConfigure:
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["config"]["auth_token"] == "Bearer secret"
+class TestIntegrationOAuthRefreshView:
+    @pytest.fixture
+    def url(self, data_set):
+        return reverse("integration-oauth-refresh", kwargs={"data_set_id": data_set.pk})
+
+    @pytest.fixture
+    def stored(self):
+        return {
+            "url": "https://srv.example.com/mcp",
+            "refresh_token": "r1",
+            "token_endpoint": "https://srv.example.com/token",
+            "client_id": "abc",
+        }
+
+    @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
+    def test_post_returns_the_renewed_config(self, mock_get_plugin_class, admin_api_client, url, stored):
+        mock_get_plugin_class.return_value = MockOAuthIntegration
+
+        with patch.object(MockOAuthIntegration, "oauth_refresh", return_value={"auth_token": "Bearer new"}):
+            response = admin_api_client.post(url, {"type": "mock_oauth", "config": stored}, format="json")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["config"]["auth_token"] == "Bearer new"
+
+    def test_post_unknown_type_returns_400(self, admin_api_client, url):
+        response = admin_api_client.post(url, {"type": "does_not_exist", "config": {}}, format="json")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
+    def test_post_type_without_oauth_support_returns_400(self, mock_get_plugin_class, admin_api_client, url):
+        mock_get_plugin_class.return_value = MockSingleInstanceIntegration
+
+        response = admin_api_client.post(url, {"type": "mock_single", "config": {}}, format="json")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
+    def test_a_provider_refusal_reaches_the_admin_as_a_message(
+        self, mock_get_plugin_class, admin_api_client, url, stored
+    ):
+        """A revoked grant is the admin's to act on - they have to connect the server again."""
+        mock_get_plugin_class.return_value = MockOAuthIntegration
+
+        with patch.object(MockOAuthIntegration, "oauth_refresh", side_effect=RuntimeError("would not renew")):
+            response = admin_api_client.post(url, {"type": "mock_oauth", "config": stored}, format="json")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "would not renew" in response.data["detail"]
+
+    @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
+    def test_a_user_without_the_change_permission_cannot_renew(
+        self, mock_get_plugin_class, api_client, url, stored
+    ):
+        mock_get_plugin_class.return_value = MockOAuthIntegration
+
+        with patch.object(MockOAuthIntegration, "oauth_refresh") as refresh:
+            response = api_client.post(url, {"type": "mock_oauth", "config": stored}, format="json")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        refresh.assert_not_called()
+
+
+class TestRefreshIsSavedNotLeftToTheForm:
+    """Providers retire the old refresh token on renewal, so an unsaved renewal strands the server."""
+
+    @pytest.fixture
+    def url(self, data_set):
+        return reverse("integration-oauth-refresh", kwargs={"data_set_id": data_set.pk})
+
+    @pytest.fixture
+    def integration(self, data_set):
+        return baker.make(
+            Integration,
+            dataset=data_set,
+            type="mock_oauth",
+            config={"url": "https://srv.example.com/mcp", "auth_token": "Bearer old", "refresh_token": "r1"},
+        )
+
+    @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
+    def test_a_renewal_for_a_stored_server_is_written_straight_away(
+        self, mock_get_plugin_class, admin_api_client, url, integration
+    ):
+        mock_get_plugin_class.return_value = MockOAuthIntegration
+
+        with patch.object(MockOAuthIntegration, "oauth_refresh", return_value={"auth_token": "Bearer new"}):
+            admin_api_client.post(
+                url,
+                {"type": "mock_oauth", "config": integration.config, "integration_id": integration.pk},
+                format="json",
+            )
+
+        integration.refresh_from_db()
+        assert integration.config["auth_token"] == "Bearer new"
+        assert integration.config["url"] == "https://srv.example.com/mcp"
+
+    @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
+    def test_a_server_not_yet_added_is_only_answered(self, mock_get_plugin_class, admin_api_client, url):
+        """Nothing exists to write to; the renewal travels back and is stored when the form saves."""
+        mock_get_plugin_class.return_value = MockOAuthIntegration
+
+        with patch.object(MockOAuthIntegration, "oauth_refresh", return_value={"auth_token": "Bearer new"}):
+            response = admin_api_client.post(url, {"type": "mock_oauth", "config": {}}, format="json")
+
+        assert response.data["config"]["auth_token"] == "Bearer new"
+
+    @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
+    def test_a_renewal_cannot_be_written_onto_another_data_set(
+        self, mock_get_plugin_class, admin_api_client, url, integration
+    ):
+        """The id is supplied by the caller, so it is only honoured within the data set being asked about."""
+        mock_get_plugin_class.return_value = MockOAuthIntegration
+        elsewhere = baker.make(Integration, type="mock_oauth", config={"auth_token": "Bearer untouched"})
+
+        with patch.object(MockOAuthIntegration, "oauth_refresh", return_value={"auth_token": "Bearer new"}):
+            admin_api_client.post(
+                url,
+                {"type": "mock_oauth", "config": {}, "integration_id": elsewhere.pk},
+                format="json",
+            )
+
+        elsewhere.refresh_from_db()
+        assert elsewhere.config["auth_token"] == "Bearer untouched"

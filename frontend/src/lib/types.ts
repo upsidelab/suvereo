@@ -24,6 +24,7 @@ export type IntegrationType = {
 export type Integration = {
   id: number;
   dataset: number;
+  needs_reconnect?: boolean;
   type: string;
   name: string;
   integration_type_name: string | null;

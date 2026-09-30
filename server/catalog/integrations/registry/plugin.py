@@ -1,9 +1,10 @@
 from typing import List, Type
 
 from django.conf import settings
-from enthusiast_common.integrations import BaseIntegration
+from enthusiast_common.integrations import BaseIntegration, BaseOAuthIntegration
 from utils.base_registry import BaseRegistry
 
+from catalog.integrations.config_patch import config_writer_for
 from catalog.models import Integration
 
 
@@ -29,4 +30,6 @@ class IntegrationPluginRegistry(BaseRegistry[BaseIntegration]):
         plugin = self.get_plugin_class_by_type(integration.type)()
         if integration.config:
             plugin.set_runtime_arguments({"configuration_args": integration.config})
+        if isinstance(plugin, BaseOAuthIntegration):
+            plugin.set_config_writer(config_writer_for(integration.pk))
         return plugin

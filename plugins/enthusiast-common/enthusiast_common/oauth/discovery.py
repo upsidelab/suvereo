@@ -20,6 +20,12 @@ class AuthorizationServer:
     registration_endpoint: str | None = None
     scopes: list[str] = field(default_factory=list)
     resource: str | None = None
+    grants: list[str] = field(default_factory=list)
+    offers_offline_access: bool = False
+
+    def issues_refresh_tokens(self) -> bool:
+        """Whether the server says it will renew a token later. Assumed when it says nothing."""
+        return "refresh_token" in self.grants if self.grants else True
 
 
 def register_client(server: AuthorizationServer, redirect_uri: str, client_name: str) -> OAuthClientCredentials:
@@ -79,12 +85,15 @@ def discover_from_challenge(resource_url: str, challenge: str) -> AuthorizationS
                     continue
                 if "authorization_endpoint" not in metadata or "token_endpoint" not in metadata:
                     continue
+                advertised = metadata.get("scopes_supported") or []
                 return AuthorizationServer(
                     authorization_endpoint=metadata["authorization_endpoint"],
                     token_endpoint=metadata["token_endpoint"],
                     registration_endpoint=metadata.get("registration_endpoint"),
-                    scopes=scopes or metadata.get("scopes_supported") or [],
+                    scopes=scopes or advertised,
                     resource=resource,
+                    grants=metadata.get("grant_types_supported") or [],
+                    offers_offline_access="offline_access" in advertised,
                 )
 
     raise OAuthError(

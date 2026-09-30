@@ -46,6 +46,10 @@ class MockOAuthIntegration(BaseOAuthIntegration):
         )
 
     @classmethod
+    def oauth_refresh(cls, config):
+        return {"auth_token": "Bearer renewed"}
+
+    @classmethod
     def oauth_exchange_code(cls, pending, code):
         return {"auth_header": "Authorization", "auth_token": f"Bearer token-for-{code}"}
 

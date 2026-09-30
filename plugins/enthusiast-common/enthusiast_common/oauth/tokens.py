@@ -25,12 +25,37 @@ def build_authorization_url(server: AuthorizationServer, client_id: str, redirec
         "code_challenge": challenge,
         "code_challenge_method": "S256",
     }
-    if server.scopes:
-        params["scope"] = " ".join(server.scopes)
+    scopes = list(server.scopes)
+    # Some servers only issue a refresh token when asked, and omit it from the resource scopes.
+    if server.offers_offline_access and "offline_access" not in scopes:
+        scopes.append("offline_access")
+    if scopes:
+        params["scope"] = " ".join(scopes)
     if server.resource:
         params["resource"] = server.resource
 
     return f"{server.authorization_endpoint}?{urlencode(params)}", verifier, state
+
+
+def _request_tokens(token_endpoint: str, data: dict[str, str], refusal: str) -> OAuthTokens:
+    """Ask the token endpoint for tokens, and insist on getting something usable back."""
+    with http.open_client() as client:
+        response = http.send(client, "POST", token_endpoint, data=data, headers={"Accept": "application/json"})
+    if response.status_code >= 400:
+        raise OAuthError(f"{refusal} (HTTP {response.status_code}).")
+    tokens = response.json()
+    if not tokens.get("access_token"):
+        raise OAuthError("The server answered without an access token.")
+    return OAuthTokens.model_validate(tokens)
+
+
+def refresh_tokens(token_endpoint: str, refresh_token: str, client_id: str) -> OAuthTokens:
+    """Trade a refresh token for a fresh access token."""
+    return _request_tokens(
+        token_endpoint,
+        {"grant_type": "refresh_token", "refresh_token": refresh_token, "client_id": client_id},
+        "This server would not renew its token, so it has to be connected again",
+    )
 
 
 def exchange_code(
@@ -54,12 +79,4 @@ def exchange_code(
         data["client_secret"] = client_secret
     if resource:
         data["resource"] = resource
-
-    with http.open_client() as client:
-        response = http.send(client, "POST", token_endpoint, data=data, headers={"Accept": "application/json"})
-    if response.status_code >= 400:
-        raise OAuthError(f"The server refused the token exchange (HTTP {response.status_code}).")
-    tokens = response.json()
-    if not tokens.get("access_token"):
-        raise OAuthError("The server completed the exchange but returned no access token.")
-    return OAuthTokens.model_validate(tokens)
+    return _request_tokens(token_endpoint, data, "The server refused the token exchange")

@@ -1,5 +1,6 @@
 from typing import Any
 
+from enthusiast_common.integrations import BaseOAuthIntegration
 from pydantic import ValidationError as PydanticValidationError
 from rest_framework import serializers
 
@@ -109,6 +110,7 @@ class IntegrationSerializer(IntegrationConfigValidationMixin, serializers.ModelS
     name = serializers.SerializerMethodField()
     integration_type_name = serializers.SerializerMethodField()
     syncable = serializers.SerializerMethodField()
+    needs_reconnect = serializers.SerializerMethodField()
     configurable = serializers.SerializerMethodField()
     config_schema = serializers.SerializerMethodField()
 
@@ -121,6 +123,7 @@ class IntegrationSerializer(IntegrationConfigValidationMixin, serializers.ModelS
             "name",
             "integration_type_name",
             "syncable",
+            "needs_reconnect",
             "configurable",
             "config",
             "config_schema",
@@ -142,21 +145,43 @@ class IntegrationSerializer(IntegrationConfigValidationMixin, serializers.ModelS
         except KeyError:
             return None
 
+    def _build_plugin(self, integration):
+        """The configured plugin for this record, built once however many fields ask for it."""
+        from catalog.integrations.registry import IntegrationPluginRegistry
+
+        if not hasattr(self, "_plugins"):
+            self._plugins = {}
+        if integration.pk not in self._plugins:
+            try:
+                self._plugins[integration.pk] = IntegrationPluginRegistry().build_instance(integration)
+            except Exception:
+                self._plugins[integration.pk] = None
+        return self._plugins[integration.pk]
+
     def get_name(self, integration):
         """The instance's own label, so several integrations of one type are distinguishable.
 
         Falls back to the type's name if the plugin cannot be built from the stored config, since a
         listing that breaks on one bad record is worse than one that labels it generically.
         """
-        from catalog.integrations.registry import IntegrationPluginRegistry
-
         plugin_class = self._get_plugin_class(integration)
         if plugin_class is None:
             return integration.type
+        plugin = self._build_plugin(integration)
         try:
-            return IntegrationPluginRegistry().build_instance(integration).instance_name()
+            return plugin.instance_name() if plugin else plugin_class.NAME
         except Exception:
             return plugin_class.NAME
+
+    def get_needs_reconnect(self, integration) -> bool:
+        """Whether this instance has stopped working in a way only a person can put right."""
+        plugin = self._build_plugin(integration)
+        if not isinstance(plugin, BaseOAuthIntegration):
+            return False
+        try:
+            return bool(plugin.needs_reconnect())
+        except Exception:
+            return False
 
     def get_integration_type_name(self, integration):
         plugin_class = self._get_plugin_class(integration)
