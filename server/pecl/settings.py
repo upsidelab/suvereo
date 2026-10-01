@@ -36,7 +36,7 @@ SECRET_KEY = env.str("ECL_DJANGO_SECRET_KEY")
 
 DEBUG = env.bool("ECL_DJANGO_DEBUG", False)
 
-ALLOWED_HOSTS = json.loads(os.environ.get("ECL_DJANGO_ALLOWED_HOSTS", default="[]"))
+ALLOWED_HOSTS = json.loads(env.str("ECL_DJANGO_ALLOWED_HOSTS", default="[]"))
 
 LOGGING = {
     "version": 1,
@@ -126,7 +126,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [os.environ.get("ECL_CELERY_BROKER_URL")],
+            "hosts": [env.str("ECL_CELERY_BROKER_URL")],
         },
     },
 }
@@ -134,7 +134,7 @@ CHANNEL_LAYERS = {
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": os.environ.get("ECL_CELERY_BROKER_URL"),
+        "LOCATION": env.str("ECL_CELERY_BROKER_URL"),
     },
 }
 
@@ -209,7 +209,7 @@ if not DEBUG:
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-CORS_ALLOWED_ORIGINS = json.loads(os.environ.get("ECL_DJANGO_CORS_ALLOWED_ORIGINS", default="[]"))
+CORS_ALLOWED_ORIGINS = json.loads(env.str("ECL_DJANGO_CORS_ALLOWED_ORIGINS", default="[]"))
 
 CACHES = {
     "default": {
