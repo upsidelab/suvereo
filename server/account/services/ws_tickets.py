@@ -12,9 +12,9 @@ class WebSocketTicketService:
     KEY_PREFIX = "ws_ticket:"
 
     def issue(self, user: User) -> str:
-        """Store a new ticket for `user` that expires after `WS_TICKET_TTL` seconds and return it."""
+        """Store a new ticket for `user` that expires after `WS_TICKET_TTL_SECONDS` and return it."""
         ticket = secrets.token_urlsafe(32)
-        cache.set(self._key(ticket), user.pk, timeout=settings.WS_TICKET_TTL)
+        cache.set(self._key(ticket), user.pk, timeout=settings.WS_TICKET_TTL_SECONDS)
         return ticket
 
     def redeem(self, ticket: str) -> User | None:

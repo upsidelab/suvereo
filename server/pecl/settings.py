@@ -17,7 +17,6 @@ from datetime import timedelta
 from pathlib import Path
 
 from environ import Env
-from utils.functions import DurationUnit, parse_duration
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -239,8 +238,8 @@ SWAGGER_SETTINGS = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(milliseconds=parse_duration(env.str("ECL_AUTH_ACCESS_TOKEN_TTL", "15m"))),
-    "REFRESH_TOKEN_LIFETIME": timedelta(milliseconds=parse_duration(env.str("ECL_AUTH_REFRESH_TOKEN_TTL", "7d"))),
+    "ACCESS_TOKEN_LIFETIME": timedelta(seconds=env.int("ECL_AUTH_ACCESS_TOKEN_TTL_SECONDS", 15 * 60)),
+    "REFRESH_TOKEN_LIFETIME": timedelta(seconds=env.int("ECL_AUTH_REFRESH_TOKEN_TTL_SECONDS", 7 * 24 * 60 * 60)),
     "SIGNING_KEY": env.str("ECL_AUTH_SIGNING_KEY"),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
@@ -248,7 +247,7 @@ SIMPLE_JWT = {
     "UPDATE_LAST_LOGIN": True,
 }
 
-WS_TICKET_TTL = parse_duration(env.str("ECL_AUTH_WS_TICKET_TTL", "10s"), unit=DurationUnit.SECONDS)
+WS_TICKET_TTL_SECONDS = env.int("ECL_AUTH_WS_TICKET_TTL_SECONDS", 10)
 
 # CELERY
 CELERY_BROKER_URL = env.str("ECL_CELERY_BROKER_URL")

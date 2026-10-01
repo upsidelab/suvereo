@@ -37,12 +37,12 @@ Built on simplejwt with the `token_blacklist` app, which records every issued re
 - `flushexpiredtokens` (scheduled with Celery beat) removes expired rows from the blacklist tables.
 
 ### Lifetimes
-Configured in `SIMPLE_JWT` settings, overridable from env:
+Configured in `SIMPLE_JWT` settings, overridable from env. All values are whole seconds:
 
 ```
-ECL_AUTH_ACCESS_TOKEN_TTL        = 15m    # ACCESS_TOKEN_LIFETIME
-ECL_AUTH_REFRESH_TOKEN_TTL       = 7d     # REFRESH_TOKEN_LIFETIME
-ECL_AUTH_WS_TICKET_TTL           = 10s    # WS_TICKET_TTL (WebSocket ticket, see §5)
+ECL_AUTH_ACCESS_TOKEN_TTL_SECONDS     = 900       # ACCESS_TOKEN_LIFETIME (15 minutes)
+ECL_AUTH_REFRESH_TOKEN_TTL_SECONDS    = 604800    # REFRESH_TOKEN_LIFETIME (7 days)
+ECL_AUTH_WS_TICKET_TTL_SECONDS        = 10        # WS_TICKET_TTL_SECONDS (WebSocket ticket, see §5)
 ```
 
 The refresh window is **sliding**: each rotation issues a refresh token with a fresh 7-day lifetime (simplejwt's default). Active users stay logged in; users idle for more than 7 days log in again. The access token lifetime is also the longest an access token stays usable after logout or revocation, so it should stay short.
@@ -86,7 +86,7 @@ Each phase is one PR-sized, independently shippable commit (or small stack of co
 - `INSTALLED_APPS`: add `rest_framework_simplejwt` and `rest_framework_simplejwt.token_blacklist`.
 - `REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"]`: `JWTAuthentication` first, `TokenAuthentication` second. Both use `Authorization`, but different keywords (`Bearer` / `Token`), so each class ignores the other's header.
 - New `SIMPLE_JWT` block:
-  - `ACCESS_TOKEN_LIFETIME` / `REFRESH_TOKEN_LIFETIME` from `ECL_AUTH_ACCESS_TOKEN_TTL` / `ECL_AUTH_REFRESH_TOKEN_TTL` (default 15m / 7d). Env values are durations like `15m`, `7d` (aliases such as `15min`, `7days` also work) — parsed by `parse_duration()` in `utils/functions.py`, since `environ` doesn't parse that format. It returns a whole number of a `DurationUnit` (milliseconds by default); settings wrap it in `timedelta(milliseconds=…)` where a `timedelta` is expected.
+  - `ACCESS_TOKEN_LIFETIME` / `REFRESH_TOKEN_LIFETIME` from `ECL_AUTH_ACCESS_TOKEN_TTL_SECONDS` / `ECL_AUTH_REFRESH_TOKEN_TTL_SECONDS` (default 900 / 604800, i.e. 15 minutes / 7 days). Env values are integers in seconds, read with `env.int()` and wrapped in `timedelta(seconds=…)`.
   - `SIGNING_KEY` from a new required `ECL_AUTH_SIGNING_KEY` (fail at startup like `ECL_DJANGO_SECRET_KEY` at line 25).
   - `ROTATE_REFRESH_TOKENS`, `BLACKLIST_AFTER_ROTATION`, `CHECK_REVOKE_TOKEN` = `True`; `UPDATE_LAST_LOGIN = True`.
   - `User.USERNAME_FIELD` is already `email`, so `TokenObtainPairSerializer` accepts `{ email, password }` without a subclass.
@@ -157,7 +157,7 @@ Implemented together with 2b: the method is `BaseApiClient.authenticatedFetch()`
 
 Decision: **ticket** rather than first-message auth, because it keeps authentication in middleware (the connection is rejected before `connect()` runs) and the token never appears in a URL.
 
-- **Ticket endpoint** — `api/auth/ws_ticket` (`server/account/views/ws_ticket.py`, logic in `account/services/ws_tickets.py` `WebSocketTicketService`): authenticated `POST` returns a random ticket stored in the Django cache as `ws_ticket:<ticket> → user_id` for `WS_TICKET_TTL` (`ECL_AUTH_WS_TICKET_TTL`, default 10s). Adds a `CACHES` entry (none existed) — a Redis cache reusing the existing Redis.
+- **Ticket endpoint** — `api/auth/ws_ticket` (`server/account/views/ws_ticket.py`, logic in `account/services/ws_tickets.py` `WebSocketTicketService`): authenticated `POST` returns a random ticket stored in the Django cache as `ws_ticket:<ticket> → user_id` for `WS_TICKET_TTL_SECONDS` (`ECL_AUTH_WS_TICKET_TTL_SECONDS`, default 10). Adds a `CACHES` entry (none existed) — a Redis cache reusing the existing Redis.
 - **Middleware** — `server/agent/ws_auth.py` (new) `TicketAuthMiddleware`: reads `ticket` from the query string, redeems it from the cache (single use: `cache.delete()` returns `True` only for the caller that removed the key, so parallel redeems can't both succeed), loads the user (reject inactive), sets `scope["user"]`, else `AnonymousUser`.
 - **`server/pecl/asgi.py`**: replace `AuthMiddlewareStack` with `OriginValidator(TicketAuthMiddleware(URLRouter(...)), CORS_ALLOWED_ORIGINS)` — not `AllowedHostsOriginValidator`, since frontend and API may be on different hosts. The frontend origin must be listed in `ECL_DJANGO_CORS_ALLOWED_ORIGINS`, or every WebSocket connection is rejected (the chat then falls back to polling).
 - **`server/agent/consumers.py:7` `ChatConsumer.connect`**: close (code `4401`) if the user is anonymous; close (`4403`) if the conversation isn't visible to them — reuse the same filter as `ConversationView.get` (`agent/views.py:74`: owner or `CONVERSATION.VIEW_ALL` on the data set). Extracted into `Conversation.objects.visible_to(user)`, used by the consumer (wrapped in `database_sync_to_async`), `ConversationView` and the conversation list. Note: closing before `accept()` makes the server reject the handshake with a plain HTTP 403, so browsers never see `4401` / `4403` — only the tests do. The frontend doesn't distinguish failures today (it always falls back to polling); accepting first and then closing would expose the codes.
