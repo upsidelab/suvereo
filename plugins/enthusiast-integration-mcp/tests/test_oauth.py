@@ -1,20 +1,12 @@
 import ipaddress
 import socket
 from unittest.mock import MagicMock, patch
-from urllib.parse import parse_qs, urlparse
 
 import httpx
 import pytest
+from enthusiast_common.oauth import AuthorizationServer, OAuthError
 from enthusiast_integration_mcp.integration import MCPServerIntegration
-from enthusiast_integration_mcp.oauth import (
-    AuthorizationServer,
-    MCPOAuthError,
-    build_authorization_url,
-    discover,
-    exchange_code,
-    register_client,
-    require_public_url,
-)
+from enthusiast_integration_mcp.oauth import discover
 
 REDIRECT = "https://enthusiast.example.com/api/integrations/oauth/callback/"
 
@@ -45,7 +37,7 @@ def _resolve_stand_in_hosts():
             return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0))]
         return real(host, *args, **kwargs)
 
-    with patch("enthusiast_integration_mcp.oauth.socket.getaddrinfo", side_effect=fake):
+    with patch("enthusiast_common.oauth.client.socket.getaddrinfo", side_effect=fake):
         yield
 
 
@@ -75,7 +67,7 @@ class TestDiscover:
             gets=[_response(json_body=RESOURCE_METADATA), _response(json_body=AS_METADATA)],
         )
 
-        with patch("enthusiast_integration_mcp.oauth._client", return_value=client):
+        with patch("enthusiast_common.oauth.client._client", return_value=client):
             server = discover("https://srv.example.com/mcp")
 
         assert server.authorization_endpoint == "https://srv.example.com/authorize"
@@ -87,8 +79,8 @@ class TestDiscover:
     def test_a_server_needing_no_token_is_reported_rather_than_guessed_at(self):
         client = _client_returning(post=_response(200))
 
-        with patch("enthusiast_integration_mcp.oauth._client", return_value=client):
-            with pytest.raises(MCPOAuthError, match="did not ask for authorization"):
+        with patch("enthusiast_common.oauth.client._client", return_value=client):
+            with pytest.raises(OAuthError, match="did not ask for authorization"):
                 discover("https://open.example.com/mcp")
 
     def test_falls_back_to_the_origin_when_no_resource_metadata_is_published(self):
@@ -97,7 +89,7 @@ class TestDiscover:
             gets=[_response(json_body=AS_METADATA)],
         )
 
-        with patch("enthusiast_integration_mcp.oauth._client", return_value=client):
+        with patch("enthusiast_common.oauth.client._client", return_value=client):
             server = discover("https://srv.example.com/mcp")
 
         assert server.token_endpoint == "https://srv.example.com/token"
@@ -108,155 +100,14 @@ class TestDiscover:
             gets=[httpx.ConnectError("boom"), httpx.ConnectError("boom"), httpx.ConnectError("boom")],
         )
 
-        with patch("enthusiast_integration_mcp.oauth._client", return_value=client):
-            with pytest.raises(MCPOAuthError, match="publishes no OAuth metadata"):
+        with patch("enthusiast_common.oauth.client._client", return_value=client):
+            with pytest.raises(OAuthError, match="publishes no OAuth metadata"):
                 discover("https://srv.example.com/mcp")
-
-
-class TestRedirectsAreFollowedOneHopAtATime:
-    """Providers do redirect, but a hop must not be able to land the server on its own network."""
-
-    def _redirect(self, to):
-        response = _response(302, headers={"Location": to})
-        response.is_redirect = True
-        response.next_request = None
-        return response
-
-    def test_a_hop_to_a_private_address_is_refused(self):
-        client = _client_returning()
-        client.request.side_effect = None
-        client.request.return_value = self._redirect("http://169.254.169.254/latest/meta-data/")
-
-        with patch("enthusiast_integration_mcp.oauth._client", return_value=client):
-            with pytest.raises(MCPOAuthError, match="private address"):
-                discover("https://srv.example.com/mcp")
-
-    def test_a_public_hop_is_followed(self):
-        client = _client_returning()
-        client.request.side_effect = [
-            self._redirect("https://canonical.example.com/mcp"),
-            _response(401, headers={"WWW-Authenticate": 'Bearer realm="OAuth"'}),
-            _response(json_body=AS_METADATA),
-        ]
-        with patch("enthusiast_integration_mcp.oauth._client", return_value=client):
-            server = discover("https://srv.example.com/mcp")
-
-        assert server.token_endpoint == "https://srv.example.com/token"
-
-    def test_a_redirect_loop_gives_up(self):
-        client = _client_returning()
-        client.request.side_effect = None
-        client.request.return_value = self._redirect("https://srv.example.com/mcp")
-
-        with patch("enthusiast_integration_mcp.oauth._client", return_value=client):
-            with pytest.raises(MCPOAuthError, match="redirected too many times"):
-                discover("https://srv.example.com/mcp")
-
-
-class TestRequirePublicUrl:
-    """Everything here is fetched by the server, so a form value must not reach its own network."""
-
-    @pytest.mark.parametrize(
-        "url",
-        [
-            "http://127.0.0.1:8931/mcp",
-            "http://localhost/mcp",
-            "http://169.254.169.254/latest/meta-data/",
-            "http://10.0.0.5/mcp",
-            "http://192.168.1.10/mcp",
-        ],
-    )
-    def test_addresses_on_our_own_network_are_refused(self, url):
-        with pytest.raises(MCPOAuthError, match="private address"):
-            require_public_url(url)
-
-    @pytest.mark.parametrize("url", ["file:///etc/passwd", "gopher://example.com", "ftp://example.com"])
-    def test_only_http_is_fetched(self, url):
-        with pytest.raises(MCPOAuthError, match="http:// or https:// URL"):
-            require_public_url(url)
-
-    def test_a_public_url_passes_through_unchanged(self):
-        with patch("enthusiast_integration_mcp.oauth.socket.getaddrinfo", return_value=[(2, 1, 6, "", ("93.184.216.34", 0))]):
-            assert require_public_url("https://example.com/mcp") == "https://example.com/mcp"
-
-    def test_a_name_that_does_not_resolve_is_reported(self):
-        with patch("enthusiast_integration_mcp.oauth.socket.getaddrinfo", side_effect=socket.gaierror):
-            with pytest.raises(MCPOAuthError, match="Could not resolve"):
-                require_public_url("https://nope.invalid/mcp")
-
-
-class TestRegisterClient:
-    def test_registers_as_a_public_client_for_the_callback(self):
-        client = _client_returning(post=_response(201, {"client_id": "abc123"}))
-        server = AuthorizationServer("https://a/authorize", "https://a/token", "https://a/register", ["read"])
-
-        with patch("enthusiast_integration_mcp.oauth._client", return_value=client):
-            credentials = register_client(server, REDIRECT, "Enthusiast")
-
-        assert credentials["client_id"] == "abc123"
-        payload = client.request.call_args.kwargs["json"]
-        assert payload["redirect_uris"] == [REDIRECT]
-        assert payload["token_endpoint_auth_method"] == "none"
-        assert "refresh_token" in payload["grant_types"]
-
-    def test_a_server_without_registration_points_at_the_manual_field(self):
-        """Such a server still takes a token the admin can make themselves, so say that."""
-        server = AuthorizationServer("https://a/authorize", "https://a/token", registration_endpoint=None)
-
-        with pytest.raises(MCPOAuthError, match="paste it into Auth token"):
-            register_client(server, REDIRECT, "Enthusiast")
-
-
-class TestBuildAuthorizationUrl:
-    def test_sends_pkce_and_the_resource(self):
-        server = AuthorizationServer(
-            "https://a/authorize", "https://a/token", scopes=["read"], resource="https://srv/mcp"
-        )
-
-        url, verifier, state = build_authorization_url(server, "abc123", REDIRECT)
-        params = parse_qs(urlparse(url).query)
-
-        assert params["code_challenge_method"] == ["S256"]
-        assert params["client_id"] == ["abc123"]
-        assert params["redirect_uri"] == [REDIRECT]
-        assert params["state"] == [state]
-        assert params["resource"] == ["https://srv/mcp"]
-        assert params["code_challenge"][0] != verifier
-
-    def test_each_call_is_unique_so_two_flows_cannot_collide(self):
-        server = AuthorizationServer("https://a/authorize", "https://a/token")
-
-        _, first_verifier, first_state = build_authorization_url(server, "abc", REDIRECT)
-        _, second_verifier, second_state = build_authorization_url(server, "abc", REDIRECT)
-
-        assert first_verifier != second_verifier
-        assert first_state != second_state
-
-
-class TestExchangeCode:
-    def test_posts_the_verifier_and_returns_the_tokens(self):
-        client = _client_returning(post=_response(200, {"access_token": "tok", "token_type": "bearer"}))
-
-        with patch("enthusiast_integration_mcp.oauth._client", return_value=client):
-            tokens = exchange_code("https://a/token", "code-1", "verifier-1", "abc123", REDIRECT)
-
-        assert tokens["access_token"] == "tok"
-        sent = client.request.call_args.kwargs["data"]
-        assert sent["code_verifier"] == "verifier-1"
-        assert sent["grant_type"] == "authorization_code"
-        assert sent["redirect_uri"] == REDIRECT
-
-    def test_a_refused_exchange_raises(self):
-        client = _client_returning(post=_response(400, {"error": "invalid_grant"}))
-
-        with patch("enthusiast_integration_mcp.oauth._client", return_value=client):
-            with pytest.raises(MCPOAuthError, match="refused the token exchange"):
-                exchange_code("https://a/token", "code-1", "verifier-1", "abc123", REDIRECT)
 
 
 class TestIntegrationOAuthHooks:
     def test_oauth_start_needs_a_url(self):
-        with pytest.raises(MCPOAuthError, match="Enter the server URL"):
+        with pytest.raises(OAuthError, match="Enter the server URL"):
             MCPServerIntegration.oauth_start({}, REDIRECT)
 
     def test_oauth_start_returns_the_state_the_callback_needs(self):
@@ -274,7 +125,7 @@ class TestIntegrationOAuthHooks:
         assert pending["redirect_uri"] == REDIRECT
         assert pending["verifier"] and pending["state"]
 
-    def test_oauth_finish_fills_the_auth_fields_the_form_already_has(self):
+    def test_oauth_exchange_code_fills_the_auth_fields_the_form_already_has(self):
         pending = {
             "token_endpoint": "https://a/token",
             "verifier": "v",
@@ -286,6 +137,6 @@ class TestIntegrationOAuthHooks:
             "enthusiast_integration_mcp.integration.exchange_code",
             return_value={"access_token": "tok", "token_type": "bearer"},
         ):
-            config = MCPServerIntegration.oauth_finish(pending, "code-1")
+            config = MCPServerIntegration.oauth_exchange_code(pending, "code-1")
 
         assert config == {"auth_header": "Authorization", "auth_token": "Bearer tok"}

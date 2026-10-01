@@ -94,6 +94,24 @@ class BaseToolProvidingIntegration(BaseIntegration):
         """Return the LangChain tools this integration instance currently makes available."""
 
 
+class BaseOAuthIntegration(BaseIntegration):
+    """An integration whose credentials are obtained by an OAuth authorization-code flow."""
+
+    OAUTH_FIELD: str = ""
+
+    @classmethod
+    @abstractmethod
+    def oauth_start(
+        cls, config: dict[str, Any], redirect_uri: str, client: dict[str, Any] | None = None
+    ) -> tuple[str, dict[str, Any]]:
+        """Begin the flow for a part-filled config."""
+
+    @classmethod
+    @abstractmethod
+    def oauth_exchange_code(cls, pending: dict[str, Any], code: str) -> dict[str, Any]:
+        """Exchange an authorization code for credentials."""
+
+
 # Bound to BaseIntegration, defined above — kept local to its only use below
 # rather than hoisted to the top of the file with the other imports.
 IntegrationT = TypeVar("IntegrationT", bound=BaseIntegration)

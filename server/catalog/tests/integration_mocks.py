@@ -1,4 +1,4 @@
-from enthusiast_common.integrations import BaseIntegration
+from enthusiast_common.integrations import BaseIntegration, BaseOAuthIntegration
 from enthusiast_common.utils import RequiredFieldsModel
 from pydantic import Field
 
@@ -26,13 +26,12 @@ class MockMultiInstanceIntegration(BaseIntegration):
         return f"{self.NAME} ({self.CONFIGURATION_ARGS.marker})"
 
 
-class MockOAuthIntegration(BaseIntegration):
+class MockOAuthIntegration(BaseOAuthIntegration):
     """Stands in for a plugin that opts into the OAuth handshake, without talking to a provider."""
 
     TYPE = "mock_oauth"
     NAME = "Mock OAuth"
     INTEGRATION_TYPE_NAME = "Mock category"
-    SUPPORTS_OAUTH = True
 
     OAUTH_FIELD = "url"
 
@@ -45,5 +44,5 @@ class MockOAuthIntegration(BaseIntegration):
         }
 
     @classmethod
-    def oauth_finish(cls, pending, code):
+    def oauth_exchange_code(cls, pending, code):
         return {"auth_header": "Authorization", "auth_token": f"Bearer token-for-{code}"}

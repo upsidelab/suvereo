@@ -1,5 +1,6 @@
 from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
+from enthusiast_common.integrations import BaseOAuthIntegration
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -26,8 +27,8 @@ class IntegrationTypeListView(APIView):
                 "name": cls.NAME,
                 "integration_type_name": cls.INTEGRATION_TYPE_NAME,
                 "syncable": cls.is_syncable(),
-                "supports_oauth": getattr(cls, "SUPPORTS_OAUTH", False),
-                "oauth_field": getattr(cls, "OAUTH_FIELD", ""),
+                "supports_oauth": issubclass(cls, BaseOAuthIntegration),
+                "oauth_field": cls.OAUTH_FIELD if issubclass(cls, BaseOAuthIntegration) else "",
                 "config_schema": cls().get_config_schema(),
             }
             for cls in IntegrationPluginRegistry().get_plugin_classes()

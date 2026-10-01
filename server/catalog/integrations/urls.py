@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .oauth_views import IntegrationOAuthCallbackView, IntegrationOAuthResultView, IntegrationOAuthStartView
+from .oauth import IntegrationOAuthCallbackView, IntegrationOAuthResultView, IntegrationOAuthStartView
 from .views import (
     IntegrationListView,
     IntegrationSyncView,

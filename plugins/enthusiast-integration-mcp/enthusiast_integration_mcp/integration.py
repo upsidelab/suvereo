@@ -1,14 +1,15 @@
 from typing import Any
 from urllib.parse import urlparse
 
-from enthusiast_common.integrations import BaseToolProvidingIntegration
+from enthusiast_common.integrations import BaseOAuthIntegration, BaseToolProvidingIntegration
+from enthusiast_common.oauth import OAuthError, build_authorization_url, exchange_code, register_client
 from fastmcp import Client
 from fastmcp.client.transports import ClientTransport, SSETransport, StreamableHttpTransport
 from langchain.mcp import MCPAdapter
 from langchain_core.tools import BaseTool
 
 from .config import MCPServerConfigArgs
-from .oauth import MCPOAuthError, build_authorization_url, discover, exchange_code, register_client
+from .oauth import discover
 
 TRANSPORTS: dict[str, type[ClientTransport]] = {
     "http": StreamableHttpTransport,
@@ -18,7 +19,7 @@ TRANSPORTS: dict[str, type[ClientTransport]] = {
 OAUTH_CLIENT_NAME = "Enthusiast"
 
 
-class MCPServerIntegration(BaseToolProvidingIntegration):
+class MCPServerIntegration(BaseToolProvidingIntegration, BaseOAuthIntegration):
     """A single MCP server connected to a dataset. A dataset may hold any number of these."""
 
     TYPE = "mcp_server"
@@ -26,7 +27,6 @@ class MCPServerIntegration(BaseToolProvidingIntegration):
     INTEGRATION_TYPE_NAME = "MCP Server"
     CONFIGURATION_ARGS = MCPServerConfigArgs
     ALLOWS_MULTIPLE_INSTANCES = True
-    SUPPORTS_OAUTH = True
     OAUTH_FIELD = "url"
 
     @classmethod
@@ -46,11 +46,11 @@ class MCPServerIntegration(BaseToolProvidingIntegration):
             state carries ``client`` back out, for the caller to keep and pass in next time.
 
         Raises:
-            MCPOAuthError: If the server needs no token, or cannot be registered with.
+            OAuthError: If the server needs no token, or cannot be registered with.
         """
         url = (config.get("url") or "").strip()
         if not url:
-            raise MCPOAuthError("Enter the server URL before connecting.")
+            raise OAuthError("Enter the server URL before connecting.")
 
         server = discover(url)
         credentials = client or register_client(server, redirect_uri, client_name=OAUTH_CLIENT_NAME)
@@ -70,7 +70,7 @@ class MCPServerIntegration(BaseToolProvidingIntegration):
         return authorization_url, pending
 
     @classmethod
-    def oauth_finish(cls, pending: dict[str, Any], code: str) -> dict[str, Any]:
+    def oauth_exchange_code(cls, pending: dict[str, Any], code: str) -> dict[str, Any]:
         """Exchange the authorization code for a token, as fields to merge into the config.
 
         Args:

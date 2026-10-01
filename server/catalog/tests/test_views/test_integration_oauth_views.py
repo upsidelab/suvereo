@@ -1,12 +1,17 @@
 from unittest.mock import patch
 
 import pytest
+from django.contrib.auth.models import Permission
 from django.core.cache import caches
 from django.urls import reverse
+from model_bakery import baker
 from rest_framework import status
 
-from catalog.integrations import oauth_config, oauth_flows
-from catalog.integrations.oauth_views import callback_uri
+from account.authorization import PERMISSIONS
+from account.models import DatasetRole, DatasetUserRoleAssignment
+from catalog.integrations.oauth import config as oauth_config
+from catalog.integrations.oauth import storage as oauth_storage
+from catalog.integrations.oauth.helpers import callback_uri
 from catalog.integrations.registry import IntegrationPluginRegistry
 from catalog.tests.integration_mocks import MockOAuthIntegration, MockSingleInstanceIntegration
 
@@ -38,7 +43,7 @@ class TestIntegrationOAuthStartView:
         response = admin_api_client.post(url, {"type": "does_not_exist", "config": {}}, format="json")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert oauth_flows.pop("state-123") is None
+        assert oauth_storage.pop("state-123") is None
 
     @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
     def test_post_type_without_oauth_support_returns_400(self, mock_get_plugin_class, admin_api_client, url):
@@ -47,7 +52,7 @@ class TestIntegrationOAuthStartView:
         response = admin_api_client.post(url, {"type": "mock_single", "config": {}}, format="json")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert oauth_flows.pop("state-123") is None
+        assert oauth_storage.pop("state-123") is None
 
     @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
     def test_post_returns_the_authorization_url_and_stores_the_flow(self, mock_get_plugin_class, admin_api_client, url):
@@ -60,7 +65,7 @@ class TestIntegrationOAuthStartView:
         assert response.status_code == status.HTTP_200_OK
         assert response.data["authorization_url"].startswith("https://provider.example.com/authorize")
         assert response.data["expires_in"] == oauth_config.FLOW_LIFETIME_SECONDS
-        flow = oauth_flows.pop("state-123")
+        flow = oauth_storage.pop("state-123")
         assert flow["integration_type"] == "mock_oauth"
         assert flow["origin"] == ORIGIN
 
@@ -75,7 +80,7 @@ class TestIntegrationOAuthStartView:
             url, {"type": "mock_oauth", "config": {}}, format="json", HTTP_ORIGIN="https://evil.example.com"
         )
 
-        assert oauth_flows.pop("state-123")["origin"] == ""
+        assert oauth_storage.pop("state-123")["origin"] == ""
 
     @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
     def test_post_reports_a_provider_failure_as_a_message(self, mock_get_plugin_class, admin_api_client, url):
@@ -87,7 +92,7 @@ class TestIntegrationOAuthStartView:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "no metadata" in response.data["detail"]
-        assert oauth_flows.pop("state-123") is None
+        assert oauth_storage.pop("state-123") is None
 
     @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
     def test_post_by_a_user_without_the_permission_starts_no_flow(self, mock_get_plugin_class, api_client, url):
@@ -97,7 +102,7 @@ class TestIntegrationOAuthStartView:
         response = api_client.post(url, {"type": "mock_oauth", "config": {}}, format="json")
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert oauth_flows.pop("state-123") is None
+        assert oauth_storage.pop("state-123") is None
 
 
 class TestClientRegistrationIsReused:
@@ -181,11 +186,12 @@ class TestIntegrationOAuthCallbackView:
         return reverse("integration-oauth-start", kwargs={"data_set_id": data_set.pk})
 
     @pytest.fixture
-    def flow(self, admin_user):
-        oauth_flows.store(
+    def flow(self, admin_user, data_set):
+        oauth_storage.store(
             "state-123",
             {
                 "integration_type": "mock_oauth",
+                "data_set_id": data_set.pk,
                 "pending": {"state": "state-123", "redirect_uri": "http://testserver/callback"},
                 "origin": ORIGIN,
                 "user_id": admin_user.pk,
@@ -200,7 +206,7 @@ class TestIntegrationOAuthCallbackView:
 
         client.get(url, {"state": "state-123", "code": "abc"})
 
-        assert oauth_flows.read_result("state-123")["config"]["auth_token"] == "Bearer token-for-abc"
+        assert oauth_storage.read_result("state-123")["config"]["auth_token"] == "Bearer token-for-abc"
 
     @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
     def test_get_hands_the_popup_back_to_the_origin_that_began_the_flow(
@@ -225,9 +231,9 @@ class TestIntegrationOAuthCallbackView:
     @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
     def test_an_untrusted_origin_gets_a_page_rather_than_a_redirect(self, mock_get_plugin_class, client, url):
         mock_get_plugin_class.return_value = MockOAuthIntegration
-        oauth_flows.store(
+        oauth_storage.store(
             "state-456",
-            {"integration_type": "mock_oauth", "pending": {}, "origin": "", "user_id": 1},
+            {"integration_type": "mock_oauth", "data_set_id": 1, "pending": {}, "origin": "", "user_id": 1},
         )
 
         response = client.get(url, {"state": "state-456", "code": "abc"})
@@ -282,7 +288,7 @@ class TestIntegrationOAuthCallbackView:
     def test_a_provider_refusal_is_kept_for_the_form_to_report(self, client, url, flow):
         client.get(url, {"state": "state-123", "error": "access_denied", "error_description": "User said no"})
 
-        assert oauth_flows.read_result("state-123")["error"] == "User said no"
+        assert oauth_storage.read_result("state-123")["error"] == "User said no"
 
     @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
     def test_a_callback_without_a_code_is_kept_as_an_error(self, mock_get_plugin_class, client, url, flow):
@@ -290,7 +296,7 @@ class TestIntegrationOAuthCallbackView:
 
         client.get(url, {"state": "state-123"})
 
-        assert "no authorization code" in oauth_flows.read_result("state-123")["error"]
+        assert "no authorization code" in oauth_storage.read_result("state-123")["error"]
 
     def test_get_needs_no_authentication(self, client, url):
         """The provider redirects the admin's browser here with no token of ours attached."""
@@ -309,11 +315,12 @@ class TestIntegrationOAuthResultView:
         return reverse("integration-oauth-callback")
 
     @pytest.fixture
-    def flow(self, admin_user):
-        oauth_flows.store(
+    def flow(self, admin_user, data_set):
+        oauth_storage.store(
             "state-123",
             {
                 "integration_type": "mock_oauth",
+                "data_set_id": data_set.pk,
                 "pending": {"state": "state-123"},
                 "origin": ORIGIN,
                 "user_id": admin_user.pk,
@@ -378,3 +385,66 @@ class TestIntegrationOAuthResultView:
         response = admin_api_client.get(url, {"state": "never-issued"})
 
         assert response.data["status"] == "pending"
+
+class TestConnectingNeedsTheRightToConfigure:
+    """Connect both adds a server and re-authorizes an existing one, so either right allows it."""
+
+    @pytest.fixture
+    def url(self, data_set):
+        return reverse("integration-oauth-start", kwargs={"data_set_id": data_set.pk})
+
+    @pytest.fixture
+    def role(self, user, data_set):
+        role = baker.make(DatasetRole)
+        baker.make(DatasetUserRoleAssignment, user=user, dataset=data_set, role=role)
+        return role
+
+    @pytest.mark.parametrize("codename", [PERMISSIONS.INTEGRATION.ADD, PERMISSIONS.INTEGRATION.CHANGE])
+    @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
+    def test_either_right_may_start_a_flow(self, mock_get_plugin_class, codename, api_client, url, role):
+        mock_get_plugin_class.return_value = MockOAuthIntegration
+        app_label, name = codename.split(".", 1)
+        role.permissions.add(Permission.objects.get(content_type__app_label=app_label, codename=name))
+
+        response = api_client.post(url, {"type": "mock_oauth", "config": {}}, format="json")
+
+        assert response.status_code == status.HTTP_200_OK
+
+    @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
+    def test_a_member_with_neither_right_may_not(self, mock_get_plugin_class, api_client, url, role):
+        mock_get_plugin_class.return_value = MockOAuthIntegration
+
+        response = api_client.post(url, {"type": "mock_oauth", "config": {}}, format="json")
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+class TestCollectingAResultNeedsTheRightToConfigure:
+    """The result carries a credential, so the right is checked again when it is handed over."""
+
+    @pytest.fixture
+    def url(self):
+        return reverse("integration-oauth-result")
+
+    def test_a_user_who_lost_the_right_cannot_collect(self, api_client, user, data_set, url):
+        """`user` is authenticated but holds nothing on the data set."""
+        oauth_storage.store_result(
+            "state-123",
+            {"config": {"auth_token": "Bearer secret"}, "user_id": user.pk, "data_set_id": data_set.pk},
+        )
+
+        response = api_client.get(url, {"state": "state-123"})
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert oauth_storage.read_result("state-123") is not None
+
+    def test_the_owner_with_the_right_collects_it(self, admin_api_client, admin_user, data_set, url):
+        oauth_storage.store_result(
+            "state-123",
+            {"config": {"auth_token": "Bearer secret"}, "user_id": admin_user.pk, "data_set_id": data_set.pk},
+        )
+
+        response = admin_api_client.get(url, {"state": "state-123"})
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["config"]["auth_token"] == "Bearer secret"

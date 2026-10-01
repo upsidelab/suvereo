@@ -97,6 +97,17 @@ def has_any_permission_on_any_dataset(user: User, *codenames: str) -> bool:
     ).exists()
 
 
+def enforce_any_dataset_scoped_permission(
+    view, dataset: DataSet, *codenames: str, obscured_model: type = DataSet
+) -> None:
+    """As `enforce_dataset_scoped_permission`, but any one of `codenames` lets the request through."""
+    if any(has_dataset_perm(view.request.user, codename, dataset) for codename in codenames):
+        return
+    if is_dataset_member(view.request.user, dataset):
+        view.permission_denied(view.request)
+    raise Http404(f"No {obscured_model._meta.object_name} matches the given query.")
+
+
 def enforce_dataset_scoped_permission(view, codename: str, dataset: DataSet, *, obscured_model: type = DataSet) -> None:
     """Holding `codename` (globally, or via a per-dataset role) lets the request through.
     Lacking it while still being a member of `dataset` denies with 403 - the dataset is
@@ -111,8 +122,4 @@ def enforce_dataset_scoped_permission(view, codename: str, dataset: DataSet, *, 
     "denied access" indistinguishable from "doesn't exist" for the same model - otherwise a
     non-member could tell the two apart by comparing response bodies.
     """
-    if has_dataset_perm(view.request.user, codename, dataset):
-        return
-    if is_dataset_member(view.request.user, dataset):
-        view.permission_denied(view.request)
-    raise Http404(f"No {obscured_model._meta.object_name} matches the given query.")
+    enforce_any_dataset_scoped_permission(view, dataset, codename, obscured_model=obscured_model)
