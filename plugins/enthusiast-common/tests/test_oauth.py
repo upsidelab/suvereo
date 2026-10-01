@@ -11,6 +11,7 @@ from enthusiast_common.oauth import (
     build_authorization_url,
     discover_from_challenge,
     exchange_code,
+    refresh_tokens,
     register_client,
     require_public_url,
 )
@@ -208,6 +209,34 @@ class TestExchangeCode:
         with patch("enthusiast_common.oauth.http.open_client", return_value=client):
             with pytest.raises(OAuthError, match="refused the token exchange"):
                 exchange_code("https://a/token", "code-1", "verifier-1", "abc123", REDIRECT)
+
+
+class TestRefreshTokens:
+    def test_posts_the_refresh_grant_and_returns_the_tokens(self):
+        client = _client_returning(post=_response(200, {"access_token": "fresh", "token_type": "bearer"}))
+
+        with patch("enthusiast_common.oauth.http.open_client", return_value=client):
+            tokens = refresh_tokens("https://a/token", "refresh-1", "abc123")
+
+        assert tokens.access_token == "fresh"
+        sent = client.request.call_args.kwargs["data"]
+        assert sent["grant_type"] == "refresh_token"
+        assert sent["refresh_token"] == "refresh-1"
+        assert sent["client_id"] == "abc123"
+
+    def test_a_refusal_says_the_server_has_to_be_connected_again(self):
+        client = _client_returning(post=_response(400, {"error": "invalid_grant"}))
+
+        with patch("enthusiast_common.oauth.http.open_client", return_value=client):
+            with pytest.raises(OAuthError, match="connected again"):
+                refresh_tokens("https://a/token", "refresh-1", "abc123")
+
+    def test_an_answer_without_a_token_is_not_taken_as_success(self):
+        client = _client_returning(post=_response(200, {"token_type": "bearer"}))
+
+        with patch("enthusiast_common.oauth.http.open_client", return_value=client):
+            with pytest.raises(OAuthError, match="without an access token"):
+                refresh_tokens("https://a/token", "refresh-1", "abc123")
 
 
 class TestWhatTheServerSaysAboutRenewal:

@@ -113,7 +113,8 @@ export function AddEditIntegrationModal({
   const showTypeSelect = readOnly || typeOptions.length > 1;
   const oauthField = selectedIntegrationType?.supports_oauth ? selectedIntegrationType.oauth_field : "";
   const canConnect = !readOnly && !!selectedType && !!oauthField;
-  const canRefresh = canConnect && !!config.refresh_token;
+  const refreshField = selectedIntegrationType?.supports_oauth ? selectedIntegrationType.oauth_refresh_field : "";
+  const canRefresh = canConnect && !!refreshField && !!config[refreshField];
 
   useEffect(() => {
     if (!open || readOnly || isEditing) return;

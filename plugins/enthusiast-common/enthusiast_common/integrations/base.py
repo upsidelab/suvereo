@@ -101,6 +101,8 @@ class BaseOAuthIntegration(BaseIntegration):
 
     #: The config field identifying what is being authorized; its value is passed to ``oauth_start``.
     OAUTH_FIELD: str
+    #: Config field holding the renewal credential. Left empty by an integration that cannot renew.
+    OAUTH_REFRESH_FIELD: str = ""
 
     _config_writer: Callable[[dict[str, Any]], Awaitable[None]] | None = None
 

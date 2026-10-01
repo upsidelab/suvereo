@@ -29,6 +29,7 @@ class IntegrationTypeListView(APIView):
                 "syncable": cls.is_syncable(),
                 "supports_oauth": issubclass(cls, BaseOAuthIntegration),
                 "oauth_field": cls.OAUTH_FIELD if issubclass(cls, BaseOAuthIntegration) else "",
+                "oauth_refresh_field": cls.OAUTH_REFRESH_FIELD if issubclass(cls, BaseOAuthIntegration) else "",
                 "config_schema": cls().get_config_schema(),
             }
             for cls in IntegrationPluginRegistry().get_plugin_classes()

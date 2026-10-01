@@ -54,6 +54,7 @@ class MCPServerIntegration(BaseToolProvidingIntegration, BaseOAuthIntegration):
     CONFIGURATION_ARGS = MCPServerConfigArgs
     ALLOWS_MULTIPLE_INSTANCES = True
     OAUTH_FIELD = "url"
+    OAUTH_REFRESH_FIELD = "refresh_token"
 
     @classmethod
     def oauth_start(

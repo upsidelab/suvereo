@@ -221,4 +221,5 @@ class IntegrationTypeSerializer(serializers.Serializer):
     syncable = serializers.BooleanField()
     supports_oauth = serializers.BooleanField()
     oauth_field = serializers.CharField(allow_blank=True)
+    oauth_refresh_field = serializers.CharField(allow_blank=True)
     config_schema = serializers.JSONField()
