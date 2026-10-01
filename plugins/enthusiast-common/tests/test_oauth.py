@@ -9,11 +9,11 @@ from enthusiast_common.oauth import (
     AuthorizationServer,
     OAuthError,
     build_authorization_url,
+    discover_from_challenge,
     exchange_code,
     register_client,
     require_public_url,
 )
-from enthusiast_common.oauth.client import discover_from_challenge
 
 REDIRECT = "https://enthusiast.example.com/api/integrations/oauth/callback/"
 
@@ -44,7 +44,7 @@ def _resolve_stand_in_hosts():
             return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0))]
         return real(host, *args, **kwargs)
 
-    with patch("enthusiast_common.oauth.client.socket.getaddrinfo", side_effect=fake):
+    with patch("enthusiast_common.oauth.http.socket.getaddrinfo", side_effect=fake):
         yield
 
 
@@ -81,7 +81,7 @@ class TestRedirectsAreFollowedOneHopAtATime:
         client.request.side_effect = None
         client.request.return_value = self._redirect("http://169.254.169.254/latest/meta-data/")
 
-        with patch("enthusiast_common.oauth.client._client", return_value=client):
+        with patch("enthusiast_common.oauth.http.open_client", return_value=client):
             with pytest.raises(OAuthError, match="private address"):
                 discover_from_challenge("https://srv.example.com/mcp", CHALLENGE)
 
@@ -92,7 +92,7 @@ class TestRedirectsAreFollowedOneHopAtATime:
             _response(401, headers={"WWW-Authenticate": 'Bearer realm="OAuth"'}),
             _response(json_body=AS_METADATA),
         ]
-        with patch("enthusiast_common.oauth.client._client", return_value=client):
+        with patch("enthusiast_common.oauth.http.open_client", return_value=client):
             server = discover_from_challenge("https://srv.example.com/mcp", CHALLENGE)
 
         assert server.token_endpoint == "https://srv.example.com/token"
@@ -102,7 +102,7 @@ class TestRedirectsAreFollowedOneHopAtATime:
         client.request.side_effect = None
         client.request.return_value = self._redirect("https://srv.example.com/mcp")
 
-        with patch("enthusiast_common.oauth.client._client", return_value=client):
+        with patch("enthusiast_common.oauth.http.open_client", return_value=client):
             with pytest.raises(OAuthError, match="redirected too many times"):
                 discover_from_challenge("https://srv.example.com/mcp", CHALLENGE)
 
@@ -130,11 +130,13 @@ class TestRequirePublicUrl:
             require_public_url(url)
 
     def test_a_public_url_passes_through_unchanged(self):
-        with patch("enthusiast_common.oauth.client.socket.getaddrinfo", return_value=[(2, 1, 6, "", ("93.184.216.34", 0))]):
+        with patch(
+            "enthusiast_common.oauth.http.socket.getaddrinfo", return_value=[(2, 1, 6, "", ("93.184.216.34", 0))]
+        ):
             assert require_public_url("https://example.com/mcp") == "https://example.com/mcp"
 
     def test_a_name_that_does_not_resolve_is_reported(self):
-        with patch("enthusiast_common.oauth.client.socket.getaddrinfo", side_effect=socket.gaierror):
+        with patch("enthusiast_common.oauth.http.socket.getaddrinfo", side_effect=socket.gaierror):
             with pytest.raises(OAuthError, match="Could not resolve"):
                 require_public_url("https://nope.invalid/mcp")
 
@@ -144,7 +146,7 @@ class TestRegisterClient:
         client = _client_returning(post=_response(201, {"client_id": "abc123"}))
         server = AuthorizationServer("https://a/authorize", "https://a/token", "https://a/register", ["read"])
 
-        with patch("enthusiast_common.oauth.client._client", return_value=client):
+        with patch("enthusiast_common.oauth.http.open_client", return_value=client):
             credentials = register_client(server, REDIRECT, "Enthusiast")
 
         assert credentials["client_id"] == "abc123"
@@ -191,7 +193,7 @@ class TestExchangeCode:
     def test_posts_the_verifier_and_returns_the_tokens(self):
         client = _client_returning(post=_response(200, {"access_token": "tok", "token_type": "bearer"}))
 
-        with patch("enthusiast_common.oauth.client._client", return_value=client):
+        with patch("enthusiast_common.oauth.http.open_client", return_value=client):
             tokens = exchange_code("https://a/token", "code-1", "verifier-1", "abc123", REDIRECT)
 
         assert tokens["access_token"] == "tok"
@@ -203,8 +205,6 @@ class TestExchangeCode:
     def test_a_refused_exchange_raises(self):
         client = _client_returning(post=_response(400, {"error": "invalid_grant"}))
 
-        with patch("enthusiast_common.oauth.client._client", return_value=client):
+        with patch("enthusiast_common.oauth.http.open_client", return_value=client):
             with pytest.raises(OAuthError, match="refused the token exchange"):
                 exchange_code("https://a/token", "code-1", "verifier-1", "abc123", REDIRECT)
-
-

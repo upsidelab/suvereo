@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 #: Connecting a server both adds one and re-authorizes an existing one, so either right allows it.
 CONNECT_PERMISSIONS = (PERMISSIONS.INTEGRATION.ADD, PERMISSIONS.INTEGRATION.CHANGE)
 
+
 class IntegrationOAuthStartView(APIView):
     """Begin the handshake and hand back the URL the admin's browser should open."""
 

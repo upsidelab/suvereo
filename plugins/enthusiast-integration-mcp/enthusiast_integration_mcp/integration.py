@@ -54,9 +54,7 @@ class MCPServerIntegration(BaseToolProvidingIntegration, BaseOAuthIntegration):
 
         server = discover(url)
         credentials = client or register_client(server, redirect_uri, client_name=OAUTH_CLIENT_NAME)
-        authorization_url, verifier, state = build_authorization_url(
-            server, credentials["client_id"], redirect_uri
-        )
+        authorization_url, verifier, state = build_authorization_url(server, credentials["client_id"], redirect_uri)
         pending = {
             "state": state,
             "verifier": verifier,

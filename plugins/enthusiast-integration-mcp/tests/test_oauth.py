@@ -10,7 +10,11 @@ from enthusiast_integration_mcp.oauth import discover
 
 REDIRECT = "https://enthusiast.example.com/api/integrations/oauth/callback/"
 
-CHALLENGE = 'Bearer realm="OAuth", resource_metadata="https://srv.example.com/.well-known/oauth-protected-resource/mcp", scope="read write"'
+CHALLENGE = (
+    'Bearer realm="OAuth", '
+    'resource_metadata="https://srv.example.com/.well-known/oauth-protected-resource/mcp", '
+    'scope="read write"'
+)
 RESOURCE_METADATA = {"resource": "https://srv.example.com/mcp", "authorization_servers": ["https://srv.example.com"]}
 AS_METADATA = {
     "authorization_endpoint": "https://srv.example.com/authorize",
@@ -37,7 +41,7 @@ def _resolve_stand_in_hosts():
             return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0))]
         return real(host, *args, **kwargs)
 
-    with patch("enthusiast_common.oauth.client.socket.getaddrinfo", side_effect=fake):
+    with patch("enthusiast_common.oauth.http.socket.getaddrinfo", side_effect=fake):
         yield
 
 
@@ -67,7 +71,7 @@ class TestDiscover:
             gets=[_response(json_body=RESOURCE_METADATA), _response(json_body=AS_METADATA)],
         )
 
-        with patch("enthusiast_common.oauth.client._client", return_value=client):
+        with patch("enthusiast_common.oauth.http.open_client", return_value=client):
             server = discover("https://srv.example.com/mcp")
 
         assert server.authorization_endpoint == "https://srv.example.com/authorize"
@@ -79,7 +83,7 @@ class TestDiscover:
     def test_a_server_needing_no_token_is_reported_rather_than_guessed_at(self):
         client = _client_returning(post=_response(200))
 
-        with patch("enthusiast_common.oauth.client._client", return_value=client):
+        with patch("enthusiast_common.oauth.http.open_client", return_value=client):
             with pytest.raises(OAuthError, match="did not ask for authorization"):
                 discover("https://open.example.com/mcp")
 
@@ -89,7 +93,7 @@ class TestDiscover:
             gets=[_response(json_body=AS_METADATA)],
         )
 
-        with patch("enthusiast_common.oauth.client._client", return_value=client):
+        with patch("enthusiast_common.oauth.http.open_client", return_value=client):
             server = discover("https://srv.example.com/mcp")
 
         assert server.token_endpoint == "https://srv.example.com/token"
@@ -100,7 +104,7 @@ class TestDiscover:
             gets=[httpx.ConnectError("boom"), httpx.ConnectError("boom"), httpx.ConnectError("boom")],
         )
 
-        with patch("enthusiast_common.oauth.client._client", return_value=client):
+        with patch("enthusiast_common.oauth.http.open_client", return_value=client):
             with pytest.raises(OAuthError, match="publishes no OAuth metadata"):
                 discover("https://srv.example.com/mcp")
 

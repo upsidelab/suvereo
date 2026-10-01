@@ -97,7 +97,7 @@ class BaseToolProvidingIntegration(BaseIntegration):
 class BaseOAuthIntegration(BaseIntegration):
     """An integration whose credentials are obtained by an OAuth authorization-code flow."""
 
-    OAUTH_FIELD: str = ""
+    OAUTH_FIELD: str
 
     @classmethod
     @abstractmethod
