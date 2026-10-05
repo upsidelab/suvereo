@@ -4,7 +4,13 @@ from unittest.mock import MagicMock, patch
 
 import httpx
 import pytest
-from enthusiast_common.oauth import AuthorizationServer, OAuthError
+from enthusiast_common.oauth import (
+    AuthorizationServer,
+    OAuthClientCredentials,
+    OAuthError,
+    OAuthPendingAuthorization,
+    OAuthTokens,
+)
 from enthusiast_integration_mcp.integration import MCPServerIntegration
 from enthusiast_integration_mcp.oauth import discover
 
@@ -112,34 +118,39 @@ class TestDiscover:
 class TestIntegrationOAuthHooks:
     def test_oauth_start_needs_a_url(self):
         with pytest.raises(OAuthError, match="Enter the server URL"):
-            MCPServerIntegration.oauth_start({}, REDIRECT)
+            MCPServerIntegration.oauth_start("  ", REDIRECT)
 
     def test_oauth_start_returns_the_state_the_callback_needs(self):
         server = AuthorizationServer("https://a/authorize", "https://a/token", "https://a/register")
 
         with (
             patch("enthusiast_integration_mcp.integration.discover", return_value=server),
-            patch("enthusiast_integration_mcp.integration.register_client", return_value={"client_id": "abc"}),
+            patch(
+                "enthusiast_integration_mcp.integration.register_client",
+                return_value=OAuthClientCredentials(client_id="abc"),
+            ),
         ):
-            url, pending = MCPServerIntegration.oauth_start({"url": "https://srv/mcp"}, REDIRECT)
+            authorization = MCPServerIntegration.oauth_start("https://srv/mcp", REDIRECT)
 
-        assert url.startswith("https://a/authorize")
-        assert pending["client_id"] == "abc"
-        assert pending["token_endpoint"] == "https://a/token"
-        assert pending["redirect_uri"] == REDIRECT
-        assert pending["verifier"] and pending["state"]
+        pending = authorization.pending
+        assert authorization.authorization_url.startswith("https://a/authorize")
+        assert pending.client.client_id == "abc"
+        assert pending.token_endpoint == "https://a/token"
+        assert pending.redirect_uri == REDIRECT
+        assert pending.verifier and pending.state
 
     def test_oauth_exchange_code_fills_the_auth_fields_the_form_already_has(self):
-        pending = {
-            "token_endpoint": "https://a/token",
-            "verifier": "v",
-            "client_id": "abc",
-            "redirect_uri": REDIRECT,
-        }
+        pending = OAuthPendingAuthorization(
+            state="s",
+            verifier="v",
+            client=OAuthClientCredentials(client_id="abc"),
+            token_endpoint="https://a/token",
+            redirect_uri=REDIRECT,
+        )
 
         with patch(
             "enthusiast_integration_mcp.integration.exchange_code",
-            return_value={"access_token": "tok", "token_type": "bearer"},
+            return_value=OAuthTokens(access_token="tok", token_type="bearer"),
         ):
             config = MCPServerIntegration.oauth_exchange_code(pending, "code-1")
 

@@ -1,12 +1,8 @@
 """The shapes held in storage while a handshake is in flight."""
 
-from typing import Any, NotRequired, TypedDict
+from typing import NotRequired, TypedDict
 
-#: Whatever the plugin asked to keep between starting and finishing; opaque to the host.
-PluginState = dict[str, Any]
-
-#: Credentials a provider issued for this deployment. Only ``client_id`` is promised by RFC 7591.
-ClientCredentials = dict[str, Any]
+from enthusiast_common.oauth import OAuthPendingAuthorization
 
 
 class PendingFlow(TypedDict):
@@ -14,7 +10,7 @@ class PendingFlow(TypedDict):
 
     integration_type: str
     data_set_id: int
-    pending: PluginState
+    pending: OAuthPendingAuthorization
     origin: str
     user_id: int
     client_key: list[str]

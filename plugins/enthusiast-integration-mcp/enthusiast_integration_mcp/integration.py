@@ -1,8 +1,15 @@
-from typing import Any
 from urllib.parse import urlparse
 
 from enthusiast_common.integrations import BaseOAuthIntegration, BaseToolProvidingIntegration
-from enthusiast_common.oauth import OAuthError, build_authorization_url, exchange_code, register_client
+from enthusiast_common.oauth import (
+    OAuthAuthorizationRequest,
+    OAuthClientCredentials,
+    OAuthError,
+    OAuthPendingAuthorization,
+    build_authorization_url,
+    exchange_code,
+    register_client,
+)
 from fastmcp import Client
 from fastmcp.client.transports import ClientTransport, SSETransport, StreamableHttpTransport
 from langchain.mcp import MCPAdapter
@@ -31,12 +38,12 @@ class MCPServerIntegration(BaseToolProvidingIntegration, BaseOAuthIntegration):
 
     @classmethod
     def oauth_start(
-        cls, config: dict[str, Any], redirect_uri: str, client: dict[str, Any] | None = None
-    ) -> tuple[str, dict[str, Any]]:
+        cls, target: str, redirect_uri: str, client: OAuthClientCredentials | None = None
+    ) -> OAuthAuthorizationRequest:
         """Discover the server's authorization server and build the URL to send the admin to.
 
         Args:
-            config: The configuration entered so far; only ``url`` is needed.
+            target: The server URL.
             redirect_uri: Where the authorization server must send the admin back to.
             client: Credentials from a previous registration against this server, reused when
                 given so that pressing Connect again does not register another client.
@@ -48,27 +55,25 @@ class MCPServerIntegration(BaseToolProvidingIntegration, BaseOAuthIntegration):
         Raises:
             OAuthError: If the server needs no token, or cannot be registered with.
         """
-        url = (config.get("url") or "").strip()
+        url = target.strip()
         if not url:
             raise OAuthError("Enter the server URL before connecting.")
 
         server = discover(url)
         credentials = client or register_client(server, redirect_uri, client_name=OAUTH_CLIENT_NAME)
-        authorization_url, verifier, state = build_authorization_url(server, credentials["client_id"], redirect_uri)
-        pending = {
-            "state": state,
-            "verifier": verifier,
-            "client": credentials,
-            "client_id": credentials["client_id"],
-            "client_secret": credentials.get("client_secret"),
-            "token_endpoint": server.token_endpoint,
-            "resource": server.resource,
-            "redirect_uri": redirect_uri,
-        }
-        return authorization_url, pending
+        authorization_url, verifier, state = build_authorization_url(server, credentials.client_id, redirect_uri)
+        pending = OAuthPendingAuthorization(
+            state=state,
+            verifier=verifier,
+            client=credentials,
+            token_endpoint=server.token_endpoint,
+            redirect_uri=redirect_uri,
+            resource=server.resource,
+        )
+        return OAuthAuthorizationRequest(authorization_url=authorization_url, pending=pending)
 
     @classmethod
-    def oauth_exchange_code(cls, pending: dict[str, Any], code: str) -> dict[str, Any]:
+    def oauth_exchange_code(cls, pending: OAuthPendingAuthorization, code: str) -> dict[str, str]:
         """Exchange the authorization code for a token, as fields to merge into the config.
 
         Args:
@@ -79,18 +84,18 @@ class MCPServerIntegration(BaseToolProvidingIntegration, BaseOAuthIntegration):
             The ``auth_header``/``auth_token`` pair, ready to drop into the form.
         """
         tokens = exchange_code(
-            token_endpoint=pending["token_endpoint"],
+            token_endpoint=pending.token_endpoint,
             code=code,
-            verifier=pending["verifier"],
-            client_id=pending["client_id"],
-            redirect_uri=pending["redirect_uri"],
-            client_secret=pending.get("client_secret"),
-            resource=pending.get("resource"),
+            verifier=pending.verifier,
+            client_id=pending.client.client_id,
+            redirect_uri=pending.redirect_uri,
+            client_secret=pending.client.client_secret,
+            resource=pending.resource,
         )
-        token_type = tokens.get("token_type") or "Bearer"
+        token_type = tokens.token_type or "Bearer"
         return {
             "auth_header": "Authorization",
-            "auth_token": f"{token_type.title()} {tokens['access_token']}",
+            "auth_token": f"{token_type.title()} {tokens.access_token}",
         }
 
     def instance_name(self) -> str:

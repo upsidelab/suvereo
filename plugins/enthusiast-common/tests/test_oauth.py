@@ -149,7 +149,7 @@ class TestRegisterClient:
         with patch("enthusiast_common.oauth.http.open_client", return_value=client):
             credentials = register_client(server, REDIRECT, "Enthusiast")
 
-        assert credentials["client_id"] == "abc123"
+        assert credentials.client_id == "abc123"
         payload = client.request.call_args.kwargs["json"]
         assert payload["redirect_uris"] == [REDIRECT]
         assert payload["token_endpoint_auth_method"] == "none"
@@ -196,7 +196,7 @@ class TestExchangeCode:
         with patch("enthusiast_common.oauth.http.open_client", return_value=client):
             tokens = exchange_code("https://a/token", "code-1", "verifier-1", "abc123", REDIRECT)
 
-        assert tokens["access_token"] == "tok"
+        assert tokens.access_token == "tok"
         sent = client.request.call_args.kwargs["data"]
         assert sent["code_verifier"] == "verifier-1"
         assert sent["grant_type"] == "authorization_code"

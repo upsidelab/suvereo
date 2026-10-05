@@ -8,6 +8,7 @@ import httpx
 
 from . import http
 from .errors import OAuthError
+from .types import OAuthClientCredentials
 
 
 @dataclass
@@ -21,7 +22,7 @@ class AuthorizationServer:
     resource: str | None = None
 
 
-def register_client(server: AuthorizationServer, redirect_uri: str, client_name: str) -> dict[str, Any]:
+def register_client(server: AuthorizationServer, redirect_uri: str, client_name: str) -> OAuthClientCredentials:
     """Register this deployment as a client, so no app has to be created by hand."""
     if not server.registration_endpoint:
         raise OAuthError(
@@ -45,7 +46,7 @@ def register_client(server: AuthorizationServer, redirect_uri: str, client_name:
     credentials = response.json()
     if not credentials.get("client_id"):
         raise OAuthError("The server registered a client but returned no client_id.")
-    return credentials
+    return OAuthClientCredentials.model_validate(credentials)
 
 
 def discover_from_challenge(resource_url: str, challenge: str) -> AuthorizationServer:

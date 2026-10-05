@@ -52,20 +52,20 @@ class IntegrationOAuthStartView(APIView):
             )
 
         redirect_uri = callback_uri(request)
-        target = str(config.get(plugin_class.OAUTH_FIELD, ""))
+        target = str(config.get(plugin_class.OAUTH_FIELD) or "").strip()
         known_client = storage.read_client(integration_type, target, redirect_uri)
 
         try:
-            authorization_url, pending = plugin_class.oauth_start(config, redirect_uri, known_client)
+            authorization = plugin_class.oauth_start(target, redirect_uri, known_client)
         except Exception as e:
             logger.info("OAuth start failed for %s: %s", integration_type, e)
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        if issued := pending.get("client"):
-            storage.store_client(integration_type, target, redirect_uri, issued)
+        pending = authorization.pending
+        storage.store_client(integration_type, target, redirect_uri, pending.client)
 
         storage.store(
-            pending["state"],
+            pending.state,
             {
                 "integration_type": integration_type,
                 "data_set_id": data_set.pk,
@@ -77,8 +77,8 @@ class IntegrationOAuthStartView(APIView):
         )
         return Response(
             {
-                "authorization_url": authorization_url,
-                "state": pending["state"],
+                "authorization_url": authorization.authorization_url,
+                "state": pending.state,
                 "expires_in": FLOW_LIFETIME_SECONDS,
             }
         )

@@ -3,12 +3,12 @@
 import base64
 import hashlib
 import secrets
-from typing import Any
 from urllib.parse import urlencode
 
 from . import http
 from .discovery import AuthorizationServer
 from .errors import OAuthError
+from .types import OAuthTokens
 
 
 def build_authorization_url(server: AuthorizationServer, client_id: str, redirect_uri: str) -> tuple[str, str, str]:
@@ -41,7 +41,7 @@ def exchange_code(
     redirect_uri: str,
     client_secret: str | None = None,
     resource: str | None = None,
-) -> dict[str, Any]:
+) -> OAuthTokens:
     """Trade the authorization code for tokens."""
     data = {
         "grant_type": "authorization_code",
@@ -62,4 +62,4 @@ def exchange_code(
     tokens = response.json()
     if not tokens.get("access_token"):
         raise OAuthError("The server completed the exchange but returned no access token.")
-    return tokens
+    return OAuthTokens.model_validate(tokens)

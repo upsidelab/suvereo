@@ -3,13 +3,14 @@
 import hashlib
 
 from django.core.cache import cache
+from enthusiast_common.oauth import OAuthClientCredentials
 
 from catalog.integrations.oauth.config import (
     CLIENT_LIFETIME_SECONDS,
     FLOW_LIFETIME_SECONDS,
     RESULT_LIFETIME_SECONDS,
 )
-from catalog.integrations.oauth.types import ClientCredentials, FlowResult, PendingFlow
+from catalog.integrations.oauth.types import FlowResult, PendingFlow
 
 _KEY_PREFIX = "integration-oauth-flow:"
 _RESULT_PREFIX = "integration-oauth-result:"
@@ -46,14 +47,14 @@ def _client_key(integration_type: str, target: str, redirect_uri: str) -> str:
     return f"{_CLIENT_PREFIX}{fingerprint}"
 
 
-def read_client(integration_type: str, target: str, redirect_uri: str) -> ClientCredentials | None:
+def read_client(integration_type: str, target: str, redirect_uri: str) -> OAuthClientCredentials | None:
     """Credentials from an earlier registration against this server, if we still hold them."""
     return cache.get(_client_key(integration_type, target, redirect_uri))
 
 
-def store_client(integration_type: str, target: str, redirect_uri: str, client: ClientCredentials) -> None:
+def store_client(integration_type: str, target: str, redirect_uri: str, client: OAuthClientCredentials) -> None:
     """Keep a registration so pressing Connect again reuses it rather than making another."""
-    if client.get("client_secret"):
+    if client.client_secret:
         return
     cache.set(_client_key(integration_type, target, redirect_uri), client, timeout=CLIENT_LIFETIME_SECONDS)
 

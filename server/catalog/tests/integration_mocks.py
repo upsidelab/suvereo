@@ -1,4 +1,5 @@
 from enthusiast_common.integrations import BaseIntegration, BaseOAuthIntegration
+from enthusiast_common.oauth import OAuthAuthorizationRequest, OAuthClientCredentials, OAuthPendingAuthorization
 from enthusiast_common.utils import RequiredFieldsModel
 from pydantic import Field
 
@@ -36,13 +37,26 @@ class MockOAuthIntegration(BaseOAuthIntegration):
     OAUTH_FIELD = "url"
 
     @classmethod
-    def oauth_start(cls, config, redirect_uri, client=None):
-        return "https://provider.example.com/authorize?state=state-123", {
-            "state": "state-123",
-            "redirect_uri": redirect_uri,
-            "client": client or {"client_id": "registered-once"},
-        }
+    def oauth_start(cls, target, redirect_uri, client=None):
+        return OAuthAuthorizationRequest(
+            authorization_url="https://provider.example.com/authorize?state=state-123",
+            pending=mock_pending_authorization(
+                redirect_uri=redirect_uri, client=client or OAuthClientCredentials(client_id="registered-once")
+            ),
+        )
 
     @classmethod
     def oauth_exchange_code(cls, pending, code):
         return {"auth_header": "Authorization", "auth_token": f"Bearer token-for-{code}"}
+
+
+def mock_pending_authorization(**overrides) -> OAuthPendingAuthorization:
+    """A pending authorization as MockOAuthIntegration would hold it, with any field overridden."""
+    fields = {
+        "state": "state-123",
+        "verifier": "verifier-123",
+        "client": OAuthClientCredentials(client_id="registered-once"),
+        "token_endpoint": "https://provider.example.com/token",
+        "redirect_uri": "http://testserver/callback",
+    }
+    return OAuthPendingAuthorization(**{**fields, **overrides})

@@ -4,6 +4,7 @@ import pytest
 from django.contrib.auth.models import Permission
 from django.core.cache import caches
 from django.urls import reverse
+from enthusiast_common.oauth import OAuthAuthorizationRequest, OAuthClientCredentials
 from model_bakery import baker
 from rest_framework import status
 
@@ -13,7 +14,11 @@ from catalog.integrations.oauth import config as oauth_config
 from catalog.integrations.oauth import storage as oauth_storage
 from catalog.integrations.oauth.helpers import callback_uri
 from catalog.integrations.registry import IntegrationPluginRegistry
-from catalog.tests.integration_mocks import MockOAuthIntegration, MockSingleInstanceIntegration
+from catalog.tests.integration_mocks import (
+    MockOAuthIntegration,
+    MockSingleInstanceIntegration,
+    mock_pending_authorization,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -121,7 +126,7 @@ class TestClientRegistrationIsReused:
             admin_api_client.post(url, {"type": "mock_oauth", "config": {}}, format="json")
 
         assert spy.call_args_list[0].args[2] is None
-        assert spy.call_args_list[1].args[2] == {"client_id": "registered-once"}
+        assert spy.call_args_list[1].args[2] == OAuthClientCredentials(client_id="registered-once")
 
     @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
     def test_a_failed_start_keeps_the_registration(self, mock_get_plugin_class, admin_api_client, url):
@@ -135,16 +140,16 @@ class TestClientRegistrationIsReused:
         with patch.object(MockOAuthIntegration, "oauth_start", wraps=MockOAuthIntegration.oauth_start) as spy:
             admin_api_client.post(url, {"type": "mock_oauth", "config": {}}, format="json")
 
-        assert spy.call_args_list[0].args[2] == {"client_id": "registered-once"}
+        assert spy.call_args_list[0].args[2] == OAuthClientCredentials(client_id="registered-once")
 
     @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
     def test_a_registration_carrying_a_secret_is_not_kept(self, mock_get_plugin_class, admin_api_client, url):
         """We register as a public client; a secret coming back is a credential, not cache content."""
         mock_get_plugin_class.return_value = MockOAuthIntegration
-        confidential = ("https://provider.example.com/authorize", {
-            "state": "state-123",
-            "client": {"client_id": "abc", "client_secret": "s3cret"},
-        })
+        confidential = OAuthAuthorizationRequest(
+            authorization_url="https://provider.example.com/authorize",
+            pending=mock_pending_authorization(client=OAuthClientCredentials(client_id="abc", client_secret="s3cret")),
+        )
 
         with patch.object(MockOAuthIntegration, "oauth_start", return_value=confidential):
             admin_api_client.post(url, {"type": "mock_oauth", "config": {}}, format="json")
@@ -192,7 +197,7 @@ class TestIntegrationOAuthCallbackView:
             {
                 "integration_type": "mock_oauth",
                 "data_set_id": data_set.pk,
-                "pending": {"state": "state-123", "redirect_uri": "http://testserver/callback"},
+                "pending": mock_pending_authorization(),
                 "origin": ORIGIN,
                 "user_id": admin_user.pk,
             },
@@ -233,7 +238,13 @@ class TestIntegrationOAuthCallbackView:
         mock_get_plugin_class.return_value = MockOAuthIntegration
         oauth_storage.store(
             "state-456",
-            {"integration_type": "mock_oauth", "data_set_id": 1, "pending": {}, "origin": "", "user_id": 1},
+            {
+                "integration_type": "mock_oauth",
+                "data_set_id": 1,
+                "pending": mock_pending_authorization(state="state-456"),
+                "origin": "",
+                "user_id": 1,
+            },
         )
 
         response = client.get(url, {"state": "state-456", "code": "abc"})
@@ -283,7 +294,7 @@ class TestIntegrationOAuthCallbackView:
         with patch.object(MockOAuthIntegration, "oauth_start", wraps=MockOAuthIntegration.oauth_start) as spy:
             admin_api_client.post(start_url, {"type": "mock_oauth", "config": {}}, format="json")
 
-        assert spy.call_args_list[0].args[2] == {"client_id": "registered-once"}
+        assert spy.call_args_list[0].args[2] == OAuthClientCredentials(client_id="registered-once")
 
     def test_a_provider_refusal_is_kept_for_the_form_to_report(self, client, url, flow):
         client.get(url, {"state": "state-123", "error": "access_denied", "error_description": "User said no"})
@@ -321,7 +332,7 @@ class TestIntegrationOAuthResultView:
             {
                 "integration_type": "mock_oauth",
                 "data_set_id": data_set.pk,
-                "pending": {"state": "state-123"},
+                "pending": mock_pending_authorization(),
                 "origin": ORIGIN,
                 "user_id": admin_user.pk,
             },

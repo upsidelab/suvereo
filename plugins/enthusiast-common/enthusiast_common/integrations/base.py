@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Optional, TypeVar
 
 from enthusiast_common.indexing import BaseEntityIndexer
+from enthusiast_common.oauth import OAuthAuthorizationRequest, OAuthClientCredentials, OAuthPendingAuthorization
 from langchain_core.tools import BaseTool as LCBaseTool
 
 
@@ -97,19 +98,37 @@ class BaseToolProvidingIntegration(BaseIntegration):
 class BaseOAuthIntegration(BaseIntegration):
     """An integration whose credentials are obtained by an OAuth authorization-code flow."""
 
+    #: The config field identifying what is being authorized; its value is passed to ``oauth_start``.
     OAUTH_FIELD: str
 
     @classmethod
     @abstractmethod
     def oauth_start(
-        cls, config: dict[str, Any], redirect_uri: str, client: dict[str, Any] | None = None
-    ) -> tuple[str, dict[str, Any]]:
-        """Begin the flow for a part-filled config."""
+        cls, target: str, redirect_uri: str, client: OAuthClientCredentials | None = None
+    ) -> OAuthAuthorizationRequest:
+        """Begin the flow for the value entered in ``OAUTH_FIELD``.
+
+        Args:
+            target: The value of ``OAUTH_FIELD``, possibly empty if the admin has not filled it in.
+            redirect_uri: Where the provider must send the admin back to.
+            client: A registration from an earlier attempt, to reuse instead of registering again.
+
+        Returns:
+            The URL to send the admin to, and the state the callback needs to finish.
+        """
 
     @classmethod
     @abstractmethod
-    def oauth_exchange_code(cls, pending: dict[str, Any], code: str) -> dict[str, Any]:
-        """Exchange an authorization code for credentials."""
+    def oauth_exchange_code(cls, pending: OAuthPendingAuthorization, code: str) -> dict[str, str]:
+        """Exchange an authorization code for credentials.
+
+        Args:
+            pending: The state ``oauth_start`` returned.
+            code: The authorization code the callback received.
+
+        Returns:
+            Config field values to merge into the form.
+        """
 
 
 # Bound to BaseIntegration, defined above — kept local to its only use below
