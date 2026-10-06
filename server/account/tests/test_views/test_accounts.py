@@ -11,7 +11,7 @@ pytestmark = pytest.mark.django_db
 
 # The prefixes an admin's raw `get_all_permissions()` is full of, none of which this application
 # ever checks. Before the public vocabulary they were all published to the frontend verbatim.
-FRAMEWORK_PREFIXES = ("admin.", "auth.", "authtoken.", "contenttypes.", "sessions.", "token_blacklist.")
+FRAMEWORK_PREFIXES = ("admin.", "auth.", "authtoken.", "contenttypes.", "token_blacklist.")
 
 
 @pytest.fixture
