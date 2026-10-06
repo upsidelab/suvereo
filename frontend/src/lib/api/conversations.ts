@@ -40,8 +40,19 @@ export type MessageTaskStatusResponse = TaskStatusResponse<{
 }>
 
 export class ConversationsApiClient extends BaseApiClient {
+  async getWebSocketTicket(): Promise<string> {
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/auth/ws_ticket`, { method: "POST" });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get WebSocket ticket: ${response.statusText}`);
+    }
+
+    const { ticket } = await response.json() as { ticket: string };
+    return ticket;
+  }
+
   async getConversations(dataSetId: number, page: number = 1): Promise<PaginatedResult<Conversation>> {
-    const response = await fetch(`${this.apiBase}/api/conversations?data_set_id=${dataSetId}&page=${page}`, this._requestConfiguration());
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/conversations?data_set_id=${dataSetId}&page=${page}`);
     return await response.json() as Promise<PaginatedResult<Conversation>>;
   }
 
@@ -50,11 +61,10 @@ export class ConversationsApiClient extends BaseApiClient {
       agent_id: agentId
     };
 
-    const requestConfiguration = this._requestConfiguration();
-    requestConfiguration.method = "POST";
-    requestConfiguration.body = JSON.stringify(requestBody);
-
-    const response = await fetch(`${this.apiBase}/api/conversations`, requestConfiguration);
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/conversations`, {
+      method: "POST",
+      body: JSON.stringify(requestBody)
+    });
 
     if (!response.ok) {
       throw new Error(`Failed to create conversation: ${response.statusText}`);
@@ -72,8 +82,7 @@ export class ConversationsApiClient extends BaseApiClient {
       file_ids: fileIds
     }
 
-    const response = await fetch(`${this.apiBase}/api/conversations/${conversationId}`, {
-      ...this._requestConfiguration(),
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/conversations/${conversationId}`, {
       method: "POST",
       body: JSON.stringify(requestBody)
     });
@@ -86,7 +95,7 @@ export class ConversationsApiClient extends BaseApiClient {
   }
 
   async getTaskStatus(taskHandle: TaskHandle): Promise<MessageTaskStatusResponse> {
-    const response = await fetch(`${this.apiBase}/api/message-push-status/${taskHandle.task_id}`, {...this._requestConfiguration()});
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/message-push-status/${taskHandle.task_id}`);
     return await response.json() as MessageTaskStatusResponse;
   }
 
@@ -102,9 +111,7 @@ export class ConversationsApiClient extends BaseApiClient {
   }
 
   async getConversation(conversation_id: number | null): Promise<Conversation> {
-    const response = await fetch(`${this.apiBase}/api/conversations/${conversation_id}`, {
-      ...this._requestConfiguration()
-    });
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/conversations/${conversation_id}`);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -118,8 +125,7 @@ export class ConversationsApiClient extends BaseApiClient {
   }
 
   async updateMessageFeedback(messageId: number | null, feedbackData: FeedbackData): Promise<void> {
-    const response = await fetch(`${this.apiBase}/api/messages/${messageId}/feedback/`, {
-      ...this._requestConfiguration(),
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/messages/${messageId}/feedback/`, {
       method: 'PATCH',
       body: JSON.stringify(feedbackData),
     });
@@ -133,8 +139,7 @@ export class ConversationsApiClient extends BaseApiClient {
 
   async getSupportedFileTypes(): Promise<SupportedFileTypes> {
     try {
-      const response = await fetch(`${this.apiBase}/api/supported-file-types/`, {
-        ...this._requestConfiguration(),
+      const response = await this.authenticatedFetch(`${this.apiBase}/api/supported-file-types/`, {
         method: 'GET',
       });
 
@@ -156,14 +161,8 @@ export class ConversationsApiClient extends BaseApiClient {
     const formData = new FormData();
     formData.append('file', file);
 
-    const requestConfig = this._requestConfiguration();
-    const headers = { ...requestConfig.headers } as Record<string, string>;
-    delete headers['Content-Type'];
-
-    const response = await fetch(`${this.apiBase}/api/conversations/${conversationId}/upload/`, {
-      ...requestConfig,
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/conversations/${conversationId}/upload/`, {
       method: 'POST',
-      headers,
       body: formData,
     });
 
@@ -175,7 +174,7 @@ export class ConversationsApiClient extends BaseApiClient {
   }
 
   async getFileUploadStatus(taskId: string): Promise<FileUploadStatusResponse> {
-    const response = await fetch(`${this.apiBase}/api/file-upload-status/${taskId}/`, this._requestConfiguration());
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/file-upload-status/${taskId}/`);
 
     if (!response.ok) {
       throw new Error('Failed to check upload status');

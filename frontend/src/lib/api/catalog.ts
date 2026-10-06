@@ -11,12 +11,12 @@ export type DocumentResponse = {
 
 export class CatalogApiClient extends BaseApiClient {
   async getProducts(dataSetId: number, page: number = 1): Promise<PaginatedResult<Product>> {
-    const response = await fetch(`${this.apiBase}/api/data_sets/${dataSetId}/products?page=${page}`, this._requestConfiguration());
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/data_sets/${dataSetId}/products?page=${page}`);
     return await response.json() as Promise<PaginatedResult<Product>>;
   }
 
   async getDocuments(dataSetId: number, page: number = 1): Promise<PaginatedResult<Document>> {
-    const response = await fetch(`${this.apiBase}/api/data_sets/${dataSetId}/documents?page=${page}`, this._requestConfiguration());
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/data_sets/${dataSetId}/documents?page=${page}`);
     const result = await response.json() as PaginatedResult<DocumentResponse>;
 
     return {

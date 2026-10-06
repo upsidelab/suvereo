@@ -202,18 +202,25 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
     }
   };
 
-  const createWsConnection = (conversationId: number): Promise<boolean> => {
+  const createWsConnection = async (conversationId: number): Promise<boolean> => {
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      return true;
+    }
+
+    if (ws.current) {
+      ws.current.close();
+    }
+
+    let ticket: string;
+    try {
+      ticket = await api.conversations().getWebSocketTicket();
+    } catch {
+      usePolling.current = true;
+      return false;
+    }
+
     return new Promise((resolve) => {
-      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-        resolve(true);
-        return;
-      }
-
-      if (ws.current) {
-        ws.current.close();
-      }
-
-      ws.current = new WebSocket(`${import.meta.env.VITE_WS_BASE}/ws/chat/${conversationId}/`);
+      ws.current = new WebSocket(`${import.meta.env.VITE_WS_BASE}/ws/chat/${conversationId}/?ticket=${encodeURIComponent(ticket)}`);
 
       ws.current.onopen = () => {
         resolve(true);

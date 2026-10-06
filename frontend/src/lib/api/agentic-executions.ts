@@ -8,7 +8,7 @@ export class AgenticExecutionsApiClient extends BaseApiClient {
     if (filters?.datasetId) params.set("dataset_id", filters.datasetId.toString());
     if (filters?.agentId) params.set("agent_id", filters.agentId.toString());
     if (filters?.status) params.set("status", filters.status);
-    const response = await fetch(`${this.apiBase}/api/agentic-executions/?${params}`, this._requestConfiguration());
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/agentic-executions/?${params}`);
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new ApiError(`Failed to list agentic executions: ${response.statusText}`, {
@@ -20,7 +20,7 @@ export class AgenticExecutionsApiClient extends BaseApiClient {
   }
 
   async get(id: number): Promise<AgenticExecutionDetail> {
-    const response = await fetch(`${this.apiBase}/api/agentic-executions/${id}/`, this._requestConfiguration());
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/agentic-executions/${id}/`);
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new ApiError(`Failed to fetch agentic execution: ${response.statusText}`, {
@@ -32,7 +32,7 @@ export class AgenticExecutionsApiClient extends BaseApiClient {
   }
 
   async getDefinitions(agentId: number): Promise<ExecutionDefinition[]> {
-    const response = await fetch(`${this.apiBase}/api/agents/${agentId}/agentic-execution-definitions/`, this._requestConfiguration());
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/agents/${agentId}/agentic-execution-definitions/`);
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new ApiError(`Failed to fetch execution definitions: ${response.statusText}`, {
@@ -53,19 +53,12 @@ export class AgenticExecutionsApiClient extends BaseApiClient {
       formData.append("input", JSON.stringify(input));
       files.forEach(file => formData.append("files", file));
 
-      const requestConfig = this._requestConfiguration();
-      const headers = { ...requestConfig.headers } as Record<string, string>;
-      delete headers["Content-Type"];
-
-      response = await fetch(`${this.apiBase}/api/agents/${agentId}/agentic-executions/`, {
-        ...requestConfig,
+      response = await this.authenticatedFetch(`${this.apiBase}/api/agents/${agentId}/agentic-executions/`, {
         method: "POST",
-        headers,
         body: formData,
       });
     } else {
-      response = await fetch(`${this.apiBase}/api/agents/${agentId}/agentic-executions/`, {
-        ...this._requestConfiguration(),
+      response = await this.authenticatedFetch(`${this.apiBase}/api/agents/${agentId}/agentic-executions/`, {
         method: "POST",
         body: JSON.stringify({ execution_key, input }),
       });

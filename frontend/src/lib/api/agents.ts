@@ -17,7 +17,7 @@ type AvailableAgentsResponse = {
 
 export class AgentsApiClient extends BaseApiClient {
     async getAvailableAgentTypes(): Promise<AgentChoice[]> {
-        const response = await fetch(`${this.apiBase}/api/agents/types`, this._requestConfiguration());
+        const response = await this.authenticatedFetch(`${this.apiBase}/api/agents/types`);
 
         if (!response.ok) {
             throw new Error(`Failed to fetch available agents: ${response.statusText}`);
@@ -28,10 +28,7 @@ export class AgentsApiClient extends BaseApiClient {
     }
     async getDatasetAvailableAgents(dataSetId: number): Promise<Agent[]> {
         const query = new URLSearchParams({ dataset: dataSetId.toString() });
-        const response = await fetch(
-            `${this.apiBase}/api/agents?${query.toString()}`,
-            this._requestConfiguration()
-        );
+        const response = await this.authenticatedFetch(`${this.apiBase}/api/agents?${query.toString()}`);
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
@@ -44,7 +41,7 @@ export class AgentsApiClient extends BaseApiClient {
         return await response.json() as Agent[];
     }
     async getAgentById(agentId: number): Promise<AgentDetails> {
-        const response = await fetch(`${this.apiBase}/api/agents/${agentId}`, this._requestConfiguration());
+        const response = await this.authenticatedFetch(`${this.apiBase}/api/agents/${agentId}`);
         if (!response.ok) {
             throw new Error(`Failed to fetch agent: ${response.statusText}`);
         }
@@ -52,8 +49,7 @@ export class AgentsApiClient extends BaseApiClient {
     }
 
     async createAgent(data: { name: string; agent_type: string; dataset: number; config: AgentConfig }): Promise<AgentDetails> {
-        const response = await fetch(`${this.apiBase}/api/agents`, {
-            ...this._requestConfiguration(),
+        const response = await this.authenticatedFetch(`${this.apiBase}/api/agents`, {
             method: 'POST',
             body: JSON.stringify(data),
         });
@@ -68,8 +64,7 @@ export class AgentsApiClient extends BaseApiClient {
     }
 
     async updateAgent(agentId: number, data: { name: string; agent_type: string; dataset: number; config: AgentConfig }): Promise<AgentDetails> {
-        const response = await fetch(`${this.apiBase}/api/agents/${agentId}`, {
-            ...this._requestConfiguration(),
+        const response = await this.authenticatedFetch(`${this.apiBase}/api/agents/${agentId}`, {
             method: 'PUT',
             body: JSON.stringify(data),
         });
@@ -85,8 +80,7 @@ export class AgentsApiClient extends BaseApiClient {
     }
 
     async deleteAgent(agentId: number): Promise<void> {
-        const response = await fetch(`${this.apiBase}/api/agents/${agentId}`, {
-            ...this._requestConfiguration(),
+        const response = await this.authenticatedFetch(`${this.apiBase}/api/agents/${agentId}`, {
             method: 'DELETE',
         });
         if (!response.ok) {

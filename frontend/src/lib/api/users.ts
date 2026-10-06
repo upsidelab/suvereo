@@ -41,7 +41,7 @@ export type UserResponse = {
 
 export class UsersApiClient extends BaseApiClient {
   async getUsers(page: number): Promise<PaginatedResult<User>> {
-    const response = await fetch(`${this.apiBase}/api/users?page=${page}`, this._requestConfiguration());
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/users?page=${page}`);
     if (!response.ok) {
       throw new ApiError(`Failed to list users: ${response.statusText}`, {
         data: await response.json().catch(() => ({})),
@@ -69,10 +69,9 @@ export class UsersApiClient extends BaseApiClient {
       is_active: user.isActive
     };
 
-    return await fetch(
+    return await this.authenticatedFetch(
       `${this.apiBase}/api/users`,
       {
-        ...this._requestConfiguration(),
         method: "POST",
         body: JSON.stringify(payload)
       }
@@ -86,10 +85,9 @@ export class UsersApiClient extends BaseApiClient {
       is_active: user.isActive
     };
 
-    return await fetch(
+    return await this.authenticatedFetch(
       `${this.apiBase}/api/users/${userId}`,
       {
-        ...this._requestConfiguration(),
         method: "PATCH",
         body: JSON.stringify(payload)
       }
@@ -97,10 +95,9 @@ export class UsersApiClient extends BaseApiClient {
   }
 
   async setUserAdmin(userId: number, isAdmin: boolean): Promise<Response> {
-    return await fetch(
+    return await this.authenticatedFetch(
       `${this.apiBase}/api/users/${userId}`,
       {
-        ...this._requestConfiguration(),
         method: "PATCH",
         body: JSON.stringify({ is_admin: isAdmin })
       }
@@ -112,10 +109,9 @@ export class UsersApiClient extends BaseApiClient {
       password: password
     };
 
-    return await fetch(
+    return await this.authenticatedFetch(
       `${this.apiBase}/api/users/${userId}/password`,
       {
-        ...this._requestConfiguration(),
         method: "PUT",
         body: JSON.stringify(payload)
       }

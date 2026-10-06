@@ -4,7 +4,7 @@ import { ApiError } from "@/lib/api-error.ts";
 
 export class IntegrationsApiClient extends BaseApiClient {
   async listTypes(): Promise<IntegrationType[]> {
-    const response = await fetch(`${this.apiBase}/api/integration-types/`, this._requestConfiguration());
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/integration-types/`);
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new ApiError(`Failed to list integration types: ${response.statusText}`, {
@@ -20,8 +20,7 @@ export class IntegrationsApiClient extends BaseApiClient {
     type: string,
     config: Record<string, unknown>
   ): Promise<{ authorizationUrl?: string; state?: string; expiresInMs: number; authorizationRequired: boolean; detail?: string }> {
-    const response = await fetch(`${this.apiBase}/api/data_sets/${dataSetId}/integrations/oauth/start/`, {
-      ...this._requestConfiguration(),
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/data_sets/${dataSetId}/integrations/oauth/start/`, {
       method: "POST",
       body: JSON.stringify({ type, config }),
     });
@@ -54,8 +53,7 @@ export class IntegrationsApiClient extends BaseApiClient {
     config: Record<string, unknown>,
     integrationId?: number
   ): Promise<Record<string, string>> {
-    const response = await fetch(`${this.apiBase}/api/data_sets/${dataSetId}/integrations/oauth/refresh/`, {
-      ...this._requestConfiguration(),
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/data_sets/${dataSetId}/integrations/oauth/refresh/`, {
       method: "POST",
       body: JSON.stringify({ type, config, integration_id: integrationId }),
     });
@@ -70,9 +68,8 @@ export class IntegrationsApiClient extends BaseApiClient {
   }
 
   async getOAuthResult(state: string): Promise<{ status: string; config?: Record<string, string>; error?: string }> {
-    const response = await fetch(
-      `${this.apiBase}/api/integrations/oauth/result/?state=${encodeURIComponent(state)}`,
-      this._requestConfiguration()
+    const response = await this.authenticatedFetch(
+      `${this.apiBase}/api/integrations/oauth/result/?state=${encodeURIComponent(state)}`
     );
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
@@ -82,10 +79,7 @@ export class IntegrationsApiClient extends BaseApiClient {
   }
 
   async list(dataSetId: number): Promise<Integration[]> {
-    const response = await fetch(
-      `${this.apiBase}/api/data_sets/${dataSetId}/integrations/`,
-      this._requestConfiguration()
-    );
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/data_sets/${dataSetId}/integrations/`);
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new ApiError(`Failed to list integrations: ${response.statusText}`, {
@@ -97,8 +91,7 @@ export class IntegrationsApiClient extends BaseApiClient {
   }
 
   async create(dataSetId: number, type: string, config: Record<string, unknown>): Promise<Integration> {
-    const response = await fetch(`${this.apiBase}/api/data_sets/${dataSetId}/integrations/`, {
-      ...this._requestConfiguration(),
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/data_sets/${dataSetId}/integrations/`, {
       method: "POST",
       body: JSON.stringify({ type, config }),
     });
@@ -113,8 +106,7 @@ export class IntegrationsApiClient extends BaseApiClient {
   }
 
   async sync(dataSetId: number, id: number): Promise<{ task_id: string }> {
-    const response = await fetch(`${this.apiBase}/api/data_sets/${dataSetId}/integrations/${id}/sync/`, {
-      ...this._requestConfiguration(),
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/data_sets/${dataSetId}/integrations/${id}/sync/`, {
       method: "POST",
     });
     if (!response.ok) {
@@ -128,8 +120,7 @@ export class IntegrationsApiClient extends BaseApiClient {
   }
 
   async update(dataSetId: number, id: number, config: Record<string, unknown>): Promise<Integration> {
-    const response = await fetch(`${this.apiBase}/api/data_sets/${dataSetId}/integrations/${id}/`, {
-      ...this._requestConfiguration(),
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/data_sets/${dataSetId}/integrations/${id}/`, {
       method: "PATCH",
       body: JSON.stringify({ config }),
     });
@@ -144,8 +135,7 @@ export class IntegrationsApiClient extends BaseApiClient {
   }
 
   async delete(dataSetId: number, id: number): Promise<void> {
-    const response = await fetch(`${this.apiBase}/api/data_sets/${dataSetId}/integrations/${id}/`, {
-      ...this._requestConfiguration(),
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/data_sets/${dataSetId}/integrations/${id}/`, {
       method: "DELETE",
     });
     if (!response.ok) {

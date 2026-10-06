@@ -18,7 +18,8 @@ const api = new ApiClient(authenticationProviderInstance);
 
 export function UserMenu() {
   const navigate = useNavigate();
-  const logout = () => {
+  const logout = async () => {
+    await api.logout();
     authenticationProviderInstance.logout();
     navigate("/login");
   };
