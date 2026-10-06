@@ -36,6 +36,10 @@ class BaseAgentRegistry(ABC, BaseRegistry[BaseAgent]):
         pass
 
     @abstractmethod
+    async def aget_conversation_agent(self, *args, **kwargs) -> BaseAgent:
+        pass
+
+    @abstractmethod
     def get_agent_class_by_type(self, *args, **kwargs) -> Type[BaseAgent]:
         pass
 
@@ -50,17 +54,40 @@ class AgentRegistry(BaseAgentRegistry):
         tool_scratchpad: Optional[ToolScratchpad] = None,
     ) -> BaseAgent:
         try:
-            config_provider_cls = self._get_config_provider_class(agent_type=conversation.agent.agent_type)
-            builder = config_provider_cls.BUILDER_CLASS or AgentBuilder
-            config = merge_config(partial=config_provider_cls().get_config(config_type=config_type))
-            return builder(
-                config=config,
-                conversation_id=conversation.id,
-                streaming=streaming,
-                tool_scratchpad=tool_scratchpad,
-            ).build()
+            builder = self._build_agent_builder(conversation, streaming, config_type, tool_scratchpad)
+            return builder.build()
         except Exception as e:
             raise AgentRegistryError(f"Failed to build agent for conversation {conversation.id}") from e
+
+    async def aget_conversation_agent(
+        self,
+        conversation: Conversation,
+        streaming: bool,
+        config_type: ConfigType = ConfigType.CONVERSATION,
+        tool_scratchpad: Optional[ToolScratchpad] = None,
+    ) -> BaseAgent:
+        try:
+            builder = self._build_agent_builder(conversation, streaming, config_type, tool_scratchpad)
+            return await builder.abuild()
+        except Exception as e:
+            raise AgentRegistryError(f"Failed to build agent for conversation {conversation.id}") from e
+
+    def _build_agent_builder(
+        self,
+        conversation: Conversation,
+        streaming: bool,
+        config_type: ConfigType,
+        tool_scratchpad: Optional[ToolScratchpad],
+    ):
+        config_provider_cls = self._get_config_provider_class(agent_type=conversation.agent.agent_type)
+        builder_cls = config_provider_cls.BUILDER_CLASS or AgentBuilder
+        config = merge_config(partial=config_provider_cls().get_config(config_type=config_type))
+        return builder_cls(
+            config=config,
+            conversation_id=conversation.id,
+            streaming=streaming,
+            tool_scratchpad=tool_scratchpad,
+        )
 
     def get_agent_class_by_type(self, agent_type: str) -> Type[BaseAgent]:
         agents = [agent for agent in self.get_plugin_classes() if agent.AGENT_KEY == agent_type]

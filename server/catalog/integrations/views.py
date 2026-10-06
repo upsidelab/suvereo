@@ -1,4 +1,6 @@
+from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
+from enthusiast_common.integrations import BaseOAuthIntegration
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -8,6 +10,7 @@ from account.authorization import PERMISSIONS, any_permission_on_any_dataset_req
 from catalog.integrations.registry import IntegrationPluginRegistry
 from catalog.integrations.tasks import sync_integration_task
 from catalog.models import DataSet, Integration
+from catalog.models.integration import UNIQUE_INTEGRATION_TYPE_CONSTRAINT
 from catalog.serializers import IntegrationSerializer, IntegrationTypeSerializer, IntegrationUpdateSerializer
 
 
@@ -24,6 +27,9 @@ class IntegrationTypeListView(APIView):
                 "name": cls.NAME,
                 "integration_type_name": cls.INTEGRATION_TYPE_NAME,
                 "syncable": cls.is_syncable(),
+                "supports_oauth": issubclass(cls, BaseOAuthIntegration),
+                "oauth_field": cls.OAUTH_FIELD if issubclass(cls, BaseOAuthIntegration) else "",
+                "oauth_refresh_field": cls.OAUTH_REFRESH_FIELD if issubclass(cls, BaseOAuthIntegration) else "",
                 "config_schema": cls().get_config_schema(),
             }
             for cls in IntegrationPluginRegistry().get_plugin_classes()
@@ -45,7 +51,7 @@ class IntegrationListView(_DataSetScopedView):
     def get(self, request, data_set_id):
         data_set = self._get_dataset(data_set_id)
         enforce_dataset_scoped_permission(self, PERMISSIONS.INTEGRATION.VIEW, data_set)
-        qs = Integration.objects.filter(dataset_id=data_set_id).order_by("type")
+        qs = Integration.objects.filter(dataset_id=data_set_id).order_by("type", "id")
         return Response(IntegrationSerializer(qs, many=True).data)
 
     def post(self, request, data_set_id):
@@ -57,19 +63,26 @@ class IntegrationListView(_DataSetScopedView):
         integration_type = serializer.validated_data["type"]
 
         try:
-            IntegrationPluginRegistry().get_plugin_class_by_type(integration_type)
+            plugin_class = IntegrationPluginRegistry().get_plugin_class_by_type(integration_type)
         except KeyError:
             return Response(
                 {"detail": f"No integration plugin registered with TYPE='{integration_type}'."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        if Integration.objects.filter(dataset=data_set, type=integration_type).exists():
+        try:
+            with transaction.atomic():
+                integration = serializer.save(
+                    dataset=data_set, allows_multiple_instances=plugin_class.ALLOWS_MULTIPLE_INSTANCES
+                )
+        except IntegrityError as e:
+            # Only the uniqueness constraint means "already configured"; anything else is a real
+            # database failure and must not be reported to the admin as a duplicate.
+            if UNIQUE_INTEGRATION_TYPE_CONSTRAINT not in str(e):
+                raise
             return Response(
                 {"detail": f"This dataset already has a '{integration_type}' integration."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        integration = serializer.save(dataset=data_set)
         return Response(IntegrationSerializer(integration).data, status=status.HTTP_201_CREATED)
 
 

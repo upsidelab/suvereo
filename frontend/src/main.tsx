@@ -6,6 +6,7 @@ import { createBrowserRouter, LoaderFunctionArgs, redirect, RouterProvider } fro
 import { ChatHistory } from "@/pages/data-sets/(id)/history.tsx";
 import { Chat } from "@/pages/data-sets/(id)/chat/index.tsx";
 import { LoginPage } from "@/pages/login.tsx";
+import { OAuthCompletePage } from "@/pages/oauth-complete.tsx";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
 import { ApiConnectionIndex } from "@/pages/service-accounts/index.tsx";
 import { NoDataSets } from "@/pages/no-data-sets.tsx";
@@ -219,6 +220,10 @@ const router = createBrowserRouter([
     path: "/login",
     element: <LoginPage />,
     loader: loginLoader
+  },
+  {
+    path: "/oauth/complete",
+    element: <OAuthCompletePage />
   },
   {
     path: "/onboarding",

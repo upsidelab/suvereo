@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "enthusiast-integration-mcp"
+version = "1.0.0"
+description = "MCP (Model Context Protocol) server integration for Enthusiast — connect one or more MCP servers per dataset."
+authors = ["Rafal Cymerys <rafal@upsidelab.io>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+enthusiast-common = ">=1.7.0"
+# Deliberately unpinned at the top end: langchain.mcp is in beta and moving, and pinning would
+# hold this plugin back from fixes. The mcp extra first appears in 1.4.2.
+langchain = { version = ">=1.4.2", extras = ["mcp"] }
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

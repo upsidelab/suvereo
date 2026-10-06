@@ -16,12 +16,16 @@ export type IntegrationType = {
   name: string;
   integration_type_name: string;
   syncable: boolean;
+  supports_oauth: boolean;
+  oauth_field: string;
+  oauth_refresh_field: string;
   config_schema: unknown;
 };
 
 export type Integration = {
   id: number;
   dataset: number;
+  needs_reconnect?: boolean;
   type: string;
   name: string;
   integration_type_name: string | null;

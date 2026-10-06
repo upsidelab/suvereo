@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
+from collections.abc import Awaitable, Callable
 from typing import Any, Optional, TypeVar
 
 from enthusiast_common.indexing import BaseEntityIndexer
+from enthusiast_common.oauth import OAuthAuthorizationRequest, OAuthClientCredentials, OAuthPendingAuthorization
+from langchain_core.tools import BaseTool as LCBaseTool
 
 
 class BaseIntegrationManager(ABC):
@@ -25,11 +28,12 @@ class BaseIntegration(ABC):
 
     The framework stores the integration's configuration and instantiates the
     plugin with that config before use. A DataSet holds at most one integration
-    of a given ``TYPE``. A vertical may add further capabilities in its own
-    subclass; the base only covers config and connection testing.
+    of a given ``TYPE``, unless the type opts into ``ALLOWS_MULTIPLE_INSTANCES``.
+    A vertical may add further capabilities in its own subclass; the base only
+    covers configuration and how an instance presents itself.
     """
 
-    #: Stable identifier for this integration type. Unique per DataSet.
+    #: Stable identifier for this integration type. Unique per DataSet unless ALLOWS_MULTIPLE_INSTANCES is True.
     TYPE: str
     #: Human-readable name shown in the UI.
     NAME: str
@@ -39,11 +43,23 @@ class BaseIntegration(ABC):
     INTEGRATION_MANAGER: type[BaseIntegrationManager] | None = None
     #: Pydantic model class describing the configuration fields. Set to None when no config is required.
     CONFIGURATION_ARGS = None
+    #: When True, a DataSet may hold more than one integration of this TYPE. Defaults to False so
+    #: every existing plugin stays capped at one; a type opts in by overriding this.
+    ALLOWS_MULTIPLE_INSTANCES: bool = False
 
     @classmethod
     def is_syncable(cls) -> bool:
         """An integration is syncable when its manager pulls data from an external source."""
         return cls.INTEGRATION_MANAGER is not None and issubclass(cls.INTEGRATION_MANAGER, BaseSourceIntegrationManager)
+
+    def instance_name(self) -> str:
+        """Label for this configured instance, shown wherever integrations are listed.
+
+        Defaults to the type's ``NAME``, which reads fine while a DataSet holds only one of each.
+        A type allowing several instances should override this to include whatever distinguishes
+        them — otherwise every one of them shows up under the same label.
+        """
+        return self.NAME
 
     def set_runtime_arguments(self, runtime_arguments: dict[str, Any]) -> None:
         """Populate class-level config fields from a dict of runtime values.
@@ -67,6 +83,76 @@ class BaseIntegration(ABC):
         return config_class.model_json_schema()
 
 
+class BaseToolProvidingIntegration(BaseIntegration):
+    """An integration that can also hand agents extra tools to call, on top of its stored config.
+
+    Discovered generically via ``resolve_all(data_set_id, BaseToolProvidingIntegration)`` — the
+    framework never needs to know about a specific tool-providing integration type (e.g. MCP
+    servers); it only needs to know this capability exists.
+    """
+
+    @abstractmethod
+    async def get_tools(self) -> list[LCBaseTool]:
+        """Return the LangChain tools this integration instance currently makes available."""
+
+
+class BaseOAuthIntegration(BaseIntegration):
+    """An integration whose credentials are obtained by an OAuth authorization-code flow."""
+
+    #: The config field identifying what is being authorized; its value is passed to ``oauth_start``.
+    OAUTH_FIELD: str
+    #: Config field holding the renewal credential. Left empty by an integration that cannot renew.
+    OAUTH_REFRESH_FIELD: str = ""
+
+    _config_writer: Callable[[dict[str, Any]], Awaitable[None]] | None = None
+
+    @classmethod
+    @abstractmethod
+    def oauth_start(
+        cls, target: str, redirect_uri: str, client: OAuthClientCredentials | None = None
+    ) -> OAuthAuthorizationRequest:
+        """Begin the flow for the value entered in ``OAUTH_FIELD``.
+
+        Args:
+            target: The value of ``OAUTH_FIELD``, possibly empty if the admin has not filled it in.
+            redirect_uri: Where the provider must send the admin back to.
+            client: A registration from an earlier attempt, to reuse instead of registering again.
+
+        Returns:
+            The URL to send the admin to, and the state the callback needs to finish.
+        """
+
+    @classmethod
+    @abstractmethod
+    def oauth_exchange_code(cls, pending: OAuthPendingAuthorization, code: str) -> dict[str, Any]:
+        """Exchange an authorization code for credentials.
+
+        Args:
+            pending: The state ``oauth_start`` returned.
+            code: The authorization code the callback received.
+
+        Returns:
+            Config field values to merge into the form.
+        """
+
+    @classmethod
+    @abstractmethod
+    def oauth_refresh(cls, config: dict[str, Any]) -> dict[str, Any]:
+        """Renew stored credentials, as config fields to merge in.
+
+        Raises ``OAuthError`` when this config was not obtained in a way that can be renewed, so a
+        caller never has to ask whether renewal is possible before trying.
+        """
+
+    def set_config_writer(self, writer: Callable[[dict[str, Any]], Awaitable[None]]) -> None:
+        """Accept a way to persist config this instance renews for itself mid-conversation."""
+        self._config_writer = writer
+
+    def needs_reconnect(self) -> bool:
+        """Whether renewal has failed often enough that only a fresh authorization will fix it."""
+        return False
+
+
 # Bound to BaseIntegration, defined above — kept local to its only use below
 # rather than hoisted to the top of the file with the other imports.
 IntegrationT = TypeVar("IntegrationT", bound=BaseIntegration)
@@ -83,3 +169,20 @@ class BaseIntegrationPluginResolver(ABC):
     @abstractmethod
     def resolve(self, data_set_id: Any, plugin_base: type[IntegrationT]) -> Optional[IntegrationT]:
         """Return a configured plugin instance of *plugin_base* for the data set, or None."""
+
+    @abstractmethod
+    def resolve_all(self, data_set_id: Any, plugin_base: type[IntegrationT]) -> list[IntegrationT]:
+        """Return every configured plugin instance of *plugin_base* for the data set.
+
+        Best-effort: an implementation skips records it cannot instantiate (an unknown type, or a
+        stored config that no longer validates) rather than raising, so that one broken integration
+        does not hide the healthy ones from the caller.
+        """
+
+    @abstractmethod
+    def has_any(self, data_set_id: Any, plugin_base: type[IntegrationT]) -> bool:
+        """Return whether the data set has at least one integration of *plugin_base*.
+
+        Answers the question without instantiating plugins or reading their stored config, so it
+        stays cheap enough to call on every conversation turn.
+        """

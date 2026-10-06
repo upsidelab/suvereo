@@ -1,10 +1,13 @@
+import asyncio
 from datetime import datetime
 from typing import Optional
 
 from enthusiast_common.agentic_execution.memory import ToolScratchpad
 from enthusiast_common.agents import ConfigType
+from enthusiast_common.integrations import BaseToolProvidingIntegration
 
 from account.models import User
+from agent.core.agents.default_config import get_default_config
 from agent.core.registries.agents.agent_registry import AgentRegistry
 from agent.models import Conversation, Message
 from agent.models.agent import Agent
@@ -27,6 +30,17 @@ class ConversationManager:
         Engine calculates embedding for a question and using similarity search collects documents that may contain
         relevant content.
         """
+        # Resolving the agent class here, before branching, also has the side effect of populating
+        # conversation.agent's cache (get_conversation() already select_related()s it, so this
+        # is not even a fresh query) — the async path re-reads conversation.agent.agent_type
+        # later, and it must hit that cache rather than issue a fresh sync query from inside a
+        # running event loop.
+        agent_class = AgentRegistry().get_agent_class_by_type(conversation.agent.agent_type)
+        if self._should_answer_asynchronously(conversation, agent_class):
+            return asyncio.run(
+                self._get_answer_async(conversation, question_message, streaming, config_type, tool_scratchpad)
+            )
+
         agent = AgentRegistry().get_conversation_agent(
             conversation,
             streaming,
@@ -36,6 +50,40 @@ class ConversationManager:
         response = agent.get_answer(question_message)
 
         return response
+
+    def _should_answer_asynchronously(self, conversation: Conversation, agent_class: type) -> bool:
+        """Decide whether this turn needs the async path, which exists to await integration tools.
+
+        Two things have to hold: the agent has to be able to answer asynchronously at all, and the
+        data set has to have at least one tool-providing integration (e.g. an MCP server) whose
+        tools are worth fetching. Agents that only implement ``get_answer`` keep the sync path, and
+        a data set with nothing connected never pays for an event loop it has no use for.
+
+        The resolver comes from the default agent config rather than being imported directly, so a
+        host that swaps its implementation is honoured here as well as in the agent builder.
+        """
+        if not hasattr(agent_class, "aget_answer"):
+            return False
+        resolver_class = get_default_config().integration_plugin_resolver
+        if resolver_class is None:
+            return False
+        return resolver_class().has_any(conversation.data_set_id, BaseToolProvidingIntegration)
+
+    async def _get_answer_async(
+        self,
+        conversation: Conversation,
+        question_message: str,
+        streaming: bool,
+        config_type: ConfigType,
+        tool_scratchpad: Optional[ToolScratchpad],
+    ) -> str:
+        agent = await AgentRegistry().aget_conversation_agent(
+            conversation,
+            streaming,
+            config_type=config_type,
+            tool_scratchpad=tool_scratchpad,
+        )
+        return await agent.aget_answer(question_message)
 
     def create_conversation(self, user_id: int, agent_id: int) -> Conversation:
         user = User.objects.get(id=user_id)
