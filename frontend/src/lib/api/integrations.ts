@@ -20,8 +20,7 @@ export class IntegrationsApiClient extends BaseApiClient {
     type: string,
     config: Record<string, unknown>
   ): Promise<{ authorizationUrl?: string; state?: string; expiresInMs: number; authorizationRequired: boolean; detail?: string }> {
-    const response = await fetch(`${this.apiBase}/api/data_sets/${dataSetId}/integrations/oauth/start/`, {
-      ...this._requestConfiguration(),
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/data_sets/${dataSetId}/integrations/oauth/start/`, {
       method: "POST",
       body: JSON.stringify({ type, config }),
     });
@@ -54,8 +53,7 @@ export class IntegrationsApiClient extends BaseApiClient {
     config: Record<string, unknown>,
     integrationId?: number
   ): Promise<Record<string, string>> {
-    const response = await fetch(`${this.apiBase}/api/data_sets/${dataSetId}/integrations/oauth/refresh/`, {
-      ...this._requestConfiguration(),
+    const response = await this.authenticatedFetch(`${this.apiBase}/api/data_sets/${dataSetId}/integrations/oauth/refresh/`, {
       method: "POST",
       body: JSON.stringify({ type, config, integration_id: integrationId }),
     });
@@ -70,9 +68,8 @@ export class IntegrationsApiClient extends BaseApiClient {
   }
 
   async getOAuthResult(state: string): Promise<{ status: string; config?: Record<string, string>; error?: string }> {
-    const response = await fetch(
-      `${this.apiBase}/api/integrations/oauth/result/?state=${encodeURIComponent(state)}`,
-      this._requestConfiguration()
+    const response = await this.authenticatedFetch(
+      `${this.apiBase}/api/integrations/oauth/result/?state=${encodeURIComponent(state)}`
     );
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
