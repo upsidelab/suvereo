@@ -1,7 +1,7 @@
 import os
 
 from django.conf import settings
-from django.db.models import Prefetch, Q
+from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -14,7 +14,6 @@ from rest_framework.views import APIView
 
 from account.authorization import (
     PERMISSIONS,
-    datasets_with_permission,
     enforce_dataset_scoped_permission,
     has_dataset_perm,
 )
@@ -63,10 +62,7 @@ class ConversationView(APIView):
                     queryset=Message.objects.exclude(type__in=Message.internal_message_types()).order_by("id"),
                 )
             )
-            .filter(
-                Q(user=request.user)
-                | Q(data_set__in=datasets_with_permission(request.user, PERMISSIONS.CONVERSATION.VIEW_ALL))
-            ),
+            .visible_to(request.user),
             id=conversation_id,
         )
         serializer = ConversationContentSerializer(conversation)
@@ -138,9 +134,7 @@ class ConversationListView(ListAPIView):
         data_set_id = self.request.query_params.get("data_set_id")
         agent_id = self.request.query_params.get("agent_id")
 
-        qs = Conversation.objects.filter(
-            Q(user=user) | Q(data_set__in=datasets_with_permission(user, PERMISSIONS.CONVERSATION.VIEW_ALL))
-        ).exclude(agentic_execution__isnull=False)
+        qs = Conversation.objects.visible_to(user).exclude(agentic_execution__isnull=False)
 
         if data_set_id:
             qs = qs.filter(data_set_id=data_set_id)

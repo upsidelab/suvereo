@@ -43,6 +43,7 @@ def get_model_descriptor_from_class_field(class_obj: Any, field_name: str) -> di
 
     return args
 
+
 def get_model_descriptor_default_value_from_class(class_obj: Any, field_name: str) -> dict:
     model = getattr(class_obj, field_name)
     if model is None:

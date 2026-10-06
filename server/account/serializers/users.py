@@ -1,8 +1,10 @@
+from django.db import transaction
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.validators import UniqueValidator
 
 from account.models import User
+from account.services import RefreshTokenRevocationService
 
 
 def unique_email_field():
@@ -72,8 +74,10 @@ class UserUpdatePasswordSerializer(OnlyAdminsManageAdminsMixin, serializers.Seri
     password = serializers.CharField(write_only=True)
 
     def update(self, instance, validated_data):
-        instance.set_password(validated_data["password"])
-        instance.save()
+        with transaction.atomic():
+            instance.set_password(validated_data["password"])
+            instance.save()
+            RefreshTokenRevocationService().revoke_all(instance)
         return instance
 
 

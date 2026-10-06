@@ -35,7 +35,7 @@ SECRET_KEY = env.str("ECL_DJANGO_SECRET_KEY")
 
 DEBUG = env.bool("ECL_DJANGO_DEBUG", False)
 
-ALLOWED_HOSTS = json.loads(os.environ.get("ECL_DJANGO_ALLOWED_HOSTS", default="[]"))
+ALLOWED_HOSTS = json.loads(env.str("ECL_DJANGO_ALLOWED_HOSTS", default="[]"))
 
 LOGGING = {
     "version": 1,
@@ -72,6 +72,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "rest_framework.authtoken",
+    "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "catalog",
     "agent",
@@ -123,8 +125,15 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [os.environ.get("ECL_CELERY_BROKER_URL")],
+            "hosts": [env.str("ECL_CELERY_BROKER_URL")],
         },
+    },
+}
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": env.str("ECL_CELERY_BROKER_URL"),
     },
 }
 
@@ -199,7 +208,7 @@ if not DEBUG:
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-CORS_ALLOWED_ORIGINS = json.loads(os.environ.get("ECL_DJANGO_CORS_ALLOWED_ORIGINS", default="[]"))
+CORS_ALLOWED_ORIGINS = json.loads(env.str("ECL_DJANGO_CORS_ALLOWED_ORIGINS", default="[]"))
 
 CACHES = {
     "default": {
@@ -209,7 +218,10 @@ CACHES = {
 }
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.TokenAuthentication"],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "rest_framework.authentication.TokenAuthentication",
+    ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 25,
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
@@ -218,9 +230,24 @@ REST_FRAMEWORK = {
 # SWAGGER
 
 SWAGGER_SETTINGS = {
-    "SECURITY_DEFINITIONS": {"Token": {"type": "apiKey", "name": "Authorization", "in": "header"}},
+    "SECURITY_DEFINITIONS": {
+        "Bearer": {"type": "apiKey", "name": "Authorization", "in": "header"},
+        "Token": {"type": "apiKey", "name": "Authorization", "in": "header"},
+    },
     "USE_SESSION_AUTH": False,
 }
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(seconds=env.int("ECL_AUTH_ACCESS_TOKEN_TTL_SECONDS", 15 * 60)),
+    "REFRESH_TOKEN_LIFETIME": timedelta(seconds=env.int("ECL_AUTH_REFRESH_TOKEN_TTL_SECONDS", 7 * 24 * 60 * 60)),
+    "SIGNING_KEY": env.str("ECL_AUTH_SIGNING_KEY"),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "CHECK_REVOKE_TOKEN": True,
+    "UPDATE_LAST_LOGIN": True,
+}
+
+WS_TICKET_TTL_SECONDS = env.int("ECL_AUTH_WS_TICKET_TTL_SECONDS", 10)
 
 # CELERY
 CELERY_BROKER_URL = env.str("ECL_CELERY_BROKER_URL")
@@ -231,6 +258,10 @@ CELERY_BEAT_SCHEDULE = {
     "clean_uploaded_files": {
         "task": "agent.conversation.tasks.clean_uploaded_files",
         "schedule": timedelta(hours=1),
+    },
+    "flush_expired_tokens": {
+        "task": "account.tasks.flush_expired_tokens",
+        "schedule": timedelta(days=1),
     },
 }
 

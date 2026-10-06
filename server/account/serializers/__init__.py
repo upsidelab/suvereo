@@ -1,4 +1,5 @@
 from .accounts import AccountSerializer
+from .auth import TokenPairResponseSerializer
 from .dataset_roles import (
     DatasetGroupRoleAssignmentSerializer,
     DatasetRoleDetailSerializer,
@@ -48,6 +49,7 @@ __all__ = [
     "PermissionEntitySerializer",
     "PermissionOptionSerializer",
     "ServiceAccountSerializer",
+    "TokenPairResponseSerializer",
     "TokenResponseSerializer",
     "UserReferenceSerializer",
     "UserSerializer",
