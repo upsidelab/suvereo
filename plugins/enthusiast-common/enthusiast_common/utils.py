@@ -41,6 +41,17 @@ def _call_and_release_connections(func: Callable[..., T], *args: Any) -> T:
         _release_thread_local_db_connections()
 
 
+def deep_merge(base: dict, patch: dict) -> dict:
+    """Return ``base`` with ``patch`` merged in: nested dicts merge, any other value replaces. Neither is mutated."""
+    merged = dict(base)
+    for key, value in patch.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = deep_merge(merged[key], value)
+        else:
+            merged[key] = value
+    return merged
+
+
 def prioritize_items(items: list[str], priorities: list[str]):
     items_set = set(items)
     priorities_set = set(priorities)

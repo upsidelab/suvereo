@@ -8,6 +8,7 @@ from enthusiast_common.builder import AgentBuilder
 from enthusiast_common.config import AgentConfig
 from utils.base_registry import BaseRegistry
 
+from agent.core.agents.config_overrides import AgentConfigOverrides
 from agent.core.agents.default_config import merge_config
 from agent.models import Conversation
 
@@ -52,9 +53,10 @@ class AgentRegistry(BaseAgentRegistry):
         streaming: bool,
         config_type: ConfigType = ConfigType.CONVERSATION,
         tool_scratchpad: Optional[ToolScratchpad] = None,
+        overrides: Optional[AgentConfigOverrides] = None,
     ) -> BaseAgent:
         try:
-            builder = self._build_agent_builder(conversation, streaming, config_type, tool_scratchpad)
+            builder = self._build_agent_builder(conversation, streaming, config_type, tool_scratchpad, overrides)
             return builder.build()
         except Exception as e:
             raise AgentRegistryError(f"Failed to build agent for conversation {conversation.id}") from e
@@ -65,9 +67,10 @@ class AgentRegistry(BaseAgentRegistry):
         streaming: bool,
         config_type: ConfigType = ConfigType.CONVERSATION,
         tool_scratchpad: Optional[ToolScratchpad] = None,
+        overrides: Optional[AgentConfigOverrides] = None,
     ) -> BaseAgent:
         try:
-            builder = self._build_agent_builder(conversation, streaming, config_type, tool_scratchpad)
+            builder = self._build_agent_builder(conversation, streaming, config_type, tool_scratchpad, overrides)
             return await builder.abuild()
         except Exception as e:
             raise AgentRegistryError(f"Failed to build agent for conversation {conversation.id}") from e
@@ -78,10 +81,13 @@ class AgentRegistry(BaseAgentRegistry):
         streaming: bool,
         config_type: ConfigType,
         tool_scratchpad: Optional[ToolScratchpad],
+        overrides: Optional[AgentConfigOverrides] = None,
     ):
         config_provider_cls = self._get_config_provider_class(agent_type=conversation.agent.agent_type)
         builder_cls = config_provider_cls.BUILDER_CLASS or AgentBuilder
         config = merge_config(partial=config_provider_cls().get_config(config_type=config_type))
+        if overrides:
+            config = overrides.apply(config)
         return builder_cls(
             config=config,
             conversation_id=conversation.id,

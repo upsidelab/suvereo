@@ -21,17 +21,18 @@ class BaseLLM:
         self._callbacks = callbacks
         self._data_set_repo = data_set_repo
 
-    def _get_llm_provider(self, data_set_id: Any) -> Type[LanguageModelProvider]:
-        return self._llm_registry.provider_for_dataset(data_set_id)
+    def create(self, data_set_id: Any) -> BaseLanguageModel:
+        """Build the language model the data set is configured to use."""
+        provider_class, model = self._resolve_target(data_set_id)
+        return self._build(provider_class, model)
 
-    def _get_llm(self, provider_class: Type[LanguageModelProvider], data_set_id: Any) -> BaseLanguageModel:
+    def _resolve_target(self, data_set_id: Any) -> tuple[Type[LanguageModelProvider], str]:
+        """The provider class and model name to build; override to choose them some other way."""
         data_set = self._data_set_repo.get_by_id(data_set_id)
-        provider = provider_class(data_set.language_model)
+        return self._llm_registry.provider_for_dataset(data_set_id), data_set.language_model
+
+    def _build(self, provider_class: Type[LanguageModelProvider], model: str) -> BaseLanguageModel:
+        provider = provider_class(model)
         if self._streaming and provider.STREAMING_AVAILABLE:
             return provider.provide_streaming_language_model(callbacks=self._callbacks)
-        else:
-            return provider.provide_language_model(callbacks=self._callbacks)
-
-    def create(self, data_set_id: Any):
-        provider_class = self._get_llm_provider(data_set_id)
-        return self._get_llm(provider_class, data_set_id)
+        return provider.provide_language_model(callbacks=self._callbacks)

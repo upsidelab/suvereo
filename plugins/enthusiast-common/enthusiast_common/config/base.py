@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Generic, Optional, Type, TypeVar
+from typing import Any, Generic, Optional, Type, TypeVar
 
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.chat_history import BaseChatMessageHistory
@@ -118,6 +118,8 @@ class AgentConfig(ArbitraryTypeBaseModel, Generic[InjectorT]):
     memory_compactor_enabled: bool = False
     similarity_searcher: Optional[Type[BaseSimilaritySearcher]] = None
     integration_plugin_resolver: Optional[Type[BaseIntegrationPluginResolver]] = None
+    #: Deep-merged over the agent's stored runtime arguments for this build only; the stored ones are untouched.
+    runtime_arguments_patch: Optional[dict[str, Any]] = None
 
 
 class AgentConfigWithDefaults(AgentConfig, Generic[InjectorT]):
