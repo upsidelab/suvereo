@@ -2,7 +2,7 @@
 
 from typing import Any, Awaitable, Callable
 
-from asgiref.sync import sync_to_async
+from channels.db import database_sync_to_async
 from django.db import transaction
 
 from catalog.models import DataSet, Integration
@@ -30,7 +30,7 @@ def merge_into_integration(integration_id: Any, patch: dict[str, Any], dataset: 
 def config_writer_for(integration_id: Any) -> Callable[[dict[str, Any]], Awaitable[None]]:
     """An awaitable writer a plugin instance can call to persist config it renewed mid-conversation."""
 
-    @sync_to_async
+    @database_sync_to_async
     def write(patch: dict[str, Any]) -> None:
         merge_into_integration(integration_id, patch)
 
