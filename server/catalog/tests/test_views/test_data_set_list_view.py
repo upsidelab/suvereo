@@ -30,16 +30,16 @@ def _permission(codename: str) -> Permission:
     return Permission.objects.get(codename=name, content_type__app_label=app_label)
 
 
-class TestArgs(RequiredFieldsModel):
+class MockAgentArgs(RequiredFieldsModel):
     test: str = Field(default="")
 
 
 class MockAgentClass:
     AGENT_KEY = "dummy_agent_type"
     NAME= "Dummy Agent"
-    AGENT_ARGS = TestArgs
-    PROMPT_INPUT = TestArgs
-    PROMPT_EXTENSION = TestArgs
+    AGENT_ARGS = MockAgentArgs
+    PROMPT_INPUT = MockAgentArgs
+    PROMPT_EXTENSION = MockAgentArgs
     TOOLS = []
     FILE_UPLOAD = False
 

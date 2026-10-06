@@ -31,7 +31,7 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
-    path("api/docs<format>/", schema_view.without_ui(cache_timeout=0), name="schema-json"),
+    path("api/docs.<format>/", schema_view.without_ui(cache_timeout=0), name="schema-json"),
     path("api/docs/", schema_view.with_ui("swagger", cache_timeout=0), name="schema-swagger-ui"),
     path("", include("catalog.urls")),
     path("", include("catalog.integrations.urls")),
