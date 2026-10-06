@@ -10,7 +10,7 @@ from model_bakery import baker
 import agent.routing
 from account.models import User
 from account.services import WebSocketTicketService
-from agent.consumers import CLOSE_FORBIDDEN, CLOSE_UNAUTHENTICATED
+from agent.conversation.consumers import CLOSE_FORBIDDEN, CLOSE_UNAUTHENTICATED
 from agent.ws_auth import TicketAuthMiddleware
 
 pytestmark = pytest.mark.django_db
