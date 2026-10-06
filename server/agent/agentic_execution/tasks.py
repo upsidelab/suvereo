@@ -4,7 +4,7 @@ from enthusiast_common.agentic_execution.memory import ToolScratchpad
 from enthusiast_common.agents import ConfigType
 
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
-from agent.conversation import ConversationManager
+from agent.conversation.manager import ConversationManager
 from agent.models.agentic_execution import AgenticExecution
 from agent.models.conversation import Conversation
 

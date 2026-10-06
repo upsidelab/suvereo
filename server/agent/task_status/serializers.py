@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from agent.tasks import TaskStatus
+from agent.conversation.tasks import TaskStatus
 
 
 class UploadedFileResultSerializer(serializers.Serializer):

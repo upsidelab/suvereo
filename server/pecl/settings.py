@@ -229,7 +229,7 @@ CELERY_TIMEZONE = env.str("ECL_CELERY_TIMEZONE")
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_BEAT_SCHEDULE = {
     "clean_uploaded_files": {
-        "task": "agent.tasks.clean_uploaded_files",
+        "task": "agent.conversation.tasks.clean_uploaded_files",
         "schedule": timedelta(hours=1),
     },
 }

@@ -3,8 +3,8 @@ import json
 from pydantic import ValidationError as PydanticValidationError
 from rest_framework import serializers
 
+from agent.conversation.serializers import ConversationFileSerializer
 from agent.models.agentic_execution import AgenticExecution
-from agent.serializers.conversation import ConversationFileSerializer
 
 _BASE_FIELDS = [
     "id",
