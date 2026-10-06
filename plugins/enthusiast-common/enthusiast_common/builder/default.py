@@ -136,7 +136,11 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
         agent_instance.set_runtime_arguments(self._agent_runtime_arguments())
 
     def _agent_runtime_arguments(self) -> dict:
-        """The agent's stored runtime arguments, with the config's ``runtime_arguments_patch`` merged in."""
+        """The agent's runtime arguments for this build.
+
+        Returns:
+            The stored arguments, with the config's ``runtime_arguments_patch`` deep-merged in when set.
+        """
         agent_configuration_id = self._repositories.conversation.get_agent_id(self.conversation_id)
         runtime_arguments = self._repositories.agent.get_agent_configuration_by_id(agent_configuration_id)
         if patch := self._config.runtime_arguments_patch:

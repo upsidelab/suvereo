@@ -9,7 +9,7 @@ class AgenticExecutionRunner:
     def run(
         self, execution_key: str, input_data: dict, conversation: ExecutionConversationInterface
     ) -> ExecutionResult:
-        """Run the definition registered under ``execution_key``.
+        """Run the execution definition registered under a key.
 
         Args:
             execution_key: The definition's ``EXECUTION_KEY``.
@@ -18,6 +18,9 @@ class AgenticExecutionRunner:
 
         Returns:
             The definition's result, after its validator retry loop.
+
+        Raises:
+            pydantic.ValidationError: If ``input_data`` does not fit the definition's ``INPUT_TYPE``.
         """
         execution_cls = AgenticExecutionDefinitionRegistry().get_by_key(execution_key)
         return execution_cls().run(execution_cls.INPUT_TYPE(**input_data), conversation)

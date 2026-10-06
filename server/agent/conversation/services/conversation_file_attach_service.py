@@ -23,10 +23,14 @@ class FileUploadNotSupportedError(Exception):
 
 
 class ConversationFileAttachService:
-    """Checks files against what an agent accepts, and attaches them to a conversation for the agent to read."""
+    """Checks files against what an agent accepts, and attaches them to a conversation for it to read."""
 
     def validate(self, agent: Agent, filenames: list[str]) -> None:
-        """Raise unless ``agent`` accepts every one of ``filenames``.
+        """Check that an agent accepts every one of the given files.
+
+        Args:
+            agent: The agent the files are for.
+            filenames: The files' names, extensions included.
 
         Raises:
             FileUploadNotSupportedError: If there are files and the agent takes none.

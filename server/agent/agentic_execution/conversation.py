@@ -1,5 +1,3 @@
-from typing import Optional
-
 from enthusiast_common.agentic_execution import ExecutionConversationInterface
 from enthusiast_common.agentic_execution.memory import ToolScratchpad
 from enthusiast_common.agents import ConfigType
@@ -10,19 +8,22 @@ from agent.models.conversation import Conversation
 
 
 class ExecutionConversation(ExecutionConversationInterface):
-    """The conversation handle an execution drives, backed by a stored ``Conversation``.
+    """The conversation an execution drives, building its agent with the given overrides."""
 
-    Args:
-        conversation: The conversation every ``ask()`` appends to.
-        overrides: Applied to the agent built for each ``ask()``; None builds it as configured.
-    """
-
-    def __init__(self, conversation: Conversation, overrides: Optional[AgentConfigOverrides] = None) -> None:
+    def __init__(self, conversation: Conversation, overrides: AgentConfigOverrides | None = None) -> None:
         self._conversation = conversation
         self._overrides = overrides
         self._tool_scratchpad = ToolScratchpad()
 
     def ask(self, message: str) -> str:
+        """Send a user message and return the agent's reply.
+
+        Args:
+            message: The user-side message to append to the conversation.
+
+        Returns:
+            The agent's final text response, built with this conversation's overrides.
+        """
         return ConversationManager().get_answer(
             self._conversation,
             message,

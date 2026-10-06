@@ -1,4 +1,4 @@
-from typing import Any, Optional, Type
+from typing import Any
 
 from enthusiast_common.config import AgentCallbackHandlerConfig, AgentConfig, CallbackHandlerConfig
 from enthusiast_common.config.base import ArbitraryTypeBaseModel
@@ -8,34 +8,23 @@ from enthusiast_common.utils import deep_merge
 
 
 class AgentConfigOverrides(ArbitraryTypeBaseModel):
-    """Per-build changes to an agent's merged config, leaving the plugin and the stored agent untouched.
+    """Per-build changes to an agent's merged config; unset fields keep the config's values."""
 
-    Every field is optional; an unset field keeps whatever the config already has.
-
-    Attributes:
-        llm_class: Replaces the ``BaseLLM`` used for every LLM the agent builds, e.g. to pin a model.
-        llm_callbacks: Added to the configured LLM callbacks, so they see every LLM call, nested ones included.
-        agent_callback_handler: Replaces the agent's callback handler.
-        integration_plugin_resolver: Replaces how the agent finds its integrations.
-        system_prompt: Replaces the system prompt.
-        agent_config_patch: Deep-merged over the agent's stored config (its runtime arguments).
-    """
-
-    llm_class: Optional[Type[BaseLLM]] = None
-    llm_callbacks: Optional[list[CallbackHandlerConfig]] = None
-    agent_callback_handler: Optional[AgentCallbackHandlerConfig] = None
-    integration_plugin_resolver: Optional[Type[BaseIntegrationPluginResolver]] = None
-    system_prompt: Optional[str] = None
-    agent_config_patch: Optional[dict[str, Any]] = None
+    llm_class: type[BaseLLM] | None = None
+    llm_callbacks: list[CallbackHandlerConfig] | None = None
+    agent_callback_handler: AgentCallbackHandlerConfig | None = None
+    integration_plugin_resolver: type[BaseIntegrationPluginResolver] | None = None
+    system_prompt: str | None = None
+    agent_config_patch: dict[str, Any] | None = None
 
     def apply(self, config: AgentConfig) -> AgentConfig:
-        """Return a copy of ``config`` with these overrides applied.
+        """Apply these overrides to an agent's merged config.
 
         Args:
-            config: The agent's merged config.
+            config: The merged config to start from; it is not modified.
 
         Returns:
-            A new config; ``config`` itself is not modified.
+            A copy with LLM callbacks added and every other set field replaced.
         """
         llm_update: dict[str, Any] = {}
         if self.llm_class is not None:
