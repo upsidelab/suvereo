@@ -1,0 +1,291 @@
+import asyncio
+import builtins
+import functools
+import importlib
+import inspect
+import re
+import string
+import time
+from abc import ABCMeta
+from contextlib import contextmanager
+from datetime import datetime
+from threading import Lock
+from types import SimpleNamespace
+from typing import Any, ClassVar, Generic, Iterator, Mapping, TypeVar
+
+from pydantic import TypeAdapter, ValidationError
+
+from ..trace import MockCall, TraceRecorder
+from .errors import MockConfigError, UnmockedCallError
+from .mock_behaviour import MockBehaviour
+
+InterfaceT = TypeVar("InterfaceT")
+
+BEHAVIOURS = TypeAdapter(MockBehaviour | list[MockBehaviour])
+INSTANCE_ATTRIBUTES = frozenset({"data", "strict", "recorder", "calls"})
+#: ``{name}``, ``{name[0]}``, ``{name.attr}`` or ``{name:spec}``; any other brace is literal text, JSON included.
+PLACEHOLDER = re.compile(r"\{([A-Za-z_]\w*(?:\.[A-Za-z_]\w*|\[[^\[\]{}]*\])*)(?::([^{}]*))?\}")
+
+
+class BaseMock(Generic[InterfaceT]):
+    """Stands in for an interface: records every call and answers it from declared behaviour.
+
+    A subclass sets ``INTERFACE``; every public method of the interface it does not define itself is generated to
+    dispatch through the declared behaviour, and the mock is registered as a virtual subclass of an ABC interface.
+    Define a method to handle it by hand, or override ``_default`` for state that outlives one call.
+    """
+
+    INTERFACE: ClassVar[type]
+    #: Error names a YAML ``raises`` may use besides builtins and dotted paths, e.g. a vertical's own errors.
+    ERRORS: ClassVar[dict[str, type[Exception]]] = {}
+
+    _declarative: ClassVar[dict[type, type["BaseMock"]]] = {}
+
+    def __init_subclass__(cls, **kwargs: Any):
+        super().__init_subclass__(**kwargs)
+        interface = cls.__dict__.get("INTERFACE")
+        if interface is None:
+            return
+        for name, original in cls.interface_methods().items():
+            if name in vars(BaseMock) or name in INSTANCE_ATTRIBUTES:
+                raise TypeError(f"{interface.__name__}.{name} clashes with a BaseMock attribute.")
+            if not any(name in vars(klass) for klass in cls.__mro__[: cls.__mro__.index(BaseMock)]):
+                setattr(cls, name, cls._dispatcher(name, original))
+        if isinstance(interface, ABCMeta):
+            interface.register(cls)
+
+    def __init__(
+        self,
+        behaviour: Mapping[str, Any] | None = None,
+        data: dict[str, Any] | None = None,
+        strict: bool = False,
+        recorder: TraceRecorder | None = None,
+    ):
+        """Create a mock with its behaviour and data.
+
+        Args:
+            behaviour: Per method name, a behaviour or a list of them; the first whose ``when`` matches applies.
+            data: Anything a subclass's stateful logic reads, e.g. a catalog.
+            strict: Raise ``UnmockedCallError`` for calls no behaviour answers, instead of returning None.
+            recorder: Also records every call into a run's trace.
+
+        Raises:
+            MockConfigError: If a behaviour names an unknown method or error, or is invalid.
+        """
+        self.data = data or {}
+        self.strict = strict
+        self.recorder = recorder
+        self.calls: list[MockCall] = []
+        self._behaviour = self._parse(behaviour or {})
+        self._lock = Lock()
+        self._call_counts: dict[str, int] = {}
+        self._sequence_positions: dict[int, int] = {}
+
+    @classmethod
+    def declarative(cls, interface: type) -> type["BaseMock"]:
+        """A mock class for any interface, driven by declared behaviour alone.
+
+        Args:
+            interface: The class to mock.
+
+        Returns:
+            The same generated class for every call with the same interface.
+        """
+        if interface not in BaseMock._declarative:
+            BaseMock._declarative[interface] = type(
+                f"Declarative{interface.__name__}Mock", (BaseMock,), {"INTERFACE": interface}
+            )
+        return BaseMock._declarative[interface]
+
+    @classmethod
+    def interface_methods(cls) -> dict[str, Any]:
+        """The interface's public instance methods, inherited ones included, by name."""
+        return {
+            name: member
+            for name, member in inspect.getmembers(cls.INTERFACE, inspect.isfunction)
+            if not name.startswith("_") and not isinstance(inspect.getattr_static(cls.INTERFACE, name), staticmethod)
+        }
+
+    def calls_to(self, method: str) -> list[MockCall]:
+        """The calls this mock received to one method.
+
+        Args:
+            method: The interface method's name.
+
+        Returns:
+            The calls in the order they were made.
+        """
+        return [c for c in self.calls if c.method == method]
+
+    def reset(self) -> None:
+        """Forget recorded calls, call numbers and sequence positions; behaviour and data are kept."""
+        with self._lock:
+            self.calls.clear()
+            self._call_counts.clear()
+            self._sequence_positions.clear()
+
+    def _dispatch(self, method: str, args: tuple, kwargs: dict[str, Any]) -> Any:
+        with self._recording(method, args, kwargs) as outcome:
+            behaviour, context = self._select(method, args, kwargs)
+            if behaviour is not None and behaviour.latency_ms:
+                time.sleep(behaviour.latency_ms / 1000)
+            outcome.result = self._answer(method, behaviour, context, args, kwargs)
+        return outcome.result
+
+    async def _dispatch_async(self, method: str, args: tuple, kwargs: dict[str, Any]) -> Any:
+        with self._recording(method, args, kwargs) as outcome:
+            behaviour, context = self._select(method, args, kwargs)
+            if behaviour is not None and behaviour.latency_ms:
+                await asyncio.sleep(behaviour.latency_ms / 1000)
+            outcome.result = self._answer(method, behaviour, context, args, kwargs)
+        return outcome.result
+
+    @contextmanager
+    def _recording(self, method: str, args: tuple, kwargs: dict[str, Any]) -> Iterator[SimpleNamespace]:
+        started_at, started = datetime.now(), time.perf_counter()
+        outcome = SimpleNamespace(result=None)
+        error = None
+        try:
+            yield outcome
+        except Exception as e:
+            error = f"{type(e).__name__}: {e}"
+            raise
+        finally:
+            call = MockCall(
+                method=method,
+                args=list(args),
+                kwargs=kwargs,
+                result=outcome.result,
+                error=error,
+                started_at=started_at,
+                duration_ms=(time.perf_counter() - started) * 1000,
+            )
+            with self._lock:
+                self.calls.append(call)
+            if self.recorder is not None:
+                self.recorder.record_mock_call(call)
+
+    def _select(self, method: str, args: tuple, kwargs: dict[str, Any]) -> tuple[MockBehaviour | None, dict[str, Any]]:
+        arguments = self._bind(method, args, kwargs)
+        with self._lock:
+            number = self._call_counts[method] = self._call_counts.get(method, 0) + 1
+        behaviour = next((b for b in self._behaviour.get(method, []) if b.matches(arguments)), None)
+        return behaviour, {**arguments, "n": number, "args": args, "kwargs": kwargs}
+
+    def _answer(
+        self, method: str, behaviour: MockBehaviour | None, context: dict[str, Any], args: tuple, kwargs: dict[str, Any]
+    ) -> Any:
+        if behaviour is None:
+            return self._default(method, *args, **kwargs)
+        return self._apply(behaviour, context)
+
+    def _default(self, method: str, *args: Any, **kwargs: Any) -> Any:
+        """Answer a call no behaviour matched; override for stateful logic and fall back to ``super()``.
+
+        Raises:
+            UnmockedCallError: If the mock is strict.
+        """
+        if self.strict:
+            raise UnmockedCallError(f"{self.INTERFACE.__name__}.{method} has no declared behaviour for this call.")
+        return None
+
+    def _apply(self, behaviour: MockBehaviour, context: dict[str, Any]) -> Any:
+        if behaviour.raises is not None:
+            raise self._error_class(behaviour.raises.error)(self._render(behaviour.raises.message, context))
+        if behaviour.sequence is not None:
+            with self._lock:
+                position = self._sequence_positions.get(id(behaviour), 0)
+                self._sequence_positions[id(behaviour)] = position + 1
+            return self._render(behaviour.sequence[min(position, len(behaviour.sequence) - 1)], context)
+        return self._render(behaviour.returns, context)
+
+    def _bind(self, method: str, args: tuple, kwargs: dict[str, Any]) -> dict[str, Any]:
+        signature = inspect.signature(getattr(self.INTERFACE, method))
+        bound = signature.bind(None, *args, **kwargs)
+        bound.apply_defaults()
+        arguments: dict[str, Any] = {}
+        for name, value in list(bound.arguments.items())[1:]:
+            if signature.parameters[name].kind is inspect.Parameter.VAR_KEYWORD:
+                arguments.update(value)
+            else:
+                arguments[name] = value
+        return arguments
+
+    def _parse(self, behaviour: Mapping[str, Any]) -> dict[str, list[MockBehaviour]]:
+        known = self.interface_methods()
+        parsed: dict[str, list[MockBehaviour]] = {}
+        for method, declared in behaviour.items():
+            if method not in known:
+                raise MockConfigError(
+                    f"{self.INTERFACE.__name__} has no method '{method}'; it has: {', '.join(sorted(known))}."
+                )
+            try:
+                value = BEHAVIOURS.validate_python(declared)
+            except ValidationError as e:
+                raise MockConfigError(f"Invalid behaviour for '{method}': {e}") from e
+            parsed[method] = value if isinstance(value, list) else [value]
+            for b in parsed[method]:
+                if b.raises is not None:
+                    self._error_class(b.raises.error)
+                self._check_when(method, known[method], b)
+        return parsed
+
+    def _check_when(self, method: str, function: Any, behaviour: MockBehaviour) -> None:
+        if not behaviour.when:
+            return
+        parameters = list(inspect.signature(function).parameters.values())[1:]
+        if any(p.kind is inspect.Parameter.VAR_KEYWORD for p in parameters):
+            return
+        names = {p.name for p in parameters}
+        if unknown := sorted(set(behaviour.when) - names):
+            raise MockConfigError(
+                f"'when' for '{method}' names {', '.join(unknown)}, which it does not take; "
+                f"it takes: {', '.join(sorted(names)) or 'nothing'}."
+            )
+
+    def _error_class(self, name: str) -> type[Exception]:
+        candidate = self.ERRORS.get(name) or getattr(builtins, name, None)
+        if candidate is None and "." in name:
+            module, _, attribute = name.rpartition(".")
+            try:
+                candidate = getattr(importlib.import_module(module), attribute, None)
+            except ImportError as e:
+                raise MockConfigError(f"Cannot import error '{name}'.") from e
+        if not (isinstance(candidate, type) and issubclass(candidate, Exception)):
+            raise MockConfigError(
+                f"Unknown error '{name}'; use a builtin, a dotted path or one of {sorted(self.ERRORS)}."
+            )
+        return candidate
+
+    @classmethod
+    def _render(cls, value: Any, context: dict[str, Any]) -> Any:
+        if isinstance(value, str):
+            return PLACEHOLDER.sub(lambda match: cls._fill(match, value, context), value)
+        if isinstance(value, list):
+            return [cls._render(v, context) for v in value]
+        if isinstance(value, dict):
+            return {k: cls._render(v, context) for k, v in value.items()}
+        return value
+
+    @staticmethod
+    def _fill(match: re.Match, template: str, context: dict[str, Any]) -> str:
+        field, spec = match.group(1), match.group(2) or ""
+        try:
+            return format(string.Formatter().get_field(field, (), context)[0], spec)
+        except (KeyError, IndexError, AttributeError, ValueError, TypeError) as e:
+            raise MockConfigError(f"Template '{template}' cannot fill {{{field}}} for this call: {e!r}") from e
+
+    @staticmethod
+    def _dispatcher(name: str, original: Any) -> Any:
+        if inspect.iscoroutinefunction(original):
+
+            async def method(self, *args, **kwargs):
+                return await self._dispatch_async(name, args, kwargs)
+        else:
+
+            def method(self, *args, **kwargs):
+                return self._dispatch(name, args, kwargs)
+
+        functools.update_wrapper(method, original)
+        method.__isabstractmethod__ = False
+        return method
