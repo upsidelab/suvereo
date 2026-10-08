@@ -13,19 +13,7 @@ class SuiteReader:
     """Reads suite.yaml and its cases, checking what needs no host; the host checks the rest."""
 
     def read(self, path: Path) -> LoadedSuite:
-        """Read a suite file and collect its cases.
-
-        Args:
-            path: The ``suite.yaml`` to read.
-
-        Returns:
-            The suite, its cases and where it was read from.
-
-        Raises:
-            EvalSuiteError: If the file cannot be read or the suite is invalid.
-            CaseSourceError: If a case file cannot be read or a case is invalid.
-            DuplicateCaseError: If two cases share an id.
-        """
+        """Read a suite file and collect its cases; raises EvalSuiteError (or CaseSourceError, DuplicateCaseError)."""
         path = path.resolve()
         try:
             data = yaml.safe_load(path.read_text(encoding="utf-8"))
