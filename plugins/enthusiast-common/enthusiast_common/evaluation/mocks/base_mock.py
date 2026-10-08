@@ -101,7 +101,7 @@ class BaseMock:
 
     def _dispatch(self, method: str, args: tuple, kwargs: dict[str, Any]) -> Any:
         with self._recording(method, args, kwargs) as outcome:
-            behaviour, context = self._select(method, args, kwargs)
+            behaviour, context = self._select(method, args, kwargs, outcome)
             if behaviour is not None and behaviour.latency_ms:
                 time.sleep(behaviour.latency_ms / 1000)
             outcome.result = self._answer(method, behaviour, context, args, kwargs)
@@ -109,7 +109,7 @@ class BaseMock:
 
     async def _dispatch_async(self, method: str, args: tuple, kwargs: dict[str, Any]) -> Any:
         with self._recording(method, args, kwargs) as outcome:
-            behaviour, context = self._select(method, args, kwargs)
+            behaviour, context = self._select(method, args, kwargs, outcome)
             if behaviour is not None and behaviour.latency_ms:
                 await asyncio.sleep(behaviour.latency_ms / 1000)
             outcome.result = self._answer(method, behaviour, context, args, kwargs)
@@ -118,7 +118,7 @@ class BaseMock:
     @contextmanager
     def _recording(self, method: str, args: tuple, kwargs: dict[str, Any]) -> Iterator[SimpleNamespace]:
         started_at, started = datetime.now(), time.perf_counter()
-        outcome = SimpleNamespace(result=None)
+        outcome = SimpleNamespace(result=None, arguments={})
         error = None
         try:
             yield outcome
@@ -130,6 +130,7 @@ class BaseMock:
                 method=method,
                 args=list(args),
                 kwargs=kwargs,
+                arguments=outcome.arguments,
                 result=outcome.result,
                 error=error,
                 started_at=started_at,
@@ -140,8 +141,10 @@ class BaseMock:
             if self.recorder is not None:
                 self.recorder.record_mock_call(call)
 
-    def _select(self, method: str, args: tuple, kwargs: dict[str, Any]) -> tuple[MockBehaviour | None, dict[str, Any]]:
-        arguments = self._bind(method, args, kwargs)
+    def _select(
+        self, method: str, args: tuple, kwargs: dict[str, Any], outcome: SimpleNamespace
+    ) -> tuple[MockBehaviour | None, dict[str, Any]]:
+        arguments = outcome.arguments = self._bind(method, args, kwargs)
         with self._lock:
             number = self._call_counts[method] = self._call_counts.get(method, 0) + 1
         behaviour = next((b for b in self._behaviour.get(method, []) if b.matches(arguments)), None)

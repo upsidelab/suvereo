@@ -112,6 +112,7 @@ class TestBaseMockRecording:
 
         get, create = mock.calls
         assert (get.method, get.args, get.result, get.error) == ("get_product", ["SKU-1"], None, None)
+        assert create.arguments == {"items": [("SKU-1", 2)], "email": "a@b.c"}
         assert (create.args, create.kwargs, create.error) == ([[("SKU-1", 2)]], {"email": "a@b.c"}, "ShopError: down")
         assert recorder.trace.mock_calls == mock.calls
         assert mock.calls_to("create_order") == [create]
