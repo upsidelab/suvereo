@@ -26,16 +26,7 @@ class ConversationFileAttachService:
     """Checks files against what an agent accepts, and attaches them to a conversation for it to read."""
 
     def validate(self, agent: Agent, filenames: list[str]) -> None:
-        """Check that an agent accepts every one of the given files.
-
-        Args:
-            agent: The agent the files are for.
-            filenames: The files' names, extensions included.
-
-        Raises:
-            FileUploadNotSupportedError: If there are files and the agent takes none.
-            UnsupportedFileTypeError: If a file's extension has no parser.
-        """
+        """Raise FileUploadNotSupportedError or UnsupportedFileTypeError unless the agent accepts every file."""
         if not filenames:
             return
         if not agent.file_upload:
@@ -48,17 +39,7 @@ class ConversationFileAttachService:
                 raise UnsupportedFileTypeError(ext, supported)
 
     def attach(self, conversation: Conversation, name: str, content: bytes, content_type: str) -> ConversationFile:
-        """Parse a file, store it on the conversation and add the message that shows it to the agent.
-
-        Args:
-            conversation: The conversation to attach to.
-            name: The file name, extension included.
-            content: The file's bytes.
-            content_type: Its MIME type; ``image/*`` is stored as an image.
-
-        Returns:
-            The stored file.
-        """
+        """Parse the file, store it on the conversation and add the message that shows it to the agent."""
         file_category = (
             ConversationFile.FileCategory.IMAGE
             if content_type.startswith("image/")

@@ -42,15 +42,7 @@ def _call_and_release_connections(func: Callable[..., T], *args: Any) -> T:
 
 
 def deep_merge(base: dict, patch: dict) -> dict:
-    """Merge a patch into a dict without mutating either.
-
-    Args:
-        base: The dict to start from.
-        patch: Values to merge in; nested dicts merge, any other value replaces.
-
-    Returns:
-        A new dict.
-    """
+    """Return ``base`` with ``patch`` merged in: nested dicts merge, any other value replaces. Neither is mutated."""
     merged = dict(base)
     for key, value in patch.items():
         if isinstance(value, dict) and isinstance(merged.get(key), dict):

@@ -48,36 +48,17 @@ class EvalSuite(EvalModel):
 
     @classmethod
     def json_schema(cls) -> dict[str, Any]:
-        """The JSON Schema of ``suite.yaml``, for editors and coding agents.
-
-        Returns:
-            The schema, with keys spelled as in YAML (e.g. ``class``, ``in``).
-        """
+        """The JSON Schema of suite.yaml, with keys spelled as in YAML (e.g. ``class``, ``in``)."""
         return cls.model_json_schema(by_alias=True)
 
     def integrations_for(self, case: EvalCase) -> list[IntegrationConfig]:
-        """The integrations a case runs with.
-
-        Args:
-            case: The case whose overrides apply.
-
-        Returns:
-            The suite's integrations with the case's overrides applied, plus any the case adds. An override's
-            config is deep-merged, except that its behaviour for a method replaces the suite's for that method.
-        """
+        """The suite's integrations with the case's overrides deep-merged in; a case's behaviour for a method replaces the suite's."""
         overrides = {i.key: i for i in case.integrations}
         merged = [self._override(i, overrides.pop(i.key)) if i.key in overrides else i for i in self.integrations]
         return merged + list(overrides.values())
 
     def metrics_for(self, case: EvalCase) -> list[MetricConfig]:
-        """The metrics measured on a case.
-
-        Args:
-            case: The case whose metrics apply.
-
-        Returns:
-            The suite's metrics, the case's replacing those of the same name, plus any the case adds.
-        """
+        """The suite's metrics, the case's replacing those of the same name, plus any the case adds."""
         overrides = {m.name: m for m in case.metrics}
         merged = [overrides.pop(m.name, m) for m in self.metrics]
         return merged + list(overrides.values())

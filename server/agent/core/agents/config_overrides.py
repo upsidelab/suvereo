@@ -18,14 +18,7 @@ class AgentConfigOverrides(ArbitraryTypeBaseModel):
     agent_config_patch: dict[str, Any] | None = None
 
     def apply(self, config: AgentConfig) -> AgentConfig:
-        """Apply these overrides to an agent's merged config.
-
-        Args:
-            config: The merged config to start from; it is not modified.
-
-        Returns:
-            A copy with LLM callbacks added and every other set field replaced.
-        """
+        """A copy of the config with these overrides applied; LLM callbacks are added, the rest replaced."""
         llm_update: dict[str, Any] = {}
         if self.llm_class is not None:
             llm_update["llm_class"] = self.llm_class

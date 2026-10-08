@@ -16,14 +16,7 @@ class ExecutionConversation(ExecutionConversationInterface):
         self._tool_scratchpad = ToolScratchpad()
 
     def ask(self, message: str) -> str:
-        """Send a user message and return the agent's reply.
-
-        Args:
-            message: The user-side message to append to the conversation.
-
-        Returns:
-            The agent's final text response, built with this conversation's overrides.
-        """
+        """Send a user message and return the agent's reply."""
         return ConversationManager().get_answer(
             self._conversation,
             message,
