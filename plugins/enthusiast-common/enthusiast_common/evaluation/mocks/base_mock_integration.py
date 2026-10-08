@@ -1,5 +1,6 @@
 import inspect
 import typing
+from pathlib import Path
 from typing import Any, ClassVar
 
 from ...integrations import BaseIntegration
@@ -22,6 +23,7 @@ class BaseMockIntegration(BaseIntegration):
     def __init__(self):
         self._recorder: TraceRecorder | None = None
         self._mocks: dict[type[BaseMock], BaseMock] = {}
+        self.base_dir: Path = Path.cwd()
 
     @classmethod
     def for_plugin_interface(cls, plugin_interface: type[BaseIntegration]) -> type["BaseMockIntegration"]:
@@ -64,8 +66,12 @@ class BaseMockIntegration(BaseIntegration):
             config = self.config
             methods = mock_class.interface_methods()
             behaviour = {name: value for name, value in config.behaviour.items() if name in methods}
-            self._mocks[mock_class] = mock_class(behaviour, config.data, config.strict, self._recorder)
+            self._mocks[mock_class] = mock_class(behaviour, self._mock_data(), config.strict, self._recorder)
         return self._mocks[mock_class]
+
+    def _mock_data(self) -> dict[str, Any]:
+        """The data mocks are built with; override to load fixture files, e.g. with ``FixtureRecords``."""
+        return self.config.data
 
     def _check_behaviour(self) -> None:
         known = {name for mock_class in self.mock_classes() for name in mock_class.interface_methods()}
