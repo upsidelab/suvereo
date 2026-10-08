@@ -26,15 +26,7 @@ class MockBehaviour(BaseModel):
         return self
 
     def matches(self, arguments: dict[str, Any]) -> bool:
-        """Whether this behaviour applies to a call.
-
-        Args:
-            arguments: The call's arguments by parameter name, defaults included.
-
-        Returns:
-            True when there is no ``when``, or every name in it has an equal argument. Tuples compare equal to lists
-            and Pydantic models to their dumps, since YAML can only write lists and mappings.
-        """
+        """Whether this behaviour applies to a call's named arguments; tuples equal lists and models equal their dumps."""
         if self.when is None:
             return True
         return all(

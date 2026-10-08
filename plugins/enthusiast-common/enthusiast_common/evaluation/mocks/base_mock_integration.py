@@ -12,11 +12,7 @@ BUILDER_PREFIX = "build_"
 
 
 class BaseMockIntegration(BaseIntegration):
-    """An integration whose external systems are mocks, sharing one mock per interface for the whole run.
-
-    A subclass that also inherits a plugin interface sets ``MOCK_CLASS`` and returns ``self.mock`` from its
-    ``build_*`` methods; ``for_plugin_interface`` generates such a class with no code.
-    """
+    """An integration whose external systems are mocks, one shared mock per interface for the whole run."""
 
     CONFIGURATION_ARGS = MockIntegrationConfig
     MOCK_CLASS: ClassVar[type[BaseMock]]
@@ -29,18 +25,7 @@ class BaseMockIntegration(BaseIntegration):
 
     @classmethod
     def for_plugin_interface(cls, plugin_interface: type[BaseIntegration]) -> type["BaseMockIntegration"]:
-        """A mock integration for a plugin interface, driven by declared behaviour alone.
-
-        Each abstract ``build_*`` method whose return annotation is a class returns a declarative mock of that class;
-        every other abstract method is answered by a declarative mock of the plugin interface itself.
-
-        Args:
-            plugin_interface: The integration interface to implement, e.g. an e-commerce plugin ABC.
-
-        Returns:
-            The same generated class for every call with the same interface; it subclasses the interface, so the
-            run's resolver finds it as one.
-        """
+        """A mock integration for a plugin interface: each build_* returns a mock of its return type, other abstract methods a mock of the interface."""
         if plugin_interface not in BaseMockIntegration._generated:
             BaseMockIntegration._generated[plugin_interface] = cls._generate(plugin_interface)
         return BaseMockIntegration._generated[plugin_interface]
@@ -73,17 +58,7 @@ class BaseMockIntegration(BaseIntegration):
         return self.mock_for(self.MOCK_CLASS)
 
     def mock_for(self, mock_class: type[BaseMock]) -> BaseMock:
-        """The run's shared instance of one of this integration's mock classes.
-
-        Args:
-            mock_class: One of ``mock_classes()``.
-
-        Returns:
-            The same instance on every call, given the behaviour keys its interface has.
-
-        Raises:
-            MockConfigError: If a behaviour key is a method of none of this integration's mocks.
-        """
+        """The run's shared instance of one of this integration's mock classes; raises MockConfigError for a behaviour key no mock has."""
         if mock_class not in self._mocks:
             self._check_behaviour()
             config = self.config

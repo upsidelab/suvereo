@@ -28,12 +28,7 @@ PLACEHOLDER = re.compile(r"\{([A-Za-z_]\w*(?:\.[A-Za-z_]\w*|\[[^\[\]{}]*\])*)(?:
 
 
 class BaseMock(Generic[InterfaceT]):
-    """Stands in for an interface: records every call and answers it from declared behaviour.
-
-    A subclass sets ``INTERFACE``; every public method of the interface it does not define itself is generated to
-    dispatch through the declared behaviour, and the mock is registered as a virtual subclass of an ABC interface.
-    Define a method to handle it by hand, or override ``_default`` for state that outlives one call.
-    """
+    """Stands in for an interface: records every call, answers from declared behaviour, and generates the methods a subclass doesn't define."""
 
     INTERFACE: ClassVar[type]
     #: Error names a YAML ``raises`` may use besides builtins and dotted paths, e.g. a vertical's own errors.
@@ -61,16 +56,13 @@ class BaseMock(Generic[InterfaceT]):
         strict: bool = False,
         recorder: TraceRecorder | None = None,
     ):
-        """Create a mock with its behaviour and data.
+        """Create a mock; raises MockConfigError for an unknown method or error, or an invalid behaviour.
 
         Args:
-            behaviour: Per method name, a behaviour or a list of them; the first whose ``when`` matches applies.
-            data: Anything a subclass's stateful logic reads, e.g. a catalog.
-            strict: Raise ``UnmockedCallError`` for calls no behaviour answers, instead of returning None.
+            behaviour: Per method name, a behaviour or a list of them; the first whose when matches applies.
+            data: Read by a subclass's stateful logic, e.g. a catalog.
+            strict: Raise UnmockedCallError for calls no behaviour answers, instead of returning None.
             recorder: Also records every call into a run's trace.
-
-        Raises:
-            MockConfigError: If a behaviour names an unknown method or error, or is invalid.
         """
         self.data = data or {}
         self.strict = strict
@@ -83,14 +75,7 @@ class BaseMock(Generic[InterfaceT]):
 
     @classmethod
     def declarative(cls, interface: type) -> type["BaseMock"]:
-        """A mock class for any interface, driven by declared behaviour alone.
-
-        Args:
-            interface: The class to mock.
-
-        Returns:
-            The same generated class for every call with the same interface.
-        """
+        """A mock class for any interface, driven by declared behaviour alone; one cached class per interface."""
         if interface not in BaseMock._declarative:
             BaseMock._declarative[interface] = type(
                 f"Declarative{interface.__name__}Mock", (BaseMock,), {"INTERFACE": interface}
@@ -107,14 +92,7 @@ class BaseMock(Generic[InterfaceT]):
         }
 
     def calls_to(self, method: str) -> list[MockCall]:
-        """The calls this mock received to one method.
-
-        Args:
-            method: The interface method's name.
-
-        Returns:
-            The calls in the order they were made.
-        """
+        """The calls this mock received to one method, in order."""
         return [c for c in self.calls if c.method == method]
 
     def reset(self) -> None:
@@ -180,11 +158,7 @@ class BaseMock(Generic[InterfaceT]):
         return self._apply(behaviour, context)
 
     def _default(self, method: str, *args: Any, **kwargs: Any) -> Any:
-        """Answer a call no behaviour matched; override for stateful logic and fall back to ``super()``.
-
-        Raises:
-            UnmockedCallError: If the mock is strict.
-        """
+        """Answer a call no behaviour matched: None, or UnmockedCallError when strict. Override for stateful logic."""
         if self.strict:
             raise UnmockedCallError(f"{self.INTERFACE.__name__}.{method} has no declared behaviour for this call.")
         return None
