@@ -11,23 +11,10 @@ DEFAULT_FUZZY_THRESHOLD = 0.85
 
 
 class ValueMatcher:
-    """Compares an actual value with an expected one in a mode written as ``mode`` or ``mode:argument``.
-
-    Modes: ``exact``; ``ci`` (case- and space-insensitive text); ``numeric:tolerance``; ``fuzzy:threshold``
-    (similarity ratio, default 0.85); ``regex`` (the expected value is a pattern the whole actual text must match).
-    With ``coerce``, ``exact`` also treats ``"2"`` and ``2`` as equal.
-    """
+    """Compares values in a mode: exact, ci, numeric[:tolerance], fuzzy[:threshold] or regex; coerce makes exact compare numbers."""
 
     def __init__(self, spec: str = "exact", coerce: bool = False):
-        """Parse a mode.
-
-        Args:
-            spec: The mode, optionally with its argument, e.g. ``numeric:0.01``.
-            coerce: Compare number-like text as numbers in ``exact`` mode.
-
-        Raises:
-            ValueError: If the mode or its argument is invalid.
-        """
+        """Parse a mode such as numeric:0.01; raises ValueError for an invalid one."""
         mode, _, argument = spec.partition(":")
         if mode not in MODES:
             raise ValueError(f"Unknown match mode '{mode}'; use one of {', '.join(MODES)}.")

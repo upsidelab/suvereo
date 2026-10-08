@@ -6,15 +6,7 @@ from .value_matcher import ValueMatcher
 
 
 class ListScorer:
-    """Pairs actual list items with expected ones by a key, then checks their other fields.
-
-    Fully matching items are paired first, so repeated keys (the same SKU on two lines) pair the best way round.
-
-    Args:
-        key: The field or index identifying an item, e.g. ``sku`` or ``0``; without one, whole items are compared.
-        fields: The fields to check on paired items, each with its match mode.
-        coerce: Treat number-like text as numbers when comparing keys and exact fields.
-    """
+    """Pairs actual list items with expected ones by key (exact matches first), then checks their fields."""
 
     def __init__(self, key: str | int | None = None, fields: dict[str | int, str] | None = None, coerce: bool = False):
         self.key = None if key is None else DottedPath(str(key))
@@ -22,15 +14,7 @@ class ListScorer:
         self.exact = ValueMatcher("exact", coerce)
 
     def score(self, actual: list[Any], expected: list[Any]) -> ListScore:
-        """Score actual items against the expected ones.
-
-        Args:
-            actual: What the agent produced.
-            expected: What the case expects.
-
-        Returns:
-            Matched counts and the missing, extra and mismatched items, for F1, precision and recall.
-        """
+        """Matched counts plus missing, extra and mismatched items, for F1, precision and recall."""
         unpaired = list(actual)
         score = ListScore()
         unmatched = []

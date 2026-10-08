@@ -18,10 +18,7 @@ class MockCallsParams(BaseModel):
 
 
 class MockCalls(BaseMetric):
-    """F1 of one argument across a mock method's calls against expected.mock_calls.<method>[i].<arg>.
-
-    List arguments (e.g. order items) are scored item by item; any other value counts as a single item.
-    """
+    """F1 of one argument across a mock method's calls against expected.mock_calls.<method>[i].<arg>; list arguments are scored per item."""
 
     NAME = "mock_calls"
     VALUE_TYPE = "number"

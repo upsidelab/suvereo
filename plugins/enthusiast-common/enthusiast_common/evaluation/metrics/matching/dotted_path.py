@@ -11,14 +11,7 @@ class DottedPath:
         self.segments = [segment for segment in path.split(".") if segment]
 
     def get(self, value: Any) -> Any:
-        """Follow the path from a value.
-
-        Args:
-            value: The root to start from.
-
-        Returns:
-            The value at the path, or ``MISSING`` when any segment is absent.
-        """
+        """The value at the path, or MISSING when any segment is absent."""
         for segment in self.segments:
             if isinstance(value, dict) and segment in value:
                 value = value[segment]

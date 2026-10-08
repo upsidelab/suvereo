@@ -6,11 +6,4 @@ class BaseJudgeClient(ABC):
 
     @abstractmethod
     def complete(self, prompt: str) -> str:
-        """Ask the judge model one question.
-
-        Args:
-            prompt: The full prompt, material to judge included.
-
-        Returns:
-            The model's text reply.
-        """
+        """Ask the judge model one question and return its text reply."""

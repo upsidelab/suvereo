@@ -12,15 +12,7 @@ class JudgeMaterial:
 
     @classmethod
     def render(cls, context: MetricContext, sections: list[Section]) -> str:
-        """The chosen sections of a run as prompt text.
-
-        Args:
-            context: The run to describe.
-            sections: Which parts to include, in order.
-
-        Returns:
-            One headed block per section.
-        """
+        """The chosen sections of a run as prompt text, one headed block each."""
         renderers = {
             "output": lambda: cls._json(context.trace.output),
             "expected": lambda: cls._json(context.case.expected),
