@@ -14,11 +14,7 @@ class DirectoryCaseSource(BaseCaseSource):
         return [case for source in self.file_sources() for case in source.load()]
 
     def file_sources(self) -> list[BaseCaseSource]:
-        """One source per case file in the directory.
-
-        Returns:
-            The sources in file-name order, so callers can tell which file a case came from.
-        """
+        """One source per case file, in name order, so callers can tell which file a case came from."""
         files = sorted(
             p
             for p in self.path.iterdir()

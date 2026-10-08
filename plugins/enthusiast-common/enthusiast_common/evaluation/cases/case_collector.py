@@ -13,18 +13,7 @@ class CaseCollector:
         self.base_dir = base_dir
 
     def collect(self, spec: CasesSpec) -> list[EvalCase]:
-        """Gather every case a suite's ``cases`` entry points at.
-
-        Args:
-            spec: A path, an inline case, or a list of both; paths are relative to the suite directory.
-
-        Returns:
-            The cases in the order written.
-
-        Raises:
-            CaseSourceError: If a path is missing or unsupported, or a case in it is invalid.
-            DuplicateCaseError: If two cases share an id.
-        """
+        """Every case the spec points at, in the order written; raises CaseSourceError or DuplicateCaseError."""
         cases: list[EvalCase] = []
         origins: dict[str, str] = {}
         for entry in spec if isinstance(spec, list) else [spec]:

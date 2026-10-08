@@ -16,14 +16,7 @@ class BaseCaseSource(ABC):
 
     @abstractmethod
     def load(self) -> list[EvalCase]:
-        """Read every case in the source.
-
-        Returns:
-            The cases, with ``files`` resolved to existing absolute paths.
-
-        Raises:
-            CaseSourceError: If the source cannot be read or a case in it is invalid.
-        """
+        """Every case in the source, files resolved to absolute paths; raises CaseSourceError for an invalid one."""
 
     def _build_case(self, data: Any, row: int | None = None) -> EvalCase:
         if not isinstance(data, dict):
