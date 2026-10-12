@@ -50,7 +50,8 @@ Apps expose their API under `/api/` and are mounted at the root in `pecl/urls.py
 
 ## Layout conventions
 
-- Views, serializers and models are packages with one module per resource, re-exported from `__init__.py`. Follow `account/views/`.
+- A feature with its own mechanics (consumers, tasks, registries) is a sub-package with its own views, urls and serializers. Follow `agent/agentic_execution/`.
+- Anything else is a flat module until it grows, then becomes a package with one module per resource, re-exported from `__init__.py`. Follow `account/views/`.
 - Tests sit next to the code in `<app>/tests/` (or a sub-package's `tests/`).
 
 ## Authorization
@@ -64,7 +65,7 @@ Admins are users with `is_superuser=True`. This is not a role entity: it reuses 
 ## Reference implementations
 
 - Global-permission endpoint: `account/views/groups.py`
-- Data-set-scoped endpoint: `agent/views/agents.py`
+- Data-set-scoped endpoint: `agent/views.py`
 - Endpoint tests: `account/tests/test_views/`, `agent/tests/test_views.py`
 
 ## Tests

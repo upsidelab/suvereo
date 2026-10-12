@@ -4,4 +4,4 @@ target-version = "py312"
 [tool.ruff.lint]
 extend-select = ["I"]
 [tool.ruff.lint.isort]
-known-first-party = ["agent", "account", "catalog", "pecl", "sync"]
+known-first-party = ["agent", "account", "catalog", "pecl"]
