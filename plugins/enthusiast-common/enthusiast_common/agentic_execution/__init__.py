@@ -1,4 +1,4 @@
-from .base import BaseAgenticExecutionDefinition, ExecutionConversationInterface
+from .base import AttemptObserver, BaseAgenticExecutionDefinition, ExecutionConversationInterface
 from .errors import ExecutionFailureCode
 from .input import ExecutionInputType
 from .memory import ToolScratchpad
@@ -14,6 +14,7 @@ from .validators import (
 )
 
 __all__ = [
+    "AttemptObserver",
     "BaseAgenticExecutionDefinition",
     "ExecutionConversationInterface",
     "ExecutionFailureCode",

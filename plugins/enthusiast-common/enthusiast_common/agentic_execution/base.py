@@ -1,12 +1,15 @@
 import json
 from abc import ABC, abstractmethod
-from typing import ClassVar, Optional, Protocol, Type
+from typing import Callable, ClassVar, Optional, Protocol, Type
 
 from .errors import ExecutionFailureCode
 from .input import ExecutionInputType
 from .memory import ToolScratchpad
 from .result import ExecutionResult
 from .validators import BaseExecutionValidator, IsValidJsonValidator, ValidatorResponse
+
+#: Told about every validated attempt: its 1-based number, the response, and the failing validator's verdict or None.
+AttemptObserver = Callable[[int, str, Optional[ValidatorResponse]], None]
 
 
 class ExecutionConversationInterface(Protocol):
@@ -80,6 +83,7 @@ class BaseAgenticExecutionDefinition(ABC):
         self,
         input_data: ExecutionInputType,
         conversation: ExecutionConversationInterface,
+        attempt_observer: Optional[AttemptObserver] = None,
     ) -> ExecutionResult:
         """Orchestrate the validator retry loop and return the final result.
 
@@ -93,7 +97,8 @@ class BaseAgenticExecutionDefinition(ABC):
         Validators receive the ``ToolScratchpad`` accumulated during the current
         attempt so they can inspect what tools did, not just what the LLM said.
         The memory is cleared before each retry so validators always see results
-        from the most recent attempt only.
+        from the most recent attempt only. ``attempt_observer``, when given, is told
+        about every validated attempt, e.g. so an evaluation can record retries.
         """
 
         response = self.execute(input_data, conversation)
@@ -104,6 +109,8 @@ class BaseAgenticExecutionDefinition(ABC):
                 execution_input=input_data,
                 tool_scratchpad=conversation.tool_scratchpad
             )
+            if attempt_observer is not None:
+                attempt_observer(attempt + 1, response, validator_response)
 
             if validator_response is None:
                 return ExecutionResult(success=True, output=self._build_output(response))
