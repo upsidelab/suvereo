@@ -1,0 +1,102 @@
+from pathlib import Path
+
+from enthusiast_common.agentic_execution import BaseAgenticExecutionDefinition
+from enthusiast_common.evaluation.errors import EvalSuiteError
+from enthusiast_common.evaluation.loaded_suite import LoadedSuite
+from enthusiast_common.evaluation.metrics import MetricError, MetricRegistry
+from enthusiast_common.evaluation.metrics.auto import AUTO_METRICS
+from enthusiast_common.evaluation.mocks.errors import MockError
+from enthusiast_common.evaluation.suite import EvalSuite
+from enthusiast_common.evaluation.suite_reader import SuiteReader
+from pydantic import ValidationError
+
+from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
+from agent.core.registries.language_models import LanguageModelRegistry
+from agent.evaluation.integrations import MockIntegrationFactory
+from agent.evaluation.runner.case_runner import JUDGE_COST
+from agent.models import Agent
+
+RESERVED_METRIC_NAMES = {metric.NAME for metric in AUTO_METRICS} | {JUDGE_COST}
+
+
+class SuiteLoader:
+    """Reads a suite and checks what needs the host, so a mistake fails before any tokens are spent."""
+
+    def load(self, path: Path) -> LoadedSuite:
+        """The suite with its execution key resolved; raises EvalSuiteError naming the first problem found."""
+        loaded = SuiteReader().read(path)
+        execution = self._execution(loaded.suite)
+        self._check_models(loaded.suite)
+        self._check_prompt_files(loaded)
+        self._check_metrics(loaded)
+        self._check_integrations(loaded)
+        self._check_inputs(loaded, execution)
+        suite = loaded.suite.model_copy(update={"execution_key": execution.EXECUTION_KEY})
+        return loaded.model_copy(update={"suite": suite})
+
+    def _execution(self, suite: EvalSuite) -> type[BaseAgenticExecutionDefinition]:
+        agent_type = suite.agent.type or self._existing_agent_type(suite.agent.id)
+        definitions = AgenticExecutionDefinitionRegistry().get_by_agent_type(agent_type)
+        if suite.execution_key:
+            definitions = [d for d in definitions if d.EXECUTION_KEY == suite.execution_key]
+            if not definitions:
+                raise EvalSuiteError(f"Agent type '{agent_type}' has no execution '{suite.execution_key}'.")
+        if len(definitions) != 1:
+            raise EvalSuiteError(
+                f"Agent type '{agent_type}' has {len(definitions)} registered executions; set 'execution_key'."
+            )
+        return definitions[0]
+
+    @staticmethod
+    def _existing_agent_type(agent_id: int) -> str:
+        agent_type = Agent.objects.filter(pk=agent_id).values_list("agent_type", flat=True).first()
+        if agent_type is None:
+            raise EvalSuiteError(f"There is no agent with id {agent_id}.")
+        return agent_type
+
+    @staticmethod
+    def _check_models(suite: EvalSuite) -> None:
+        registry = LanguageModelRegistry()
+        for target in [*suite.models, *([suite.judge] if suite.judge else [])]:
+            try:
+                registry.provider_class_by_name(target.provider)
+            except KeyError:
+                raise EvalSuiteError(f"Unknown language model provider '{target.provider}'.") from None
+
+    @staticmethod
+    def _check_prompt_files(loaded: LoadedSuite) -> None:
+        for variant in loaded.suite.variants:
+            if variant.system_prompt_file and not (loaded.base_dir / variant.system_prompt_file).is_file():
+                raise EvalSuiteError(f"Variant '{variant.name}': no prompt file {variant.system_prompt_file}.")
+
+    @staticmethod
+    def _check_metrics(loaded: LoadedSuite) -> None:
+        registry = MetricRegistry()
+        for case in loaded.cases:
+            for config in loaded.suite.metrics_for(case):
+                if config.name in RESERVED_METRIC_NAMES:
+                    raise EvalSuiteError(f"Metric name '{config.name}' is measured on every run; pick another.")
+                try:
+                    registry.build(config, loaded.base_dir)
+                except MetricError as e:
+                    raise EvalSuiteError(f"Case '{case.id}': {e}") from e
+
+    @staticmethod
+    def _check_integrations(loaded: LoadedSuite) -> None:
+        factory = MockIntegrationFactory(loaded.base_dir)
+        for case in loaded.cases:
+            for config in loaded.suite.integrations_for(case):
+                integration = factory.build(config)
+                try:
+                    for mock_class in integration.mock_classes():
+                        integration.mock_for(mock_class)
+                except (MockError, OSError, ValueError) as e:
+                    raise EvalSuiteError(f"Case '{case.id}', integration {config.key}: {e}") from e
+
+    @staticmethod
+    def _check_inputs(loaded: LoadedSuite, execution: type[BaseAgenticExecutionDefinition]) -> None:
+        for case in loaded.cases:
+            try:
+                execution.INPUT_TYPE(**case.input)
+            except ValidationError as e:
+                raise EvalSuiteError(f"Case '{case.id}': invalid input: {e}") from e

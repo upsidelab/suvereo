@@ -39,6 +39,10 @@ class ToolScratchpad:
         """Return the recorded result for the given tool, or ``None`` if not recorded."""
         return self._store.get(tool_name)
 
+    def entries(self) -> dict[str, Any]:
+        """A copy of every recorded result, by tool name."""
+        return dict(self._store)
+
     def clear(self) -> None:
         """Discard all recorded results.
 

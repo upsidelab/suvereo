@@ -175,6 +175,25 @@ class TestGate:
     def test_in_is_written_as_in(self):
         assert Gate.model_validate({"in": ["a", "b"]}).in_ == ["a", "b"]
 
+    @pytest.mark.parametrize(
+        "gate, value, passes",
+        [
+            ({"min": 0.9}, 0.95, True),
+            ({"min": 0.9}, 0.5, False),
+            ({"min": 0, "max": 1}, None, False),
+            ({"max": 2}, "two", False),
+            ({"max": 2}, True, False),
+            ({"equals": True}, True, True),
+            ({"equals": "ok"}, "nok", False),
+            ({"in": ["a", "b"]}, "b", True),
+            ({"equals": True}, 1, False),
+            ({"equals": 1}, True, False),
+            ({"in": [1]}, True, False),
+        ],
+    )
+    def test_passes_only_a_value_meeting_every_condition(self, gate, value, passes):
+        assert Gate.model_validate(gate).passes(value) is passes
+
 
 class TestIntegrationConfig:
     def test_needs_exactly_one_of_class_or_interface(self):

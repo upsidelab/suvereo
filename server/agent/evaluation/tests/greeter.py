@@ -1,7 +1,11 @@
+import json
 from abc import ABC, abstractmethod
 
+from enthusiast_common.agentic_execution import BaseAgenticExecutionDefinition, ExecutionInputType
 from enthusiast_common.evaluation.mocks import BaseMock, BaseMockIntegration
 from enthusiast_common.integrations import BaseIntegration
+
+from agent.evaluation.integrations import EvalIntegrationPluginResolver
 
 
 class Greeter(ABC):
@@ -41,3 +45,22 @@ class RealGreeterIntegration(GreeterIntegrationPlugin):
 
     def build_greeter(self) -> Greeter:
         raise AssertionError("a real integration must never be used here")
+
+
+class GreetingInput(ExecutionInputType):
+    name: str
+
+
+class GreetingExecution(BaseAgenticExecutionDefinition):
+    """Greets through whichever greeter the run resolves, without an LLM, as an agent's tool would."""
+
+    EXECUTION_KEY = "greeting"
+    AGENT_KEY = "greeter-agent"
+    NAME = "Greeting"
+    INPUT_TYPE = GreetingInput
+
+    def execute(self, input_data, conversation):
+        greeting = EvalIntegrationPluginResolver().resolve(None, GreeterIntegrationPlugin).build_greeter()
+        reply = greeting.greet(input_data.name)
+        conversation.tool_scratchpad.record("greet", reply)
+        return json.dumps({"greeting": reply})

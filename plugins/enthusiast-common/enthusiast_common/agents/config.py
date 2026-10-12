@@ -2,10 +2,9 @@ from abc import ABC, abstractmethod
 from enum import StrEnum
 from typing import TYPE_CHECKING, Optional, Type
 
-from ..config import AgentConfig
-
 if TYPE_CHECKING:
     from ..builder import BaseAgentBuilder
+    from ..config import AgentConfig
 
 
 class ConfigType(StrEnum):
@@ -33,7 +32,7 @@ class BaseAgentConfigProvider(ABC):
     BUILDER_CLASS: Optional[Type["BaseAgentBuilder"]] = None
 
     @abstractmethod
-    def get_config(self, config_type: ConfigType = ConfigType.CONVERSATION) -> AgentConfig:
+    def get_config(self, config_type: ConfigType = ConfigType.CONVERSATION) -> "AgentConfig":
         """Return the agent configuration for the given context type.
 
         Args:
