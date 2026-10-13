@@ -4,7 +4,11 @@ from .value_matcher import ValueMatcher
 
 
 class ArgumentFilter:
-    """Selects calls whose named arguments include all of the given values; no values selects every call."""
+    """Decides which tool or mock calls a counting metric counts, by argument values (the metric's `args:`).
+
+    A call is kept when every required argument is present with an equal value; arguments not listed are ignored.
+    With no required values every call is kept. E.g. {"email": "a@b.c"} keeps create_order(items=[...], email="a@b.c").
+    """
 
     def __init__(self, required: dict[str, Any] | None = None, coerce: bool = False):
         self.required = required or {}
