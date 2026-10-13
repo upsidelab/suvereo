@@ -183,10 +183,10 @@ class TestBaseMockInterface:
 
     def test_default_can_hold_state_across_calls(self):
         class CatalogShopMock(ShopMock):
-            def _answer_unmatched_call(self, method, *args, **kwargs):
+            def _answer_unmatched_call(self, method, arguments):
                 if method == "get_product":
-                    return self.data["catalog"].get(args[0])
-                return super()._answer_unmatched_call(method, *args, **kwargs)
+                    return self.data["catalog"].get(arguments["sku"])
+                return super()._answer_unmatched_call(method, arguments)
 
         mock = CatalogShopMock({"create_order": {"returns": "ORD-1"}}, data={"catalog": {"SKU-1": {"price": 5}}})
 

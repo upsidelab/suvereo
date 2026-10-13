@@ -21,7 +21,9 @@ class ECommerceMockIntegration(BaseMockIntegration, ECommerceIntegrationPlugin):
         return self.mock
 
     def build_product_source(self) -> FixtureProductSource:
-        return FixtureProductSource([product.details() for product in CatalogProduct.load_all(self._catalog)])
+        return FixtureProductSource(
+            [product.to_product_details() for product in CatalogProduct.load_all(self._catalog)]
+        )
 
     def _mock_data(self) -> dict[str, Any]:
         return {**self.config.data, "catalog": self._catalog}

@@ -7,7 +7,12 @@ import yaml
 
 from .errors import MockConfigError
 
-READERS = {".yaml": "yaml", ".yml": "yaml", ".json": "json", ".csv": "csv"}
+READERS = {
+    ".yaml": yaml.safe_load,
+    ".yml": yaml.safe_load,
+    ".json": json.load,
+    ".csv": lambda f: [dict(row) for row in csv.DictReader(f)],
+}
 
 
 class FixtureRecords:
@@ -25,13 +30,12 @@ class FixtureRecords:
 
     @staticmethod
     def _read(path: Path) -> Any:
-        reader = READERS.get(path.suffix.lower())
-        if reader is None:
+        """Parse a fixture file with the reader for its extension."""
+        read = READERS.get(path.suffix.lower())
+        if read is None:
             raise MockConfigError(f"Cannot read fixture file {path}; use {', '.join(READERS)}.")
         try:
             with path.open(encoding="utf-8-sig", newline="") as f:
-                if reader == "csv":
-                    return [dict(row) for row in csv.DictReader(f)]
-                return yaml.safe_load(f) if reader == "yaml" else json.load(f)
+                return read(f)
         except (OSError, yaml.YAMLError, json.JSONDecodeError) as e:
             raise MockConfigError(f"Cannot read fixture file {path}: {e}") from e

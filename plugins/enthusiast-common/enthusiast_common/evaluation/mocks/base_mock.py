@@ -105,7 +105,7 @@ class BaseMock:
             behaviour, context = self._find_behaviour(method, outcome.arguments, args, kwargs)
             if behaviour is not None and behaviour.latency_ms:
                 time.sleep(behaviour.latency_ms / 1000)
-            outcome.result = self._answer_call(method, behaviour, context, args, kwargs)
+            outcome.result = self._answer_call(method, behaviour, outcome.arguments, context)
         return outcome.result
 
     async def _handle_call_async(self, method: str, args: tuple, kwargs: dict[str, Any]) -> Any:
@@ -114,7 +114,7 @@ class BaseMock:
             behaviour, context = self._find_behaviour(method, outcome.arguments, args, kwargs)
             if behaviour is not None and behaviour.latency_ms:
                 await asyncio.sleep(behaviour.latency_ms / 1000)
-            outcome.result = self._answer_call(method, behaviour, context, args, kwargs)
+            outcome.result = self._answer_call(method, behaviour, outcome.arguments, context)
         return outcome.result
 
     @contextmanager
@@ -152,14 +152,17 @@ class BaseMock:
         return behaviour, {**arguments, "n": number, "args": args, "kwargs": kwargs}
 
     def _answer_call(
-        self, method: str, behaviour: MockBehaviour | None, context: dict[str, Any], args: tuple, kwargs: dict[str, Any]
+        self, method: str, behaviour: MockBehaviour | None, arguments: dict[str, Any], context: dict[str, Any]
     ) -> Any:
         if behaviour is None:
-            return self._answer_unmatched_call(method, *args, **kwargs)
+            return self._answer_unmatched_call(method, arguments)
         return self._apply_behaviour(behaviour, context)
 
-    def _answer_unmatched_call(self, method: str, *args: Any, **kwargs: Any) -> Any:
-        """Answer a call no behaviour matched: None, or UnmockedCallError when strict. Override for stateful logic."""
+    def _answer_unmatched_call(self, method: str, arguments: dict[str, Any]) -> Any:
+        """Answer a call no behaviour matched: None, or UnmockedCallError when strict. Override for stateful logic.
+
+        arguments are the call's arguments by parameter name, defaults filled in.
+        """
         if self.strict:
             raise UnmockedCallError(f"{self.INTERFACE.__name__}.{method} has no declared behaviour for this call.")
         return None

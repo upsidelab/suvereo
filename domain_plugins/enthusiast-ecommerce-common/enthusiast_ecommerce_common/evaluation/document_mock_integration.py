@@ -20,7 +20,7 @@ class DocumentMockIntegration(BaseMockIntegration, DocumentSourcePlugin):
 
     def fetch(self) -> list[DocumentDetails]:
         self._check_behaviour()
-        return [document.details() for document in self._documents]
+        return [document.to_document_details() for document in self._documents]
 
     @cached_property
     def _documents(self) -> list[FixtureDocument]:

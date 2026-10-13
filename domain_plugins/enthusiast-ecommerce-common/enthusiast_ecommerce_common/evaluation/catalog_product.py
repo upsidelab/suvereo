@@ -37,7 +37,7 @@ class CatalogProduct(BaseModel):
         except ValidationError as e:
             raise MockConfigError(f"Invalid catalog product: {e}") from e
 
-    def details(self) -> ProductDetails:
+    def to_product_details(self) -> ProductDetails:
         """The product as the platform connector and product source return it."""
         return ProductDetails(
             entry_id=self.entry_id or self.sku,
