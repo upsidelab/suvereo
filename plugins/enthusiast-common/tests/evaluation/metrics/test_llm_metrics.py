@@ -53,6 +53,15 @@ class TestLLMJudge:
         assert result.value is None
         assert "completeness" in result.details["error"]
 
+    def test_an_unreadable_criterion_keeps_the_scores_of_the_readable_ones(self):
+        judge = ScriptedJudge('{"score": 1, "reasoning": "all there"}', "no idea")
+
+        result = LLMJudge({"criteria": CRITERIA}).measure(_judged(judge))
+
+        assert (result.value, result.components) == (None, {"completeness": 1.0})
+        assert "no_invented_skus" in result.details["error"]
+        assert result.details["reasoning"] == {"completeness": "all there"}
+
     def test_without_a_judge_nothing_is_measured(self):
         assert LLMJudge({"criteria": CRITERIA}).measure(run()).value is None
 

@@ -13,7 +13,7 @@ class MetricRegistry:
     def __init__(self, builtins: list[type[BaseMetric]] | None = None):
         self._builtins = {metric.NAME: metric for metric in (BUILTIN_METRICS if builtins is None else builtins)}
 
-    def get(self, metric_type: str) -> type[BaseMetric]:
+    def metric_class(self, metric_type: str) -> type[BaseMetric]:
         """The metric class for a built-in NAME or a dotted path; raises MetricNotFoundError."""
         if metric_type in self._builtins:
             return self._builtins[metric_type]
@@ -28,10 +28,6 @@ class MetricRegistry:
             )
         return candidate
 
-    def build(self, config: MetricConfig, base_dir: Path | None = None) -> BaseMetric:
+    def build_metric(self, config: MetricConfig, base_dir: Path | None = None) -> BaseMetric:
         """Instantiate a metric from its suite config; raises MetricNotFoundError or MetricConfigError."""
-        return self.get(config.type)(config.params, config.name, base_dir)
-
-    def builtin_metrics(self) -> list[type[BaseMetric]]:
-        """The built-in metric classes, by name."""
-        return [self._builtins[name] for name in sorted(self._builtins)]
+        return self.metric_class(config.type)(config.params, config.name, base_dir)

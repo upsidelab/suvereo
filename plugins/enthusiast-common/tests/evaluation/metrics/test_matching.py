@@ -5,12 +5,12 @@ from enthusiast_common.evaluation.metrics.matching import MISSING, DottedPath, L
 
 class TestDottedPath:
     def test_follows_dicts_and_list_indexes(self):
-        assert DottedPath("items.1.sku").get({"items": [{"sku": "a"}, {"sku": "b"}]}) == "b"
-        assert DottedPath("").get({"a": 1}) == {"a": 1}
+        assert DottedPath("items.1.sku").value_in({"items": [{"sku": "a"}, {"sku": "b"}]}) == "b"
+        assert DottedPath("").value_in({"a": 1}) == {"a": 1}
 
     @pytest.mark.parametrize("path", ["missing", "items.5", "items.x", "items.0.sku.deeper"])
     def test_reports_missing_values(self, path):
-        assert DottedPath(path).get({"items": [{"sku": "a"}]}) is MISSING
+        assert DottedPath(path).value_in({"items": [{"sku": "a"}]}) is MISSING
 
 
 class TestValueMatcher:

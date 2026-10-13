@@ -7,5 +7,5 @@ class OutputTokens(RunFigure):
 
     NAME = "output_tokens"
 
-    def figure(self, context: MetricContext) -> int:
+    def read_figure(self, context: MetricContext) -> int:
         return context.trace.output_tokens

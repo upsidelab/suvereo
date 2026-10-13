@@ -7,7 +7,7 @@ class RunOutcome:
     """Whether a run did what its case asked: succeed, or fail with the code under expected.failure_code."""
 
     @staticmethod
-    def as_expected(context: MetricContext) -> bool:
+    def matches_expected_outcome(context: MetricContext) -> bool:
         result, expected_failure = context.trace.execution_result, context.case.expected.get(EXPECTED_FAILURE_KEY)
         if context.trace.error is not None or result is None:
             return False

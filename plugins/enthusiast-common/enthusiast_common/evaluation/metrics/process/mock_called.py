@@ -25,5 +25,5 @@ class MockCalled(BaseMetric):
 
     def measure(self, context: MetricContext) -> MetricResult:
         accepted = ArgumentFilter(self.params.args, self.params.coerce)
-        calls = [c for c in context.trace.mock_calls_to(self.params.method) if accepted.accepts(c.arguments)]
+        calls = [c for c in context.trace.mock_calls_to(self.params.method) if accepted.matches_arguments(c.arguments)]
         return MetricResult(value=float(len(calls)))

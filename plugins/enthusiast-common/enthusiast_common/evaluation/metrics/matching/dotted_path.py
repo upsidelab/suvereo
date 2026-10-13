@@ -10,7 +10,7 @@ class DottedPath:
         self.path = path
         self.segments = [segment for segment in path.split(".") if segment]
 
-    def get(self, value: Any) -> Any:
+    def value_in(self, value: Any) -> Any:
         """The value at the path, or MISSING when any segment is absent."""
         for segment in self.segments:
             if isinstance(value, dict) and segment in value:

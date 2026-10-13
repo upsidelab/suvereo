@@ -7,5 +7,5 @@ class CostUsd(RunFigure):
 
     NAME = "cost_usd"
 
-    def figure(self, context: MetricContext) -> float | None:
+    def read_figure(self, context: MetricContext) -> float | None:
         return context.cost_usd

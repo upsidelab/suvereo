@@ -10,7 +10,7 @@ class ArgumentFilter:
         self.required = required or {}
         self.matcher = ValueMatcher("exact", coerce)
 
-    def accepts(self, arguments: dict[str, Any]) -> bool:
+    def matches_arguments(self, arguments: dict[str, Any]) -> bool:
         """Whether a call's arguments include every required value."""
         return all(
             name in arguments and self.matcher.matches(arguments[name], value) for name, value in self.required.items()

@@ -7,5 +7,5 @@ class LLMCalls(RunFigure):
 
     NAME = "llm_calls"
 
-    def figure(self, context: MetricContext) -> int:
+    def read_figure(self, context: MetricContext) -> int:
         return len(context.trace.llm_calls)

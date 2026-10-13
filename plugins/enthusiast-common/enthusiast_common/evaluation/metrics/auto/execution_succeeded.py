@@ -11,4 +11,4 @@ class ExecutionSucceeded(BaseMetric):
     VALUE_TYPE = "bool"
 
     def measure(self, context: MetricContext) -> MetricResult:
-        return MetricResult(value=RunOutcome.as_expected(context))
+        return MetricResult(value=RunOutcome.matches_expected_outcome(context))

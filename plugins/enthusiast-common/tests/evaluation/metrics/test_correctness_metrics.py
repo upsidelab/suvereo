@@ -129,7 +129,7 @@ class TestJsonSchema:
         (tmp_path / "schemas" / "order.json").write_text(json.dumps(self.SCHEMA))
         monkeypatch.chdir("/")
 
-        metric = MetricRegistry().build(
+        metric = MetricRegistry().build_metric(
             MetricConfig(type="json_schema", params={"schema_file": "schemas/order.json"}), tmp_path
         )
 

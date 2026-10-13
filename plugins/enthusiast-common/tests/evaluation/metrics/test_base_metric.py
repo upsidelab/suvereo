@@ -72,17 +72,17 @@ class TestMetricRegistry:
     def test_finds_builtins_by_name_and_custom_metrics_by_dotted_path(self):
         registry = MetricRegistry([AttemptsAtMost])
 
-        assert registry.get("attempts_at_most") is AttemptsAtMost
-        assert registry.get(f"{AttemptsAtMost.__module__}.AttemptsAtMost") is AttemptsAtMost
+        assert registry.metric_class("attempts_at_most") is AttemptsAtMost
+        assert registry.metric_class(f"{AttemptsAtMost.__module__}.AttemptsAtMost") is AttemptsAtMost
 
     @pytest.mark.parametrize("metric_type", ["no_such_metric", "json.dumps", "no.such.module.Metric"])
     def test_unknown_metrics_are_reported(self, metric_type):
         with pytest.raises(MetricNotFoundError):
-            MetricRegistry([AttemptsAtMost]).get(metric_type)
+            MetricRegistry([AttemptsAtMost]).metric_class(metric_type)
 
     def test_builds_a_configured_metric_under_its_suite_name(self):
         config = MetricConfig(type="attempts_at_most", name="few_attempts", params={"threshold": 3})
 
-        metric = MetricRegistry([AttemptsAtMost]).build(config)
+        metric = MetricRegistry([AttemptsAtMost]).build_metric(config)
 
         assert (metric.name, metric.params.threshold) == ("few_attempts", 3)

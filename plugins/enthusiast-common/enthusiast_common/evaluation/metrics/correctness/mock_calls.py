@@ -1,10 +1,9 @@
 from pydantic import BaseModel, ConfigDict
 
 from ..base_metric import BaseMetric
-from ..matching import MISSING, ListScore, ListScorer, MatchMode
+from ..matching import MISSING, DottedPath, ListScore, ListScorer, MatchMode
 from ..metric_context import MetricContext
 from ..metric_result import MetricResult
-from .expected_values import ExpectedValues
 
 
 class MockCallsParams(BaseModel):
@@ -25,7 +24,7 @@ class MockCalls(BaseMetric):
     PARAMS = MockCallsParams
 
     def measure(self, context: MetricContext) -> MetricResult:
-        expected_calls = ExpectedValues.mock_calls(context.case.expected, self.params.method)
+        expected_calls = DottedPath(f"mock_calls.{self.params.method}").value_in(context.case.expected)
         if expected_calls is MISSING or not isinstance(expected_calls, list):
             return MetricResult(value=None, details={"reason": f"the case expects no calls to {self.params.method}"})
         if not all(isinstance(call, dict) for call in expected_calls):
@@ -39,7 +38,7 @@ class MockCalls(BaseMetric):
         for index in range(max(len(expected_calls), len(actual_calls))):
             wanted = expected_calls[index].get(self.params.arg) if index < len(expected_calls) else None
             got = actual_calls[index].arguments.get(self.params.arg) if index < len(actual_calls) else None
-            score = score.merged(scorer.score(self._items(got), self._items(wanted)))
+            score = score.combined_with(scorer.score(self._as_list(got), self._as_list(wanted)))
         return MetricResult(
             value=score.f1,
             components={"precision": score.precision, "recall": score.recall},
@@ -51,7 +50,7 @@ class MockCalls(BaseMetric):
         )
 
     @staticmethod
-    def _items(value) -> list:
+    def _as_list(value) -> list:
         if value is None:
             return []
         return list(value) if isinstance(value, (list, tuple)) else [value]

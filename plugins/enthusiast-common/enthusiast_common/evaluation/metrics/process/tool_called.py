@@ -25,5 +25,5 @@ class ToolCalled(BaseMetric):
 
     def measure(self, context: MetricContext) -> MetricResult:
         accepted = ArgumentFilter(self.params.args, self.params.coerce)
-        calls = [c for c in context.trace.tool_calls_named(self.params.name) if accepted.accepts(c.args)]
+        calls = [c for c in context.trace.tool_calls_named(self.params.name) if accepted.matches_arguments(c.args)]
         return MetricResult(value=float(len(calls)))

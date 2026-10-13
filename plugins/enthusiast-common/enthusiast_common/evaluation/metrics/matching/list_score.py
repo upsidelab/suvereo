@@ -26,7 +26,7 @@ class ListScore(BaseModel):
         errors = len(self.missing) + len(self.extra) + 2 * len(self.mismatched)
         return 2 * self.matched / (2 * self.matched + errors) if self.matched or errors else 1.0
 
-    def merged(self, other: "ListScore") -> "ListScore":
+    def combined_with(self, other: "ListScore") -> "ListScore":
         """This score and another added together, e.g. across several calls."""
         return ListScore(
             matched=self.matched + other.matched,

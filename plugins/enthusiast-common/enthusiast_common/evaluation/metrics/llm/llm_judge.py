@@ -54,25 +54,33 @@ class LLMJudge(BaseMetric):
     def measure(self, context: MetricContext) -> MetricResult:
         if context.judge is None:
             return MetricResult(value=None, details={"reason": "no judge model is configured"})
-        material = JudgeMaterial.render(context, self.params.include)
-        scores, reasoning = {}, {}
+        material = JudgeMaterial.build_prompt_text(context, self.params.include)
+        scores, reasoning, unreadable = {}, {}, []
         for criterion in self.params.criteria:
-            verdicts = [self._ask(context.judge, criterion, material) for _ in range(self.params.samples)]
+            verdicts = [
+                self._ask_judge_for_score(context.judge, criterion, material) for _ in range(self.params.samples)
+            ]
             graded = sorted((v for v in verdicts if v[0] is not None), key=lambda v: v[0])
             if not graded:
-                return MetricResult(value=None, details={"error": f"unreadable judge reply for '{criterion.name}'"})
+                unreadable.append(criterion.name)
+                continue
             scores[criterion.name] = median(score for score, _ in graded)
             reasoning[criterion.name] = graded[len(graded) // 2][1]
+        if unreadable:
+            error = f"unreadable judge reply for {', '.join(repr(n) for n in unreadable)}"
+            return MetricResult(value=None, components=scores, details={"error": error, "reasoning": reasoning})
         total_weight = sum(c.weight for c in self.params.criteria)
         value = sum(scores[c.name] * c.weight for c in self.params.criteria) / total_weight
         return MetricResult(value=value, components=scores, details={"reasoning": reasoning})
 
-    def _ask(self, judge: BaseJudgeClient, criterion: Criterion, material: str) -> tuple[float | None, str]:
+    def _ask_judge_for_score(
+        self, judge: BaseJudgeClient, criterion: Criterion, material: str
+    ) -> tuple[float | None, str]:
         low, high, scale = SCALES[self.params.scale]
         reply = judge.complete(
             PROMPT.format(name=criterion.name, description=criterion.description, scale=scale, material=material)
         )
-        verdict = self._verdict(reply)
+        verdict = self._parse_verdict(reply)
         try:
             score = float(verdict["score"])
         except (KeyError, TypeError, ValueError):
@@ -82,7 +90,7 @@ class LLMJudge(BaseMetric):
         return (score - low) / (high - low), str(verdict.get("reasoning", ""))
 
     @staticmethod
-    def _verdict(reply: str) -> dict:
+    def _parse_verdict(reply: str) -> dict:
         decoder = json.JSONDecoder()
         for start in (i for i, char in enumerate(reply) if char == "{"):
             try:

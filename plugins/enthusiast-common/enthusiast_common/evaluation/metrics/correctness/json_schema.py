@@ -43,6 +43,9 @@ class JsonSchema(BaseMetric):
     def measure(self, context: MetricContext) -> MetricResult:
         if context.trace.output is None:
             return MetricResult(value=False, details={"reason": "the run produced no output"})
-        errors = sorted(Draft202012Validator(self.params.json_schema).iter_errors(context.trace.output), key=str)
+        errors = sorted(
+            Draft202012Validator(self.params.json_schema).iter_errors(context.trace.output),
+            key=lambda e: ([str(p) for p in e.absolute_path], e.message),
+        )
         messages = [f"{'/'.join(str(p) for p in e.absolute_path) or '<root>'}: {e.message}" for e in errors]
         return MetricResult(value=not errors, details={"errors": messages[:MAX_REPORTED_ERRORS]} if errors else {})

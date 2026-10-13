@@ -4,7 +4,6 @@ from ..base_metric import BaseMetric
 from ..matching import DottedPath, ListScorer, MatchMode
 from ..metric_context import MetricContext
 from ..metric_result import MetricResult
-from .expected_values import ExpectedValues
 
 
 class ListMatchParams(BaseModel):
@@ -25,10 +24,10 @@ class ListMatch(BaseMetric):
     PARAMS = ListMatchParams
 
     def measure(self, context: MetricContext) -> MetricResult:
-        expected = ExpectedValues.output(context.case.expected, self.params.expected_path or self.params.path)
+        expected = DottedPath(f"output.{self.params.expected_path or self.params.path}").value_in(context.case.expected)
         if not isinstance(expected, list):
             return MetricResult(value=None, details={"reason": "the case expects no list at this path"})
-        actual = DottedPath(self.params.path).get(context.trace.output or {})
+        actual = DottedPath(self.params.path).value_in(context.trace.output or {})
         actual = actual if isinstance(actual, (list, tuple)) else []
         score = ListScorer(self.params.key, self.params.fields, self.params.coerce).score(list(actual), expected)
         return MetricResult(

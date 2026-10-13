@@ -177,16 +177,16 @@ class TestBaseMockInterface:
     def test_a_method_defined_on_the_mock_is_kept(self):
         class CountingShopMock(ShopMock):
             def create_order(self, items, email=None):
-                return self._dispatch("create_order", (items,), {"email": email}) or f"ORD-{len(items)}"
+                return self._handle_call("create_order", (items,), {"email": email}) or f"ORD-{len(items)}"
 
         assert CountingShopMock().create_order(["a", "b"]) == "ORD-2"
 
     def test_default_can_hold_state_across_calls(self):
         class CatalogShopMock(ShopMock):
-            def _default(self, method, *args, **kwargs):
+            def _answer_unmatched_call(self, method, *args, **kwargs):
                 if method == "get_product":
                     return self.data["catalog"].get(args[0])
-                return super()._default(method, *args, **kwargs)
+                return super()._answer_unmatched_call(method, *args, **kwargs)
 
         mock = CatalogShopMock({"create_order": {"returns": "ORD-1"}}, data={"catalog": {"SKU-1": {"price": 5}}})
 

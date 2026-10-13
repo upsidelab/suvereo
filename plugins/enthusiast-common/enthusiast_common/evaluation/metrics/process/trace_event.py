@@ -15,7 +15,7 @@ class TraceEventParams(BaseModel):
 
     @field_validator("event")
     @classmethod
-    def _known_event(cls, event: str) -> str:
+    def _validate_event_name(cls, event: str) -> str:
         name, _, code = event.partition(":")
         if name not in EVENTS or (code and name != "validator_failed"):
             raise ValueError(f"Unknown event '{event}'; use one of {', '.join(EVENTS)}, or validator_failed:<code>.")

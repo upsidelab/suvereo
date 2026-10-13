@@ -36,15 +36,15 @@ class LLMClassify(BaseMetric):
         prompt = PROMPT.format(
             labels=", ".join(self.params.labels),
             question=self.params.question,
-            material=JudgeMaterial.render(context, self.params.include),
+            material=JudgeMaterial.build_prompt_text(context, self.params.include),
         )
         reply = context.judge.complete(prompt)
-        label = self._label(reply)
+        label = self._label_from_reply(reply)
         return MetricResult(
             value=label, details={} if label else {"error": "the reply names no single label", "reply": reply}
         )
 
-    def _label(self, reply: str) -> str | None:
+    def _label_from_reply(self, reply: str) -> str | None:
         answer = reply.strip().strip(".\"'`").casefold()
         by_text = {label.casefold(): label for label in self.params.labels}
         if answer in by_text:
