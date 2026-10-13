@@ -11,7 +11,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from threading import Lock
 from types import SimpleNamespace
-from typing import Any, ClassVar, Generic, Iterator, Mapping, TypeVar
+from typing import Any, ClassVar, Iterator, Mapping
 
 from pydantic import TypeAdapter, ValidationError
 
@@ -19,19 +19,16 @@ from ..trace import MockCall, TraceRecorder
 from .errors import MockConfigError, UnmockedCallError
 from .mock_behaviour import MockBehaviour
 
-InterfaceT = TypeVar("InterfaceT")
-
 BEHAVIOURS = TypeAdapter(MockBehaviour | list[MockBehaviour])
 INSTANCE_ATTRIBUTES = frozenset({"data", "strict", "recorder", "calls"})
 #: ``{name}``, ``{name[0]}``, ``{name.attr}`` or ``{name:spec}``; any other brace is literal text, JSON included.
 PLACEHOLDER = re.compile(r"\{([A-Za-z_]\w*(?:\.[A-Za-z_]\w*|\[[^\[\]{}]*\])*)(?::([^{}]*))?\}")
 
 
-class BaseMock(Generic[InterfaceT]):
+class BaseMock:
     """Stands in for an interface: records every call, answers from declared behaviour, and generates the methods a subclass doesn't define."""
 
     INTERFACE: ClassVar[type]
-    #: Error names a YAML ``raises`` may use besides builtins and dotted paths, e.g. a vertical's own errors.
     ERRORS: ClassVar[dict[str, type[Exception]]] = {}
 
     _declarative: ClassVar[dict[type, type["BaseMock"]]] = {}

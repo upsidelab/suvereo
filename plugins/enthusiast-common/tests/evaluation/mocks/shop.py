@@ -28,6 +28,6 @@ class Shop(ABC):
         return ["EUR"]
 
 
-class ShopMock(BaseMock[Shop]):
+class ShopMock(BaseMock):
     INTERFACE = Shop
     ERRORS = {"ShopError": ShopError}
