@@ -1,4 +1,5 @@
 import json
+import logging
 from abc import ABC, abstractmethod
 from typing import Callable, ClassVar, Optional, Protocol, Type
 
@@ -7,6 +8,8 @@ from .input import ExecutionInputType
 from .memory import ToolScratchpad
 from .result import ExecutionResult
 from .validators import BaseExecutionValidator, IsValidJsonValidator, ValidatorResponse
+
+logger = logging.getLogger(__name__)
 
 #: Told about every validated attempt: its 1-based number, the response, and the failing validator's verdict or None.
 AttemptObserver = Callable[[int, str, Optional[ValidatorResponse]], None]
@@ -98,7 +101,8 @@ class BaseAgenticExecutionDefinition(ABC):
         attempt so they can inspect what tools did, not just what the LLM said.
         The memory is cleared before each retry so validators always see results
         from the most recent attempt only. ``attempt_observer``, when given, is told
-        about every validated attempt, e.g. so an evaluation can record retries.
+        about every validated attempt, e.g. so an evaluation can record retries;
+        an error in the observer is logged and never fails the execution.
         """
 
         response = self.execute(input_data, conversation)
@@ -110,7 +114,7 @@ class BaseAgenticExecutionDefinition(ABC):
                 tool_scratchpad=conversation.tool_scratchpad
             )
             if attempt_observer is not None:
-                attempt_observer(attempt + 1, response, validator_response)
+                self._notify_observer(attempt_observer, attempt + 1, response, validator_response)
 
             if validator_response is None:
                 return ExecutionResult(success=True, output=self._build_output(response))
@@ -156,6 +160,16 @@ class BaseAgenticExecutionDefinition(ABC):
         Returns:
             The agent's raw response string (typically JSON).
         """
+
+    @staticmethod
+    def _notify_observer(
+        observer: AttemptObserver, number: int, response: str, validator_response: Optional[ValidatorResponse]
+    ) -> None:
+        """Tell the observer about an attempt; its errors are logged so recording can never break a real run."""
+        try:
+            observer(number, response, validator_response)
+        except Exception:
+            logger.exception("Attempt observer failed on attempt %s; the execution continues.", number)
 
     def _first_failed_validator_response(
         self, response: str, execution_input: ExecutionInputType, tool_scratchpad: ToolScratchpad

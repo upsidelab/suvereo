@@ -1,6 +1,7 @@
 from enthusiast_common.evaluation.trace import TraceRecorder
 from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
 from langchain_core.messages import AIMessage
+from langchain_core.runnables import RunnableLambda
 from langchain_core.tools import tool
 
 from agent.evaluation.run_context import EvalRunContext
@@ -93,3 +94,45 @@ class TestTraceCallbackHandler:
             model.invoke("hi", config={"callbacks": [TraceCallbackHandler()]})
 
         assert len(context.recorder.trace.llm_calls) == 1
+
+    def test_a_reply_without_usage_is_marked_unreported_and_cache_writes_are_kept(self):
+        recorder = TraceRecorder()
+        silent = GenericFakeChatModel(messages=iter([AIMessage(content="ok")]))
+        cached = GenericFakeChatModel(
+            messages=iter(
+                [
+                    _reply(
+                        usage_metadata={
+                            "input_tokens": 100,
+                            "output_tokens": 5,
+                            "total_tokens": 105,
+                            "input_token_details": {"cache_creation": 60},
+                        }
+                    )
+                ]
+            )
+        )
+
+        silent.invoke("hi", config={"callbacks": [TraceCallbackHandler(recorder)]})
+        cached.invoke("hi", config={"callbacks": [TraceCallbackHandler(recorder)]})
+
+        unreported, written = recorder.trace.llm_calls
+        assert (unreported.usage_reported, unreported.input_tokens) == (False, 0)
+        assert (written.usage_reported, written.cache_write_input_tokens) == (True, 60)
+
+    def test_an_llm_call_inside_a_chain_inside_a_tool_counts_as_within_the_tool(self):
+        recorder = TraceRecorder()
+        model = GenericFakeChatModel(messages=iter([_reply()]))
+        chain = RunnableLambda(lambda text: text) | model
+
+        @tool
+        def summarize(text: str) -> str:
+            """Summarize a text."""
+            return chain.invoke(text).content
+
+        summarize.invoke({"text": "long"}, config={"callbacks": [TraceCallbackHandler(recorder)]})
+
+        [tool_call] = recorder.trace.tool_calls
+        [llm_call] = recorder.trace.llm_calls
+        assert llm_call.parent_run_id != tool_call.run_id
+        assert recorder.trace.llm_calls_within(tool_call) == [llm_call]

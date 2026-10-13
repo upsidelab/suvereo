@@ -62,3 +62,13 @@ class TestExecutionConversation:
             ExecutionConversation(MagicMock()).ask("hello")
 
         assert get_answer.call_args.kwargs["overrides"] is None
+
+    def test_the_attempt_observer_hears_each_attempt_and_its_errors_never_fail_the_run(self, registered):
+        conversation = MagicMock()
+        conversation.ask.return_value = '{"echo": "hi"}'
+        observer = MagicMock(side_effect=RuntimeError("recording broke"))
+
+        result = AgenticExecutionRunner().run("echo", {"text": "hi"}, conversation, observer)
+
+        observer.assert_called_once_with(1, '{"echo": "hi"}', None)
+        assert result.success

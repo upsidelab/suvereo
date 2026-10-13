@@ -24,6 +24,11 @@ class TraceRecorder:
         with self._lock:
             return self.trace.record_tool_call(call)
 
+    def record_run_parent(self, run_id: str, parent_run_id: str) -> None:
+        """Remember which run started another one."""
+        with self._lock:
+            self.trace.record_run_parent(run_id, parent_run_id)
+
     def record_mock_call(self, call: MockCall) -> None:
         """Add a call a mock received."""
         with self._lock:

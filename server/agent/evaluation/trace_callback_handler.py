@@ -17,10 +17,21 @@ class TraceCallbackHandler(BaseCallbackHandler):
         self._llm_starts: dict[UUID, tuple[float, str | None]] = {}
         self._tool_starts: dict[UUID, tuple[float, str, dict[str, Any]]] = {}
 
-    def on_chat_model_start(self, serialized, messages, *, run_id: UUID, **kwargs: Any) -> None:
+    def on_chain_start(
+        self, serialized, inputs, *, run_id: UUID, parent_run_id: UUID | None = None, **kwargs: Any
+    ) -> None:
+        self._record_parent(run_id, parent_run_id)
+
+    def on_chat_model_start(
+        self, serialized, messages, *, run_id: UUID, parent_run_id: UUID | None = None, **kwargs: Any
+    ) -> None:
+        self._record_parent(run_id, parent_run_id)
         self._start_llm(run_id, kwargs)
 
-    def on_llm_start(self, serialized, prompts, *, run_id: UUID, **kwargs: Any) -> None:
+    def on_llm_start(
+        self, serialized, prompts, *, run_id: UUID, parent_run_id: UUID | None = None, **kwargs: Any
+    ) -> None:
+        self._record_parent(run_id, parent_run_id)
         self._start_llm(run_id, kwargs)
 
     def on_llm_end(
@@ -32,7 +43,8 @@ class TraceCallbackHandler(BaseCallbackHandler):
             return
         generation = response.generations[0][0] if response.generations and response.generations[0] else None
         message = getattr(generation, "message", None)
-        usage = getattr(message, "usage_metadata", None) or {}
+        usage = getattr(message, "usage_metadata", None)
+        input_details = (usage or {}).get("input_token_details") or {}
         metadata = getattr(message, "response_metadata", None) or {}
         recorder.record_llm_call(
             LLMCall(
@@ -40,10 +52,12 @@ class TraceCallbackHandler(BaseCallbackHandler):
                 parent_run_id=str(parent_run_id) if parent_run_id else None,
                 requested_model=requested_model,
                 model=metadata.get("model_name") or metadata.get("model") or requested_model,
-                input_tokens=usage.get("input_tokens", 0),
-                cached_input_tokens=(usage.get("input_token_details") or {}).get("cache_read", 0) or 0,
-                output_tokens=usage.get("output_tokens", 0),
-                reasoning_tokens=(usage.get("output_token_details") or {}).get("reasoning", 0) or 0,
+                input_tokens=(usage or {}).get("input_tokens", 0),
+                cached_input_tokens=input_details.get("cache_read", 0) or 0,
+                cache_write_input_tokens=input_details.get("cache_creation", 0) or 0,
+                output_tokens=(usage or {}).get("output_tokens", 0),
+                reasoning_tokens=((usage or {}).get("output_token_details") or {}).get("reasoning", 0) or 0,
+                usage_reported=usage is not None,
                 duration_s=self._elapsed(started),
                 finish_reason=metadata.get("finish_reason") or metadata.get("stop_reason"),
                 requested_tool_calls=[
@@ -71,8 +85,16 @@ class TraceCallbackHandler(BaseCallbackHandler):
         )
 
     def on_tool_start(
-        self, serialized: dict, input_str: str, *, run_id: UUID, inputs: dict | None = None, **kwargs: Any
+        self,
+        serialized: dict,
+        input_str: str,
+        *,
+        run_id: UUID,
+        parent_run_id: UUID | None = None,
+        inputs: dict | None = None,
+        **kwargs: Any,
     ) -> None:
+        self._record_parent(run_id, parent_run_id)
         args = inputs if isinstance(inputs, dict) else {"input": input_str}
         self._tool_starts[run_id] = (time.perf_counter(), (serialized or {}).get("name", "unknown"), args)
 
@@ -83,6 +105,12 @@ class TraceCallbackHandler(BaseCallbackHandler):
         self, error: BaseException, *, run_id: UUID, parent_run_id: UUID | None = None, **kwargs: Any
     ) -> None:
         self._finish_tool(run_id, parent_run_id, error=f"{type(error).__name__}: {error}")
+
+    def _record_parent(self, run_id: UUID, parent_run_id: UUID | None) -> None:
+        """Remember which run started this one, so nested LLM calls can be traced back to their tool."""
+        recorder = self._active_recorder()
+        if recorder is not None and parent_run_id is not None:
+            recorder.record_run_parent(str(run_id), str(parent_run_id))
 
     def _start_llm(self, run_id: UUID, kwargs: dict[str, Any]) -> None:
         params = kwargs.get("invocation_params") or {}

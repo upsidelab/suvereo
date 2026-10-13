@@ -8,7 +8,11 @@ from enthusiast_common.integrations import BaseIntegration, BaseIntegrationPlugi
 
 
 class EvalRunContext:
-    """One evaluation run's state, read via current() by classes the agent builder instantiates without arguments."""
+    """What one evaluation run shares with code the agent builder creates: the trace recorder, the mock integrations,
+    the real resolver to fall back to (None refuses real integrations) and the suite directory.
+
+    activate() makes it current for a block; current() returns it, or None outside an evaluation.
+    """
 
     _current: ClassVar[ContextVar[Optional["EvalRunContext"]]] = ContextVar("eval_run_context", default=None)
 

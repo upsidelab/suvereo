@@ -33,6 +33,7 @@ class PricingTable:
                 input_per_million=p["input"],
                 output_per_million=p["output"],
                 cached_input_per_million=p.get("cached_input"),
+                cache_write_input_per_million=p.get("cache_write"),
             )
             for name, p in data["models"].items()
         }
@@ -52,21 +53,30 @@ class PricingTable:
         return self.prices.get(base) if base != model else None
 
     def call_cost(self, call: LLMCall) -> float | None:
+        """One call's USD cost; None when its model has no price or the provider reported no token counts."""
         price = self.price_for(call.requested_model) or self.price_for(call.model)
-        if price is None:
+        if price is None or not call.usage_reported:
             return None
         cached = min(call.cached_input_tokens, call.input_tokens)
-        cached_rate = (
-            price.cached_input_per_million if price.cached_input_per_million is not None else price.input_per_million
-        )
+        written = min(call.cache_write_input_tokens, call.input_tokens - cached)
         return (
-            (call.input_tokens - cached) * price.input_per_million
-            + cached * cached_rate
+            (call.input_tokens - cached - written) * price.input_per_million
+            + cached * self._or_input_rate(price.cached_input_per_million, price)
+            + written * self._or_input_rate(price.cache_write_input_per_million, price)
             + call.output_tokens * price.output_per_million
         ) / PER_TOKEN
 
     def trace_cost(self, trace: ExecutionTrace) -> TraceCost:
         """The trace's total cost, or None with the unpriced model names if any call cannot be priced."""
         costs = [(call, self.call_cost(call)) for call in trace.llm_calls]
-        unpriced = sorted({call.requested_model or call.model or "unknown" for call, cost in costs if cost is None})
+        unpriced = sorted({self._unpriced_label(call) for call, cost in costs if cost is None})
         return TraceCost(usd=None if unpriced else sum(cost for _, cost in costs), unpriced_models=unpriced)
+
+    @staticmethod
+    def _or_input_rate(rate: float | None, price: ModelPricing) -> float:
+        return price.input_per_million if rate is None else rate
+
+    @staticmethod
+    def _unpriced_label(call: LLMCall) -> str:
+        name = call.requested_model or call.model or "unknown"
+        return name if call.usage_reported else f"{name} (no token usage reported)"

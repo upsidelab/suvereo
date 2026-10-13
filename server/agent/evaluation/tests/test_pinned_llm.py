@@ -20,3 +20,4 @@ class TestPinnedLLM:
     def test_one_class_per_provider_and_model(self):
         assert PinnedLLM.for_model("OpenAI", "gpt-4o") is PinnedLLM.for_model("OpenAI", "gpt-4o")
         assert PinnedLLM.for_model("OpenAI", "gpt-4o") is not PinnedLLM.for_model("OpenAI", "gpt-4o-mini")
+        assert PinnedLLM.for_model("OpenAI", "gpt-4o-mini").__name__ == "PinnedOpenAILLM[gpt-4o-mini]"

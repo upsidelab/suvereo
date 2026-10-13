@@ -17,7 +17,9 @@ class PinnedLLM(BaseLLM):
         """The pinned class for a provider NAME and model, one cached class per pair."""
         key = (provider, model)
         if key not in PinnedLLM._classes:
-            PinnedLLM._classes[key] = type(f"Pinned{provider}LLM", (PinnedLLM,), {"PROVIDER": provider, "MODEL": model})
+            PinnedLLM._classes[key] = type(
+                f"Pinned{provider}LLM[{model}]", (PinnedLLM,), {"PROVIDER": provider, "MODEL": model}
+            )
         return PinnedLLM._classes[key]
 
     def _resolve_target(self, data_set_id: Any) -> tuple[type[LanguageModelProvider], str]:

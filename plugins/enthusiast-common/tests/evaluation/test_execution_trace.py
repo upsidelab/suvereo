@@ -37,6 +37,16 @@ class TestExecutionTrace:
 
         assert [c.run_id for c in trace.llm_calls_within(tool)] == ["nested"]
 
+    def test_llm_calls_within_a_tool_are_found_through_intermediate_runs(self):
+        trace = ExecutionTrace()
+        tool = ToolCall(run_id="t1", name="summarize")
+        trace.record_run_parent("chain", "t1")
+        trace.record_run_parent("t1", "agent")
+        trace.record_llm_call(_llm("deep", parent="chain"))
+        trace.record_llm_call(_llm("outside", parent="agent"))
+
+        assert [c.run_id for c in trace.llm_calls_within(tool)] == ["deep"]
+
     def test_query_helpers(self):
         trace = ExecutionTrace()
         trace.record_tool_call(ToolCall(run_id="t1", name="place_order", error="RuntimeError: Out of stock"))
