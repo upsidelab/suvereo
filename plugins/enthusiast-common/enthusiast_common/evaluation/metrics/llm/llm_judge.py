@@ -1,6 +1,6 @@
 import json
 from statistics import median
-from typing import Literal
+from typing import ClassVar, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -9,9 +9,10 @@ from ..base_metric import BaseMetric
 from ..metric_context import MetricContext
 from ..metric_result import MetricResult
 from .judge_material import JudgeMaterial, Section
+from .judge_prompt_params import JudgePromptParams
 
 SCALES = {"binary": (0, 1, "0 (not met) or 1 (met)"), "1-5": (1, 5, "from 1 (not met at all) to 5 (fully met)")}
-PROMPT = """You are grading an AI agent's work against one criterion.
+DEFAULT_PROMPT = """You are grading an AI agent's work against one criterion.
 
 Criterion: {name}: {description}
 
@@ -28,11 +29,26 @@ class Criterion(BaseModel):
     weight: float = Field(default=1.0, gt=0)
 
 
-class LLMJudgeParams(BaseModel):
+class ScoreRange(BaseModel):
+    """A custom score range for the judge, e.g. 0-10; scores are normalised to 0-1."""
+
     model_config = ConfigDict(extra="forbid")
 
+    min: float
+    max: float
+
+    @model_validator(mode="after")
+    def _max_above_min(self) -> "ScoreRange":
+        if self.max <= self.min:
+            raise ValueError("Score range 'max' must be above 'min'.")
+        return self
+
+
+class LLMJudgeParams(JudgePromptParams):
+    PLACEHOLDERS: ClassVar[tuple[str, ...]] = ("name", "description", "scale", "material")
+
     criteria: list[Criterion] = Field(min_length=1)
-    scale: Literal["binary", "1-5"] = "binary"
+    scale: Literal["binary", "1-5"] | ScoreRange = "binary"
     include: list[Section] = ["output", "expected"]
     samples: int = Field(default=1, ge=1, le=9)
 
@@ -45,7 +61,14 @@ class LLMJudgeParams(BaseModel):
 
 
 class LLMJudge(BaseMetric):
-    """A judge model's 0-1 score: each criterion is asked separately (median of samples), then weighted together."""
+    """Scores the agent's work 0-1 by asking a judge model to grade it against criteria written in the suite.
+
+    Each criterion (e.g. "every line item from the document is ordered") is sent to the judge separately with the run
+    details chosen by `include`; the judge replies with a score on the scale and its reasoning. With `samples` > 1 the
+    median score is kept. Scores are normalised to 0-1 and averaged by criterion weight; each criterion's score is also
+    reported as a component. `judge` picks a model other than the suite's judge, `prompt`/`prompt_file` replace the
+    built-in prompt (placeholders {name}, {description}, {scale}, {material}).
+    """
 
     NAME = "llm_judge"
     VALUE_TYPE = "number"
@@ -76,10 +99,11 @@ class LLMJudge(BaseMetric):
     def _ask_judge_for_score(
         self, judge: BaseJudgeClient, criterion: Criterion, material: str
     ) -> tuple[float | None, str]:
-        low, high, scale = SCALES[self.params.scale]
-        reply = judge.complete(
-            PROMPT.format(name=criterion.name, description=criterion.description, scale=scale, material=material)
+        low, high, scale = self._score_range()
+        prompt = (self.params.prompt or DEFAULT_PROMPT).format(
+            name=criterion.name, description=criterion.description, scale=scale, material=material
         )
+        reply = judge.complete(prompt, self.params.judge)
         verdict = self._parse_verdict(reply)
         try:
             score = float(verdict["score"])
@@ -88,6 +112,13 @@ class LLMJudge(BaseMetric):
         if not low <= score <= high:
             return None, reply
         return (score - low) / (high - low), str(verdict.get("reasoning", ""))
+
+    def _score_range(self) -> tuple[float, float, str]:
+        """The lowest and highest score, and how the prompt describes the scale."""
+        scale = self.params.scale
+        if isinstance(scale, ScoreRange):
+            return scale.min, scale.max, f"from {scale.min:g} (not met at all) to {scale.max:g} (fully met)"
+        return SCALES[scale]
 
     @staticmethod
     def _parse_verdict(reply: str) -> dict:

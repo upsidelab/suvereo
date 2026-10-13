@@ -76,8 +76,41 @@ class TestLLMJudge:
         assert '## trace_summary\ntool place_order({"sku": "SKU-1"}) -> ok' in judge.prompts[0]
         assert "## output" not in judge.prompts[0]
 
+    def test_a_custom_score_range_is_normalised(self):
+        judge = ScriptedJudge('{"score": 7}')
+
+        result = LLMJudge({"criteria": CRITERIA[:1], "scale": {"min": 0, "max": 10}}).measure(_judged(judge))
+
+        assert result.value == pytest.approx(0.7)
+        assert "from 0 (not met at all) to 10 (fully met)" in judge.prompts[0]
+
+    def test_a_custom_prompt_and_judge_model_are_used(self, tmp_path):
+        (tmp_path / "judge.txt").write_text("Grade {name} ({description}) {scale}.\n{material}")
+        params = {
+            "criteria": CRITERIA[:1],
+            "prompt_file": "judge.txt",
+            "judge": {"provider": "OpenAI", "model": "gpt-4.1"},
+        }
+        judge = ScriptedJudge('{"score": 1}')
+
+        LLMJudge(params, base_dir=tmp_path).measure(_judged(judge))
+
+        assert judge.prompts[0].startswith("Grade completeness (Every line item is ordered) 0 (not met) or 1 (met).")
+        assert judge.models[0].model == "gpt-4.1"
+
     @pytest.mark.parametrize(
-        "params", [{"criteria": []}, {"criteria": CRITERIA * 2}, {"criteria": CRITERIA, "include": ["everything"]}]
+        "params",
+        [
+            {"criteria": []},
+            {"criteria": CRITERIA * 2},
+            {"criteria": CRITERIA, "include": ["everything"]},
+            {"criteria": CRITERIA, "scale": {"min": 5, "max": 5}},
+            {"criteria": CRITERIA, "prompt": "Grade {criterion}: {material}"},
+            {"criteria": CRITERIA, "prompt": "Grade {name} without the run"},
+            {"criteria": CRITERIA, "prompt": 'Reply {"score": 1} {material}'},
+            {"criteria": CRITERIA, "prompt": "{material}", "prompt_file": "judge.txt"},
+            {"criteria": CRITERIA, "prompt_file": "missing.txt"},
+        ],
     )
     def test_invalid_params_fail_when_the_suite_loads(self, params):
         with pytest.raises(MetricConfigError):
@@ -97,3 +130,15 @@ class TestLLMClassify:
 
         assert result.value is None
         assert result.details["reply"] == reply
+
+    def test_a_custom_prompt_and_judge_model_are_used(self):
+        params = {
+            **self.PARAMS,
+            "prompt": "Q: {question} A: {labels}\n{material}",
+            "judge": {"provider": "X", "model": "m"},
+        }
+        judge = ScriptedJudge("no")
+
+        assert LLMClassify(params).measure(_judged(judge)).value == "no"
+        assert judge.prompts[0].startswith("Q: Did the agent invent SKUs? A: yes, no")
+        assert judge.models[0].model == "m"
