@@ -1,7 +1,6 @@
 from functools import cached_property
 
-from enthusiast_common.evaluation.mocks import BaseMockIntegration, FixtureRecords, MockConfigError
-from pydantic import ValidationError
+from enthusiast_common.evaluation.mocks import BaseMockIntegration, FixtureRecords
 
 from ..interfaces import DocumentSourcePlugin
 from ..structures import DocumentDetails
@@ -24,8 +23,4 @@ class DocumentMockIntegration(BaseMockIntegration, DocumentSourcePlugin):
 
     @cached_property
     def _documents(self) -> list[FixtureDocument]:
-        records = FixtureRecords.load(self.config.data.get("documents"), self.base_dir)
-        try:
-            return [FixtureDocument.model_validate(record) for record in records]
-        except ValidationError as e:
-            raise MockConfigError(f"Invalid fixture document: {e}") from e
+        return FixtureDocument.load_all(FixtureRecords.load(self.config.data.get("documents"), self.base_dir))
