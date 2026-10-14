@@ -7,8 +7,10 @@ from .metric_config import Aggregate, MetricConfig
 from .model_pricing import ModelPricing
 from .model_target import ModelTarget
 from .prompt_variant import DEFAULT_VARIANT, PromptVariant
+from .report_name import DEFAULT_REPORTS, ReportName
 
 __all__ = [
+    "DEFAULT_REPORTS",
     "DEFAULT_VARIANT",
     "Aggregate",
     "AgentRef",
@@ -21,4 +23,5 @@ __all__ = [
     "ModelPricing",
     "ModelTarget",
     "PromptVariant",
+    "ReportName",
 ]

@@ -5,6 +5,7 @@ from enthusiast_common.evaluation.suite import Aggregate
 
 from agent.evaluation.runner import RunResult
 from agent.evaluation.runner.case_runner import JUDGE_COST
+from agent.evaluation.suite_metric_configs import suite_metric_configs
 
 from .candidate_metrics import CandidateMetrics
 from .metric_aggregate import MetricAggregate
@@ -32,18 +33,11 @@ class MetricAggregator:
 
     @classmethod
     def for_suite(cls, loaded: LoadedSuite) -> "MetricAggregator":
-        """An aggregator knowing the value type and declared aggregate of every metric the suite measures.
-
-        SuiteLoader makes a case's override keep its suite metric's type and aggregate, so the first config of a name
-        speaks for every case.
-        """
+        """An aggregator knowing the value type and declared aggregate of every metric the suite measures."""
         value_types = {metric.NAME: metric.VALUE_TYPE for metric in AUTO_METRICS} | {JUDGE_COST: "number"}
         aggregates: dict[str, Aggregate] = {}
         registry = MetricRegistry()
-        configs = [*loaded.suite.metrics, *(c for case in loaded.cases for c in loaded.suite.metrics_for(case))]
-        for config in configs:
-            if config.name in value_types:
-                continue
+        for config in suite_metric_configs(loaded).values():
             value_types[config.name] = registry.metric_class(config.type).VALUE_TYPE
             if config.aggregate:
                 aggregates[config.name] = config.aggregate

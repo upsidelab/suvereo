@@ -10,6 +10,7 @@ from .integration_config import IntegrationConfig
 from .metric_config import MetricConfig
 from .model_target import ModelTarget
 from .prompt_variant import PromptVariant
+from .report_name import DEFAULT_REPORTS, ReportName
 
 CasesSpec = str | list[str | EvalCase]
 
@@ -31,6 +32,7 @@ class EvalSuite(EvalModel):
         default=0.8, ge=0, le=1, description="Minimum pass rate per candidate for the run to succeed."
     )
     metrics: list[MetricConfig] = Field(min_length=1)
+    reports: list[ReportName] = Field(default=DEFAULT_REPORTS, description="Outputs to write besides summary.json.")
     cases: CasesSpec = Field(description="Case files or directories (suite-relative), inline cases, or a list of both.")
 
     @model_validator(mode="after")

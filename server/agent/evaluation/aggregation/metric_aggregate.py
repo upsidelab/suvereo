@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 #: Aggregate names that read another figure: a bool's rate is its mean.
 NUMBER_AGGREGATES = {"rate": "mean"}
+DEFAULT_AGGREGATE_NAMES = {"number": "mean", "bool": "rate", "label": "most_common"}
 
 
 class MetricAggregate(BaseModel):
