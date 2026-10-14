@@ -1,10 +1,9 @@
-from typing import Any, Optional, TypeVar
+from typing import Any, Optional
 
-from enthusiast_common.integrations import BaseIntegration, BaseIntegrationPluginResolver
+from enthusiast_common.integrations import BaseIntegrationPluginResolver
+from enthusiast_common.integrations.base import IntegrationT
 
 from agent.evaluation.run_context import EvalRunContext
-
-IntegrationT = TypeVar("IntegrationT", bound=BaseIntegration)
 
 
 class EvalIntegrationPluginResolver(BaseIntegrationPluginResolver):

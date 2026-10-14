@@ -29,6 +29,12 @@ class GreeterMockIntegration(BaseMockIntegration, GreeterIntegrationPlugin):
         return self.mock
 
 
+class IncompleteGreeterMockIntegration(BaseMockIntegration, GreeterIntegrationPlugin):
+    TYPE = "mock_incomplete_greeter"
+    NAME = "Mock greeter missing build_greeter"
+    MOCK_CLASS = BaseMock.declarative(Greeter)
+
+
 class RealGreeterIntegration(GreeterIntegrationPlugin):
     TYPE = "real_greeter"
     NAME = "Real greeter"

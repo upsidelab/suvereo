@@ -42,6 +42,15 @@ class TestHandWrittenMockIntegration:
         assert integration.mock is integration.build_shop()
         assert [c.method for c in integration.mock.calls] == ["get_product"]
 
+    def test_reset_mocks_starts_every_built_mock_afresh(self):
+        integration = _configured(ShopMockIntegration, behaviour={"create_order": {"returns": "ORD-{n}"}})
+        integration.build_shop().create_order([])
+
+        integration.reset_mocks()
+
+        assert integration.mock.calls == []
+        assert integration.build_shop().create_order([]) == "ORD-1"
+
     def test_without_configuration_the_mock_has_no_behaviour(self):
         assert ShopMockIntegration().mock.get_product("x") is None
 

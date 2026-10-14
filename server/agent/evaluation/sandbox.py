@@ -2,6 +2,7 @@ import logging
 import re
 import secrets
 import time
+from datetime import datetime, timezone
 from typing import Any
 
 from django.db import transaction
@@ -9,7 +10,7 @@ from enthusiast_common.evaluation.mocks import BaseMockIntegration
 from enthusiast_common.utils import deep_merge
 
 from agent.core.registries.agents.agent_registry import AgentRegistry
-from agent.evaluation.eval_conversations import EvalConversations
+from agent.evaluation.eval_conversations import ABANDONED_AFTER, EvalConversations
 from agent.evaluation.integrations import IntegrationFixtureSyncer
 from agent.models import Agent, Conversation
 from agent.services import AgentPreconfigurationService
@@ -18,10 +19,9 @@ from catalog.models import DataSet
 logger = logging.getLogger(__name__)
 
 NAME_PREFIX = "__eval__"
-#: Same length as NAME_PREFIX, so a kept sandbox's name still fits; purge_stale never matches it.
+#: Same length as NAME_PREFIX, so a kept sandbox's name still fits; purge_abandoned never matches it.
 KEPT_PREFIX = "__kept__"
 NAME_LENGTH = 30
-STALE_AFTER_SECONDS = 6 * 60 * 60
 CREATED_AT = re.compile(rf"^{NAME_PREFIX}([0-9a-f]+)-")
 
 
@@ -36,8 +36,10 @@ class EvalSandbox:
     def create(
         cls, suite_name: str, agent_type: str, agent_config: dict[str, Any], integrations: list[BaseMockIntegration]
     ) -> "EvalSandbox":
-        """Create the sandbox and sync the integrations' fixture data into it; anything half-built is removed on failure."""
-        cls.purge_stale()
+        """Create the sandbox and sync the integrations' fixture data into it; anything half-built is removed on failure.
+
+        The sync calls the integrations' mocks, so they are reset afterwards and runs start from a fresh state.
+        """
         agent_class = AgentRegistry().get_agent_class_by_type(agent_type)
         config = deep_merge(AgentPreconfigurationService.default_agent_configuration(agent_class), agent_config)
         with transaction.atomic():
@@ -53,6 +55,7 @@ class EvalSandbox:
         try:
             for integration in integrations:
                 IntegrationFixtureSyncer().sync(integration, data_set)
+                integration.reset_mocks()
         except BaseException:
             sandbox.destroy()
             raise
@@ -64,17 +67,20 @@ class EvalSandbox:
         self.data_set.delete()
 
     def keep(self) -> None:
-        """Rename the sandbox so purge_stale leaves it, and its conversations, for someone to inspect."""
+        """Rename the sandbox and mark its conversations kept, so the purges leave them for someone to inspect."""
         self.data_set.name = KEPT_PREFIX + self.data_set.name.removeprefix(NAME_PREFIX)
         self.data_set.save(update_fields=["name"])
+        EvalConversations.keep(Conversation.objects.filter(data_set=self.data_set))
 
     @classmethod
-    def purge_stale(cls) -> int:
-        """Delete sandboxes left behind by runs that died, sparing young ones; one that fails is logged and skipped."""
+    def purge_abandoned(cls) -> int:
+        """Delete sandboxes of runs that died: created, and last used by a conversation, over ABANDONED_AFTER ago.
+
+        A run still going keeps its sandbox alive by starting conversations. One that fails is logged and skipped.
+        """
         purged = 0
         for data_set in DataSet.objects.filter(name__startswith=NAME_PREFIX):
-            match = CREATED_AT.match(data_set.name)
-            if not match or time.time() - int(match.group(1), 16) <= STALE_AFTER_SECONDS:
+            if not cls._is_abandoned(data_set):
                 continue
             try:
                 cls(data_set, None).destroy()
@@ -83,6 +89,16 @@ class EvalSandbox:
                 continue
             purged += 1
         return purged
+
+    @staticmethod
+    def _is_abandoned(data_set: DataSet) -> bool:
+        match = CREATED_AT.match(data_set.name)
+        if not match:
+            return False
+        now = datetime.now(timezone.utc)
+        created = datetime.fromtimestamp(int(match.group(1), 16), timezone.utc)
+        last_used = EvalConversations.last_activity(Conversation.objects.filter(data_set=data_set)) or created
+        return now - max(created, last_used) > ABANDONED_AFTER
 
     @staticmethod
     def _name(suite_name: str) -> str:

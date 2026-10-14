@@ -60,6 +60,31 @@ class TestEvalSandbox:
         assert record.type == "mock_greeter"
         manager.sync.assert_called_once_with(integration, sandbox.data_set.id, record.id)
 
+    def test_the_mocks_are_reset_after_the_sync_so_runs_start_fresh(self):
+        integration = GreeterMockIntegration()
+
+        with patch.object(IntegrationManagerRegistry, "get_manager_for", return_value=MagicMock()):
+            with patch.object(GreeterMockIntegration, "reset_mocks") as reset:
+                _create([integration])
+
+        reset.assert_called_once_with()
+
+    def test_creating_a_sandbox_leaves_other_sandboxes_alone(self):
+        old = baker.make(DataSet, name=f"{NAME_PREFIX}{int(time.time()) - 7 * 3600:x}-ab-old")
+
+        _create()
+
+        assert DataSet.objects.filter(pk=old.pk).exists()
+
+    def test_an_old_sandbox_still_starting_conversations_is_not_purged(self):
+        sandbox = _create()
+        sandbox.data_set.name = f"{NAME_PREFIX}{int(time.time()) - 7 * 3600:x}-ab-busy"
+        sandbox.data_set.save()
+        EvalConversations.create(sandbox.agent, EvalUser.get())
+
+        assert EvalSandbox.purge_abandoned() == 0
+        assert DataSet.objects.filter(pk=sandbox.data_set.pk).exists()
+
     def test_a_failed_sync_leaves_nothing_behind(self):
         with patch.object(IntegrationFixtureSyncer, "sync", side_effect=RuntimeError("catalog unreadable")):
             with pytest.raises(RuntimeError):
@@ -81,12 +106,12 @@ class TestEvalSandbox:
         assert not Conversation.objects.filter(pk=conversation.pk).exists()
         assert not storage.exists(path)
 
-    def test_purge_removes_only_stale_sandboxes(self):
+    def test_purge_removes_only_abandoned_sandboxes(self):
         fresh = _create().data_set
         stale = baker.make(DataSet, name=f"{NAME_PREFIX}{int(time.time()) - 7 * 3600:x}-ab-old")
         unrelated = baker.make(DataSet, name="Shop")
 
-        assert EvalSandbox.purge_stale() == 1
+        assert EvalSandbox.purge_abandoned() == 1
 
         assert set(DataSet.objects.values_list("pk", flat=True)) >= {fresh.pk, unrelated.pk}
         assert not DataSet.objects.filter(pk=stale.pk).exists()
@@ -102,7 +127,7 @@ class TestEvalSandbox:
             destroy(sandbox)
 
         with patch.object(EvalSandbox, "destroy", destroy_unless_stuck):
-            assert EvalSandbox.purge_stale() == 1
+            assert EvalSandbox.purge_abandoned() == 1
 
         assert DataSet.objects.filter(pk=stuck.pk).exists()
         assert not DataSet.objects.filter(pk=stale.pk).exists()

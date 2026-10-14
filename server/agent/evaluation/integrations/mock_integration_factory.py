@@ -9,14 +9,19 @@ from pydantic import ValidationError
 
 
 class MockIntegrationFactory:
-    """Builds a fresh mock integration from a suite's integration config, with relative data paths resolved."""
+    """Builds a fresh mock integration from a suite's integration config; its base_dir is the suite directory,
+    which its fixture files are read relative to."""
 
     def __init__(self, base_dir: Path):
         self.base_dir = base_dir
 
     def build(self, config: IntegrationConfig) -> BaseMockIntegration:
         """A configured instance; raises EvalSuiteError for an unknown or non-mock class, or invalid config."""
-        integration = self.integration_class(config)()
+        integration_class = self.resolve_class(config)
+        try:
+            integration = integration_class()
+        except TypeError as e:
+            raise EvalSuiteError(f"Integration {config.key} cannot be built: {e}") from e
         try:
             integration.set_runtime_arguments({"configuration_args": config.config})
         except (ValidationError, TypeError) as e:
@@ -24,7 +29,7 @@ class MockIntegrationFactory:
         integration.base_dir = self.base_dir
         return integration
 
-    def integration_class(self, config: IntegrationConfig) -> type[BaseMockIntegration]:
+    def resolve_class(self, config: IntegrationConfig) -> type[BaseMockIntegration]:
         """The mock integration class a config names, generating one for a plugin interface."""
         target = self._import(config.key)
         if config.class_path:

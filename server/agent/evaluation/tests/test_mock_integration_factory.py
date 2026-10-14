@@ -50,6 +50,7 @@ class TestMockIntegrationFactory:
             ({"interface": f"{MODULE}.Greeter"}, "not an integration interface"),
             ({"class": f"{MODULE}.Nope"}, "Cannot import"),
             ({"class": f"{MODULE}.GreeterMockIntegration", "config": {"unknown": 1}}, "Invalid config"),
+            ({"class": f"{MODULE}.IncompleteGreeterMockIntegration"}, "cannot be built"),
         ],
     )
     def test_unusable_configs_are_reported(self, fields, message):

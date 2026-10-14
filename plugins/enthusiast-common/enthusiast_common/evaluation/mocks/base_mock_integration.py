@@ -69,6 +69,11 @@ class BaseMockIntegration(BaseIntegration):
             self._mocks[mock_class] = mock_class(behaviour, self._mock_data(), config.strict, self._recorder)
         return self._mocks[mock_class]
 
+    def reset_mocks(self) -> None:
+        """Reset every mock built so far: recorded calls, call numbers and sequence positions start again."""
+        for mock in self._mocks.values():
+            mock.reset()
+
     def _mock_data(self) -> dict[str, Any]:
         """The data mocks are built with; override to load fixture files, e.g. with ``FixtureRecords``."""
         return self.config.data
