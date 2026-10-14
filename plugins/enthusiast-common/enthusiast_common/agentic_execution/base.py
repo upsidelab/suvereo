@@ -11,7 +11,6 @@ from .validators import BaseExecutionValidator, IsValidJsonValidator, ValidatorR
 
 logger = logging.getLogger(__name__)
 
-#: Told about every validated attempt: its 1-based number, the response, and the failing validator's verdict or None.
 AttemptObserver = Callable[[int, str, Optional[ValidatorResponse]], None]
 
 

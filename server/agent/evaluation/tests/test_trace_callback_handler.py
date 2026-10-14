@@ -1,6 +1,8 @@
 from enthusiast_common.evaluation.trace import TraceRecorder
+from langchain_core.documents import Document
 from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
 from langchain_core.messages import AIMessage
+from langchain_core.retrievers import BaseRetriever
 from langchain_core.runnables import RunnableLambda
 from langchain_core.tools import tool
 
@@ -106,7 +108,11 @@ class TestTraceCallbackHandler:
                             "input_tokens": 100,
                             "output_tokens": 5,
                             "total_tokens": 105,
-                            "input_token_details": {"cache_creation": 60},
+                            "input_token_details": {
+                                "cache_creation": 0,
+                                "ephemeral_5m_input_tokens": 40,
+                                "ephemeral_1h_input_tokens": 20,
+                            },
                         }
                     )
                 ]
@@ -118,7 +124,11 @@ class TestTraceCallbackHandler:
 
         unreported, written = recorder.trace.llm_calls
         assert (unreported.usage_reported, unreported.input_tokens) == (False, 0)
-        assert (written.usage_reported, written.cache_write_input_tokens) == (True, 60)
+        assert (written.usage_reported, written.cache_write_5m_input_tokens, written.cache_write_1h_input_tokens) == (
+            True,
+            40,
+            20,
+        )
 
     def test_an_llm_call_inside_a_chain_inside_a_tool_counts_as_within_the_tool(self):
         recorder = TraceRecorder()
@@ -136,3 +146,22 @@ class TestTraceCallbackHandler:
         [llm_call] = recorder.trace.llm_calls
         assert llm_call.parent_run_id != tool_call.run_id
         assert recorder.trace.llm_calls_within(tool_call) == [llm_call]
+
+    def test_an_llm_call_made_by_a_retriever_inside_a_tool_counts_as_within_the_tool(self):
+        recorder = TraceRecorder()
+        model = GenericFakeChatModel(messages=iter([_reply(content="rewritten")]))
+
+        class RewritingRetriever(BaseRetriever):
+            def _get_relevant_documents(self, query, *, run_manager):
+                text = model.invoke(query, config={"callbacks": run_manager.get_child()}).content
+                return [Document(page_content=text)]
+
+        @tool
+        def search(query: str) -> str:
+            """Search the docs."""
+            return RewritingRetriever().invoke(query)[0].page_content
+
+        search.invoke({"query": "mugs"}, config={"callbacks": [TraceCallbackHandler(recorder)]})
+
+        [tool_call] = recorder.trace.tool_calls
+        assert [c.run_id for c in recorder.trace.llm_calls_within(tool_call)] == [recorder.trace.llm_calls[0].run_id]

@@ -48,21 +48,35 @@ class TestPricingTable:
         assert table.call_cost(cached_rate) == pytest.approx(0.6 * 2.5 + 0.4 * 1.25)
         assert table.call_cost(no_cached_rate) == pytest.approx(0.15)
 
-    def test_cache_writes_use_the_cache_write_rate(self):
-        table = PricingTable(
-            {"claude": ModelPricing(input_per_million=4, output_per_million=20, cache_write_input_per_million=5)}
+    def test_cache_writes_use_their_5_minute_and_1_hour_rates(self):
+        price = ModelPricing(
+            input_per_million=4,
+            output_per_million=20,
+            cache_write_5m_input_per_million=5,
+            cache_write_1h_input_per_million=8,
         )
-        call = LLMCall(run_id="a", requested_model="claude", input_tokens=1_000_000, cache_write_input_tokens=600_000)
+        call = LLMCall(
+            run_id="a",
+            requested_model="claude",
+            input_tokens=1_000_000,
+            cache_write_5m_input_tokens=500_000,
+            cache_write_1h_input_tokens=200_000,
+        )
 
-        assert table.call_cost(call) == pytest.approx(0.4 * 4 + 0.6 * 5)
-        assert PricingTable.load().price_for("claude-opus-5-5").cache_write_input_per_million == 5.0
+        assert PricingTable({"claude": price}).call_cost(call) == pytest.approx(0.3 * 4 + 0.5 * 5 + 0.2 * 8)
+
+    def test_the_shipped_claude_rows_carry_cache_prices(self):
+        sonnet = PricingTable.load().price_for("claude-sonnet-5-5")
+
+        assert (sonnet.cached_input_per_million, sonnet.cache_write_5m_input_per_million) == (0.10, 2.50)
+        assert sonnet.cache_write_1h_input_per_million == 4.0
 
     def test_a_call_without_reported_usage_is_unpriced_rather_than_free(self, table):
         trace = ExecutionTrace(llm_calls=[LLMCall(run_id="a", requested_model="gpt-4o", usage_reported=False)])
 
         cost = table.trace_cost(trace)
 
-        assert (cost.usd, cost.unpriced_models) == (None, ["gpt-4o (no token usage reported)"])
+        assert (cost.usd, cost.unpriced_models, cost.models_without_usage) == (None, [], ["gpt-4o"])
 
     def test_a_trace_with_an_unpriced_model_has_no_total(self, table):
         trace = ExecutionTrace(

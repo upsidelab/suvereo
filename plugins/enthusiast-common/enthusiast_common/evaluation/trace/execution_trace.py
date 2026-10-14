@@ -20,8 +20,7 @@ class ExecutionTrace(BaseModel):
     output: dict[str, Any] | None = None
     execution_result: ExecutionResult | None = None
     error: str | None = None
-    #: Each LangChain run's parent run (chains, tools, LLM calls), so nested calls can be traced back to their tool.
-    run_parents: dict[str, str] = {}
+    parent_run_ids: dict[str, str] = {}
 
     def record_llm_call(self, call: LLMCall) -> bool:
         """Add a finished LLM call; False when its run_id is already recorded."""
@@ -39,7 +38,7 @@ class ExecutionTrace(BaseModel):
 
     def record_run_parent(self, run_id: str, parent_run_id: str) -> None:
         """Remember which run started another one."""
-        self.run_parents[run_id] = parent_run_id
+        self.parent_run_ids[run_id] = parent_run_id
 
     def record_mock_call(self, call: MockCall) -> None:
         """Add a call a mock received."""
@@ -62,11 +61,11 @@ class ExecutionTrace(BaseModel):
         return [c for c in self.llm_calls if tool_call.run_id in self._ancestor_runs(c.parent_run_id)]
 
     def _ancestor_runs(self, run_id: str | None) -> list[str]:
-        """A run and every run above it, following run_parents."""
+        """A run and every run above it, following parent_run_ids."""
         ancestors: list[str] = []
         while run_id is not None and run_id not in ancestors:
             ancestors.append(run_id)
-            run_id = self.run_parents.get(run_id)
+            run_id = self.parent_run_ids.get(run_id)
         return ancestors
 
     def had_retry(self) -> bool:

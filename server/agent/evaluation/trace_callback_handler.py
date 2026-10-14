@@ -22,6 +22,11 @@ class TraceCallbackHandler(BaseCallbackHandler):
     ) -> None:
         self._record_parent(run_id, parent_run_id)
 
+    def on_retriever_start(
+        self, serialized, query, *, run_id: UUID, parent_run_id: UUID | None = None, **kwargs: Any
+    ) -> None:
+        self._record_parent(run_id, parent_run_id)
+
     def on_chat_model_start(
         self, serialized, messages, *, run_id: UUID, parent_run_id: UUID | None = None, **kwargs: Any
     ) -> None:
@@ -54,7 +59,10 @@ class TraceCallbackHandler(BaseCallbackHandler):
                 model=metadata.get("model_name") or metadata.get("model") or requested_model,
                 input_tokens=(usage or {}).get("input_tokens", 0),
                 cached_input_tokens=input_details.get("cache_read", 0) or 0,
-                cache_write_input_tokens=input_details.get("cache_creation", 0) or 0,
+                cache_write_5m_input_tokens=(
+                    input_details.get("ephemeral_5m_input_tokens") or input_details.get("cache_creation") or 0
+                ),
+                cache_write_1h_input_tokens=input_details.get("ephemeral_1h_input_tokens") or 0,
                 output_tokens=(usage or {}).get("output_tokens", 0),
                 reasoning_tokens=((usage or {}).get("output_token_details") or {}).get("reasoning", 0) or 0,
                 usage_reported=usage is not None,
