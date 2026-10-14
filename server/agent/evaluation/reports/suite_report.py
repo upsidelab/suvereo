@@ -13,12 +13,15 @@ from agent.evaluation.runner.run_scorer import BOOL_GATE
 from agent.evaluation.runner.suite_run_result import SuiteRunResult
 from agent.evaluation.suite_metric_configs import suite_metric_configs
 
+from .git_state import GitState
+
 UNSAFE_IN_FILE_NAMES = re.compile(r"[^A-Za-z0-9._-]+")
 
 
 class SuiteReport:
     """What every report writer reads from one suite run, worked out once: the runs with their ids and trace files,
-    each candidate's aggregated metrics in comparison order (pass rate, then mean cost), the cases and the metrics."""
+    each candidate's aggregated metrics in comparison order (pass rate, then mean cost), the cases and the metrics,
+    and how the run was started (git state, command-line args)."""
 
     def __init__(
         self,
@@ -26,9 +29,13 @@ class SuiteReport:
         result: SuiteRunResult,
         reports: list[ReportName] | None = None,
         aggregator: MetricAggregator | None = None,
+        git: GitState | None = None,
+        args: list[str] | None = None,
     ):
         self.loaded = loaded
         self.result = result
+        self.git = git or GitState()
+        self.args = args or []
         self.reports: list[ReportName] = loaded.suite.reports if reports is None else reports
         candidates = (aggregator or MetricAggregator.for_suite(loaded)).aggregate_per_candidate(result.runs)
         self.candidates: list[CandidateMetrics] = sorted(candidates, key=self._comparison_order)
@@ -58,11 +65,11 @@ class SuiteReport:
         """The run's trace file for other reports to link to; None when the traces report isn't selected."""
         return self.trace_path(run) if "traces" in self.reports else None
 
-    def provider(self, model_label: str) -> str:
+    def provider_of(self, model_label: str) -> str:
         """The provider of a model under test, by its label; empty for the DataSet's configured model."""
         return next((m.provider for m in self.loaded.suite.models if m.display_label == model_label), "")
 
-    def gate(self, case_id: str, metric: str) -> Gate | None:
+    def gate_for(self, case_id: str, metric: str) -> Gate | None:
         """The gate a case's metric was checked against: its own, or equals: true for a bool metric."""
         case = next((c for c in self.cases if c.id == case_id), None)
         config = next((m for m in self.loaded.suite.metrics_for(case) if m.name == metric), None) if case else None

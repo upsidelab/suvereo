@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -20,3 +21,7 @@ class SuiteRunResult(BaseModel):
         "tracked.",
     )
     unpriced_models: list[str] = Field(default=[], description="Models with calls spent_usd could not price.")
+    budget_usd: float | None = None
+    pricing_as_of: str = Field(default="", description="The date of the prices spent_usd is worked out with.")
+    started_at: datetime | None = None
+    finished_at: datetime | None = None

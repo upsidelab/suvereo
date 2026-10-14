@@ -7,8 +7,16 @@ from .base_report_writer import BaseReportWriter
 from .csv_table import CsvTable
 from .suite_report import SuiteReport
 
-OUTCOME = ["execution_succeeded", "failure_code", "attempts", "first_attempt_success"]
-PERFORMANCE = ["duration_s", "cost_usd", "judge_cost_usd", "input_tokens", "output_tokens", "llm_calls", "tool_calls"]
+OUTCOME_COLUMNS = ["execution_succeeded", "failure_code", "attempts", "first_attempt_success"]
+PERFORMANCE_COLUMNS = [
+    "duration_s",
+    "cost_usd",
+    "judge_cost_usd",
+    "input_tokens",
+    "output_tokens",
+    "llm_calls",
+    "tool_calls",
+]
 
 
 class ResultsCsvWriter(BaseReportWriter):
@@ -21,7 +29,7 @@ class ResultsCsvWriter(BaseReportWriter):
         metric_columns = self._metric_columns(report)
         header = [
             *["run_id", "case_id", "tags", "candidate", "provider", "model", "variant", "repeat"],
-            *["passed", "error", *OUTCOME, *PERFORMANCE],
+            *["passed", "error", *OUTCOME_COLUMNS, *PERFORMANCE_COLUMNS],
             *(column.header for column in metric_columns),
             *["failed_gates", "trace_file"],
         ]
@@ -29,8 +37,12 @@ class ResultsCsvWriter(BaseReportWriter):
         rows = [
             [
                 *[report.run_id(run), run.case_id, tags.get(run.case_id, []), run.candidate],
-                *[report.provider(run.model), run.model, run.variant, run.repeat],
-                *[run.passed, run.trace.error, *(self._value(run, name) for name in [*OUTCOME, *PERFORMANCE])],
+                *[report.provider_of(run.model), run.model, run.variant, run.repeat],
+                *[
+                    run.passed,
+                    run.trace.error,
+                    *(self._metric_value(run, name) for name in [*OUTCOME_COLUMNS, *PERFORMANCE_COLUMNS]),
+                ],
                 *(column.cell(run) for column in metric_columns),
                 *[[name for name, gate in run.gates.items() if not gate.passed], report.linked_trace_path(run)],
             ]
@@ -54,7 +66,7 @@ class ResultsCsvWriter(BaseReportWriter):
         return columns
 
     @staticmethod
-    def _value(run: RunResult, name: str) -> Any:
+    def _metric_value(run: RunResult, name: str) -> Any:
         result = run.metrics.get(name)
         return result.value if result else None
 

@@ -7,7 +7,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 RESULTS_DIR = "results"
-LATEST = "latest"
+LATEST_LINK = "latest"
 
 
 class RunDirectory:
@@ -20,8 +20,8 @@ class RunDirectory:
         results = suite_dir / RESULTS_DIR
         run_dir = results / f"{(now or datetime.now()):%Y%m%d-%H%M%S}-{secrets.token_hex(3)}"
         run_dir.mkdir(parents=True)
-        latest = results / LATEST
-        temporary = results / f".{LATEST}-{run_dir.name}"
+        latest = results / LATEST_LINK
+        temporary = results / f".{LATEST_LINK}-{run_dir.name}"
         try:
             temporary.symlink_to(run_dir.name, target_is_directory=True)
             os.replace(temporary, latest)

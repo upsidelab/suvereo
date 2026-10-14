@@ -31,7 +31,7 @@ class ComparisonCsvWriter(BaseReportWriter):
         ]
         rows = [
             [
-                *[candidate.candidate, report.provider(candidate.model), candidate.model, candidate.variant],
+                *[candidate.candidate, report.provider_of(candidate.model), candidate.model, candidate.variant],
                 *[
                     len(candidate.runs),
                     *(self._metric_value(candidate, rate) for rate in (PASS_RATE, FIRST_ATTEMPT_PASS_RATE, FLAKY_RATE)),

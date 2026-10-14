@@ -79,6 +79,7 @@ class TestSuiteRunner:
         result = SuiteRunner(loaded).run()
 
         assert result.planned_runs == len(result.runs) == 16
+        assert result.started_at <= result.finished_at and result.pricing_as_of
         assert all(run.passed for run in result.runs)
         assert {(r.model, r.variant, r.case_id, r.repeat) for r in result.runs} == {
             (m, v, c, n) for m in "ab" for v in ("default", "warm") for c in ("ada", "bob") for n in (1, 2)

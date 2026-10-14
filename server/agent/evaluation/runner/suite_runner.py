@@ -4,6 +4,7 @@ import tempfile
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import ExitStack, contextmanager, nullcontext
+from datetime import datetime
 from itertools import product
 from typing import Iterator
 
@@ -52,6 +53,7 @@ class SuiteRunner:
         self._check_budget_is_trackable()
         self._spent, self._stopped_reason = 0.0, None
         self._warn_on_self_judging()
+        started_at = datetime.now()
         results: list[RunResult] = []
         with self._run_files_media_root():
             for cases in self._cases_by_sandbox():
@@ -63,6 +65,10 @@ class SuiteRunner:
             spent_usd=self._spent,
             stopped_reason=self._stopped_reason,
             unpriced_models=sorted({model for result in results for model in result.unpriced_models}),
+            budget_usd=self.budget_usd,
+            pricing_as_of=self.pricing.as_of,
+            started_at=started_at,
+            finished_at=datetime.now(),
         )
 
     def _run_group(self, cases: list[EvalCase]) -> list[RunResult]:
