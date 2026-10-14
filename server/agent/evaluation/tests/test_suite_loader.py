@@ -5,6 +5,7 @@ import yaml
 from enthusiast_common.evaluation.errors import EvalSuiteError
 
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
+from agent.evaluation.judge_models_used_by_metrics import judge_models_used_by_metrics
 from agent.evaluation.suite_loader import SuiteLoader
 
 from .greeter import GreeterMockIntegration, GreetingExecution
@@ -48,6 +49,24 @@ class TestSuiteLoader:
             ({"agent": {"id": 999}}, "no agent with id 999"),
             ({"execution_key": "farewell"}, "no execution 'farewell'"),
             ({"models": [{"provider": "Nope", "model": "x"}]}, "Unknown language model provider 'Nope'"),
+            (
+                {
+                    "metrics": [
+                        {
+                            "type": "llm_judge",
+                            "params": {
+                                "criteria": [{"name": "c", "description": "d"}],
+                                "judge": {"provider": "Nope", "model": "x"},
+                            },
+                        }
+                    ]
+                },
+                "Unknown language model provider 'Nope'",
+            ),
+            (
+                {"metrics": [{"type": "llm_judge", "params": {"criteria": [{"name": "c", "description": "d"}]}}]},
+                "needs a judge model",
+            ),
             ({"variants": [{"name": "v2", "system_prompt_file": "v2.txt"}]}, "no prompt file v2.txt"),
             ({"metrics": [{"type": "no_such_metric"}]}, "Unknown metric 'no_such_metric'"),
             ({"metrics": [{"type": "mock_called", "name": "cost_usd", "params": {"method": "greet"}}]}, "every run"),
@@ -61,3 +80,27 @@ class TestSuiteLoader:
     def test_fails_early_on_a_suite_the_host_cannot_run(self, tmp_path, changes, message):
         with pytest.raises(EvalSuiteError, match=message):
             _load(tmp_path, **changes)
+
+
+class TestJudgeModels:
+    def test_lists_the_suites_judge_and_each_metrics_own_judge_once(self, tmp_path):
+        judge = {"provider": "OpenAI", "model": "gpt-4.1"}
+        criteria = [{"name": "c", "description": "d"}]
+        metrics = [
+            {"type": "llm_judge", "name": "a", "params": {"criteria": criteria}},
+            {
+                "type": "llm_judge",
+                "name": "b",
+                "params": {"criteria": criteria, "judge": {"provider": "OpenAI", "model": "gpt-5"}},
+            },
+            {"type": "llm_judge", "name": "c", "params": {"criteria": criteria, "judge": judge}},
+        ]
+
+        loaded = _load(tmp_path, judge=judge, metrics=metrics)
+
+        assert [t.model for t in judge_models_used_by_metrics(loaded)] == ["gpt-4.1", "gpt-5"]
+
+    def test_a_suite_judge_no_llm_metric_relies_on_is_left_out(self, tmp_path):
+        loaded = _load(tmp_path, judge={"provider": "OpenAI", "model": "gpt-4.1"})
+
+        assert judge_models_used_by_metrics(loaded) == []

@@ -22,17 +22,19 @@ class RunScorer:
     def score(
         self, configs: list[MetricConfig], context: MetricContext
     ) -> tuple[dict[str, MetricResult], dict[str, GateResult]]:
-        results = {metric.NAME: self._measure(metric(), context) for metric in AUTO_METRICS}
+        """Measure the auto metrics and each configured metric, and check gates: a configured gate, or equals: true
+        for a bool metric. A metric that cannot be built has no value and a failed gate, as a broken check never passes.
+        """
+        results = {metric.NAME: self._measure_safely(metric(), context) for metric in AUTO_METRICS}
         gates = {}
         for config in configs:
             try:
-                metric = self.registry.build(config, self.base_dir)
+                metric = self.registry.build_metric(config, self.base_dir)
             except MetricError as e:
                 results[config.name] = MetricResult(value=None, details={"error": str(e)})
-                if config.gate is not None:
-                    gates[config.name] = GateResult(passed=False, required=config.required)
+                gates[config.name] = GateResult(passed=False, required=config.required)
                 continue
-            results[config.name] = self._measure(metric, context)
+            results[config.name] = self._measure_safely(metric, context)
             gate = config.gate or (BOOL_GATE if metric.VALUE_TYPE == "bool" else None)
             if gate is not None:
                 gates[config.name] = GateResult(
@@ -40,8 +42,17 @@ class RunScorer:
                 )
         return results, gates
 
+    def scores_for_unfinished_run(
+        self, configs: list[MetricConfig], context: MetricContext, reason: str
+    ) -> tuple[dict[str, MetricResult], dict[str, GateResult]]:
+        """For a run that never ran: the auto metrics, and each configured metric with no value and a failed gate."""
+        results = {metric.NAME: self._measure_safely(metric(), context) for metric in AUTO_METRICS}
+        results |= {config.name: MetricResult(value=None, details={"reason": reason}) for config in configs}
+        gates = {config.name: GateResult(passed=False, required=config.required) for config in configs}
+        return results, gates
+
     @staticmethod
-    def _measure(metric: BaseMetric, context: MetricContext) -> MetricResult:
+    def _measure_safely(metric: BaseMetric, context: MetricContext) -> MetricResult:
         try:
             return metric.measure(context)
         except Exception as e:

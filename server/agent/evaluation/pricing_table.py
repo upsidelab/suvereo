@@ -12,12 +12,13 @@ DATED_SNAPSHOT = re.compile(r"-(\d{4}-\d{2}-\d{2}|\d{8})$")
 
 
 class TraceCost(BaseModel):
-    """What a trace's LLM calls cost; usd is None when any call can't be priced.
+    """What a trace's LLM calls cost; usd is None when any call can't be priced, priced_usd sums the calls that can.
 
     unpriced_models have no price; models_without_usage answered without token counts, so their calls can't be priced.
     """
 
     usd: float | None
+    priced_usd: float = 0.0
     unpriced_models: list[str] = []
     models_without_usage: list[str] = []
 
@@ -80,6 +81,7 @@ class PricingTable:
         without_usage = sorted({self._model_name(c) for c in trace.llm_calls if not c.usage_reported})
         return TraceCost(
             usd=None if unpriced or without_usage else sum(cost for _, cost in costs),
+            priced_usd=sum(cost for _, cost in costs if cost is not None),
             unpriced_models=unpriced,
             models_without_usage=without_usage,
         )

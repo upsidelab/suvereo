@@ -98,6 +98,23 @@ class TestCaseRunner:
         assert result.passed
         assert result.metrics["judge_cost_usd"].value == 0.0
 
+    def test_a_metrics_own_judge_is_asked_without_a_suite_judge(self, target, tmp_path):
+        judge = {"provider": "OpenAI", "model": "judge-x"}
+        metrics = [{"type": "llm_judge", "params": {"criteria": [{"name": "c", "description": "d"}], "judge": judge}}]
+
+        with patch.object(EvalJudgeClient, "complete", return_value='{"score": 1}') as complete:
+            result = _runner(target, tmp_path, metrics=metrics).run(_case())
+
+        assert result.metrics["llm_judge"].value == 1.0
+        assert complete.call_args.args[1] == ModelTarget.model_validate(judge)
+
+    def test_a_metric_that_cannot_be_built_fails_the_run_even_without_a_gate(self, target, tmp_path):
+        metrics = [{"type": "no_such_metric", "name": "broken"}]
+
+        result = _runner(target, tmp_path, metrics=metrics).run(_case())
+
+        assert not result.passed and result.gates["broken"].passed is False
+
     def test_a_metric_that_cannot_be_built_fails_its_gate_not_the_runner(self, target, tmp_path):
         metrics = [{"type": "no_such_metric", "name": "broken", "gate": {"min": 1}}]
 
@@ -110,8 +127,14 @@ class TestCaseRunner:
     def test_an_unpriced_judge_model_is_named(self, target, tmp_path):
         unpriced = TraceCost(usd=None, unpriced_models=["judge-x"])
 
-        with patch.object(EvalJudgeClient, "cost", return_value=unpriced):
-            result = _runner(target, tmp_path, judge={"provider": "OpenAI", "model": "judge-x"}).run(_case())
+        judged = [{"type": "llm_judge", "params": {"criteria": [{"name": "c", "description": "d"}]}}]
+
+        with (
+            patch.object(EvalJudgeClient, "cost", return_value=unpriced),
+            patch.object(EvalJudgeClient, "complete", return_value='{"score": 1}'),
+        ):
+            runner = _runner(target, tmp_path, judge={"provider": "OpenAI", "model": "judge-x"}, metrics=judged)
+            result = runner.run(_case())
 
         assert result.metrics["judge_cost_usd"].value is None
         assert result.unpriced_models == ["judge-x"]

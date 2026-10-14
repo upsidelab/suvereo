@@ -29,6 +29,6 @@ class EvalExecutionConversation(ExecutionConversation):
             )
         )
 
-    def record_scratchpad(self) -> None:
+    def copy_scratchpad_to_trace(self) -> None:
         """Copy the last attempt's scratchpad into the trace."""
         self._recorder.trace.scratchpad = self.tool_scratchpad.entries()

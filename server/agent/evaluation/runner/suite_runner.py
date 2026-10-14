@@ -3,7 +3,7 @@ import logging
 import tempfile
 import threading
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import contextmanager, nullcontext
+from contextlib import ExitStack, contextmanager, nullcontext
 from itertools import product
 from typing import Iterator
 
@@ -15,17 +15,17 @@ from enthusiast_common.evaluation.suite import EvalCase, ModelTarget, PromptVari
 
 from agent.evaluation.eval_user import EvalUser
 from agent.evaluation.integrations import MockIntegrationFactory
+from agent.evaluation.judge_models_used_by_metrics import judge_models_used_by_metrics
 from agent.evaluation.pricing_table import PricingTable
 from agent.evaluation.targets import BaseAgentTarget, ExistingAgentTarget, SandboxAgentTarget
 
-from .case_runner import JUDGE_COST, CaseRunner
+from .case_runner import CaseRunner
 from .run_result import RunResult
 from .suite_run_options import SuiteRunOptions
-from .suite_run_result import SuiteRunResult
+from .suite_run_result import StopReason, SuiteRunResult
 
 logger = logging.getLogger(__name__)
 
-COST = "cost_usd"
 PlannedRun = tuple[EvalCase, ModelTarget | None, PromptVariant | None, int]
 
 
@@ -37,11 +37,11 @@ class SuiteRunner:
     ):
         self.loaded = loaded
         self.options = options or SuiteRunOptions()
-        self.pricing = (pricing or PricingTable.load()).with_overrides(self._suite_prices())
+        self.judge_models_in_use = judge_models_used_by_metrics(loaded)
+        self.pricing = (pricing or PricingTable.load()).with_overrides(self._suite_price_overrides())
         self._lock = threading.Lock()
         self._spent = 0.0
-        self._budget_exceeded = False
-        self._budget_untracked = False
+        self._stopped_reason: StopReason | None = None
 
     @property
     def budget_usd(self) -> float | None:
@@ -50,36 +50,37 @@ class SuiteRunner:
     def run(self) -> SuiteRunResult:
         """Run every planned run; raises EvalSuiteError when a budget is set but a model under test has no price."""
         self._check_budget_is_trackable()
-        self._spent, self._budget_exceeded, self._budget_untracked = 0.0, False, False
+        self._spent, self._stopped_reason = 0.0, None
         self._warn_on_self_judging()
         results: list[RunResult] = []
-        with self._media_root():
-            for cases in self._sandbox_groups():
+        with self._run_files_media_root():
+            for cases in self._cases_by_sandbox():
                 results += self._run_group(cases)
         return SuiteRunResult(
             suite=self.loaded.suite.name,
-            planned_runs=len(self._plan(self.loaded.cases)),
+            planned_runs=len(self._planned_runs(self.loaded.cases)),
             runs=results,
             spent_usd=self._spent,
-            budget_exceeded=self._budget_exceeded,
+            stopped_reason=self._stopped_reason,
             unpriced_models=sorted({model for result in results for model in result.unpriced_models}),
         )
 
     def _run_group(self, cases: list[EvalCase]) -> list[RunResult]:
         """Run cases sharing a sandbox; if it cannot be set up, their runs are recorded as errored and the suite goes on."""
-        results = None
-        try:
-            with self._target(cases[0]) as target:
-                results = self._run_all(CaseRunner(self.loaded, target, self.pricing), self._plan(cases))
-        except Exception as e:
-            ids = ", ".join(case.id for case in cases)
-            logger.warning("Evaluation target for case(s) %s failed", ids, exc_info=True)
-            if results is None:
+        with ExitStack() as stack:
+            try:
+                target = stack.enter_context(self._target_for_group(cases))
+            except Exception as e:
+                ids = ", ".join(case.id for case in cases)
+                logger.warning("Setting up the agent for case(s) %s failed", ids, exc_info=True)
                 error = f"Setting up the agent for case(s) {ids} failed: {type(e).__name__}: {e}"
-                return [CaseRunner.errored(*planned, error) for planned in self._plan(cases)]
-        return results
+                return [
+                    CaseRunner.errored_result(self.loaded, *planned, error) for planned in self._planned_runs(cases)
+                ]
+            runner = CaseRunner(self.loaded, target, self.pricing, self.judge_models_in_use)
+            return self._run_planned(runner, self._planned_runs(cases))
 
-    def _plan(self, cases: list[EvalCase]) -> list[PlannedRun]:
+    def _planned_runs(self, cases: list[EvalCase]) -> list[PlannedRun]:
         suite = self.loaded.suite
         models = suite.models or [None]
         variants = [None, *suite.variants]
@@ -88,9 +89,9 @@ class SuiteRunner:
             (case, model, variant, repeat) for model, variant, case, repeat in product(models, variants, cases, repeats)
         ]
 
-    def _run_all(self, runner: CaseRunner, plan: list[PlannedRun]) -> list[RunResult]:
+    def _run_planned(self, runner: CaseRunner, plan: list[PlannedRun]) -> list[RunResult]:
         if self.options.parallel == 1:
-            results = [self._run_one(runner, planned) for planned in plan]
+            results = [self._run_within_budget(runner, planned) for planned in plan]
         else:
             with ThreadPoolExecutor(max_workers=self.options.parallel) as pool:
                 results = list(pool.map(lambda planned: self._run_in_thread(runner, planned), plan))
@@ -98,27 +99,36 @@ class SuiteRunner:
 
     def _run_in_thread(self, runner: CaseRunner, planned: PlannedRun) -> RunResult | None:
         try:
-            return self._run_one(runner, planned)
+            return self._run_within_budget(runner, planned)
         finally:
             connection.close()
 
-    def _run_one(self, runner: CaseRunner, planned: PlannedRun) -> RunResult | None:
+    def _run_within_budget(self, runner: CaseRunner, planned: PlannedRun) -> RunResult | None:
+        """Run one planned run, or skip it and return None once the run has stopped (budget spent or untracked).
+
+        A failure outside the agent (which CaseRunner already records in the trace) becomes an errored run.
+        """
         budget = self.budget_usd
         with self._lock:
-            if budget is not None and (self._spent >= budget or self._budget_untracked):
-                self._budget_exceeded = True
+            if budget is not None and self._spent >= budget and self._stopped_reason is None:
+                self._stopped_reason = "budget_spent"
+            if self._stopped_reason is not None:
                 return None
-        result = runner.run(*planned)
+        try:
+            result = runner.run(*planned)
+        except Exception as e:
+            logger.exception("Run of case %s failed outside the agent", planned[0].id)
+            return CaseRunner.errored_result(self.loaded, *planned, f"The run failed: {type(e).__name__}: {e}")
         with self._lock:
-            self._spent += (result.metrics[COST].value or 0) + (result.metrics[JUDGE_COST].value or 0)
-            if budget is not None and result.unpriced_models:
+            self._spent += result.priced_spend_usd
+            if budget is not None and result.unpriced_models and self._stopped_reason is None:
                 logger.warning(
                     "Unpriced model(s) %s; stopping, as the budget cannot be tracked.", result.unpriced_models
                 )
-                self._budget_untracked = True
+                self._stopped_reason = "budget_untracked"
         return result
 
-    def _sandbox_groups(self) -> list[list[EvalCase]]:
+    def _cases_by_sandbox(self) -> list[list[EvalCase]]:
         """Cases grouped by the integration data their sandbox is synced from; one group for an existing agent."""
         if not self.loaded.suite.agent.is_sandbox:
             return [self.loaded.cases]
@@ -128,17 +138,19 @@ class SuiteRunner:
             groups.setdefault(json.dumps(data, sort_keys=True, default=str), []).append(case)
         return list(groups.values())
 
-    def _target(self, case: EvalCase) -> BaseAgentTarget:
-        suite, user, keep = self.loaded.suite, EvalUser.get(), self.options.keep_conversations
+    def _target_for_group(self, cases: list[EvalCase]) -> BaseAgentTarget:
+        """An unopened target for cases sharing integration data: a sandbox built from it, or the existing agent."""
+        case = cases[0]
+        suite, user, keep = self.loaded.suite, EvalUser.get(), self.options.keep_run_data
         if not suite.agent.is_sandbox:
             return ExistingAgentTarget(suite.agent.id, user, self.options.allow_real_integrations, keep)
         factory = MockIntegrationFactory(self.loaded.base_dir)
         integrations = [factory.build(config) for config in suite.integrations_for(case)]
         return SandboxAgentTarget(suite.name, suite.agent.type, suite.agent.config, integrations, user, keep)
 
-    def _media_root(self):
-        """A temporary MEDIA_ROOT for the run's files, unless conversations, and so their files, are kept."""
-        return nullcontext() if self.options.keep_conversations else self._temporary_media_root()
+    def _run_files_media_root(self):
+        """A temporary MEDIA_ROOT for the run's files, unless the run data, and so its files, are kept."""
+        return nullcontext() if self.options.keep_run_data else self._temporary_media_root()
 
     @staticmethod
     @contextmanager
@@ -148,19 +160,20 @@ class SuiteRunner:
                 yield
 
     def _check_budget_is_trackable(self) -> None:
-        suite = self.loaded.suite
-        targets = [*suite.models, *([suite.judge] if suite.judge else [])]
+        targets = [*self.loaded.suite.models, *self.judge_models_in_use]
         unpriced = sorted({t.model for t in targets if self.pricing.price_for(t.model) is None})
         if self.budget_usd is not None and unpriced:
             raise EvalSuiteError(
                 f"A budget is set but {', '.join(unpriced)} has no price; add 'pricing' to the model in the suite."
             )
 
-    def _suite_prices(self) -> dict:
-        targets = [*self.loaded.suite.models, *([self.loaded.suite.judge] if self.loaded.suite.judge else [])]
+    def _suite_price_overrides(self) -> dict:
+        targets = [*self.loaded.suite.models, *self.judge_models_in_use]
         return {target.model: target.pricing for target in targets if target.pricing}
 
     def _warn_on_self_judging(self) -> None:
-        judge = self.loaded.suite.judge
-        if judge and any(m.provider == judge.provider and m.model == judge.model for m in self.loaded.suite.models):
-            logger.warning("The judge %s is also a model under test; it tends to favour its own answers.", judge.model)
+        for judge in self.judge_models_in_use:
+            if any(m.provider == judge.provider and m.model == judge.model for m in self.loaded.suite.models):
+                logger.warning(
+                    "The judge %s is also a model under test; it tends to favour its own answers.", judge.model
+                )

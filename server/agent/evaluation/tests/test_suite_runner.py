@@ -46,11 +46,12 @@ def _loaded(tmp_path, agent, cases=CASES, **changes):
     return LoadedSuite(path=tmp_path / "suite.yaml", suite=suite, cases=cases)
 
 
-def _costing(usd, unpriced=()):
+def _costing(usd, unpriced=(), priced=None):
     def run(case, model=None, variant=None, repeat=1):
         metrics = {"cost_usd": MetricResult(value=usd), "judge_cost_usd": MetricResult(value=0.0)}
         return RunResult(
             unpriced_models=list(unpriced),
+            priced_spend_usd=usd if priced is None else priced,
             case_id=case.id,
             model="",
             variant="default",
@@ -89,7 +90,7 @@ class TestSuiteRunner:
         with patch.object(CaseRunner, "run", side_effect=_costing(0.4)):
             result = SuiteRunner(loaded, SuiteRunOptions(budget_usd=1.0)).run()
 
-        assert (len(result.runs), result.planned_runs, result.budget_exceeded) == (3, 6, True)
+        assert (len(result.runs), result.planned_runs, result.stopped_reason) == (3, 6, "budget_spent")
         assert result.spent_usd == pytest.approx(1.2)
 
     def test_a_budget_with_an_unpriced_model_is_refused(self, tmp_path):
@@ -101,10 +102,41 @@ class TestSuiteRunner:
     def test_an_unpriced_run_stops_a_budgeted_suite(self, tmp_path):
         loaded = _loaded(tmp_path, baker.make(Agent, config={}), repeats=3)
 
-        with patch.object(CaseRunner, "run", side_effect=_costing(None, unpriced=["tool-model"])):
+        with patch.object(CaseRunner, "run", side_effect=_costing(None, unpriced=["tool-model"], priced=0.3)):
             result = SuiteRunner(loaded, SuiteRunOptions(budget_usd=1.0)).run()
 
-        assert (len(result.runs), result.budget_exceeded, result.unpriced_models) == (1, True, ["tool-model"])
+        assert (len(result.runs), result.stopped_reason, result.unpriced_models) == (
+            1,
+            "budget_untracked",
+            ["tool-model"],
+        )
+        assert result.spent_usd == pytest.approx(0.3)
+
+    def test_without_a_budget_unpriced_runs_still_count_their_priced_calls(self, tmp_path):
+        loaded = _loaded(tmp_path, baker.make(Agent, config={}))
+
+        with patch.object(CaseRunner, "run", side_effect=_costing(None, unpriced=["tool-model"], priced=0.25)):
+            result = SuiteRunner(loaded).run()
+
+        assert (len(result.runs), result.stopped_reason, result.spent_usd) == (2, None, pytest.approx(0.5))
+
+    def test_a_run_that_fails_outside_the_agent_is_errored_and_the_others_kept(self, tmp_path):
+        loaded = _loaded(tmp_path, baker.make(Agent, config={}))
+        succeed = _costing(0.1)
+
+        def fail_for_bob(case, *args):
+            if case.id == "bob":
+                raise RuntimeError("scoring broke")
+            return succeed(case, *args)
+
+        with patch.object(CaseRunner, "run", side_effect=fail_for_bob):
+            result = SuiteRunner(loaded).run()
+
+        by_case = {r.case_id: r for r in result.runs}
+        assert by_case["ada"].passed
+        assert "The run failed: RuntimeError: scoring broke" in by_case["bob"].trace.error
+        assert by_case["bob"].gates["mock_called"].passed is False
+        assert result.spent_usd == pytest.approx(0.1)
 
     def test_a_sandbox_that_cannot_be_set_up_errors_only_its_own_cases(self, tmp_path):
         override = {"class": GREETER, "config": {"data": {"greeting": "Hi"}}}
@@ -124,6 +156,8 @@ class TestSuiteRunner:
         assert not by_case["cy"].passed
         assert "case(s) cy failed: RuntimeError: fixture unreadable" in by_case["cy"].trace.error
         assert by_case["cy"].metrics["failure_code"].value == "RUNTIME_ERROR"
+        assert by_case["cy"].metrics["mock_called"].value is None
+        assert by_case["cy"].gates["mock_called"].passed is False
 
     def test_a_case_overriding_integration_data_gets_its_own_sandbox(self, tmp_path):
         override = {"class": GREETER, "config": {"data": {"greeting": "Hi"}}}

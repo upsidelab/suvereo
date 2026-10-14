@@ -20,5 +20,6 @@ class RunResult(BaseModel):
     passed: bool
     metrics: dict[str, MetricResult]
     gates: dict[str, GateResult]
-    unpriced_models: list[str] = []
+    unpriced_models: list[str] = Field(default=[], description="Models of calls that could not be priced.")
+    priced_spend_usd: float = Field(default=0.0, description="USD of every call in the run that could be priced.")
     trace: ExecutionTrace

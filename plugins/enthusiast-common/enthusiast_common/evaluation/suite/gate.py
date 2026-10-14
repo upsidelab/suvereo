@@ -28,9 +28,9 @@ class Gate(EvalModel):
         """
         if value is None:
             return False
-        if self.equals is not None and not self._same(value, self.equals):
+        if self.equals is not None and not self._strictly_equal(value, self.equals):
             return False
-        if self.in_ is not None and not any(self._same(value, option) for option in self.in_):
+        if self.in_ is not None and not any(self._strictly_equal(value, option) for option in self.in_):
             return False
         if self.min is None and self.max is None:
             return True
@@ -39,5 +39,5 @@ class Gate(EvalModel):
         return (self.min is None or value >= self.min) and (self.max is None or value <= self.max)
 
     @staticmethod
-    def _same(value: Any, expected: Any) -> bool:
+    def _strictly_equal(value: Any, expected: Any) -> bool:
         return isinstance(value, bool) == isinstance(expected, bool) and value == expected

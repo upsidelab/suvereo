@@ -1,7 +1,6 @@
 import logging
 import mimetypes
 import time
-from pathlib import Path
 
 from enthusiast_common.config import AgentCallbackHandlerConfig, CallbackHandlerConfig
 from enthusiast_common.evaluation.loaded_suite import LoadedSuite
@@ -15,6 +14,7 @@ from agent.conversation.services.conversation_file_attach_service import Convers
 from agent.core.agents.config_overrides import AgentConfigOverrides
 from agent.evaluation.integrations import EvalIntegrationPluginResolver, MockIntegrationFactory
 from agent.evaluation.judge_client import EvalJudgeClient
+from agent.evaluation.judge_models_used_by_metrics import judge_models_used_by_metrics
 from agent.evaluation.pinned_llm import PinnedLLM
 from agent.evaluation.pricing_table import PricingTable, TraceCost
 from agent.evaluation.run_context import EvalRunContext
@@ -29,18 +29,31 @@ from .run_scorer import RunScorer
 logger = logging.getLogger(__name__)
 
 JUDGE_COST = "judge_cost_usd"
-SUCCEEDED = "execution_succeeded"
+EXECUTION_SUCCEEDED = "execution_succeeded"
 
 
 class CaseRunner:
-    """Runs a suite's cases one at a time against an opened target, each in a fresh conversation with fresh mocks."""
+    """Runs one case against an opened target and scores it; each run gets its own conversation, mocks, trace and
+    judge client, so one CaseRunner can be shared by parallel threads.
 
-    def __init__(self, loaded: LoadedSuite, target: BaseAgentTarget, pricing: PricingTable):
+    judge_models_in_use are the judge models the suite's LLM metrics ask (see judge_models_used_by_metrics); worked out here when not given.
+    """
+
+    def __init__(
+        self,
+        loaded: LoadedSuite,
+        target: BaseAgentTarget,
+        pricing: PricingTable,
+        judge_models_in_use: list[ModelTarget] | None = None,
+    ):
         self.loaded = loaded
         self.target = target
         self.pricing = pricing
         self._mocks = MockIntegrationFactory(loaded.base_dir)
         self._scorer = RunScorer(loaded.base_dir)
+        self._has_judge = bool(
+            judge_models_used_by_metrics(loaded) if judge_models_in_use is None else judge_models_in_use
+        )
 
     def run(
         self, case: EvalCase, model: ModelTarget | None = None, variant: PromptVariant | None = None, repeat: int = 1
@@ -48,35 +61,53 @@ class CaseRunner:
         """Run the case once and score it; an exception while setting up or running becomes the trace's error."""
         suite = self.loaded.suite
         recorder = TraceRecorder()
-        duration_s = self._execute(case, model, variant, recorder)
+        duration_s = self._run_agent(case, model, variant, recorder)
 
         cost = self.pricing.trace_cost(recorder.trace)
-        judge = EvalJudgeClient(suite.judge, self.pricing) if suite.judge else None
+        judge = EvalJudgeClient(suite.judge, self.pricing) if self._has_judge else None
         metrics, gates = self._scorer.score(
             suite.metrics_for(case),
             MetricContext(trace=recorder.trace, case=case, duration_s=duration_s, cost_usd=cost.usd, judge=judge),
         )
         judge_cost = judge.cost() if judge else TraceCost(usd=0.0)
+        priced_spend = cost.priced_usd + judge_cost.priced_usd
         metrics[JUDGE_COST] = MetricResult(value=judge_cost.usd)
         return RunResult(
             case_id=case.id,
             model=model.display_label if model else "",
             variant=variant.name if variant else DEFAULT_VARIANT,
             repeat=repeat,
-            passed=metrics[SUCCEEDED].value is True and all(g.passed for g in gates.values() if g.required),
+            passed=metrics[EXECUTION_SUCCEEDED].value is True and all(g.passed for g in gates.values() if g.required),
             metrics=metrics,
             gates=gates,
-            unpriced_models=sorted({*cost.unpriced_models, *judge_cost.unpriced_models}),
+            unpriced_models=sorted(
+                {
+                    *cost.unpriced_models,
+                    *cost.models_without_usage,
+                    *judge_cost.unpriced_models,
+                    *judge_cost.models_without_usage,
+                }
+            ),
+            priced_spend_usd=priced_spend,
             trace=recorder.trace,
         )
 
     @staticmethod
-    def errored(
-        case: EvalCase, model: ModelTarget | None, variant: PromptVariant | None, repeat: int, error: str
+    def errored_result(
+        loaded: LoadedSuite,
+        case: EvalCase,
+        model: ModelTarget | None,
+        variant: PromptVariant | None,
+        repeat: int,
+        error: str,
     ) -> RunResult:
-        """A run that never started, e.g. because its sandbox could not be set up, with its auto metrics."""
+        """A run that failed outside the agent, e.g. its sandbox could not be set up: the error in its trace, the
+        auto metrics, and the suite's metrics with no value and failed gates, so every run has the same metric names.
+        """
         trace = ExecutionTrace(error=error)
-        metrics, _ = RunScorer(Path.cwd()).score([], MetricContext(trace=trace, case=case))
+        metrics, gates = RunScorer(loaded.base_dir).scores_for_unfinished_run(
+            loaded.suite.metrics_for(case), MetricContext(trace=trace, case=case), "the run did not complete"
+        )
         metrics[JUDGE_COST] = MetricResult(value=0.0)
         return RunResult(
             case_id=case.id,
@@ -85,11 +116,11 @@ class CaseRunner:
             repeat=repeat,
             passed=False,
             metrics=metrics,
-            gates={},
+            gates=gates,
             trace=trace,
         )
 
-    def _execute(
+    def _run_agent(
         self, case: EvalCase, model: ModelTarget | None, variant: PromptVariant | None, recorder: TraceRecorder
     ) -> float | None:
         """Set up and run the case, recording any exception as the trace's error; returns the agent's run time."""
@@ -100,7 +131,7 @@ class CaseRunner:
                 integration.recorder = recorder
             context = EvalRunContext(recorder, integrations, self.target.real_resolver, self.loaded.base_dir)
             conversation = EvalExecutionConversation(
-                self.target.new_conversation(), self._overrides(model, variant), recorder
+                self.target.new_conversation(), self._config_overrides(model, variant), recorder
             )
             self._attach_files(conversation.conversation, case)
             with context.activate():
@@ -115,7 +146,7 @@ class CaseRunner:
             recorder.trace.error = f"{type(e).__name__}: {e}"
         finally:
             if conversation is not None:
-                conversation.record_scratchpad()
+                conversation.copy_scratchpad_to_trace()
         return time.perf_counter() - started if started is not None else None
 
     def _attach_files(self, conversation: Conversation, case: EvalCase) -> None:
@@ -125,7 +156,9 @@ class CaseRunner:
             content_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
             service.attach(conversation, path.name, path.read_bytes(), content_type)
 
-    def _overrides(self, model: ModelTarget | None, variant: PromptVariant | None) -> AgentConfigOverrides:
+    def _config_overrides(self, model: ModelTarget | None, variant: PromptVariant | None) -> AgentConfigOverrides:
+        """This run's agent changes, never saved: the pinned model, the variant's prompt and config patch, trace
+        handlers, and the resolver that answers integration lookups from mocks."""
         system_prompt = None
         if variant and variant.system_prompt_file:
             system_prompt = (self.loaded.base_dir / variant.system_prompt_file).read_text(encoding="utf-8")

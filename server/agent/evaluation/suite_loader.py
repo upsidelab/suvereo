@@ -5,6 +5,7 @@ from enthusiast_common.evaluation.errors import EvalSuiteError
 from enthusiast_common.evaluation.loaded_suite import LoadedSuite
 from enthusiast_common.evaluation.metrics import MetricError, MetricRegistry
 from enthusiast_common.evaluation.metrics.auto import AUTO_METRICS
+from enthusiast_common.evaluation.metrics.llm import JudgePromptParams
 from enthusiast_common.evaluation.mocks.errors import MockError
 from enthusiast_common.evaluation.suite import EvalSuite
 from enthusiast_common.evaluation.suite_reader import SuiteReader
@@ -13,6 +14,7 @@ from pydantic import ValidationError
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
 from agent.core.registries.language_models import LanguageModelRegistry
 from agent.evaluation.integrations import MockIntegrationFactory
+from agent.evaluation.judge_models_used_by_metrics import judge_models_used_by_metrics
 from agent.evaluation.runner.case_runner import JUDGE_COST
 from agent.models import Agent
 
@@ -25,16 +27,16 @@ class SuiteLoader:
     def load(self, path: Path) -> LoadedSuite:
         """The suite with its execution key resolved; raises EvalSuiteError naming the first problem found."""
         loaded = SuiteReader().read(path)
-        execution = self._execution(loaded.suite)
-        self._check_models(loaded.suite)
+        execution = self._resolve_execution(loaded.suite)
         self._check_prompt_files(loaded)
         self._check_metrics(loaded)
+        self._check_models(loaded)
         self._check_integrations(loaded)
         self._check_inputs(loaded, execution)
         suite = loaded.suite.model_copy(update={"execution_key": execution.EXECUTION_KEY})
         return loaded.model_copy(update={"suite": suite})
 
-    def _execution(self, suite: EvalSuite) -> type[BaseAgenticExecutionDefinition]:
+    def _resolve_execution(self, suite: EvalSuite) -> type[BaseAgenticExecutionDefinition]:
         agent_type = suite.agent.type or self._existing_agent_type(suite.agent.id)
         definitions = AgenticExecutionDefinitionRegistry().get_by_agent_type(agent_type)
         if suite.execution_key:
@@ -55,9 +57,10 @@ class SuiteLoader:
         return agent_type
 
     @staticmethod
-    def _check_models(suite: EvalSuite) -> None:
+    def _check_models(loaded: LoadedSuite) -> None:
+        """Models under test and every judge model, metric-level ones included, need a known provider."""
         registry = LanguageModelRegistry()
-        for target in [*suite.models, *([suite.judge] if suite.judge else [])]:
+        for target in [*loaded.suite.models, *judge_models_used_by_metrics(loaded)]:
             try:
                 registry.provider_class_by_name(target.provider)
             except KeyError:
@@ -77,9 +80,14 @@ class SuiteLoader:
                 if config.name in RESERVED_METRIC_NAMES:
                     raise EvalSuiteError(f"Metric name '{config.name}' is measured on every run; pick another.")
                 try:
-                    registry.build(config, loaded.base_dir)
+                    metric = registry.build_metric(config, loaded.base_dir)
                 except MetricError as e:
                     raise EvalSuiteError(f"Case '{case.id}': {e}") from e
+                params = metric.params
+                if isinstance(params, JudgePromptParams) and params.judge is None and loaded.suite.judge is None:
+                    raise EvalSuiteError(
+                        f"Metric '{config.name}' needs a judge model; set 'judge' in the suite or in its params."
+                    )
 
     @staticmethod
     def _check_integrations(loaded: LoadedSuite) -> None:
