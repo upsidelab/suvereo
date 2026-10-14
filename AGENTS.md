@@ -12,6 +12,7 @@ frontend/     React + TypeScript UI — see frontend/AGENTS.md
 plugins/      Core plugins: enthusiast-common contracts, LLM providers, MCP integration, tool-calling agent
 docs/         Documentation site (Next.js)
 specs/        Design specs, written before implementation
+adrs/         Architectural decision records — the why behind intentional design
 ```
 
 Docker: `docker-compose.yml` (production), `docker-compose.development.yml` (development; postgres with pgvector, redis, api, frontend, worker, beat).
