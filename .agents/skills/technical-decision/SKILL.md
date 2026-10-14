@@ -12,8 +12,9 @@ Design work starts as a spec in `specs/<kebab-case-name>.md`. The user iterates 
 1. **Understand.** Read the code the change touches and the nearby specs. Ask the user only for what the code cannot tell you: the problem, constraints, what must not change.
 2. **Draft.** Write the spec from the template below, with every design fork marked as a decision. Status: `Draft`.
 3. **Iterate.** The user comments; revise the spec, not just the chat. Open questions stay in the spec until answered; an answered question moves into Design or a decision.
-4. **Implement.** Start only once the user accepts the spec. Implement phase by phase, in the order of the Phases section. When the implementation forces a design change, change the spec first and say so.
-5. **Close.** After the implementing PRs merge, set the status to `Implemented` and link them. A spec that the code has outgrown is marked `Superseded` with a link to its replacement; a stale spec misleads as much as a stale `AGENTS.md`.
+4. **Record.** Remarkable decisions deserve an ADR; fixes and smaller features do not. When the user settles one, add an ADR in `adrs/` before implementing: next number, slugged filename, the sections and statuses from `adrs/README.md`, and a line in its index. A decision that replaces an earlier one sets the old ADR to `Superseded by ADR-NNNN`.
+5. **Implement.** Start only once the user accepts the spec. Implement phase by phase, in the order of the Phases section. When the implementation forces a design change, change the spec first and say so.
+6. **Close.** After the implementing PRs merge, set the status to `Implemented` and link them. A spec that the code has outgrown is marked `Superseded` with a link to its replacement; a stale spec misleads as much as a stale `AGENTS.md`.
 
 A narrow question about one part of a spec (e.g. "does this decision block read right?") is answered in chat.
 

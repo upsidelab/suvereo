@@ -2,6 +2,13 @@
 
 One short file per architectural decision, numbered in the order they were recorded. Each record has a Status, Context, Decision and Consequences. A superseded record stays in place and links to the one that replaces it.
 
+## Statuses
+
+- `Proposed` — under discussion, not yet agreed.
+- `Accepted` — agreed and in effect.
+- `Deprecated` — no longer applies, and nothing replaces it.
+- `Superseded by ADR-NNNN` — replaced by a later record, which is linked.
+
 | ADR | Title | Status |
 |-----|-------|--------|
 | [0001](0001-plugin-architecture.md) | Plugin architecture and the role of enthusiast-common | Accepted |
