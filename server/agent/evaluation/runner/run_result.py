@@ -2,6 +2,8 @@ from enthusiast_common.evaluation.metrics import MetricResult
 from enthusiast_common.evaluation.trace import ExecutionTrace
 from pydantic import BaseModel, Field
 
+DEFAULT_MODEL = "default"
+
 
 class GateResult(BaseModel):
     """Whether a metric's gate passed, and whether that decides the run."""
@@ -23,3 +25,8 @@ class RunResult(BaseModel):
     unpriced_models: list[str] = Field(default=[], description="Models of calls that could not be priced.")
     priced_spend_usd: float = Field(default=0.0, description="USD of every call in the run that could be priced.")
     trace: ExecutionTrace
+
+    @property
+    def candidate(self) -> str:
+        """The model and prompt variant a run is compared as: <model label>/<variant>, with 'default' for the DataSet's configured model."""
+        return f"{self.model or DEFAULT_MODEL}/{self.variant}"

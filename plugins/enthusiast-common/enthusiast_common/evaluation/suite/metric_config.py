@@ -12,7 +12,7 @@ class MetricConfig(EvalModel):
     """A metric measured on every run it applies to."""
 
     type: str = Field(description="A built-in metric's NAME, or a dotted path to a BaseMetric.")
-    name: str = Field(default="", description="Names this instance in reports and the objective; defaults to type.")
+    name: str = Field(default="", description="Names this instance in reports; defaults to type.")
     params: dict[str, Any] = {}
     gate: Gate | None = None
     required: bool = Field(default=True, description="False reports a failed gate as a warning only.")

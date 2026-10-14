@@ -6,9 +6,6 @@ from .integration_config import IntegrationConfig
 from .metric_config import Aggregate, MetricConfig
 from .model_pricing import ModelPricing
 from .model_target import ModelTarget
-from .objective import Objective
-from .objective_constraint import ObjectiveConstraint
-from .objective_term import ObjectiveTerm
 from .prompt_variant import DEFAULT_VARIANT, PromptVariant
 
 __all__ = [
@@ -23,8 +20,5 @@ __all__ = [
     "MetricConfig",
     "ModelPricing",
     "ModelTarget",
-    "Objective",
-    "ObjectiveConstraint",
-    "ObjectiveTerm",
     "PromptVariant",
 ]

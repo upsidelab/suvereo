@@ -9,7 +9,6 @@ from .eval_case import EvalCase
 from .integration_config import IntegrationConfig
 from .metric_config import MetricConfig
 from .model_target import ModelTarget
-from .objective import Objective
 from .prompt_variant import PromptVariant
 
 CasesSpec = str | list[str | EvalCase]
@@ -28,9 +27,10 @@ class EvalSuite(EvalModel):
     judge: ModelTarget | None = None
     repeats: int = Field(default=1, ge=1)
     budget_usd: float | None = Field(default=None, gt=0)
-    pass_threshold: float = Field(default=0.8, ge=0, le=1, description="The default objective's minimum pass rate.")
+    pass_threshold: float = Field(
+        default=0.8, ge=0, le=1, description="Minimum pass rate per candidate for the run to succeed."
+    )
     metrics: list[MetricConfig] = Field(min_length=1)
-    objective: Objective | None = None
     cases: CasesSpec = Field(description="Case files or directories (suite-relative), inline cases, or a list of both.")
 
     @model_validator(mode="after")

@@ -69,12 +69,50 @@ class TestSuiteLoader:
             ),
             ({"variants": [{"name": "v2", "system_prompt_file": "v2.txt"}]}, "no prompt file v2.txt"),
             ({"metrics": [{"type": "no_such_metric"}]}, "Unknown metric 'no_such_metric'"),
-            ({"metrics": [{"type": "mock_called", "name": "cost_usd", "params": {"method": "greet"}}]}, "every run"),
+            ({"metrics": [{"type": "mock_called", "name": "cost_usd", "params": {"method": "greet"}}]}, "reserved"),
+            ({"metrics": [{"type": "mock_called", "name": "pass_rate", "params": {"method": "greet"}}]}, "reserved"),
+            (
+                {"metrics": [{"type": "mock_called", "name": "judge.tone", "params": {"method": "greet"}}]},
+                "may not contain",
+            ),
+            ({"metrics": [{"type": "mock_called", "name": "tag:x", "params": {"method": "greet"}}]}, "may not contain"),
+            (
+                {
+                    "metrics": [
+                        {
+                            "type": "llm_classify",
+                            "aggregate": "mean",
+                            "params": {
+                                "question": "q",
+                                "labels": ["a", "b"],
+                                "judge": {"provider": "OpenAI", "model": "m"},
+                            },
+                        }
+                    ]
+                },
+                "only aggregate is distribution",
+            ),
+            (
+                {
+                    "cases": [
+                        {
+                            "id": "ada",
+                            "input": {"name": "Ada"},
+                            "metrics": [{"type": "mock_called", "params": {"method": "greet"}, "aggregate": "max"}],
+                        }
+                    ]
+                },
+                "must keep the value type and aggregate",
+            ),
             (
                 {"integrations": [{"class": GREETER, "config": {"behaviour": {"wave": {"returns": "Hi"}}}}]},
                 "no method named wave",
             ),
             ({"cases": [{"id": "ada", "input": {"nickname": "Ada"}}]}, "Case 'ada': invalid input"),
+            (
+                {"metrics": [{"type": "mock_called", "params": {"method": "greet"}, "aggregate": "distribution"}]},
+                "only for label metrics",
+            ),
         ],
     )
     def test_fails_early_on_a_suite_the_host_cannot_run(self, tmp_path, changes, message):

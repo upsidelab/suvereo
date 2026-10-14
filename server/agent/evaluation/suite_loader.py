@@ -13,12 +13,13 @@ from pydantic import ValidationError
 
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
 from agent.core.registries.language_models import LanguageModelRegistry
+from agent.evaluation.aggregation import DERIVED_METRICS, TAG_PREFIX
 from agent.evaluation.integrations import MockIntegrationFactory
 from agent.evaluation.judge_models_used_by_metrics import judge_models_used_by_metrics
 from agent.evaluation.runner.case_runner import JUDGE_COST
 from agent.models import Agent
 
-RESERVED_METRIC_NAMES = {metric.NAME for metric in AUTO_METRICS} | {JUDGE_COST}
+RESERVED_METRIC_NAMES = {metric.NAME for metric in AUTO_METRICS} | {JUDGE_COST} | set(DERIVED_METRICS)
 
 
 class SuiteLoader:
@@ -74,11 +75,26 @@ class SuiteLoader:
 
     @staticmethod
     def _check_metrics(loaded: LoadedSuite) -> None:
+        """Every metric builds, has a usable name, a judge if it needs one, and an aggregate fitting its value type;
+        a case's override keeps its suite metric's value type and aggregate, as results are aggregated across cases."""
         registry = MetricRegistry()
+        first_seen: dict[str, tuple[str, str | None]] = {}
+        for config in loaded.suite.metrics:
+            try:
+                first_seen[config.name] = (registry.metric_class(config.type).VALUE_TYPE, config.aggregate)
+            except MetricError:
+                continue
         for case in loaded.cases:
             for config in loaded.suite.metrics_for(case):
                 if config.name in RESERVED_METRIC_NAMES:
-                    raise EvalSuiteError(f"Metric name '{config.name}' is measured on every run; pick another.")
+                    raise EvalSuiteError(
+                        f"Metric name '{config.name}' is reserved for a built-in figure; pick another."
+                    )
+                if "." in config.name or config.name.startswith(TAG_PREFIX):
+                    raise EvalSuiteError(
+                        f"Metric name '{config.name}' may not contain '.' or start with '{TAG_PREFIX}'; reports use "
+                        "them for components and tags."
+                    )
                 try:
                     metric = registry.build_metric(config, loaded.base_dir)
                 except MetricError as e:
@@ -87,6 +103,18 @@ class SuiteLoader:
                 if isinstance(params, JudgePromptParams) and params.judge is None and loaded.suite.judge is None:
                     raise EvalSuiteError(
                         f"Metric '{config.name}' needs a judge model; set 'judge' in the suite or in its params."
+                    )
+                if config.aggregate == "distribution" and metric.VALUE_TYPE != "label":
+                    raise EvalSuiteError(f"Metric '{config.name}': aggregate 'distribution' is only for label metrics.")
+                if metric.VALUE_TYPE == "label" and config.aggregate not in (None, "distribution"):
+                    raise EvalSuiteError(
+                        f"Metric '{config.name}' is a label metric; its only aggregate is distribution."
+                    )
+                shape = (metric.VALUE_TYPE, config.aggregate)
+                if first_seen.setdefault(config.name, shape) != shape:
+                    raise EvalSuiteError(
+                        f"Case '{case.id}': metric '{config.name}' must keep the value type and aggregate it has "
+                        "elsewhere in the suite, as its results are aggregated together."
                     )
 
     @staticmethod

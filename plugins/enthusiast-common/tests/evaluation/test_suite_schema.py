@@ -41,10 +41,6 @@ FULL = {
         {"type": "tool_called", "name": "single_place_order", "params": {"name": "place_order"}, "gate": {"equals": 1}},
         {"type": "trace_event", "name": "retried", "params": {"event": "retry"}, "required": False},
     ],
-    "objective": {
-        "constraints": [{"metric": "pass_rate", "min": 0.9}],
-        "score": [{"metric": "cost_usd", "weight": 0.15, "direction": "minimize", "bounds": [0, 0.1]}],
-    },
     "cases": ["cases.csv", "cases/", {"id": "inline", "expected": {"output": {"order_id": "ORD-1"}}}],
 }
 
@@ -83,7 +79,6 @@ class TestEvalSuite:
             {"agent": {"id": 1, "config": {"a": 1}}},
             {"variants": [{"name": "default", "system_prompt_file": "p.txt"}]},
             {"variants": [{"name": "empty"}]},
-            {"objective": {"score": [{"metric": "cost_usd", "bounds": [0.1, 0.1]}]}},
         ],
     )
     def test_invalid_suites_are_rejected(self, changes):
