@@ -1,0 +1,39 @@
+name: order-intake
+description: Purchase orders as PDFs and photos, including ones the agent must refuse, on two models and two prompts
+agent: {type: enthusiast-agent-order-intake}
+models:
+  - {provider: OpenAI, model: gpt-4o-mini}
+  - {provider: OpenAI, model: gpt-4.1-nano}
+variants:
+  - {name: v2, system_prompt_file: prompts/v2.txt}
+judge: {provider: OpenAI, model: gpt-4.1-mini}
+budget_usd: 0.50
+reports: [report, results, comparison, cases]
+integrations:
+  - class: enthusiast_ecommerce_common.evaluation.ECommerceMockIntegration
+    config: {data: {catalog: data/products.yaml}}
+metrics:
+  - name: line_items
+    type: mock_calls
+    params: {method: create_order_with_items, arg: items, key: 0, fields: {1: numeric}, coerce: true}
+    gate: {min: 0.95}
+  - name: order_id
+    type: json_subset
+    gate: {min: 1}
+  - name: one_order
+    type: tool_called
+    params: {name: place_order}
+    gate: {equals: 1}
+  - name: retried
+    type: trace_event
+    params: {event: retry}
+    gate: {equals: false}
+    required: false
+  - name: judge
+    type: llm_judge
+    params:
+      include: [input_text, trace_summary]
+      criteria:
+        - {name: completeness, description: Every line item in the document was ordered with its quantity}
+        - {name: no_invented_skus, description: Every ordered SKU was found in the catalog for an item in the document}
+cases: cases
