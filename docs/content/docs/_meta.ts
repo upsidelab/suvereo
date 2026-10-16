@@ -7,6 +7,7 @@ const mapping = {
   integrate: "",
   observe: "",
   evaluate: "",
+  concepts: "",
 };
 
 export default mapping

@@ -3,36 +3,36 @@ sidebar_position: 1
 ---
 
 # Introduction
-AgentCore is an open-source framework for putting AI agents to work on your own systems. It gives agents access to your data, lets them act in your connected services, and gives your team a place to manage them, without you having to build any of that infrastructure from scratch.
+AgentCore is an open-source framework for putting AI [agents](/docs/concepts#agent) to work on your own systems. It gives agents access to your data, lets them act in your connected services, and gives your team a place to manage them, without you having to build any of that infrastructure from scratch.
 
 AgentCore has two parts: a backend with a REST API, and a frontend that works as the management panel.
 
 ## What you get
 
-- **Conversations** - chat with an agent in the web UI, with streamed answers and saved history.
-- **Agentic executions** - autonomous, API-triggered agent runs with structured input and result, and no user in the loop.
+- **[Conversations](/docs/concepts#conversation)** - chat with an agent in the web UI, with streamed answers and saved history.
+- **[Agentic executions](/docs/concepts#agentic-execution)** - autonomous, API-triggered agent runs with structured input and result, and no user in the loop.
 - **Search across your content** - content is split, embedded and searched by meaning, so agents answer from your data (RAG).
-- **Integrations** - connect external systems, either to pull data in or to let agents perform actions there through tools. MCP server integrations are supported as well.
+- **[Integrations](/docs/concepts#integration)** - connect external systems, either to pull data in or to let agents perform actions there through [tools](/docs/concepts#tool). MCP server integrations are supported as well.
 - **Access control** - a granular permission system for managing user access.
 - **Choice of AI models** - OpenAI, Azure OpenAI, Google, Mistral, Ollama (self-hosted) and Anthropic.
-- **Plugins** - models, integrations and agents are installable packages built on shared contracts, and a selection of ready-made plugins is available.
+- **[Plugins](/docs/concepts#plugin)** - models, integrations and agents are installable packages built on shared contracts, and a selection of ready-made plugins is available.
 - **A standard stack** - Python, Django, PostgreSQL and React, with Docker Compose files for development and production.
 
 ## Works with any domain: the vertical concept
 
-AgentCore is built to accept any shape of data that can be indexed for search, and any integrations with the external systems your domain relies on. You describe your domain in a **vertical**, a plugin that defines:
+AgentCore is built to accept any shape of data that can be indexed for search, and any integrations with the external systems your domain relies on. You describe your domain in a **[vertical](/docs/concepts#vertical)**, a plugin that defines:
 
-- the **entities** agents work with: the kinds of records in your domain, which AgentCore stores, lists in the UI and indexes so agents can search them by meaning,
-- the **integration types**: how data is brought in from external systems, and how agents act in them,
+- the **[entities](/docs/concepts#entity)** agents work with: the kinds of records in your domain, which AgentCore stores, lists in the UI and indexes so agents can search them by meaning,
+- the **integrations** with external systems: how data is brought in from external systems, and how agents act in them,
 - how that data and those integrations are handed to agents as tools they can call.
 
 Agents are then built on top of the vertical and can use its data, integrations and tools. Conversations, agentic executions, permissions, models and the UI come from AgentCore, so a vertical only covers what is specific to the domain.
 
-You can also start without a vertical. Connect an MCP server, an external server that exposes tools to agents, to a data set, the workspace that groups agents, integrations and content, and agents can use its tools right away.
+You can also start without a vertical. Connect an MCP server, an external server that exposes tools to agents, to a [data set](/docs/concepts#data-set), the workspace that groups agents, integrations and content, and agents can use its tools right away.
 
 ## Enthusiast: the e-commerce vertical
 
-[Enthusiast](/tools/enthusiast) is the e-commerce vertical of AgentCore. It defines products and documents, the sources that sync them from platforms such as Shopify, Shopware or Medusa, and ready-made agents for product search, order intake and catalog enrichment. If you run an online store, start there.
+[Enthusiast](/tools/enthusiast) [TODO: correct enthusist documentation link] is the e-commerce vertical of AgentCore. It defines products and documents, the sources that sync them from platforms such as Shopify, Shopware or Medusa, and ready-made agents for product search, order intake and catalog enrichment. If you run an online store, start there.
 
 ## Try it out
 
