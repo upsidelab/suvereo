@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from enthusiast_common.evaluation.metrics.auto import CostUsd, DurationSeconds
+from enthusiast_common.evaluation.metrics.auto import DurationSeconds
 
 from agent.evaluation.aggregation import FLAKY_RATE, PASS_RATE, TAG_PREFIX
 from agent.evaluation.runner import RunResult
@@ -27,7 +27,8 @@ UNTRACKED_BUDGET_SENTENCE = (
 
 
 class ReportMdWriter(BaseReportWriter):
-    """report.md, for people and coding agents: the verdict, a comparison of the candidates, metrics per case tag,
+    """report.md, for people and coding agents: the verdict, a comparison of the candidates, the diff against a
+    baseline run, metrics per case tag,
     the failed runs grouped by the gate they failed (with values, errors and a compact trace), flaky cases, and how
     the run was made."""
 
@@ -38,6 +39,7 @@ class ReportMdWriter(BaseReportWriter):
             f"# {report.result.suite or 'Suite'} evaluation",
             self._verdict_section(report, SuiteVerdict.of(report)),
             self._comparison_section(report),
+            self._baseline_diff_section(report),
             self._metrics_per_tag_section(report),
             self._failures_section(report),
             self._flaky_cases_section(report),
@@ -82,7 +84,7 @@ class ReportMdWriter(BaseReportWriter):
         header = ["Candidate", "Runs", "Pass rate", "Flaky", *metrics, "Cost / run", "p95 time (s)"]
         rows = []
         for c in report.candidates:
-            cost, duration = c.metrics.get(CostUsd.NAME), c.metrics.get(DurationSeconds.NAME)
+            duration = c.metrics.get(DurationSeconds.NAME)
             rows.append(
                 [
                     c.candidate,
@@ -90,11 +92,37 @@ class ReportMdWriter(BaseReportWriter):
                     MarkdownText.cell(c.metrics[PASS_RATE].value),
                     MarkdownText.cell(c.metrics[FLAKY_RATE].value),
                     *(MarkdownText.cell(c.metrics[m].value) if m in c.metrics else "–" for m in metrics),
-                    MarkdownText.usd(cost.mean if cost else None),
+                    MarkdownText.usd(c.cost_mean_usd),
                     MarkdownText.cell(duration.p95 if duration else None),
                 ]
             )
         return "## Comparison\nBy pass rate, then mean cost.\n\n" + MarkdownText.table(header, rows)
+
+    @staticmethod
+    def _baseline_diff_section(report: SuiteReport) -> str:
+        diff = report.baseline_diff
+        if diff is None:
+            return ""
+        header = ["Candidate", "Pass rate", *report.metric_configs]
+        rows = [
+            [
+                change.candidate,
+                MarkdownText.change(change.pass_rate),
+                *(
+                    MarkdownText.change(change.metrics[m]) if m in change.metrics else "–"
+                    for m in report.metric_configs
+                ),
+            ]
+            for change in diff.candidates
+        ]
+        lines = [
+            f"## Baseline diff\nAgainst {diff.baseline} (started {MarkdownText.cell(diff.baseline_started_at)}).",
+            MarkdownText.table(header, rows),
+        ]
+        for title, case_changes in (("Regressed", diff.regressed), ("Improved", diff.improved)):
+            items = ", ".join(f"{c.case_id} ({c.candidate}: {c.before} → {c.after})" for c in case_changes)
+            lines.append(f"{title}: {items or 'none'}.")
+        return "\n\n".join(lines)
 
     @staticmethod
     def _metrics_per_tag_section(report: SuiteReport) -> str:
@@ -158,13 +186,9 @@ class ReportMdWriter(BaseReportWriter):
 
     @staticmethod
     def _flaky_cases_section(report: SuiteReport) -> str:
-        rows = []
-        for c in report.candidates:
-            for case in report.cases:
-                runs = [run for run in c.runs if run.case_id == case.id]
-                passed = sum(run.passed for run in runs)
-                if 0 < passed < len(runs):
-                    rows.append([case.id, c.candidate, f"{passed}/{len(runs)}"])
+        rows = [
+            [o.case_id, o.candidate, f"{o.passed_runs}/{o.runs}"] for o in report.case_outcomes() if o.status == "flaky"
+        ]
         return (
             "## Flaky cases\nPassed on some repeats and failed on others.\n\n"
             + MarkdownText.table(["Case", "Candidate", "Passed"], rows)

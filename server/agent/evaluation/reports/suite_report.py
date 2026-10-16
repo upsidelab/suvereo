@@ -3,7 +3,6 @@ import re
 
 from enthusiast_common.evaluation.loaded_suite import LoadedSuite
 from enthusiast_common.evaluation.metrics import MetricRegistry
-from enthusiast_common.evaluation.metrics.auto import CostUsd
 from enthusiast_common.evaluation.suite import EvalCase, Gate, MetricConfig, ReportName
 
 from agent.evaluation.aggregation import PASS_RATE, CandidateMetrics, MetricAggregator
@@ -13,7 +12,10 @@ from agent.evaluation.runner.run_scorer import BOOL_GATE
 from agent.evaluation.runner.suite_run_result import SuiteRunResult
 from agent.evaluation.suite_metric_configs import suite_metric_configs
 
+from .baseline_diff import BaselineDiff
+from .case_outcome import CaseOutcome
 from .git_state import GitState
+from .summary_file import SummaryFile
 
 UNSAFE_IN_FILE_NAMES = re.compile(r"[^A-Za-z0-9._-]+")
 
@@ -21,7 +23,7 @@ UNSAFE_IN_FILE_NAMES = re.compile(r"[^A-Za-z0-9._-]+")
 class SuiteReport:
     """What every report writer reads from one suite run, worked out once: the runs with their ids and trace files,
     each candidate's aggregated metrics in comparison order (pass rate, then mean cost), the cases and the metrics,
-    and how the run was started (git state, command-line args)."""
+    how the run was started (git state, command-line args), and its diff against a baseline run when given one."""
 
     def __init__(
         self,
@@ -31,6 +33,7 @@ class SuiteReport:
         aggregator: MetricAggregator | None = None,
         git: GitState | None = None,
         args: list[str] | None = None,
+        baseline: SummaryFile | None = None,
     ):
         self.loaded = loaded
         self.result = result
@@ -42,10 +45,28 @@ class SuiteReport:
         self.cases: list[EvalCase] = loaded.cases
         self.metric_configs: dict[str, MetricConfig] = suite_metric_configs(loaded)
         self._registry = MetricRegistry()
+        self.baseline_diff: BaselineDiff | None = (
+            BaselineDiff.between(self.candidates, self.case_outcomes(), list(self.metric_configs), baseline)
+            if baseline
+            else None
+        )
 
     @property
     def runs(self) -> list[RunResult]:
         return self.result.runs
+
+    def case_outcomes(self) -> list[CaseOutcome]:
+        """Each case's outcome per candidate that ran it, in case then comparison order."""
+        outcomes = []
+        for case in self.cases:
+            for candidate in self.candidates:
+                runs = [run for run in candidate.runs if run.case_id == case.id]
+                if runs:
+                    passed = sum(run.passed for run in runs)
+                    outcomes.append(
+                        CaseOutcome(case_id=case.id, candidate=candidate.candidate, passed_runs=passed, runs=len(runs))
+                    )
+        return outcomes
 
     def run_id(self, run: RunResult) -> str:
         """A run's id, also its trace file's name: <case>__<model>__<variant>__r<repeat>, safe in file names. When a
@@ -80,5 +101,5 @@ class SuiteReport:
     @staticmethod
     def _comparison_order(candidate: CandidateMetrics) -> tuple[float, float]:
         pass_rate = candidate.metrics[PASS_RATE].value or 0.0
-        cost = candidate.metrics.get(CostUsd.NAME)
-        return -pass_rate, cost.mean if cost and cost.mean is not None else float("inf")
+        cost = candidate.cost_mean_usd
+        return -pass_rate, cost if cost is not None else float("inf")

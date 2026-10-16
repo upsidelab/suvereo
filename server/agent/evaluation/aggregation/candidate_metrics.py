@@ -1,3 +1,4 @@
+from enthusiast_common.evaluation.metrics.auto import CostUsd
 from pydantic import BaseModel
 
 from agent.evaluation.runner import RunResult
@@ -13,3 +14,9 @@ class CandidateMetrics(BaseModel):
     variant: str
     runs: list[RunResult]
     metrics: dict[str, MetricAggregate]
+
+    @property
+    def cost_mean_usd(self) -> float | None:
+        """The mean agent cost per run; None when no run could be priced."""
+        cost = self.metrics.get(CostUsd.NAME)
+        return cost.mean if cost else None

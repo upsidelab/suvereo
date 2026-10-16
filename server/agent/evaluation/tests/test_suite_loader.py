@@ -5,6 +5,7 @@ import yaml
 from enthusiast_common.evaluation.errors import EvalSuiteError
 
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
+from agent.core.registries.agents.agent_registry import AgentNotFoundError, AgentRegistry
 from agent.evaluation.judge_models_used_by_metrics import judge_models_used_by_metrics
 from agent.evaluation.suite_loader import SuiteLoader
 
@@ -17,7 +18,10 @@ GREETER = f"{GreeterMockIntegration.__module__}.GreeterMockIntegration"
 
 @pytest.fixture(autouse=True)
 def _registered():
-    with patch.object(AgenticExecutionDefinitionRegistry, "get_all", return_value=[GreetingExecution]):
+    with (
+        patch.object(AgenticExecutionDefinitionRegistry, "get_all", return_value=[GreetingExecution]),
+        patch.object(AgentRegistry, "get_agent_class_by_type", return_value=object),
+    ):
         yield
 
 
@@ -36,6 +40,13 @@ def _load(tmp_path, **changes):
 
 
 class TestSuiteLoader:
+    def test_an_unregistered_sandbox_agent_type_fails_early(self, tmp_path):
+        unknown = AgentNotFoundError("Could not find agent type 'greeter-agent'.")
+
+        with patch.object(AgentRegistry, "get_agent_class_by_type", side_effect=unknown):
+            with pytest.raises(EvalSuiteError, match="add it to AVAILABLE_AGENTS"):
+                _load(tmp_path)
+
     def test_resolves_the_agent_types_only_execution(self, tmp_path):
         loaded = _load(tmp_path)
 

@@ -48,6 +48,6 @@ def run_result(case_id, model="gpt", repeat=1, passed=True, cost=0.01, orders=1.
     )
 
 
-def suite_report(tmp_path, runs, selected=None, git=None, **suite_changes) -> SuiteReport:
+def suite_report(tmp_path, runs, selected=None, git=None, baseline=None, **suite_changes) -> SuiteReport:
     result = SuiteRunResult(suite="orders", planned_runs=len(runs), runs=runs, spent_usd=0.0)
-    return SuiteReport(loaded_suite(tmp_path, **suite_changes), result, selected, git=git)
+    return SuiteReport(loaded_suite(tmp_path, **suite_changes), result, selected, git=git, baseline=baseline)

@@ -12,11 +12,13 @@ from enthusiast_common.evaluation.suite_reader import SuiteReader
 from pydantic import ValidationError
 
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
+from agent.core.registries.agents.agent_registry import AgentRegistry, AgentRegistryError
 from agent.core.registries.language_models import LanguageModelRegistry
 from agent.evaluation.aggregation import DERIVED_METRICS, TAG_PREFIX
 from agent.evaluation.integrations import MockIntegrationFactory
 from agent.evaluation.judge_models_used_by_metrics import judge_models_used_by_metrics
 from agent.evaluation.runner.case_runner import JUDGE_COST
+from agent.evaluation.suite_selection import SuiteSelection
 from agent.models import Agent
 
 RESERVED_METRIC_NAMES = {metric.NAME for metric in AUTO_METRICS} | {JUDGE_COST} | set(DERIVED_METRICS)
@@ -25,10 +27,14 @@ RESERVED_METRIC_NAMES = {metric.NAME for metric in AUTO_METRICS} | {JUDGE_COST} 
 class SuiteLoader:
     """Reads a suite and checks what needs the host, so a mistake fails before any tokens are spent."""
 
-    def load(self, path: Path) -> LoadedSuite:
-        """The suite with its execution key resolved; raises EvalSuiteError naming the first problem found."""
+    def load(self, path: Path, selection: SuiteSelection | None = None) -> LoadedSuite:
+        """The suite, narrowed to the selection if given, with its execution key resolved; raises EvalSuiteError naming
+        the first problem found."""
         loaded = SuiteReader().read(path)
+        if selection is not None:
+            loaded = selection.apply(loaded)
         execution = self._resolve_execution(loaded.suite)
+        self._check_sandbox_agent_type(loaded.suite)
         self._check_prompt_files(loaded)
         self._check_metrics(loaded)
         self._check_models(loaded)
@@ -49,6 +55,18 @@ class SuiteLoader:
                 f"Agent type '{agent_type}' has {len(definitions)} registered executions; set 'execution_key'."
             )
         return definitions[0]
+
+    @staticmethod
+    def _check_sandbox_agent_type(suite: EvalSuite) -> None:
+        """A sandbox builds its agent from the type, so the type must be registered (AVAILABLE_AGENTS)."""
+        if not suite.agent.is_sandbox:
+            return
+        try:
+            AgentRegistry().get_agent_class_by_type(suite.agent.type)
+        except AgentRegistryError as e:
+            raise EvalSuiteError(
+                f"Agent type '{suite.agent.type}' is not registered; add it to AVAILABLE_AGENTS."
+            ) from e
 
     @staticmethod
     def _existing_agent_type(agent_id: int) -> str:

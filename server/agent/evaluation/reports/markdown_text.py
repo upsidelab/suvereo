@@ -1,5 +1,8 @@
 import json
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from .baseline_diff import ValueChange
 
 MAX_INLINE_CHARS = 160
 
@@ -23,6 +26,14 @@ class MarkdownText:
     def usd(value: float | None) -> str:
         """An amount in USD to 4 decimals, '–' when unknown."""
         return "–" if value is None else f"${value:.4f}"
+
+    @classmethod
+    def change(cls, change: "ValueChange") -> str:
+        """A figure's move from a baseline run, e.g. '0.8 → 0.9 (+0.1)'; just the new value when it is new."""
+        if change.before is None:
+            return f"{cls.cell(change.after)} (new)"
+        delta = f" ({change.delta:+.3g})" if change.delta else ""
+        return f"{cls.cell(change.before)} → {cls.cell(change.after)}{delta}"
 
     @staticmethod
     def one_line(value: Any) -> str:

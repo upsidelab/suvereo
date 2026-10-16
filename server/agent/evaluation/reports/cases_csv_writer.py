@@ -13,12 +13,17 @@ class CasesCsvWriter(BaseReportWriter):
 
     def write(self, report: SuiteReport, run_dir: Path) -> list[Path]:
         header = ["case_id", "tags", "description", "candidate", "status", "passed_runs", "runs"]
-        rows = []
-        for case in report.cases:
-            for candidate in report.candidates:
-                runs = [run for run in candidate.runs if run.case_id == case.id]
-                if runs:
-                    passed = sum(run.passed for run in runs)
-                    status = "pass" if passed == len(runs) else "fail" if passed == 0 else "flaky"
-                    rows.append([case.id, case.tags, case.description, candidate.candidate, status, passed, len(runs)])
+        cases = {case.id: case for case in report.cases}
+        rows = [
+            [
+                o.case_id,
+                cases[o.case_id].tags,
+                cases[o.case_id].description,
+                o.candidate,
+                o.status,
+                o.passed_runs,
+                o.runs,
+            ]
+            for o in report.case_outcomes()
+        ]
         return [CsvTable.write(run_dir / "cases.csv", header, rows)]

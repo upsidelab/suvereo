@@ -12,7 +12,7 @@ LATEST_LINK = "latest"
 
 class RunDirectory:
     """Where one suite run's outputs go: <suite_dir>/results/<YYYYmmdd-HHMMSS>-<id>/, with results/latest linking to
-    the newest run."""
+    the newest run; results/ carries its own .gitignore, so runs stay out of git wherever the suite lives."""
 
     @staticmethod
     def create(suite_dir: Path, now: datetime | None = None) -> Path:
@@ -20,6 +20,7 @@ class RunDirectory:
         results = suite_dir / RESULTS_DIR
         run_dir = results / f"{(now or datetime.now()):%Y%m%d-%H%M%S}-{secrets.token_hex(3)}"
         run_dir.mkdir(parents=True)
+        (results / ".gitignore").write_text("*\n", encoding="utf-8")
         latest = results / LATEST_LINK
         temporary = results / f".{LATEST_LINK}-{run_dir.name}"
         try:

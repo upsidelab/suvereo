@@ -2,8 +2,6 @@ import json
 from pathlib import Path
 from typing import Any
 
-from enthusiast_common.evaluation.metrics.auto import CostUsd
-
 from agent.evaluation.aggregation import FIRST_ATTEMPT_PASS_RATE, FLAKY_RATE, PASS_RATE, CandidateMetrics
 from agent.evaluation.runner import RunResult
 
@@ -11,8 +9,7 @@ from .base_report_writer import BaseReportWriter
 from .gate_text import gate_text
 from .suite_report import SuiteReport
 from .suite_verdict import SuiteVerdict
-
-SUMMARY_FILE = "summary.json"
+from .summary_file import SUMMARY_FILE
 
 
 class SummaryJsonWriter(BaseReportWriter):
@@ -20,7 +17,8 @@ class SummaryJsonWriter(BaseReportWriter):
     for scripts, CI and coding agents.
 
     Holds the verdict (status, exit code), how the run was started, each candidate's rates and metric values, each
-    gate's pass rate, the runs that failed with their failed gates, and the cost against the budget.
+    gate's pass rate, each case's status per candidate, the runs that failed with their failed gates, the diff against
+    a baseline run (--baseline), and the cost against the budget.
     """
 
     NAME = "summary"
@@ -50,7 +48,9 @@ class SummaryJsonWriter(BaseReportWriter):
             "pass_threshold": report.loaded.suite.pass_threshold,
             "candidates": [self._candidate_summary(c, report, verdict) for c in report.candidates],
             "gates": self._gate_summaries(report),
+            "cases": [{**outcome.model_dump(), "status": outcome.status} for outcome in report.case_outcomes()],
             "failing_runs": [self._failing_run_summary(run, report) for run in report.runs if not run.passed],
+            "baseline": report.baseline_diff.model_dump() if report.baseline_diff else None,
             "cost": {
                 "spent_usd": result.spent_usd,
                 "budget_usd": result.budget_usd,
@@ -61,7 +61,6 @@ class SummaryJsonWriter(BaseReportWriter):
     @staticmethod
     def _candidate_summary(candidate: CandidateMetrics, report: SuiteReport, verdict: SuiteVerdict) -> dict[str, Any]:
         rates = {name: candidate.metrics[name].value for name in (PASS_RATE, FIRST_ATTEMPT_PASS_RATE, FLAKY_RATE)}
-        cost = candidate.metrics.get(CostUsd.NAME)
         return {
             "candidate": candidate.candidate,
             "provider": report.provider_of(candidate.model),
@@ -73,7 +72,7 @@ class SummaryJsonWriter(BaseReportWriter):
             "metrics": {
                 name: candidate.metrics[name].value for name in report.metric_configs if name in candidate.metrics
             },
-            "cost_mean_usd": cost.mean if cost else None,
+            "cost_mean_usd": candidate.cost_mean_usd,
         }
 
     @staticmethod

@@ -177,7 +177,9 @@ class TestRunDirectory:
         run_dir = RunDirectory.create(tmp_path)
 
         assert run_dir.is_dir()
-        assert sorted(p.name for p in (tmp_path / "results").iterdir()) == sorted(["latest", run_dir.name])
+        assert sorted(p.name for p in (tmp_path / "results").iterdir()) == sorted(
+            [".gitignore", "latest", run_dir.name]
+        )
 
 
 @pytest.mark.parametrize("reports", [["results", "html"], ["everything"]])

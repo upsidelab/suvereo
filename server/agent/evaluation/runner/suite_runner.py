@@ -48,6 +48,11 @@ class SuiteRunner:
     def budget_usd(self) -> float | None:
         return self.options.budget_usd or self.loaded.suite.budget_usd
 
+    @property
+    def planned_run_count(self) -> int:
+        """How many runs the suite plans: models x variants (with the default) x cases x repeats."""
+        return len(self._planned_runs(self.loaded.cases))
+
     def run(self) -> SuiteRunResult:
         """Run every planned run; raises EvalSuiteError when a budget is set but a model under test has no price."""
         self._check_budget_is_trackable()
@@ -60,7 +65,7 @@ class SuiteRunner:
                 results += self._run_group(cases)
         return SuiteRunResult(
             suite=self.loaded.suite.name,
-            planned_runs=len(self._planned_runs(self.loaded.cases)),
+            planned_runs=self.planned_run_count,
             runs=results,
             spent_usd=self._spent,
             stopped_reason=self._stopped_reason,
