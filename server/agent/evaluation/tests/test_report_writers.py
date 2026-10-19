@@ -1,4 +1,5 @@
 import csv
+import json
 from datetime import datetime
 
 import pytest
@@ -12,9 +13,10 @@ from agent.evaluation.reports import (
     ReportOutput,
     ResultsCsvWriter,
     RunDirectory,
+    TraceFilesWriter,
 )
 
-from .suite_reports import loaded_suite, run_result, suite_report
+from .suite_reports import judged_run, judged_suite_report, loaded_suite, run_result, suite_report
 
 
 def _rows(path):
@@ -56,6 +58,17 @@ class TestResultsCsvWriter:
         [path] = ResultsCsvWriter().write(suite_report(tmp_path, [run_result("ada")], ["results", "traces"]), tmp_path)
 
         assert _rows(path)[0]["trace_file"] == "runs/ada__gpt__default__r1.json"
+
+    def test_a_judge_metric_gets_a_column_with_its_reasoning_per_criterion(self, tmp_path):
+        [path] = ResultsCsvWriter().write(judged_suite_report(tmp_path, [judged_run(), run_result("bob")]), tmp_path)
+
+        ada, bob = _rows(path)
+        assert ada["judge.reasoning"] == (
+            "complete (failure): The XL mug was ordered instead of the regular one. | no_invented (success): All SKUs exist."
+        )
+        assert bob["judge.reasoning"] == ""
+        assert (ada["judge.complete"], ada["judge.no_invented"]) == ("failure", "success")
+        assert "orders.reasoning" not in ada
 
 
 class TestSuiteReport:
@@ -129,6 +142,14 @@ class TestMetricsCsvWriter:
         assert by_metric["valid", ""]["pass_threshold"] == "equals true"
         assert by_metric["orders", "precision"]["value"] == "0.5"
         assert by_metric["cost_usd", ""]["pass_threshold"] == ""
+        assert by_metric["cost_usd", ""]["details"] == ""
+
+    def test_a_metric_row_holds_its_details_as_json(self, tmp_path):
+        [path] = MetricsCsvWriter().write(judged_suite_report(tmp_path, [judged_run()]), tmp_path)
+
+        by_metric = {(r["metric"], r["component"]): r for r in _rows(path)}
+        assert json.loads(by_metric["judge", ""]["details"])["reasoning"]["no_invented"] == "All SKUs exist."
+        assert by_metric["judge", "complete"]["details"] == ""
 
     def test_list_thresholds_follow_the_csv_conventions(self, tmp_path):
         metrics = [
@@ -143,6 +164,21 @@ class TestMetricsCsvWriter:
         [path] = MetricsCsvWriter().write(suite_report(tmp_path, [run_result("ada")], metrics=metrics), tmp_path)
 
         assert {r["metric"]: r["pass_threshold"] for r in _rows(path)}["valid"] == "in true;maybe"
+
+
+class TestTraceFilesWriter:
+    def test_each_trace_file_holds_the_runs_metrics_thresholds_and_trace(self, tmp_path):
+        failed = judged_run(passed=False)
+        failed.trace.error = "Out of stock"
+
+        [path] = TraceFilesWriter().write(judged_suite_report(tmp_path, [failed]), tmp_path)
+
+        content = json.loads(path.read_text())
+        assert path.name == "ada__gpt__default__r1.json"
+        assert content["passed"] is False
+        assert content["metrics"]["judge"]["details"]["reasoning"]["no_invented"] == "All SKUs exist."
+        assert content["thresholds"]["orders"] == {"passed": False, "required": True}
+        assert content["error"] == "Out of stock"
 
 
 class TestReportOutput:

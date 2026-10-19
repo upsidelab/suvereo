@@ -49,7 +49,7 @@ class LLMJudgeParams(JudgePromptParams):
 
     criteria: list[Criterion] = Field(min_length=1)
     scale: Literal["binary", "1-5"] | ScoreRange = "binary"
-    include: list[Section] = ["output", "expected"]
+    include: list[Section] = ["outcome", "output", "expected"]
     samples: int = Field(default=1, ge=1, le=9)
 
     @model_validator(mode="after")
@@ -94,7 +94,8 @@ class LLMJudge(BaseMetric):
             return MetricResult(value=None, components=scores, details={"error": error, "reasoning": reasoning})
         total_weight = sum(c.weight for c in self.params.criteria)
         value = sum(scores[c.name] * c.weight for c in self.params.criteria) / total_weight
-        return MetricResult(value=value, components=scores, details={"reasoning": reasoning})
+        binary = self.params.scale == "binary" and all(score in (0, 1) for score in scores.values())
+        return MetricResult(value=value, components=scores, binary_components=binary, details={"reasoning": reasoning})
 
     def _ask_judge_for_score(
         self, judge: BaseJudgeClient, criterion: Criterion, material: str

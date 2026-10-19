@@ -9,4 +9,9 @@ expected:
   failure_code: validation_failed
   mock_calls: {create_order_with_items: [{items: [[KTL-ELC, 40], [MUG-RED, 2]]}]}
 metrics:
+  # the expected call is the one the shop rejects, so keep rejected calls
+  - name: line_items
+    type: mock_calls
+    params: {method: create_order_with_items, arg: items, key: 0, fields: {1: numeric}, coerce: true}
+    pass_threshold: {min: 0.95}
   - {type: json_subset, name: order_id}

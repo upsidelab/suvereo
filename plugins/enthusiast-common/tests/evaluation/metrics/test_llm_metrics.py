@@ -3,7 +3,7 @@ from enthusiast_common.evaluation.metrics import MetricConfigError
 from enthusiast_common.evaluation.metrics.llm import LLMClassify, LLMJudge
 from enthusiast_common.evaluation.trace import ToolCall
 
-from .contexts import run
+from .contexts import mock_call, run
 from .scripted_judge import ScriptedJudge
 
 CRITERIA = [
@@ -26,6 +26,7 @@ class TestLLMJudge:
 
         assert result.value == 0.75
         assert result.components == {"completeness": 1.0, "no_invented_skus": 0.0}
+        assert result.binary_components is True
         assert result.details["reasoning"]["no_invented_skus"] == "SKU-9 invented"
         assert len(judge.prompts) == 2 and "Every line item is ordered" in judge.prompts[0]
 
@@ -75,6 +76,37 @@ class TestLLMJudge:
 
         assert '## trace_summary\ntool place_order({"sku": "SKU-1"}) -> ok' in judge.prompts[0]
         assert "## output" not in judge.prompts[0]
+
+    def test_the_outcome_states_how_the_run_ended_and_which_mocks_it_called(self):
+        judge = ScriptedJudge('{"score": 1}')
+        context = run(success=False, failure_code="validation_failed")
+        context.trace.execution_result.failure_summary = "No product matched"
+        context.judge = judge
+
+        LLMJudge({"criteria": CRITERIA[:1], "include": ["outcome"]}).measure(context)
+
+        assert judge.prompts[0].endswith(
+            "## outcome\nrun: failed (validation_failed): No product matched\n"
+            "mock calls: none; the agent called no mocked external system"
+        )
+
+    def test_the_outcome_counts_the_calls_to_each_mocked_method(self):
+        judge = ScriptedJudge('{"score": 1}')
+        context = _judged(
+            judge, mock_calls=[mock_call("create_order"), mock_call("create_order"), mock_call("get_url")]
+        )
+
+        LLMJudge({"criteria": CRITERIA[:1], "include": ["outcome"]}).measure(context)
+
+        assert "run: succeeded\nmock calls: create_order ×2, get_url ×1" in judge.prompts[0]
+
+    def test_the_judge_sees_the_outcome_output_and_expected_by_default(self):
+        judge = ScriptedJudge('{"score": 1}')
+
+        LLMJudge({"criteria": CRITERIA[:1]}).measure(_judged(judge))
+
+        prompt = judge.prompts[0]
+        assert prompt.index("## outcome") < prompt.index("## output") < prompt.index("## expected")
 
     def test_a_custom_score_range_is_normalised(self):
         judge = ScriptedJudge('{"score": 7}')

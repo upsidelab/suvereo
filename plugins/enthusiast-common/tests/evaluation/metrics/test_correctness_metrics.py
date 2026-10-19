@@ -80,6 +80,30 @@ class TestMockCalls:
         assert result.components["precision"] == 0.5
         assert result.details["calls"] == 2
 
+    def test_skip_failed_leaves_out_a_rejected_call(self):
+        rejected = mock_call("create_order_with_items", items=[("370", "2")]).model_copy(
+            update={"error": "Unknown SKU"}
+        )
+        context = run(
+            expected={"mock_calls": {"create_order_with_items": [{"items": [["SKU-1", 2]]}]}},
+            mock_calls=[rejected, mock_call("create_order_with_items", items=[("SKU-1", "2")])],
+        )
+
+        assert MockCalls(self.PARAMS).measure(context).value == 0.0
+        assert MockCalls({**self.PARAMS, "skip_failed": True}).measure(context).details["calls"] == 1
+        assert MockCalls({**self.PARAMS, "skip_failed": True}).measure(context).value == 1.0
+
+    def test_without_arg_scores_each_call_as_one_item_in_any_order(self):
+        context = run(
+            expected={"mock_calls": {"update_stock": [{"sku": "A", "quantity": 5}, {"sku": "B", "quantity": 2}]}},
+            mock_calls=[mock_call("update_stock", sku="B", quantity=2), mock_call("update_stock", sku="A", quantity=4)],
+        )
+
+        result = MockCalls({"method": "update_stock", "key": "sku", "fields": {"quantity": "numeric"}}).measure(context)
+
+        assert result.value == 0.5
+        assert result.details["mismatched"][0]["fields"] == ["quantity"]
+
     def test_expecting_no_calls_fails_when_the_agent_made_one(self):
         context = run(
             expected={"mock_calls": {"create_order_with_items": []}},

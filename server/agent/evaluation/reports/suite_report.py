@@ -2,7 +2,7 @@ import hashlib
 import re
 
 from enthusiast_common.evaluation.loaded_suite import LoadedSuite
-from enthusiast_common.evaluation.metrics import MetricRegistry
+from enthusiast_common.evaluation.metrics import BaseMetric, MetricRegistry
 from enthusiast_common.evaluation.suite import EvalCase, MetricConfig, PassThreshold, ReportName
 
 from agent.evaluation.aggregation import PASS_RATE, CandidateMetrics, MetricAggregator
@@ -97,6 +97,10 @@ class SuiteReport:
         if config is None or config.pass_threshold is not None:
             return config.pass_threshold if config else None
         return BOOL_THRESHOLD if self._registry.metric_class(config.type).VALUE_TYPE == "bool" else None
+
+    def metric_class_of(self, metric: str) -> type[BaseMetric]:
+        """The class that measures a configured metric."""
+        return self._registry.metric_class(self.metric_configs[metric].type)
 
     @staticmethod
     def _comparison_order(candidate: CandidateMetrics) -> tuple[float, float]:

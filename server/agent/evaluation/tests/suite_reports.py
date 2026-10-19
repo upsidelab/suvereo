@@ -57,6 +57,32 @@ def run_result(case_id, model="gpt", repeat=1, passed=True, cost=0.01, orders=1.
     )
 
 
+JUDGE_METRIC = {
+    "type": "llm_judge",
+    "name": "judge",
+    "params": {"criteria": [{"name": "complete", "description": "d"}]},
+}
+JUDGE_REASONING = {"complete": "The XL mug was ordered  instead of the regular one.", "no_invented": "All SKUs exist."}
+
+
+def judged_run(case_id="ada", passed=True):
+    """A run that a judge scored, with its reasoning per criterion."""
+    run = run_result(case_id, passed=passed, orders=1.0 if passed else 0.0)
+    run.metrics["judge"] = MetricResult(
+        value=0.5,
+        components={"complete": 0.0, "no_invented": 1.0},
+        binary_components=True,
+        details={"reasoning": JUDGE_REASONING},
+    )
+    return run
+
+
+def judged_suite_report(tmp_path, runs, selected=None) -> SuiteReport:
+    metrics = [*loaded_suite(tmp_path).suite.model_dump()["metrics"], JUDGE_METRIC]
+    judge = {"provider": "OpenAI", "model": "gpt-4.1-mini"}
+    return suite_report(tmp_path, runs, selected, metrics=metrics, judge=judge)
+
+
 def suite_report(tmp_path, runs, selected=None, git=None, baseline=None, **suite_changes) -> SuiteReport:
     result = SuiteRunResult(suite="orders", planned_runs=len(runs), runs=runs, spent_usd=0.0)
     return SuiteReport(loaded_suite(tmp_path, **suite_changes), result, selected, git=git, baseline=baseline)

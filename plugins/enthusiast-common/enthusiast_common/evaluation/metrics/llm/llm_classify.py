@@ -22,7 +22,7 @@ class LLMClassifyParams(JudgePromptParams):
 
     question: str
     labels: list[str] = Field(min_length=2)
-    include: list[Section] = ["output"]
+    include: list[Section] = ["outcome", "output"]
 
 
 class LLMClassify(BaseMetric):

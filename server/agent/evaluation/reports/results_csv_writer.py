@@ -5,6 +5,7 @@ from agent.evaluation.runner import RunResult
 
 from .base_report_writer import BaseReportWriter
 from .csv_table import CsvTable
+from .judge_reasoning import REASONING, JudgeReasoning
 from .suite_report import SuiteReport
 
 OUTCOME_COLUMNS = ["execution_succeeded", "failure_code", "attempts", "first_attempt_success"]
@@ -21,7 +22,7 @@ PERFORMANCE_COLUMNS = [
 
 class ResultsCsvWriter(BaseReportWriter):
     """results.csv: one row per run with its identity, outcome, cost and timing, every metric (with whether the run
-    met its pass threshold, and its components), the missed thresholds and the trace file."""
+    met its pass threshold, its components and a judge's reasoning), the missed thresholds and the trace file."""
 
     NAME = "results"
 
@@ -55,8 +56,8 @@ class ResultsCsvWriter(BaseReportWriter):
 
     @staticmethod
     def _metric_columns(report: SuiteReport) -> list["MetricColumn"]:
-        """Per configured metric, in suite order: its value, whether the run met its pass threshold if any run was
-        checked, and each component any run reported."""
+        """Per configured metric, in suite order: its value, whether the run met its pass threshold if any run was checked, each
+        component any run reported, and the judge's reasoning if any run gave one."""
         columns = []
         for name in report.metric_configs:
             columns.append(MetricColumn(name, name, kind="value"))
@@ -66,6 +67,8 @@ class ResultsCsvWriter(BaseReportWriter):
             columns += [
                 MetricColumn(f"{name}.{c}", name, kind="component", component=c) for c in dict.fromkeys(reported)
             ]
+            if any(name in run.metrics and JudgeReasoning.by_criterion(run.metrics[name]) for run in report.runs):
+                columns.append(MetricColumn(f"{name}.{REASONING}", name, kind=REASONING))
         return columns
 
     @staticmethod
@@ -75,11 +78,12 @@ class ResultsCsvWriter(BaseReportWriter):
 
 
 class MetricColumn(NamedTuple):
-    """One metric column of results.csv: its header, the metric it reads, and what of it (value, threshold, component)."""
+    """One metric column of results.csv: its header, the metric it reads, and what of it (value, threshold, component,
+    reasoning)."""
 
     header: str
     metric: str
-    kind: Literal["value", "threshold_passed", "component"]
+    kind: Literal["value", "threshold_passed", "component", "reasoning"]
     component: str | None = None
 
     def cell(self, run: RunResult) -> Any:
@@ -89,4 +93,9 @@ class MetricColumn(NamedTuple):
         result = run.metrics.get(self.metric)
         if result is None:
             return None
-        return result.components.get(self.component) if self.kind == "component" else result.value
+        if self.kind == REASONING:
+            return " | ".join(JudgeReasoning.lines(result)) or None
+        if self.kind != "component":
+            return result.value
+        score = result.components.get(self.component)
+        return JudgeReasoning.outcome(score) if result.binary_components and score is not None else score

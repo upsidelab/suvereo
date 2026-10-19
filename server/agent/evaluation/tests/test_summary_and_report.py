@@ -8,7 +8,7 @@ from agent.evaluation.reports import ExitCode, GitState, ReportMdWriter, SuiteRe
 from agent.evaluation.runner import ThresholdResult
 from agent.evaluation.runner.suite_run_result import SuiteRunResult
 
-from .suite_reports import loaded_suite, run_result, suite_report
+from .suite_reports import judged_run, judged_suite_report, loaded_suite, run_result, suite_report
 
 
 def _flaky_and_failing_runs():
@@ -107,12 +107,13 @@ class TestReportMdWriter:
         assert "| gpt/default | 0.333 (1/3) | ❌ |" in text
         assert "<small>exit code 1 · complete, 3 of 3 runs · spent $0.0000</small>" in text
         assert "| gpt/default | 3 | 0.333 |" in text
-        assert "### valid — 2 run(s)" in text
-        assert "  - value: no (pass threshold: equals true)" in text
-        assert '  - trace: place_order({"sku": "A"}) → 409' in text
+        assert "## Failures\n2 of 3 runs failed; each lists what went wrong." in text
+        assert "  - ❌ **valid** no (needs true)" in text
+        assert "place_order" not in text
         assert "  - error: Out of stock" in text
         assert "| ada | gpt/default | 1/2 |" in text
         assert "per tag" not in text
+        assert "git" not in text.split("## Run details")[1]
         assert "> ⚠️ gpt/default ran fewer than 5 times" in text
 
     def test_each_failed_run_shows_the_threshold_its_case_was_checked_against(self, tmp_path):
@@ -134,7 +135,87 @@ class TestReportMdWriter:
         [path] = ReportMdWriter().write(report, tmp_path)
 
         text = path.read_text()
-        assert "  - value: 0 (pass threshold: min 1.0)" in text and "  - value: 2 (pass threshold: min 3.0)" in text
+        assert "  - ❌ **orders** 0 (needs ≥ 1)" in text and "  - ❌ **orders** 2 (needs ≥ 3)" in text
+
+    def test_a_failed_run_shows_what_the_judge_said_about_each_criterion(self, tmp_path):
+        [path] = ReportMdWriter().write(judged_suite_report(tmp_path, [judged_run(passed=False)]), tmp_path)
+
+        text = path.read_text()
+        assert (
+            "  - judge says (0.5):\n"
+            "    - complete (failure): The XL mug was ordered instead of the regular one.\n"
+            "    - no_invented (success): All SKUs exist."
+        ) in text
+        assert "  - reasoning:" not in text
+
+    def test_a_short_legend_under_the_comparison_explains_every_column(self, tmp_path):
+        metrics = [
+            {
+                "type": "mock_called",
+                "name": "orders",
+                "description": "orders placed",
+                "params": {"method": "m"},
+                "pass_threshold": {"min": 1},
+            },
+            {"type": "json_schema", "name": "valid", "params": {"schema": {}}},
+            {
+                "type": "tool_called",
+                "name": "calls",
+                "params": {"name": "t"},
+                "pass_threshold": {"max": 2},
+                "required": False,
+            },
+        ]
+        [path] = ReportMdWriter().write(suite_report(tmp_path, [run_result("ada")], metrics=metrics), tmp_path)
+
+        comparison = path.read_text().split("## Comparison")[1].split("## ")[0]
+        assert "<small>**Pass rate**: runs meeting every pass threshold; needs 80%</small><br>" in comparison
+        assert "<small>**orders**: orders placed · avg · pass: ≥ 1</small>" in comparison
+        assert (
+            "<small>**valid**: Whether the output conforms to a JSON Schema, given inline as 'schema' or as a 'schema_file' · % of runs · pass: true</small>"
+            in comparison
+        )
+        assert (
+            "<small>**calls**: How many times the agent called a tool, optionally only with given argument values · avg · warn unless ≤ 2</small>"
+            in comparison
+        )
+
+    def test_the_failures_legend_lists_only_the_fields_the_report_shows(self, tmp_path):
+        [path] = ReportMdWriter().write(suite_report(tmp_path, _flaky_and_failing_runs()), tmp_path)
+
+        failures = path.read_text().split("## Failures")[1].split("\n- **")[0]
+        assert (
+            "<small>**❌ metric**: a pass threshold the run missed: its value, then what passing needs</small>"
+            in failures
+        )
+        assert "<small>**error**:" in failures
+        assert "**missing**" not in failures and "**trace**" not in failures
+
+    def test_a_run_missing_several_thresholds_is_listed_once_with_each(self, tmp_path):
+        [path] = ReportMdWriter().write(suite_report(tmp_path, _flaky_and_failing_runs()), tmp_path)
+
+        failures = path.read_text().split("## Failures")[1].split("## ")[0]
+        assert failures.count("- **bob**") == 1
+        assert "❌ **orders**" in failures and "❌ **valid**" in failures
+
+    def test_a_failed_run_shows_its_case_tags_and_description(self, tmp_path):
+        runs = [run_result("ada", passed=False), run_result("bob", passed=False)]
+
+        [path] = ReportMdWriter().write(suite_report(tmp_path, runs), tmp_path)
+
+        text = path.read_text()
+        assert "- **ada** (vip) · gpt/default · repeat 1\n  <small>A regular order</small>\n" in text
+        assert "- **bob** · gpt/default · repeat 1\n  - ❌" in text
+
+    def test_a_failed_run_links_its_trace_file_instead_of_showing_the_calls(self, tmp_path):
+        report = suite_report(tmp_path, _flaky_and_failing_runs(), ["report", "traces"])
+
+        [path] = ReportMdWriter().write(report, tmp_path)
+
+        text = path.read_text()
+        assert "  - trace: [runs/bob__gpt__default__r1.json](runs/bob__gpt__default__r1.json) (1 tool calls)" in text
+        assert "place_order" not in text
+        assert "<small>**trace**: the run's every LLM, tool and mock call, as JSON</small>" in text
 
     def test_without_a_min_pass_rate_the_report_has_no_verdict(self, tmp_path):
         report = suite_report(tmp_path, [run_result("ada", passed=False)], min_pass_rate=None)
@@ -142,7 +223,7 @@ class TestReportMdWriter:
         [path] = ReportMdWriter().write(report, tmp_path)
 
         text = path.read_text()
-        assert "## Verdict" not in text
+        assert "## Verdict" not in text and "needs" not in text.split("## Failures")[0]
         assert "<small>exit code 0 · complete, 1 of 1 runs · spent $0.0000</small>" in text
 
     def test_an_untracked_budget_has_its_own_verdict_without_the_threshold(self, tmp_path):

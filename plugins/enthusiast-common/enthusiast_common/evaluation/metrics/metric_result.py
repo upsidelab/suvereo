@@ -9,3 +9,5 @@ class MetricResult(BaseModel):
     value: float | bool | str | None
     details: dict[str, Any] = {}
     components: dict[str, float] = {}
+    #: Each component is success (1) or failure (0), so reports show it in words.
+    binary_components: bool = False
