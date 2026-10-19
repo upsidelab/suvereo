@@ -22,7 +22,7 @@ class MarkExecutionFailedOnErrorTask(Task):
 
 @shared_task(base=MarkExecutionFailedOnErrorTask, max_retries=0)
 def run_agentic_execution_task(execution_id: int):
-    execution = AgenticExecution.objects.select_related("agent", "conversation").get(pk=execution_id)
+    execution = AgenticExecution.objects.select_related("agent", "conversation__agent").get(pk=execution_id)
     execution.mark_in_progress()
 
     result = AgenticExecutionRunner().run(

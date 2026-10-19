@@ -32,10 +32,6 @@ class ConversationManager:
         Engine calculates embedding for a question and using similarity search collects documents that may contain
         relevant content.
         """
-        # Touching conversation.agent populates its cache: the async path reads it again from inside a
-        # running event loop, where a fresh sync query would raise (callers such as agentic executions
-        # don't necessarily load the conversation with select_related("agent")).
-        conversation.agent
         if self._should_answer_asynchronously(conversation):
             return asyncio.run(
                 self._get_answer_async(
