@@ -115,11 +115,7 @@ class <Entity>Chunk(BaseEmbeddingChunk):
 
 Reference other apps' models by string (`"catalog.DataSet"`); never import server code. A vertical depends on `enthusiast-common`, not on the server. Re-export models in `models/__init__.py`.
 
-## 4. Migrations
-
-Generate with `./manage.py makemigrations <domain>_vertical` from `server/` and review the output. **Never run `migrate`**; the user does that.
-
-## 5. Retrievers, injector, builder (only if tools need them)
+## 4. Retrievers, injector, builder (only if tools need them)
 
 Retriever (vector search): declare what is searchable, the base class does the rest.
 
@@ -162,7 +158,7 @@ class <Domain>AgentBuilder(AgentBuilder[AgentConfig]):
 
 Agents then set `BUILDER_CLASS = <Domain>AgentBuilder` in their config provider (see the `add-agent` skill), and tools read `self._injector.<entity>_retriever`.
 
-## 6. Integration managers (only if data is synced in)
+## 5. Integration managers (only if data is synced in)
 
 An integration category is a manager class subclassing `BaseSourceIntegrationManager` (`enthusiast_common.integrations`). Source integration plugins point at it through `INTEGRATION_MANAGER`; the server resolves the concrete manager registered in `CATALOG_INTEGRATION_MANAGERS` that is a subclass of that class.
 
@@ -198,7 +194,7 @@ class <Entity>SourceManager(Base<Entity>SourceManager):
 
 The plugin ABCs and the abstract manager are what third-party source plugins depend on, so when several packages will implement them, put these in a small shared package instead of the vertical itself. The framework injects `self._indexer`; call it for every embedded entity.
 
-## 7. Register
+## 6. Register
 
 In `server/pecl/settings_override.py`:
 
@@ -210,6 +206,12 @@ CATALOG_INTEGRATION_PLUGINS = [...]  # concrete source plugins, if any
 ```
 
 `INSTALLED_VERTICALS` is merged into `INSTALLED_APPS`. In-codebase verticals are importable already. *(standalone package only)* Install the package into the server's environment (`pip install -e <dir>` or a path dependency, or from PyPI).
+
+## 7. Migrations
+
+The vertical must be registered first: `makemigrations` only sees apps in `INSTALLED_APPS`. Generate with `./manage.py makemigrations <domain>_vertical` from `server/` and review the output. **Never run `migrate`**; the user does that.
+
+Django writes migrations into the app's own directory (`<domain>_vertical/migrations/`). For a standalone package this works only when it is installed as editable, so that the app directory is the source directory. If the package cannot be installed as editable, `makemigrations` would write into `site-packages`; instead write the migration files by hand in the package's `migrations/` directory, following what `makemigrations` would produce for the models.
 
 ## 8. Checks
 
