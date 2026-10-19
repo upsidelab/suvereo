@@ -27,7 +27,6 @@ class AgentExtraArgsClassBaseMeta(ExtraArgsClassBaseMeta):
     REQUIRED_VARS = {
         "AGENT_ARGS": RequiredFieldsModel,
         "PROMPT_INPUT": RequiredFieldsModel,
-        "PROMPT_EXTENSION": RequiredFieldsModel,
         "TOOLS": list[BaseModel],
     }
 
@@ -37,11 +36,30 @@ class ExtraArgsClassBase(metaclass=AgentExtraArgsClassBaseMeta):
 
 
 class BaseAgent(ABC, ExtraArgsClassBase):
+    """Base class of every agent type.
+
+    Subclasses implement ``get_answer`` and declare these class variables:
+
+    - ``NAME``: the name shown in the UI.
+    - ``AGENT_KEY``: unique identifier of the agent type. Agentic execution definitions refer to it.
+    - ``AGENT_ARGS``: a ``RequiredFieldsModel`` of per-agent settings, meant for what changes how the agent
+      behaves. Its fields become a form section in the UI and the values are stored per agent.
+    - ``PROMPT_INPUT``: a ``RequiredFieldsModel`` of per-agent settings, meant for values used when building
+      the system prompt. Handled like ``AGENT_ARGS``.
+    - ``TOOLS``: the tool configs of the agent. The settings of each tool (``CONFIGURATION_ARGS``) are stored
+      per agent as well.
+    - ``FILE_UPLOAD``: whether agents of this type accept uploaded files.
+
+    The framework only stores the values of ``AGENT_ARGS`` and ``PROMPT_INPUT``. When the agent is built they
+    replace the class variables with instances of the models, so ``self.AGENT_ARGS.<field>`` and
+    ``self.PROMPT_INPUT.<field>`` hold the saved values. The agent decides how to use them. Values reach the
+    system prompt only if ``_get_system_prompt_variables`` returns them.
+    """
+
     NAME = None
     AGENT_KEY = None
     AGENT_ARGS = None
     PROMPT_INPUT = None
-    PROMPT_EXTENSION = None
     TOOLS = []
 
     FILE_UPLOAD = False

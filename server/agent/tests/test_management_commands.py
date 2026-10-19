@@ -29,7 +29,6 @@ class MockToolClass:
 class MockAgentClass:
     AGENT_ARGS = MockConfigurationArgs
     PROMPT_INPUT = MockConfigurationArgs
-    PROMPT_EXTENSION = MockConfigurationArgs
     TOOLS = [MockToolClass, MockToolClass]
 
 
@@ -38,7 +37,6 @@ def config_dict() -> dict[Any, Any]:
     return {
         "agent_args": {"value_1": "value_1", "value_2": "value_2"},
         "prompt_input": {"value_1": "value_1", "value_2": "value_2"},
-        "prompt_extension": {"value_1": "value_1", "value_2": "value_2"},
         "tools": [
             {"tool_value_1": "value_1", "tool_value_2": True},
             {"tool_value_1": "value_1", "tool_value_2": False},
@@ -200,7 +198,6 @@ class TestVerifyAgentsCommand:
         class MockAgentClassWithNoneFields:
             AGENT_ARGS = None
             PROMPT_INPUT = None
-            PROMPT_EXTENSION = None
             TOOLS = []
 
         mock_registry_instance = Mock()
@@ -211,7 +208,7 @@ class TestVerifyAgentsCommand:
             Agent,
             name="Minimal Agent",
             agent_type="minimal_agent",
-            config={"agent_args": {}, "prompt_input": {}, "prompt_extension": {}, "tools": []},
+            config={"agent_args": {}, "prompt_input": {}, "tools": []},
         )
 
         call_command("verifyagents")

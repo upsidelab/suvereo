@@ -211,7 +211,6 @@ export type ExtraArgDetail = {
 export type AgentConfig = {
   agent_args?: Record<string, ExtraArgDetail>;
   prompt_input?: Record<string, ExtraArgDetail>;
-  prompt_extension?: Record<string, ExtraArgDetail>;
   tools?: Array<Record<string, ExtraArgDetail>>;
 };
 

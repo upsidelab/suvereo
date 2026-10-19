@@ -42,7 +42,6 @@ class DummyAgent:
     NAME = "Dummy Agent"
     AGENT_ARGS = AgentArgs
     PROMPT_INPUT = PromptInput
-    PROMPT_EXTENSION = None
     TOOLS = [FunctionToolConfig(tool_class=DummyTool), FunctionToolConfig(tool_class=UnconfigurableTool)]
     FILE_UPLOAD = False
 
@@ -57,7 +56,6 @@ def agent():
         config={
             "agent_args": {"text_arg": "hello", "number_arg": 7},
             "prompt_input": {"prompt_arg": "prompt"},
-            "prompt_extension": {},
             "tools": [{"tool_setting": "on"}, {}],
         },
     )
@@ -76,9 +74,8 @@ class TestAgentTypeConfigSchema:
     def test_groups_the_descriptors_the_way_the_stored_config_is_grouped(self):
         schema = agent_type_config_schema(DummyAgent)
 
-        assert list(schema.keys()) == ["agent_args", "prompt_input", "prompt_extension", "tools"]
+        assert list(schema.keys()) == ["agent_args", "prompt_input", "tools"]
         assert list(schema["agent_args"].keys()) == ["text_arg", "number_arg"]
-        assert schema["prompt_extension"] == {}
         assert [list(tool.keys()) for tool in schema["tools"]] == [["tool_setting"], []]
 
     def test_descriptors_carry_the_title_description_type_and_required_flag(self):

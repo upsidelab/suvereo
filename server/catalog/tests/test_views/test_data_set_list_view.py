@@ -39,7 +39,6 @@ class MockAgentClass:
     NAME= "Dummy Agent"
     AGENT_ARGS = MockAgentArgs
     PROMPT_INPUT = MockAgentArgs
-    PROMPT_EXTENSION = MockAgentArgs
     TOOLS = []
     FILE_UPLOAD = False
 
