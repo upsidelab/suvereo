@@ -6,6 +6,7 @@ const mapping = {
   management: "",
   integrate: "",
   observe: "",
+  evaluate: "",
 };
 
 export default mapping

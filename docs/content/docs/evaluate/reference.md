@@ -1,5 +1,5 @@
 ---
-sidebar_position: 3
+sidebar_position: 5
 ---
 
 # Evaluation Reference
@@ -45,7 +45,7 @@ sidebar_position: 3
 
 ## Suite
 
-Only `agent`, `metrics` and `cases` are required.
+Only `agent`, `metrics` and `cases` are required. [Suites and Cases](./suites) walks through each field with examples.
 
 | Field | Meaning |
 |---|---|
@@ -70,7 +70,7 @@ A **candidate** is one model and variant, shown as `<model label>/<variant>`. A 
 | Field | Meaning |
 |---|---|
 | `id` | Unique across the suite. |
-| `description`, `tags` | Tags select cases with `--tag` and get their own rows in the report. |
+| `description`, `tags` | Shown with the case's failed runs in `report.md`; tags also select cases with `--tag`. |
 | `files` | Attached to the conversation, relative to the case file: PDFs and images (`.png`, `.jpg`). |
 | `input` | The execution's input fields. |
 | `expected` | What metrics compare against, see below. |
@@ -87,29 +87,44 @@ In `cases.csv` each row is a case: `id`, `description`, `tags` and `files` (`;`-
 
 ## Metrics
 
-Every metric config takes `type`, `name` (defaults to the type; required to use a type twice), `params`, `pass_threshold`, `required` and `aggregate`.
+Every metric config takes `type`, `name` (defaults to the type; required to use a type twice), `description` (what it checks in plain words; `report.md` explains its column with it), `params`, `pass_threshold`, `required` and `aggregate`.
 
-**Measured on every run:** `execution_succeeded`, `failure_code`, `attempts`, `first_attempt_success`, `duration_s`, `cost_usd`, `input_tokens`, `output_tokens`, `llm_calls`, `tool_calls`.
+**Measured on every run**, with no config:
 
-| Type | Value | Params |
+| Metric | Value | Measures |
 |---|---|---|
-| `field_match` | bool | `path`, `expected_path`, `mode`, `coerce` |
-| `json_subset` | share of expected fields matched | `path`, `modes` per field, `coerce` |
-| `list_match` | F1 of a list | `path`, `expected_path`, `key`, `fields`, `coerce` |
-| `mock_calls` | F1 of a mock argument over its calls | `method`, `arg`, `key`, `fields`, `coerce` |
-| `json_schema` | bool | `schema` or `schema_file` |
-| `tool_called` | count | `name`, `args` |
-| `tool_not_called` | bool | `name` |
-| `tool_order` | bool | `sequence`, `strict` |
-| `mock_called` | count | `method`, `args` |
-| `trace_event` | bool | `event`: `retry`, `tool_error`, `validator_failed[:code]` or `stop_execution` |
-| `llm_judge` | 0–1 | `criteria` (`name`, `description`, `weight`), `scale` (`binary`, `1-5` or `{min, max}`), `include`, `samples`, `prompt`/`prompt_file`, `judge` |
-| `llm_classify` | label | `question`, `labels`, `include`, `prompt`/`prompt_file`, `judge` |
+| `execution_succeeded` | bool | The run succeeded, or failed with `expected.failure_code` |
+| `failure_code` | label | The run's failure code; none when it succeeded |
+| `attempts` | number | Attempts the validator loop took |
+| `first_attempt_success` | bool | The right outcome without a validator retry |
+| `duration_s` | number | Wall-clock seconds |
+| `cost_usd` | number | The agent's LLM cost in USD; the judge's is `judge_cost_usd` |
+| `input_tokens`, `output_tokens` | number | Tokens over every LLM call |
+| `llm_calls`, `tool_calls` | number | LLM calls and tool calls the run made |
 
-- **Match modes** (`mode`, `modes`, `fields`): `exact`, `ci`, `numeric[:tolerance]`, `fuzzy[:threshold]`, `regex`. `coerce: true` compares `"2"` and `2` as equal.
+**Set in the suite** with `type`:
+
+| Type | Value | Measures | Params |
+|---|---|---|---|
+| `json_subset` | 0–1 | Share of `expected.output` fields the output matches, see [Metrics](./metrics#json_subset) | `path`, `modes` per field, `coerce` |
+| `field_match` | bool | One output field against its expected value | `path`, `expected_path`, `mode`, `coerce` |
+| `list_match` | 0–1 | F1 of an output list against the expected one | `path`, `expected_path`, `key`, `fields`, `coerce` |
+| `mock_calls` | 0–1 | F1 of what reached a mock against `expected.mock_calls`; without `arg`, of the calls themselves in any order | `method`, `arg`, `key`, `fields`, `coerce`, `skip_failed` |
+| `json_schema` | bool | The output conforms to a JSON Schema | `schema` or `schema_file` |
+| `tool_called` | count | Times the agent called a tool, optionally with given arguments | `name`, `args`, `coerce` |
+| `tool_not_called` | bool | The agent never called a tool | `name` |
+| `tool_order` | bool | The agent called tools in this order | `sequence`, `strict` |
+| `mock_called` | count | Times a mocked method was called, optionally with given arguments | `method`, `args`, `coerce` |
+| `trace_event` | bool | Something happened during the run | `event`: `retry`, `tool_error`, `validator_failed[:code]` or `stop_execution` |
+| `llm_judge` | 0–1 | A judge model grades the run against criteria you write | `criteria` (`name`, `description`, `weight`), `scale` (`binary`, `1-5` or `{min, max}`), `include`, `samples`, `prompt`/`prompt_file`, `judge` |
+| `llm_classify` | label | A judge model answers a question with one of your labels | `question`, `labels`, `include`, `prompt`/`prompt_file`, `judge` |
+
+- **Match modes** (`mode`, `modes`, `fields`): `exact`, `ci`, `numeric[:tolerance]`, `fuzzy[:threshold]`, `regex`. `coerce: true` compares `"2"` and `2` as equal. `skip_failed: true` leaves out mock calls that raised, so a call the agent fixed and retried scores once.
 - **`key` and `fields`** pair list items by one field and check the others, e.g. `key: 0, fields: {1: numeric}` for `[sku, quantity]` pairs. List scores report precision and recall as components and the missing, extra and mismatched items as details.
-- **`include`** chooses what the judge sees: `output`, `expected`, `input_text`, `trace_summary`. `llm_judge` scores each criterion separately and reports each as a component.
-- **Custom metrics:** set `type` to the dotted path of a `BaseMetric` subclass.
+- **`include`** chooses what the judge sees: `input` (the case input and file names), `outcome` (how the run ended and the calls to each mock, so a missing order is stated), `output`, `expected` (the case's answer key) and `trace_summary` (tool calls, mock calls, attempts). The default is `outcome`, `output`, `expected` for `llm_judge` and `outcome`, `output` for `llm_classify`. `llm_judge` scores each criterion separately, reports each as a component (shown as success or failure with `scale: binary`) and keeps the judge's reasoning per criterion, which `report.md`, `results.csv` (`<metric>.reasoning`), `metrics.csv` and `runs/*.json` show.
+- **Custom metrics:** set `type` to the dotted path of a `BaseMetric` subclass, see [Add your own metric](./metrics#add-your-own-metric).
+
+Each metric is explained with an example in [Metrics](./metrics).
 
 ### Pass thresholds
 

@@ -34,25 +34,25 @@ Each run writes to `<suite>/results/<date>-<id>/`, and `results/latest` points a
 
 | File | What it holds |
 |---|---|
-| `report.md` | The verdict (when the suite sets `min_pass_rate`), a comparison of candidates, failures grouped by the pass threshold they missed with a compact trace of each, flaky cases and run details. Start here. |
+| `report.md` | The verdict (when the suite sets `min_pass_rate`), a comparison of candidates with a short legend, failures grouped by the pass threshold they missed, with the judge's reasoning and a link to each trace, flaky cases and run details. Start here. |
 | `summary.json` | The same verdict and figures for scripts and CI. |
-| `results.csv` | One row per run: every metric, whether it met its pass threshold, cost and tokens. |
+| `results.csv` | One row per run: every metric, whether it met its pass threshold, the judge's reasoning, cost and tokens. |
 | `comparison.csv` | One row per candidate (model × prompt variant). |
 | `cases.csv` | One row per case and candidate: pass, fail or flaky. |
-| `metrics.csv` | One row per run and metric, for pivots and charts. |
-| `runs/*.json` | The full trace of each run: LLM calls, tool calls, mock calls, attempts. |
+| `metrics.csv` | One row per run and metric with its details as JSON, for pivots and charts. |
+| `runs/*.json` | Each run's metric results and pass thresholds, then its full trace: LLM calls, tool calls, mock calls, attempts. |
 
 The CSVs open directly in a spreadsheet. The exit code tells CI how the run went: `0` every candidate reached the suite's `min_pass_rate` (or it sets none), `1` one fell below it, `2` the suite or an option is invalid, `3` the budget ran out, `4` the run crashed.
 
 ## 3. Run the order-intake suite
 
-`evals/order_intake/` is the realistic baseline: PDF and photographed orders, two-page orders, and orders the agent must refuse, on two models and two prompts.
+`evals/order_intake/` is the realistic baseline: PDF and photographed orders, two-page orders, and orders the agent must refuse, on gpt-4o-mini with two prompts.
 
 ```shell
 ./manage.py runeval ../domain_plugins/enthusiast-agent-order-intake/evals/order_intake/suite.yaml --parallel 4
 ```
 
-The comparison table puts `gpt-4o-mini/default`, `gpt-4o-mini/v2`, `gpt-4.1-nano/default` and `gpt-4.1-nano/v2` side by side. Narrow a run while you work:
+The comparison table puts `gpt-4o-mini/default` and `gpt-4o-mini/v2` side by side; compare another model with `--model gpt-4o-mini --model OpenAI:gpt-4.1-nano`. Narrow a run while you work:
 
 ```shell
 ./manage.py runeval suite.yaml --model gpt-4o-mini --tag image          # one model, the image cases
@@ -66,7 +66,7 @@ With `--baseline`, `report.md` gains a **Baseline diff**: each candidate's pass 
 
 ## 4. Make a suite for your own agent
 
-Copy `quickstart/` next to your agent and change three things in `suite.yaml`:
+Copy `quickstart/` next to your agent and change three things in `suite.yaml`; [Suites and Cases](./suites) explains every field:
 
 - `agent.type`: your agent's key;
 - `integrations`: the mocks your agent needs, see [Mocks](./mocks);
@@ -113,7 +113,7 @@ expected:
 
 ## 6. Add a metric
 
-List the built-in metrics with `./manage.py listevalmetrics`. A metric with a `pass_threshold` decides whether a run passes; one without is measured and reported only.
+[Metrics](./metrics) explains each built-in metric and how to write your own; `./manage.py listevalmetrics` lists them. A metric with a `pass_threshold` decides whether a run passes; one without is measured and reported only.
 
 ```yaml
 metrics:
@@ -121,15 +121,16 @@ metrics:
     type: mock_calls
     params: {method: create_order_with_items, arg: items, key: 0, fields: {1: numeric}, coerce: true}
     pass_threshold: {min: 0.95}
-  - name: judge
+  - name: behaviour
     type: llm_judge
     params:
-      include: [input_text, trace_summary]
+      include: [input, outcome, trace_summary]
       criteria:
-        - {name: completeness, description: Every line item in the document was ordered with its quantity}
+        - name: adapts_search
+          description: "After a search finds nothing, the next one changes approach instead of repeating it"
 ```
 
-`llm_judge` needs a `judge` model in the suite. Pick one other than the models under test, as a model favours its own answers.
+Code metrics check what the agent produced; a judge reads the trace and grades how it worked. `llm_judge` needs a `judge` model in the suite. Pick one other than the models under test, as a model favours its own answers. The judge explains each score; read its reasoning under each failed run in `report.md`, in the `behaviour.reasoning` column of `results.csv`, or in `runs/*.json`.
 
 ## 7. Add a mock
 
