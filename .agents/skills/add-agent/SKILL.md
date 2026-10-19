@@ -118,7 +118,16 @@ __all__ = ["<Name>Agent", "<Name>ConfigProvider"]
 
 ## 5. Tools (`tools/`)
 
-Subclass `BaseFunctionTool` or `BaseLLMTool` from `enthusiast_common.tools`. A metaclass checks the required class attributes at import time: `NAME`, `DESCRIPTION`, `ARGS_SCHEMA`, `RETURN_DIRECT`.
+Subclass one of the base tools from `enthusiast_common.tools`, matching what the tool needs injected:
+
+| Base class | Constructor receives | Config type | Description |
+| --- | --- | --- | --- |
+| `BaseFunctionTool` | nothing | `FunctionToolConfig` | The simplest tool, needing no connection to Enthusiast internals (those are provided via the injector). |
+| `BaseLLMTool` | `data_set_id`, `llm`, `injector` | `LLMToolConfig` | A tool with access to the LLM and the injector. |
+| `BaseFileTool` | `data_set_id`, `conversation_id`, `llm`, `injector`, `llm_registry` | `FileToolConfig` | Like an LLM tool, but dedicated to accessing uploaded files only. |
+| `BaseAgentTool` | `agent` | `AgentToolConfig` | A tool which is itself an agent. |
+
+Only `BaseLLMTool` and `BaseFileTool` have `self._injector`. A metaclass checks the required class attributes at import time: `NAME`, `DESCRIPTION`, `ARGS_SCHEMA`, `RETURN_DIRECT`.
 
 ```python
 from enthusiast_common.tools import BaseLLMTool
@@ -140,7 +149,7 @@ class <Thing>Tool(BaseLLMTool):
         ...
 ```
 
-Tools reach retrievers, connectors and memory through `self._injector`. `DESCRIPTION` and every field description are read by the LLM: write them for the model and say when to use the tool. Export tools from `tools/__init__.py`.
+LLM and file tools reach retrievers, connectors and memory through `self._injector`; a tool that needs them must subclass one of those two. `DESCRIPTION` and every field description are read by the LLM: write them for the model and say when to use the tool. Export tools from `tools/__init__.py`.
 
 ## 6. Prompt (`prompt.py`)
 
