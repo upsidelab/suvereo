@@ -10,7 +10,7 @@ class TestSuiteReader:
         suite_dir.mkdir()
         (suite_dir / "cases.csv").write_text("id\na\nb\n")
         (suite_dir / "suite.yaml").write_text(
-            "agent: {id: 12}\nmetrics: [{type: mock_calls, gate: {min: 0.95}}]\ncases: cases.csv\n"
+            "agent: {id: 12}\nmetrics: [{type: mock_calls, pass_threshold: {min: 0.95}}]\ncases: cases.csv\n"
         )
 
         loaded = SuiteReader().read(suite_dir / "suite.yaml")
@@ -36,5 +36,5 @@ class TestEvalSuiteJsonSchema:
         schema = EvalSuite.json_schema()
 
         assert "class" in schema["$defs"]["IntegrationConfig"]["properties"]
-        assert "in" in schema["$defs"]["Gate"]["properties"]
+        assert "in" in schema["$defs"]["PassThreshold"]["properties"]
         assert set(schema["required"]) == {"agent", "metrics", "cases"}

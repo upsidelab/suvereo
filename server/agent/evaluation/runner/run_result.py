@@ -5,8 +5,8 @@ from pydantic import BaseModel, Field
 DEFAULT_MODEL = "default"
 
 
-class GateResult(BaseModel):
-    """Whether a metric's gate passed, and whether that decides the run."""
+class ThresholdResult(BaseModel):
+    """Whether a run met a metric's pass threshold, and whether that decides the run."""
 
     passed: bool
     required: bool
@@ -21,7 +21,7 @@ class RunResult(BaseModel):
     repeat: int
     passed: bool
     metrics: dict[str, MetricResult]
-    gates: dict[str, GateResult]
+    thresholds: dict[str, ThresholdResult]
     unpriced_models: list[str] = Field(default=[], description="Models of calls that could not be priced.")
     priced_spend_usd: float = Field(default=0.0, description="USD of every call in the run that could be priced.")
     trace: ExecutionTrace

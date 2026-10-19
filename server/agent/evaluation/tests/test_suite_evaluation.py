@@ -37,7 +37,7 @@ class TestSuiteEvaluation:
         summary = json.loads((second.run_dir / "summary.json").read_text())
         assert summary["baseline"]["baseline"] == str((first.run_dir / "summary.json").resolve())
         assert [c["case_id"] for c in summary["baseline"]["regressed"]] == ["bob"]
-        assert second.verdict.exit_code == ExitCode.BELOW_PASS_THRESHOLD
+        assert second.verdict.exit_code == ExitCode.BELOW_MIN_PASS_RATE
 
     def test_when_the_reports_fail_the_raw_results_are_kept(self, tmp_path):
         with patch.object(ReportOutput, "write", side_effect=OSError("disk full")):

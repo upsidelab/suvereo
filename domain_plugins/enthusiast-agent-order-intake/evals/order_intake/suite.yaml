@@ -16,18 +16,18 @@ metrics:
   - name: line_items
     type: mock_calls
     params: {method: create_order_with_items, arg: items, key: 0, fields: {1: numeric}, coerce: true}
-    gate: {min: 0.95}
+    pass_threshold: {min: 0.95}
   - name: order_id
     type: json_subset
-    gate: {min: 1}
+    pass_threshold: {min: 1}
   - name: one_order
     type: tool_called
     params: {name: place_order}
-    gate: {equals: 1}
+    pass_threshold: {equals: 1}
   - name: retried
     type: trace_event
     params: {event: retry}
-    gate: {equals: false}
+    pass_threshold: {equals: false}
     required: false
   - name: judge
     type: llm_judge

@@ -47,7 +47,7 @@ class TestRunEval:
         ):
             code, stdout, _ = _run_command("runeval", str(suite_file))
 
-        assert code == ExitCode.BELOW_PASS_THRESHOLD
+        assert code == ExitCode.BELOW_MIN_PASS_RATE
         assert "| gpt/default | 2 | 0.5 |" in stdout
         assert "Run complete, exit code 1" in stdout
 

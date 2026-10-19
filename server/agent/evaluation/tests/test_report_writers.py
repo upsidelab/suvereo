@@ -31,7 +31,7 @@ class TestCsvTable:
 
 
 class TestResultsCsvWriter:
-    def test_one_row_per_run_with_metrics_gates_and_components(self, tmp_path):
+    def test_one_row_per_run_with_metrics_thresholds_and_components(self, tmp_path):
         runs = [run_result("ada"), run_result("bob", passed=False, orders=0.0, error="Boom")]
 
         [path] = ResultsCsvWriter().write(suite_report(tmp_path, runs), tmp_path)
@@ -49,7 +49,7 @@ class TestResultsCsvWriter:
             "0.5",
             "true",
         )
-        assert (bob["passed"], bob["error"], bob["failed_gates"]) == ("false", "Boom", "orders;valid")
+        assert (bob["passed"], bob["error"], bob["failed_thresholds"]) == ("false", "Boom", "orders;valid")
         assert ada["trace_file"] == ""
 
     def test_links_trace_files_only_when_traces_are_written(self, tmp_path):
@@ -121,21 +121,28 @@ class TestCasesCsvWriter:
 
 
 class TestMetricsCsvWriter:
-    def test_one_row_per_run_metric_and_component_with_its_gate(self, tmp_path):
+    def test_one_row_per_run_metric_and_component_with_its_threshold(self, tmp_path):
         [path] = MetricsCsvWriter().write(suite_report(tmp_path, [run_result("ada")]), tmp_path)
 
         by_metric = {(r["metric"], r["component"]): r for r in _rows(path)}
-        assert (by_metric["orders", ""]["passed"], by_metric["orders", ""]["gate"]) == ("true", "min 1.0")
-        assert by_metric["valid", ""]["gate"] == "equals true"
+        assert (by_metric["orders", ""]["passed"], by_metric["orders", ""]["pass_threshold"]) == ("true", "min 1.0")
+        assert by_metric["valid", ""]["pass_threshold"] == "equals true"
         assert by_metric["orders", "precision"]["value"] == "0.5"
-        assert by_metric["cost_usd", ""]["gate"] == ""
+        assert by_metric["cost_usd", ""]["pass_threshold"] == ""
 
-    def test_list_gates_follow_the_csv_conventions(self, tmp_path):
-        metrics = [{"type": "json_schema", "name": "valid", "params": {"schema": {}}, "gate": {"in": [True, "maybe"]}}]
+    def test_list_thresholds_follow_the_csv_conventions(self, tmp_path):
+        metrics = [
+            {
+                "type": "json_schema",
+                "name": "valid",
+                "params": {"schema": {}},
+                "pass_threshold": {"in": [True, "maybe"]},
+            }
+        ]
 
         [path] = MetricsCsvWriter().write(suite_report(tmp_path, [run_result("ada")], metrics=metrics), tmp_path)
 
-        assert {r["metric"]: r["gate"] for r in _rows(path)}["valid"] == "in true;maybe"
+        assert {r["metric"]: r["pass_threshold"] for r in _rows(path)}["valid"] == "in true;maybe"
 
 
 class TestReportOutput:

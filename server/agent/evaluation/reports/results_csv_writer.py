@@ -20,8 +20,8 @@ PERFORMANCE_COLUMNS = [
 
 
 class ResultsCsvWriter(BaseReportWriter):
-    """results.csv: one row per run with its identity, outcome, cost and timing, every metric (with whether its gate
-    passed, and its components), the failed gates and the trace file."""
+    """results.csv: one row per run with its identity, outcome, cost and timing, every metric (with whether the run
+    met its pass threshold, and its components), the missed thresholds and the trace file."""
 
     NAME = "results"
 
@@ -31,7 +31,7 @@ class ResultsCsvWriter(BaseReportWriter):
             *["run_id", "case_id", "tags", "candidate", "provider", "model", "variant", "repeat"],
             *["passed", "error", *OUTCOME_COLUMNS, *PERFORMANCE_COLUMNS],
             *(column.header for column in metric_columns),
-            *["failed_gates", "trace_file"],
+            *["failed_thresholds", "trace_file"],
         ]
         tags = {case.id: case.tags for case in report.cases}
         rows = [
@@ -44,7 +44,10 @@ class ResultsCsvWriter(BaseReportWriter):
                     *(self._metric_value(run, name) for name in [*OUTCOME_COLUMNS, *PERFORMANCE_COLUMNS]),
                 ],
                 *(column.cell(run) for column in metric_columns),
-                *[[name for name, gate in run.gates.items() if not gate.passed], report.linked_trace_path(run)],
+                *[
+                    [name for name, threshold in run.thresholds.items() if not threshold.passed],
+                    report.linked_trace_path(run),
+                ],
             ]
             for run in report.runs
         ]
@@ -52,13 +55,13 @@ class ResultsCsvWriter(BaseReportWriter):
 
     @staticmethod
     def _metric_columns(report: SuiteReport) -> list["MetricColumn"]:
-        """Per configured metric, in suite order: its value, whether its gate passed if any run gated it, and each
-        component any run reported."""
+        """Per configured metric, in suite order: its value, whether the run met its pass threshold if any run was
+        checked, and each component any run reported."""
         columns = []
         for name in report.metric_configs:
             columns.append(MetricColumn(name, name, kind="value"))
-            if any(name in run.gates for run in report.runs):
-                columns.append(MetricColumn(f"{name}__passed", name, kind="gate_passed"))
+            if any(name in run.thresholds for run in report.runs):
+                columns.append(MetricColumn(f"{name}__passed", name, kind="threshold_passed"))
             reported = (c for run in report.runs if name in run.metrics for c in run.metrics[name].components)
             columns += [
                 MetricColumn(f"{name}.{c}", name, kind="component", component=c) for c in dict.fromkeys(reported)
@@ -72,17 +75,17 @@ class ResultsCsvWriter(BaseReportWriter):
 
 
 class MetricColumn(NamedTuple):
-    """One metric column of results.csv: its header, the metric it reads, and what of it (value, gate, component)."""
+    """One metric column of results.csv: its header, the metric it reads, and what of it (value, threshold, component)."""
 
     header: str
     metric: str
-    kind: Literal["value", "gate_passed", "component"]
+    kind: Literal["value", "threshold_passed", "component"]
     component: str | None = None
 
     def cell(self, run: RunResult) -> Any:
-        if self.kind == "gate_passed":
-            gate = run.gates.get(self.metric)
-            return gate.passed if gate else None
+        if self.kind == "threshold_passed":
+            threshold = run.thresholds.get(self.metric)
+            return threshold.passed if threshold else None
         result = run.metrics.get(self.metric)
         if result is None:
             return None

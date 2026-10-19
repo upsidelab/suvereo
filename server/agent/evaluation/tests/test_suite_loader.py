@@ -86,7 +86,6 @@ class TestSuiteLoader:
                 {"metrics": [{"type": "mock_called", "name": "judge.tone", "params": {"method": "greet"}}]},
                 "may not contain",
             ),
-            ({"metrics": [{"type": "mock_called", "name": "tag:x", "params": {"method": "greet"}}]}, "may not contain"),
             (
                 {
                     "metrics": [

@@ -50,12 +50,3 @@ class TestMetricAggregator:
         assert x.metrics["pass_rate"].value == pytest.approx(2 / 3)
         assert x.metrics["first_attempt_pass_rate"].value == pytest.approx(1 / 3)
         assert x.metrics["flaky_rate"].value == 0.5
-
-    def test_every_metric_is_also_aggregated_per_tag(self):
-        runs = [run("a", line_items=1.0), run("b", line_items=0.0, passed=False)]
-
-        summary = MetricAggregator({}, case_tags={"a": ["photo"], "b": []}).aggregate_runs(runs)
-
-        assert summary["tag:photo.line_items"].value == 1.0
-        assert summary["tag:photo.pass_rate"].value == 1.0
-        assert summary["pass_rate"].value == 0.5

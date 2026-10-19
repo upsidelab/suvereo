@@ -37,8 +37,8 @@ sidebar_position: 3
 
 | Code | Meaning |
 |---|---|
-| `0` | Every candidate reached `pass_threshold`. |
-| `1` | At least one candidate is below `pass_threshold`. |
+| `0` | Every candidate reached `min_pass_rate`, or the suite sets none. |
+| `1` | At least one candidate is below `min_pass_rate`. |
 | `2` | The suite or an option is invalid. |
 | `3` | The run stopped early, at the budget or at a call it had no price for; it is marked partial. |
 | `4` | The run crashed. |
@@ -58,7 +58,7 @@ Only `agent`, `metrics` and `cases` are required.
 | `judge` | The model `llm_judge` and `llm_classify` ask. |
 | `repeats` | Runs per case, model and variant (default 1). |
 | `budget_usd` | Spending limit for a run. |
-| `pass_threshold` | Minimum pass rate per candidate (default 0.8). |
+| `min_pass_rate` | Minimum pass rate per candidate, e.g. `0.8`. With it, `report.md` opens with a verdict and a candidate below it exits `1`; without it the run reports its results and gives no verdict. |
 | `metrics` | Measured on every case. |
 | `reports` | Any of `report`, `results`, `comparison`, `cases`, `metrics`, `traces` (default `report`, `results`). `summary.json` is always written. |
 | `cases` | A case file, a directory of them, inline cases, or a list of these. |
@@ -87,7 +87,7 @@ In `cases.csv` each row is a case: `id`, `description`, `tags` and `files` (`;`-
 
 ## Metrics
 
-Every metric config takes `type`, `name` (defaults to the type; required to use a type twice), `params`, `gate`, `required` and `aggregate`.
+Every metric config takes `type`, `name` (defaults to the type; required to use a type twice), `params`, `pass_threshold`, `required` and `aggregate`.
 
 **Measured on every run:** `execution_succeeded`, `failure_code`, `attempts`, `first_attempt_success`, `duration_s`, `cost_usd`, `input_tokens`, `output_tokens`, `llm_calls`, `tool_calls`.
 
@@ -111,13 +111,13 @@ Every metric config takes `type`, `name` (defaults to the type; required to use 
 - **`include`** chooses what the judge sees: `output`, `expected`, `input_text`, `trace_summary`. `llm_judge` scores each criterion separately and reports each as a component.
 - **Custom metrics:** set `type` to the dotted path of a `BaseMetric` subclass.
 
-### Gates
+### Pass thresholds
 
-`gate` takes `min`, `max`, `equals` and `in`. A bool metric without a gate is gated on `equals: true`. A run passes when every `required` gate passes; `required: false` reports a failed gate as a warning. A metric with no value fails its gate.
+`pass_threshold` takes `min`, `max`, `equals` and `in`, e.g. `pass_threshold: {min: 0.95}`. A bool metric without one needs `equals: true`. A run passes when it meets every `required` pass threshold; `required: false` reports a missed one as a warning. A metric with no value misses its threshold.
 
 ### Aggregates
 
-Across runs, numbers aggregate as `mean`, bools as `rate` and labels as `distribution`; set `aggregate` to `mean`, `rate`, `sum`, `min`, `max`, `p50`, `p95` or `distribution` to change it. Each candidate also gets `pass_rate`, `first_attempt_pass_rate` and `flaky_rate`, overall and per tag. A case is `flaky` when its repeats both passed and failed.
+Across runs, numbers aggregate as `mean`, bools as `rate` and labels as `distribution`; set `aggregate` to `mean`, `rate`, `sum`, `min`, `max`, `p50`, `p95` or `distribution` to change it. Each candidate also gets `pass_rate`, `first_attempt_pass_rate` and `flaky_rate`. A case is `flaky` when its repeats both passed and failed.
 
 ## Results and history
 

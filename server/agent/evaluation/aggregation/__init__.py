@@ -5,7 +5,6 @@ from .metric_aggregator import (
     FIRST_ATTEMPT_PASS_RATE,
     FLAKY_RATE,
     PASS_RATE,
-    TAG_PREFIX,
     MetricAggregator,
 )
 
@@ -14,7 +13,6 @@ __all__ = [
     "FIRST_ATTEMPT_PASS_RATE",
     "FLAKY_RATE",
     "PASS_RATE",
-    "TAG_PREFIX",
     "CandidateMetrics",
     "MetricAggregate",
     "MetricAggregator",

@@ -12,11 +12,11 @@ metrics:
   - name: line_items
     type: mock_calls
     params: {method: create_order_with_items, arg: items, key: 0, fields: {1: numeric}, coerce: true}
-    gate: {min: 0.95}
+    pass_threshold: {min: 0.95}
   - name: one_order
     type: tool_called
     params: {name: place_order}
-    gate: {equals: 1}
+    pass_threshold: {equals: 1}
   - name: searched_first
     type: llm_judge
     params:

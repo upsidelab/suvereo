@@ -34,15 +34,15 @@ Each run writes to `<suite>/results/<date>-<id>/`, and `results/latest` points a
 
 | File | What it holds |
 |---|---|
-| `report.md` | The verdict, a comparison of candidates, failures grouped by the gate they failed with a compact trace of each, flaky cases and run details. Start here. |
+| `report.md` | The verdict (when the suite sets `min_pass_rate`), a comparison of candidates, failures grouped by the pass threshold they missed with a compact trace of each, flaky cases and run details. Start here. |
 | `summary.json` | The same verdict and figures for scripts and CI. |
-| `results.csv` | One row per run: every metric, each gate's outcome, cost and tokens. |
+| `results.csv` | One row per run: every metric, whether it met its pass threshold, cost and tokens. |
 | `comparison.csv` | One row per candidate (model × prompt variant). |
 | `cases.csv` | One row per case and candidate: pass, fail or flaky. |
 | `metrics.csv` | One row per run and metric, for pivots and charts. |
 | `runs/*.json` | The full trace of each run: LLM calls, tool calls, mock calls, attempts. |
 
-The CSVs open directly in a spreadsheet. The exit code tells CI how the run went: `0` every candidate reached the pass threshold, `1` one fell below it, `2` the suite or an option is invalid, `3` the budget ran out, `4` the run crashed.
+The CSVs open directly in a spreadsheet. The exit code tells CI how the run went: `0` every candidate reached the suite's `min_pass_rate` (or it sets none), `1` one fell below it, `2` the suite or an option is invalid, `3` the budget ran out, `4` the run crashed.
 
 ## 3. Run the order-intake suite
 
@@ -80,7 +80,7 @@ integrations:
   - class: enthusiast_ecommerce_common.evaluation.ECommerceMockIntegration
     config: {data: {catalog: catalog.yaml}}
 metrics:
-  - {type: tool_called, name: one_order, params: {name: place_order}, gate: {equals: 1}}
+  - {type: tool_called, name: one_order, params: {name: place_order}, pass_threshold: {equals: 1}}
 cases: cases.csv
 ```
 
@@ -113,14 +113,14 @@ expected:
 
 ## 6. Add a metric
 
-List the built-in metrics with `./manage.py listevalmetrics`. A metric with a `gate` decides whether a run passes; one without is measured and reported only.
+List the built-in metrics with `./manage.py listevalmetrics`. A metric with a `pass_threshold` decides whether a run passes; one without is measured and reported only.
 
 ```yaml
 metrics:
   - name: line_items
     type: mock_calls
     params: {method: create_order_with_items, arg: items, key: 0, fields: {1: numeric}, coerce: true}
-    gate: {min: 0.95}
+    pass_threshold: {min: 0.95}
   - name: judge
     type: llm_judge
     params:

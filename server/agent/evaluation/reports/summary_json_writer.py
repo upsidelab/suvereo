@@ -6,10 +6,10 @@ from agent.evaluation.aggregation import FIRST_ATTEMPT_PASS_RATE, FLAKY_RATE, PA
 from agent.evaluation.runner import RunResult
 
 from .base_report_writer import BaseReportWriter
-from .gate_text import gate_text
 from .suite_report import SuiteReport
 from .suite_verdict import SuiteVerdict
 from .summary_file import SUMMARY_FILE
+from .threshold_text import threshold_text
 
 
 class SummaryJsonWriter(BaseReportWriter):
@@ -17,8 +17,8 @@ class SummaryJsonWriter(BaseReportWriter):
     for scripts, CI and coding agents.
 
     Holds the verdict (status, exit code), how the run was started, each candidate's rates and metric values, each
-    gate's pass rate, each case's status per candidate, the runs that failed with their failed gates, the diff against
-    a baseline run (--baseline), and the cost against the budget.
+    pass threshold's pass rate, each case's status per candidate, the runs that failed with the thresholds they
+    missed, the diff against a baseline run (--baseline), and the cost against the budget.
     """
 
     NAME = "summary"
@@ -45,9 +45,9 @@ class SummaryJsonWriter(BaseReportWriter):
                 "runs": len(result.runs),
                 "stopped_reason": result.stopped_reason,
             },
-            "pass_threshold": report.loaded.suite.pass_threshold,
+            "min_pass_rate": report.loaded.suite.min_pass_rate,
             "candidates": [self._candidate_summary(c, report, verdict) for c in report.candidates],
-            "gates": self._gate_summaries(report),
+            "thresholds": self._threshold_summaries(report),
             "cases": [{**outcome.model_dump(), "status": outcome.status} for outcome in report.case_outcomes()],
             "failing_runs": [self._failing_run_summary(run, report) for run in report.runs if not run.passed],
             "baseline": report.baseline_diff.model_dump() if report.baseline_diff else None,
@@ -68,7 +68,7 @@ class SummaryJsonWriter(BaseReportWriter):
             "variant": candidate.variant,
             "runs": len(candidate.runs),
             **rates,
-            "below_threshold": candidate.candidate in verdict.below_threshold,
+            "below_min_pass_rate": candidate.candidate in verdict.below_min_pass_rate,
             "metrics": {
                 name: candidate.metrics[name].value for name in report.metric_configs if name in candidate.metrics
             },
@@ -76,21 +76,23 @@ class SummaryJsonWriter(BaseReportWriter):
         }
 
     @staticmethod
-    def _gate_summaries(report: SuiteReport) -> dict[str, Any]:
-        """Per gated metric: how many of the runs it gated passed, and its gates as text (several when cases override
-        the gate)."""
-        gates: dict[str, Any] = {}
+    def _threshold_summaries(report: SuiteReport) -> dict[str, Any]:
+        """Per metric with a pass threshold: how many checked runs met it, and the threshold as text (several when
+        cases override it)."""
+        thresholds: dict[str, Any] = {}
         for name in report.metric_configs:
-            gated = [run for run in report.runs if name in run.gates]
-            if gated:
-                passed = sum(run.gates[name].passed for run in gated)
-                gates[name] = {
-                    "gates": sorted({gate_text(report.gate_for(run.case_id, name)) for run in gated} - {None}),
+            checked = [run for run in report.runs if name in run.thresholds]
+            if checked:
+                passed = sum(run.thresholds[name].passed for run in checked)
+                thresholds[name] = {
+                    "thresholds": sorted(
+                        {threshold_text(report.threshold_for(run.case_id, name)) for run in checked} - {None}
+                    ),
                     "passed_runs": passed,
-                    "gated_runs": len(gated),
-                    "pass_rate": passed / len(gated),
+                    "checked_runs": len(checked),
+                    "pass_rate": passed / len(checked),
                 }
-        return gates
+        return thresholds
 
     @staticmethod
     def _failing_run_summary(run: RunResult, report: SuiteReport) -> dict[str, Any]:
@@ -98,9 +100,11 @@ class SummaryJsonWriter(BaseReportWriter):
             "case_id": run.case_id,
             "candidate": run.candidate,
             "repeat": run.repeat,
-            "failed_gates": [name for name, gate in run.gates.items() if not gate.passed and gate.required],
-            "failed_optional_gates": [
-                name for name, gate in run.gates.items() if not gate.passed and not gate.required
+            "failed_thresholds": [
+                name for name, threshold in run.thresholds.items() if not threshold.passed and threshold.required
+            ],
+            "failed_optional_thresholds": [
+                name for name, threshold in run.thresholds.items() if not threshold.passed and not threshold.required
             ],
             "error": run.trace.error,
             "trace_file": report.linked_trace_path(run),

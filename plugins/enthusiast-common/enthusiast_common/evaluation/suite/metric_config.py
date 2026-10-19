@@ -3,7 +3,7 @@ from typing import Any, Literal
 from pydantic import Field, model_validator
 
 from .base import EvalModel
-from .gate import Gate
+from .pass_threshold import PassThreshold
 
 Aggregate = Literal["mean", "rate", "sum", "min", "max", "p50", "p95", "distribution"]
 
@@ -13,9 +13,10 @@ class MetricConfig(EvalModel):
 
     type: str = Field(description="A built-in metric's NAME, or a dotted path to a BaseMetric.")
     name: str = Field(default="", description="Names this instance in reports; defaults to type.")
+    description: str = Field(default="", description="What the metric checks, in plain words, for report.md.")
     params: dict[str, Any] = {}
-    gate: Gate | None = None
-    required: bool = Field(default=True, description="False reports a failed gate as a warning only.")
+    pass_threshold: PassThreshold | None = None
+    required: bool = Field(default=True, description="False reports a missed pass threshold as a warning only.")
     aggregate: Aggregate | None = None
 
     @model_validator(mode="after")

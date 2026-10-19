@@ -14,22 +14,14 @@ PASS_RATE = "pass_rate"
 FIRST_ATTEMPT_PASS_RATE = "first_attempt_pass_rate"
 FLAKY_RATE = "flaky_rate"
 DERIVED_METRICS = (PASS_RATE, FIRST_ATTEMPT_PASS_RATE, FLAKY_RATE)
-TAG_PREFIX = "tag:"
 
 
 class MetricAggregator:
-    """Aggregates runs per candidate: every metric and component, the pass, first-attempt and flaky rates, and all of
-    them again per case tag."""
+    """Aggregates runs per candidate: every metric and component, and the pass, first-attempt and flaky rates."""
 
-    def __init__(
-        self,
-        value_types: dict[str, str],
-        aggregates: dict[str, Aggregate] | None = None,
-        case_tags: dict[str, list[str]] | None = None,
-    ):
+    def __init__(self, value_types: dict[str, str], aggregates: dict[str, Aggregate] | None = None):
         self.value_types = value_types
         self.aggregates = aggregates or {}
-        self.case_tags = case_tags or {}
 
     @classmethod
     def for_suite(cls, loaded: LoadedSuite) -> "MetricAggregator":
@@ -41,7 +33,7 @@ class MetricAggregator:
             value_types[config.name] = registry.metric_class(config.type).VALUE_TYPE
             if config.aggregate:
                 aggregates[config.name] = config.aggregate
-        return cls(value_types, aggregates, {case.id: case.tags for case in loaded.cases})
+        return cls(value_types, aggregates)
 
     def aggregate_per_candidate(self, runs: list[RunResult]) -> list[CandidateMetrics]:
         """One entry per candidate, in the order their first run appears."""
@@ -59,16 +51,9 @@ class MetricAggregator:
             for name, group in grouped.items()
         ]
 
-    def aggregate_runs(self, runs: list[RunResult], by_tag: bool = True) -> dict[str, MetricAggregate]:
-        """Every metric over the runs, plus the derived rates and, with by_tag, each again as tag:<tag>.<metric>."""
-        summary = self._aggregate_measured_metrics(runs) | self._pass_and_flaky_rates(runs)
-        if by_tag:
-            tags = sorted({tag for run in runs for tag in self.case_tags.get(run.case_id, [])})
-            for tag in tags:
-                tagged = [run for run in runs if tag in self.case_tags.get(run.case_id, [])]
-                per_tag = self._aggregate_measured_metrics(tagged) | self._pass_and_flaky_rates(tagged)
-                summary |= {f"{TAG_PREFIX}{tag}.{name}": value for name, value in per_tag.items()}
-        return summary
+    def aggregate_runs(self, runs: list[RunResult]) -> dict[str, MetricAggregate]:
+        """Every metric over the runs, plus the derived rates."""
+        return self._aggregate_measured_metrics(runs) | self._pass_and_flaky_rates(runs)
 
     def _aggregate_measured_metrics(self, runs: list[RunResult]) -> dict[str, MetricAggregate]:
         names = list(dict.fromkeys(name for run in runs for name in run.metrics))

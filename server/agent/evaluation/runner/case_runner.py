@@ -65,7 +65,7 @@ class CaseRunner:
 
         cost = self.pricing.trace_cost(recorder.trace)
         judge = EvalJudgeClient(suite.judge, self.pricing) if self._has_judge else None
-        metrics, gates = self._scorer.score(
+        metrics, thresholds = self._scorer.score(
             suite.metrics_for(case),
             MetricContext(trace=recorder.trace, case=case, duration_s=duration_s, cost_usd=cost.usd, judge=judge),
         )
@@ -77,9 +77,10 @@ class CaseRunner:
             model=model.display_label if model else "",
             variant=variant.name if variant else DEFAULT_VARIANT,
             repeat=repeat,
-            passed=metrics[EXECUTION_SUCCEEDED].value is True and all(g.passed for g in gates.values() if g.required),
+            passed=metrics[EXECUTION_SUCCEEDED].value is True
+            and all(g.passed for g in thresholds.values() if g.required),
             metrics=metrics,
-            gates=gates,
+            thresholds=thresholds,
             unpriced_models=sorted(
                 {
                     *cost.unpriced_models,
@@ -102,10 +103,10 @@ class CaseRunner:
         error: str,
     ) -> RunResult:
         """A run that failed outside the agent, e.g. its sandbox could not be set up: the error in its trace, the
-        auto metrics, and the suite's metrics with no value and failed gates, so every run has the same metric names.
-        """
+        auto metrics, and the suite's metrics with no value and missed thresholds, so every run has the same metric
+        names."""
         trace = ExecutionTrace(error=error)
-        metrics, gates = RunScorer(loaded.base_dir).scores_for_unfinished_run(
+        metrics, thresholds = RunScorer(loaded.base_dir).scores_for_unfinished_run(
             loaded.suite.metrics_for(case), MetricContext(trace=trace, case=case), "the run did not complete"
         )
         metrics[JUDGE_COST] = MetricResult(value=0.0)
@@ -116,7 +117,7 @@ class CaseRunner:
             repeat=repeat,
             passed=False,
             metrics=metrics,
-            gates=gates,
+            thresholds=thresholds,
             trace=trace,
         )
 

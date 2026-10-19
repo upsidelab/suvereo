@@ -17,6 +17,6 @@ def run(case_id="a", model="m", variant="default", repeat=1, passed=True, compon
         repeat=repeat,
         passed=passed,
         metrics=results,
-        gates={},
+        thresholds={},
         trace=ExecutionTrace(),
     )

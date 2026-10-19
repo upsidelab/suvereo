@@ -38,7 +38,7 @@ def _loaded(tmp_path, agent, cases=CASES, **changes):
             "agent": {"id": agent.pk} if agent else {"type": "greeter-agent"},
             "execution_key": "greeting",
             "integrations": [{"class": GREETER, "config": {"behaviour": {"greet": {"returns": "Hello {name}"}}}}],
-            "metrics": [{"type": "mock_called", "params": {"method": "greet"}, "gate": {"equals": 1}}],
+            "metrics": [{"type": "mock_called", "params": {"method": "greet"}, "pass_threshold": {"equals": 1}}],
             "cases": [],
             **changes,
         }
@@ -58,7 +58,7 @@ def _costing(usd, unpriced=(), priced=None):
             repeat=repeat,
             passed=True,
             metrics=metrics,
-            gates={},
+            thresholds={},
             trace=ExecutionTrace(),
         )
 
@@ -136,7 +136,7 @@ class TestSuiteRunner:
         by_case = {r.case_id: r for r in result.runs}
         assert by_case["ada"].passed
         assert "The run failed: RuntimeError: scoring broke" in by_case["bob"].trace.error
-        assert by_case["bob"].gates["mock_called"].passed is False
+        assert by_case["bob"].thresholds["mock_called"].passed is False
         assert result.spent_usd == pytest.approx(0.1)
 
     def test_a_sandbox_that_cannot_be_set_up_errors_only_its_own_cases(self, tmp_path):
@@ -158,7 +158,7 @@ class TestSuiteRunner:
         assert "case(s) cy failed: RuntimeError: fixture unreadable" in by_case["cy"].trace.error
         assert by_case["cy"].metrics["failure_code"].value == "RUNTIME_ERROR"
         assert by_case["cy"].metrics["mock_called"].value is None
-        assert by_case["cy"].gates["mock_called"].passed is False
+        assert by_case["cy"].thresholds["mock_called"].passed is False
 
     def test_a_case_overriding_integration_data_gets_its_own_sandbox(self, tmp_path):
         override = {"class": GREETER, "config": {"data": {"greeting": "Hi"}}}

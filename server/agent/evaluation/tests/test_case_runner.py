@@ -43,7 +43,12 @@ def _runner(target, tmp_path, **changes):
             "execution_key": "greeting",
             "integrations": [{"class": GREETER, "config": {"behaviour": {"greet": {"returns": "Hello {name}"}}}}],
             "metrics": [
-                {"type": "mock_called", "name": "greeted_once", "params": {"method": "greet"}, "gate": {"equals": 1}}
+                {
+                    "type": "mock_called",
+                    "name": "greeted_once",
+                    "params": {"method": "greet"},
+                    "pass_threshold": {"equals": 1},
+                }
             ],
             "cases": [],
             **changes,
@@ -57,7 +62,7 @@ def _case(**fields):
 
 
 class TestCaseRunner:
-    def test_a_run_records_its_trace_and_passes_its_gates(self, target, tmp_path):
+    def test_a_run_records_its_trace_and_passes_its_thresholds(self, target, tmp_path):
         result = _runner(target, tmp_path).run(_case())
 
         assert result.passed
@@ -81,7 +86,7 @@ class TestCaseRunner:
         assert not result.passed
         assert result.trace.error == "ValueError: down"
         assert result.metrics["failure_code"].value == "RUNTIME_ERROR"
-        assert result.gates["greeted_once"].passed
+        assert result.thresholds["greeted_once"].passed
 
     def test_a_failure_while_setting_up_is_recorded_too(self, target, tmp_path):
         variant = PromptVariant(name="v2", system_prompt_file="missing.txt")
@@ -108,15 +113,15 @@ class TestCaseRunner:
         assert result.metrics["llm_judge"].value == 1.0
         assert complete.call_args.args[1] == ModelTarget.model_validate(judge)
 
-    def test_a_metric_that_cannot_be_built_fails_the_run_even_without_a_gate(self, target, tmp_path):
+    def test_a_metric_that_cannot_be_built_fails_the_run_even_without_a_threshold(self, target, tmp_path):
         metrics = [{"type": "no_such_metric", "name": "broken"}]
 
         result = _runner(target, tmp_path, metrics=metrics).run(_case())
 
-        assert not result.passed and result.gates["broken"].passed is False
+        assert not result.passed and result.thresholds["broken"].passed is False
 
-    def test_a_metric_that_cannot_be_built_fails_its_gate_not_the_runner(self, target, tmp_path):
-        metrics = [{"type": "no_such_metric", "name": "broken", "gate": {"min": 1}}]
+    def test_a_metric_that_cannot_be_built_fails_its_threshold_not_the_runner(self, target, tmp_path):
+        metrics = [{"type": "no_such_metric", "name": "broken", "pass_threshold": {"min": 1}}]
 
         result = _runner(target, tmp_path, metrics=metrics).run(_case())
 
@@ -139,13 +144,15 @@ class TestCaseRunner:
         assert result.metrics["judge_cost_usd"].value is None
         assert result.unpriced_models == ["judge-x"]
 
-    def test_a_failed_optional_gate_does_not_fail_the_run(self, target, tmp_path):
-        metrics = [{"type": "mock_called", "params": {"method": "greet"}, "gate": {"equals": 2}, "required": False}]
+    def test_a_failed_optional_threshold_does_not_fail_the_run(self, target, tmp_path):
+        metrics = [
+            {"type": "mock_called", "params": {"method": "greet"}, "pass_threshold": {"equals": 2}, "required": False}
+        ]
 
         result = _runner(target, tmp_path, metrics=metrics).run(_case())
 
         assert result.passed
-        assert not result.gates["mock_called"].passed
+        assert not result.thresholds["mock_called"].passed
 
     def test_case_files_are_attached_to_the_conversation(self, target, tmp_path, temp_media_root):
         order = tmp_path / "order.txt"

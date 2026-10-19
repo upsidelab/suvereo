@@ -4,7 +4,7 @@ from enthusiast_common.evaluation.suite import EvalCase, EvalSuite
 from enthusiast_common.evaluation.trace import ExecutionTrace
 
 from agent.evaluation.reports import SuiteReport
-from agent.evaluation.runner import GateResult, RunResult
+from agent.evaluation.runner import RunResult, ThresholdResult
 from agent.evaluation.runner.suite_run_result import SuiteRunResult
 
 CASES = [EvalCase(id="ada", tags=["vip"], description="A regular order"), EvalCase(id="bob")]
@@ -16,10 +16,16 @@ def loaded_suite(tmp_path, cases=CASES, **changes) -> LoadedSuite:
             "agent": {"type": "order-intake"},
             "models": [{"provider": "OpenAI", "model": "gpt-4.1", "label": "gpt"}],
             "metrics": [
-                {"type": "mock_called", "name": "orders", "params": {"method": "create_order"}, "gate": {"min": 1}},
+                {
+                    "type": "mock_called",
+                    "name": "orders",
+                    "params": {"method": "create_order"},
+                    "pass_threshold": {"min": 1},
+                },
                 {"type": "json_schema", "name": "valid", "params": {"schema": {"type": "object"}}},
             ],
             "cases": [],
+            "min_pass_rate": 0.8,
             **changes,
         }
     )
@@ -35,7 +41,10 @@ def run_result(case_id, model="gpt", repeat=1, passed=True, cost=0.01, orders=1.
         "orders": MetricResult(value=orders, components={"precision": 0.5}),
         "valid": MetricResult(value=passed),
     }
-    gates = {"orders": GateResult(passed=orders >= 1, required=True), "valid": GateResult(passed=passed, required=True)}
+    thresholds = {
+        "orders": ThresholdResult(passed=orders >= 1, required=True),
+        "valid": ThresholdResult(passed=passed, required=True),
+    }
     return RunResult(
         case_id=case_id,
         model=model,
@@ -43,7 +52,7 @@ def run_result(case_id, model="gpt", repeat=1, passed=True, cost=0.01, orders=1.
         repeat=repeat,
         passed=passed,
         metrics=metrics,
-        gates=gates,
+        thresholds=thresholds,
         trace=ExecutionTrace(error=error),
     )
 

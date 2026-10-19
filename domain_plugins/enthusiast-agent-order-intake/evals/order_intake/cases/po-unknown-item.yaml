@@ -7,4 +7,4 @@ expected:
   mock_calls: {create_order_with_items: []}
 metrics:
   - {type: json_subset, name: order_id}
-  - {type: tool_called, name: one_order, params: {name: place_order}, gate: {equals: 0}}
+  - {type: tool_called, name: one_order, params: {name: place_order}, pass_threshold: {equals: 0}}

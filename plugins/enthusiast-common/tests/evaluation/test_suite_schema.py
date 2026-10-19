@@ -1,10 +1,10 @@
 import pytest
-from enthusiast_common.evaluation.suite import EvalCase, EvalSuite, Gate, IntegrationConfig, MetricConfig
+from enthusiast_common.evaluation.suite import EvalCase, EvalSuite, IntegrationConfig, MetricConfig, PassThreshold
 from pydantic import ValidationError
 
 MINIMAL = {
     "agent": {"id": 12},
-    "metrics": [{"type": "mock_calls", "gate": {"min": 0.95}}],
+    "metrics": [{"type": "mock_calls", "pass_threshold": {"min": 0.95}}],
     "cases": "cases.csv",
 }
 
@@ -21,7 +21,7 @@ FULL = {
     "judge": {"provider": "Anthropic", "model": "claude-opus-5-5"},
     "repeats": 3,
     "budget_usd": 5,
-    "pass_threshold": 0.8,
+    "min_pass_rate": 0.8,
     "integrations": [
         {
             "class": "enthusiast_ecommerce_common.evaluation.ECommerceMockIntegration",
@@ -36,9 +36,14 @@ FULL = {
             "type": "mock_calls",
             "name": "line_items",
             "params": {"method": "create_order_with_items"},
-            "gate": {"min": 0.95},
+            "pass_threshold": {"min": 0.95},
         },
-        {"type": "tool_called", "name": "single_place_order", "params": {"name": "place_order"}, "gate": {"equals": 1}},
+        {
+            "type": "tool_called",
+            "name": "single_place_order",
+            "params": {"name": "place_order"},
+            "pass_threshold": {"equals": 1},
+        },
         {"type": "trace_event", "name": "retried", "params": {"event": "retry"}, "required": False},
     ],
     "cases": ["cases.csv", "cases/", {"id": "inline", "expected": {"output": {"order_id": "ORD-1"}}}],
@@ -73,7 +78,7 @@ class TestEvalSuite:
         [
             {"metrics": []},
             {"repeats": 0},
-            {"pass_threshold": 1.5},
+            {"min_pass_rate": 1.5},
             {"agent": {"id": 1, "type": "x"}},
             {"agent": {}},
             {"agent": {"id": 1, "config": {"a": 1}}},
@@ -155,23 +160,23 @@ class TestEvalSuite:
         metrics = suite.metrics_for(case)
 
         assert [m.name for m in metrics] == ["line_items", "single_place_order", "retried", "stopped"]
-        assert metrics[0].gate is None
+        assert metrics[0].pass_threshold is None
 
 
-class TestGate:
-    def test_a_gate_needs_a_condition(self):
+class TestPassThreshold:
+    def test_a_threshold_needs_a_condition(self):
         with pytest.raises(ValidationError):
-            Gate()
+            PassThreshold()
 
     def test_min_cannot_exceed_max(self):
         with pytest.raises(ValidationError):
-            Gate(min=1, max=0)
+            PassThreshold(min=1, max=0)
 
     def test_in_is_written_as_in(self):
-        assert Gate.model_validate({"in": ["a", "b"]}).in_ == ["a", "b"]
+        assert PassThreshold.model_validate({"in": ["a", "b"]}).in_ == ["a", "b"]
 
     @pytest.mark.parametrize(
-        "gate, value, passes",
+        "threshold, value, passes",
         [
             ({"min": 0.9}, 0.95, True),
             ({"min": 0.9}, 0.5, False),
@@ -186,8 +191,8 @@ class TestGate:
             ({"in": [1]}, True, False),
         ],
     )
-    def test_passes_only_a_value_meeting_every_condition(self, gate, value, passes):
-        assert Gate.model_validate(gate).passes(value) is passes
+    def test_passes_only_a_value_meeting_every_condition(self, threshold, value, passes):
+        assert PassThreshold.model_validate(threshold).passes(value) is passes
 
 
 class TestIntegrationConfig:

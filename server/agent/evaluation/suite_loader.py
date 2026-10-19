@@ -14,7 +14,7 @@ from pydantic import ValidationError
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
 from agent.core.registries.agents.agent_registry import AgentRegistry, AgentRegistryError
 from agent.core.registries.language_models import LanguageModelRegistry
-from agent.evaluation.aggregation import DERIVED_METRICS, TAG_PREFIX
+from agent.evaluation.aggregation import DERIVED_METRICS
 from agent.evaluation.integrations import MockIntegrationFactory
 from agent.evaluation.judge_models_used_by_metrics import judge_models_used_by_metrics
 from agent.evaluation.runner.case_runner import JUDGE_COST
@@ -108,10 +108,9 @@ class SuiteLoader:
                     raise EvalSuiteError(
                         f"Metric name '{config.name}' is reserved for a built-in figure; pick another."
                     )
-                if "." in config.name or config.name.startswith(TAG_PREFIX):
+                if "." in config.name:
                     raise EvalSuiteError(
-                        f"Metric name '{config.name}' may not contain '.' or start with '{TAG_PREFIX}'; reports use "
-                        "them for components and tags."
+                        f"Metric name '{config.name}' may not contain '.'; reports use it for components."
                     )
                 try:
                     metric = registry.build_metric(config, loaded.base_dir)

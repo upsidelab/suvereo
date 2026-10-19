@@ -28,8 +28,11 @@ class EvalSuite(EvalModel):
     judge: ModelTarget | None = None
     repeats: int = Field(default=1, ge=1)
     budget_usd: float | None = Field(default=None, gt=0)
-    pass_threshold: float = Field(
-        default=0.8, ge=0, le=1, description="Minimum pass rate per candidate for the run to succeed."
+    min_pass_rate: float | None = Field(
+        default=None,
+        ge=0,
+        le=1,
+        description="Minimum pass rate per candidate for the run to succeed; without it the run has no verdict.",
     )
     metrics: list[MetricConfig] = Field(min_length=1)
     reports: list[ReportName] = Field(default=DEFAULT_REPORTS, description="Outputs to write besides summary.json.")

@@ -3,12 +3,12 @@ import re
 
 from enthusiast_common.evaluation.loaded_suite import LoadedSuite
 from enthusiast_common.evaluation.metrics import MetricRegistry
-from enthusiast_common.evaluation.suite import EvalCase, Gate, MetricConfig, ReportName
+from enthusiast_common.evaluation.suite import EvalCase, MetricConfig, PassThreshold, ReportName
 
 from agent.evaluation.aggregation import PASS_RATE, CandidateMetrics, MetricAggregator
 from agent.evaluation.runner import RunResult
 from agent.evaluation.runner.run_result import DEFAULT_MODEL
-from agent.evaluation.runner.run_scorer import BOOL_GATE
+from agent.evaluation.runner.run_scorer import BOOL_THRESHOLD
 from agent.evaluation.runner.suite_run_result import SuiteRunResult
 from agent.evaluation.suite_metric_configs import suite_metric_configs
 
@@ -90,13 +90,13 @@ class SuiteReport:
         """The provider of a model under test, by its label; empty for the DataSet's configured model."""
         return next((m.provider for m in self.loaded.suite.models if m.display_label == model_label), "")
 
-    def gate_for(self, case_id: str, metric: str) -> Gate | None:
-        """The gate a case's metric was checked against: its own, or equals: true for a bool metric."""
+    def threshold_for(self, case_id: str, metric: str) -> PassThreshold | None:
+        """The threshold a case's metric was checked against: its own, or equals: true for a bool metric."""
         case = next((c for c in self.cases if c.id == case_id), None)
         config = next((m for m in self.loaded.suite.metrics_for(case) if m.name == metric), None) if case else None
-        if config is None or config.gate is not None:
-            return config.gate if config else None
-        return BOOL_GATE if self._registry.metric_class(config.type).VALUE_TYPE == "bool" else None
+        if config is None or config.pass_threshold is not None:
+            return config.pass_threshold if config else None
+        return BOOL_THRESHOLD if self._registry.metric_class(config.type).VALUE_TYPE == "bool" else None
 
     @staticmethod
     def _comparison_order(candidate: CandidateMetrics) -> tuple[float, float]:
