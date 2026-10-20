@@ -32,7 +32,7 @@ class ConversationManager:
         Engine calculates embedding for a question and using similarity search collects documents that may contain
         relevant content.
         """
-        if self._should_answer_asynchronously(conversation):
+        if self._should_answer_asynchronously(conversation, overrides):
             return asyncio.run(
                 self._get_answer_async(
                     conversation, question_message, streaming, config_type, tool_scratchpad, overrides
@@ -51,7 +51,7 @@ class ConversationManager:
         return response
 
     def _should_answer_asynchronously(
-        self, conversation: Conversation, agent_class: type, overrides: Optional[AgentConfigOverrides] = None
+        self, conversation: Conversation, overrides: Optional[AgentConfigOverrides] = None
     ) -> bool:
         """Decide whether this turn needs the async path, which exists to await integration tools.
 
