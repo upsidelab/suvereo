@@ -4,7 +4,6 @@ const mapping = {
   "custom-integration": "",
   "custom-agent": "",
   "agentic-execution": "",
-  "concept-product-search": "",
 };
 
 export default mapping
