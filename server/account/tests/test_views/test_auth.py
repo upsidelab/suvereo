@@ -116,6 +116,21 @@ class TestTokenRefresh:
 
         assert response.status_code == status.HTTP_200_OK
 
+    def test_deleted_user_refresh_token_is_rejected(self, human_user, refresh_token):
+        human_user.delete()
+
+        response = _refresh(refresh_token)
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_deactivated_user_refresh_token_is_rejected(self, human_user, refresh_token):
+        human_user.is_active = False
+        human_user.save()
+
+        response = _refresh(refresh_token)
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
 
 class TestLogout:
     def test_blacklists_the_refresh_token(self, refresh_token):

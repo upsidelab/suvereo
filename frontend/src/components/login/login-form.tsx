@@ -85,7 +85,7 @@ export function LoginForm({ className, ...props }: HTMLAttributes<HTMLDivElement
       <form onSubmit={onSubmit}>
         <div className="grid gap-2">
           <div className="grid gap-1">
-            {isSessionExpired && !isError && <Alert>
+            {isSessionExpired && !isError && <Alert variant="destructive">
               <AlertTitle>Your session has expired</AlertTitle>
               <AlertDescription>Please log in again to continue.</AlertDescription>
             </Alert>}
