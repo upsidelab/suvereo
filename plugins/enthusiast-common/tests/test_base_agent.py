@@ -19,6 +19,9 @@ class StubAgent(BaseAgent):
     def get_answer(self, input_text: str) -> str:
         return input_text
 
+    async def aget_answer(self, input_text: str) -> str:
+        return input_text
+
 
 class RenamingAgent(StubAgent):
     def _get_system_prompt_variables(self) -> dict:

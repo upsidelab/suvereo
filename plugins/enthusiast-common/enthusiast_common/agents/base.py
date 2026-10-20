@@ -106,6 +106,10 @@ class BaseAgent(ABC, ExtraArgsClassBase):
     def get_answer(self, input_text: str) -> str:
         pass
 
+    @abstractmethod
+    async def aget_answer(self, input_text: str) -> str:
+        pass
+
     def _get_system_prompt(self) -> str:
         return self._system_prompt.format(**self._get_system_prompt_variables())
 

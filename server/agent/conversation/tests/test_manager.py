@@ -242,17 +242,15 @@ class TestConversationManager:
         mock_get_answer.assert_not_called()
 
     @patch.object(IntegrationPluginResolver, "has_any", return_value=False)
-    @patch.object(AgentRegistry, "get_agent_class_by_type")
     @patch.object(AgentRegistry, "get_conversation_agent")
     @patch.object(AgentRegistry, "aget_conversation_agent")
     def test_get_answer_uses_sync_path_when_data_set_has_no_tool_providing_integration(
-        self, mock_aget_conversation_agent, mock_get_conversation_agent, mock_get_agent_class_by_type, mock_has_any
+        self, mock_aget_conversation_agent, mock_get_conversation_agent, mock_has_any
     ):
         """With nothing connected to fetch tools from, get_answer never touches the async path."""
         conversation = Conversation.objects.create(
             user=self.user, data_set=self.data_set, started_at=datetime.now(), agent=self.agent
         )
-        mock_get_agent_class_by_type.return_value = type("AsyncCapableAgent", (), {"aget_answer": lambda self: None})
         mock_agent_instance = MagicMock()
         mock_agent_instance.get_answer.return_value = "sync answer"
         mock_get_conversation_agent.return_value = mock_agent_instance
@@ -264,39 +262,15 @@ class TestConversationManager:
         mock_aget_conversation_agent.assert_not_called()
 
     @patch.object(IntegrationPluginResolver, "has_any", return_value=True)
-    @patch.object(AgentRegistry, "get_agent_class_by_type")
-    @patch.object(AgentRegistry, "get_conversation_agent")
-    @patch.object(AgentRegistry, "aget_conversation_agent")
-    def test_get_answer_uses_sync_path_when_agent_cannot_answer_asynchronously(
-        self, mock_aget_conversation_agent, mock_get_conversation_agent, mock_get_agent_class_by_type, mock_has_any
-    ):
-        """An agent that only implements get_answer stays on the sync path, tools connected or not."""
-        conversation = Conversation.objects.create(
-            user=self.user, data_set=self.data_set, started_at=datetime.now(), agent=self.agent
-        )
-        mock_get_agent_class_by_type.return_value = type("SyncOnlyAgent", (), {})
-        mock_agent_instance = MagicMock()
-        mock_agent_instance.get_answer.return_value = "sync answer"
-        mock_get_conversation_agent.return_value = mock_agent_instance
-
-        response = self.manager.get_answer(conversation, "hello", streaming=False)
-
-        assert response == "sync answer"
-        mock_get_conversation_agent.assert_called_once()
-        mock_aget_conversation_agent.assert_not_called()
-
-    @patch.object(IntegrationPluginResolver, "has_any", return_value=True)
-    @patch.object(AgentRegistry, "get_agent_class_by_type")
     @patch.object(AgentRegistry, "get_conversation_agent")
     @patch.object(AgentRegistry, "aget_conversation_agent", new_callable=AsyncMock)
     def test_get_answer_uses_async_path_when_tools_are_connected_and_agent_supports_it(
-        self, mock_aget_conversation_agent, mock_get_conversation_agent, mock_get_agent_class_by_type, mock_has_any
+        self, mock_aget_conversation_agent, mock_get_conversation_agent, mock_has_any
     ):
         """A tool-providing integration on the data set moves an async-capable agent onto the async path."""
         conversation = Conversation.objects.create(
             user=self.user, data_set=self.data_set, started_at=datetime.now(), agent=self.agent
         )
-        mock_get_agent_class_by_type.return_value = type("AsyncCapableAgent", (), {"aget_answer": lambda self: None})
         mock_agent_instance = MagicMock()
         mock_agent_instance.aget_answer = AsyncMock(return_value="async answer")
         mock_aget_conversation_agent.return_value = mock_agent_instance

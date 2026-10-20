@@ -45,6 +45,9 @@ class StubAgent(BaseAgent):
     def get_answer(self, input_text: str) -> str:
         return ""
 
+    async def aget_answer(self, input_text: str) -> str:
+        return ""
+
 
 def agent_with_tools(*names: str) -> StubAgent:
     """An agent whose own tools carry *names*, standing in for its built-in toolset."""
