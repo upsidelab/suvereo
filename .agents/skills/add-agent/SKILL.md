@@ -55,7 +55,7 @@ enthusiast-agent-<name>/
 
 ### Packaging *(standalone plugin only)*
 
-`pyproject.toml`: Poetry with a `src` layout, modelled on `plugins/enthusiast-agent-tool-calling/pyproject.toml`. Dependencies: `enthusiast-common`, `enthusiast-agent-tool-calling`, `langchain`, plus the vertical package if you use its builder or retrievers. Take version ranges from that file and from the current `enthusiast-common` version, not from memory.
+`pyproject.toml`: Poetry with a `src` layout, modelled on `plugins/enthusiast-agent-tool-calling/pyproject.toml`. Dependencies: `enthusiast-common`, `enthusiast-agent-tool-calling`, `langchain`, plus the vertical package if you use its builder or retrievers, and `enthusiast-agent-tools` if you reuse its shared tools (`FileListTool`, `FileRetrievalTool`, `StopExecutionTool`). Take version ranges from that file and from the current `enthusiast-common` version, not from memory.
 
 ```toml
 [tool.poetry]
@@ -153,7 +153,14 @@ LLM and file tools reach retrievers, connectors and memory through `self._inject
 
 ## 6. Prompt (`prompt.py`)
 
-A module-level string constant: the agent's job, when to use each tool, the required output format.
+The agent's system prompt, kept in `prompt.py` and passed to the agent when it is built (see section 4). It describes the agent's job, when to use each tool and the required output format.
+
+The system prompt is formatted with `str.format`, so `{name}` placeholders are replaced with values, e.g. `"Your name is {name}."`. A literal brace must be escaped by doubling it: `{{` and `}}` (relevant for JSON examples in the prompt, for instance).
+
+The variables available to the prompt come from one of two places:
+
+- the fields of the agent's `PROMPT_INPUT` model: they are injected automatically, each as `{field_name}`, with the values saved per agent;
+- the agent's `_get_system_prompt_variables` method: override it to rename variables or add computed ones, and call `super()` to keep the `PROMPT_INPUT` fields (see `plugins/enthusiast-common/enthusiast_common/agents/base.py`).
 
 ## 7. Agentic execution (optional)
 
