@@ -44,7 +44,6 @@ class AgentPreconfigurationService:
         return {
             "agent_args": get_model_descriptor_default_value_from_class(agent_class, "AGENT_ARGS"),
             "prompt_input": get_model_descriptor_default_value_from_class(agent_class, "PROMPT_INPUT"),
-            "prompt_extension": get_model_descriptor_default_value_from_class(agent_class, "PROMPT_EXTENSION"),
             "tools": [
                 get_model_descriptor_default_value_from_class(tool_config.tool_class, "CONFIGURATION_ARGS")
                 for tool_config in agent_class.TOOLS

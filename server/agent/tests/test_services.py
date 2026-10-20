@@ -35,16 +35,11 @@ class PromptInput(RequiredFieldsModel):
     with_default: str = Field(description="description", title="title", default="default")
 
 
-class PromptExtension(RequiredFieldsModel):
-    with_default: str = Field(description="description", title="title", default="default")
-
-
 class MockAgentClass:
     AGENT_KEY = "dummy_agent"
     NAME = "Dummy Agent"
     AGENT_ARGS = AgentArgs
     PROMPT_INPUT = PromptInput
-    PROMPT_EXTENSION = PromptExtension
     TOOLS = [FunctionToolConfig(tool_class=DummyTool), FunctionToolConfig(tool_class=DummyTool)]
     FILE_UPLOAD = False
 
@@ -58,14 +53,12 @@ class MockAgentClassWithoutDefaults:
     NAME = "Dummy Agent Without Defaults"
     AGENT_ARGS = AgentArgsWithoutDefaults
     PROMPT_INPUT = None
-    PROMPT_EXTENSION = None
     TOOLS = []
     FILE_UPLOAD = False
 
 
 EXPECTED_AGENT_CONFIG = {
     "agent_args": {"with_default": "default"},
-    "prompt_extension": {"with_default": "default"},
     "prompt_input": {"with_default": "default"},
     "tools": [{"with_default": "default"}, {"with_default": "default"}],
 }

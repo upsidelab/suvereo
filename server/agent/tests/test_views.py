@@ -72,15 +72,9 @@ class PromptInput(RequiredFieldsModel):
     optional_test: str = Field(description="description", title="title", default="default")
 
 
-class PromptExtension(RequiredFieldsModel):
-    required_test: str = Field(description="description", title="title")
-    optional_test: str = Field(description="description", title="title", default="default")
-
-
 class DummyAgentBase:
     AGENT_ARGS = AgentArgs
     PROMPT_INPUT = PromptInput
-    PROMPT_EXTENSION = PromptExtension
     TOOLS = [FunctionToolConfig(tool_class=DummyTool), FunctionToolConfig(tool_class=DummyTool)]
     FILE_UPLOAD = False
 
@@ -109,10 +103,6 @@ def config():
             "optional_test": "optional_test",
         },
         "prompt_input": {
-            "required_test": "required_test",
-            "optional_test": "optional_test",
-        },
-        "prompt_extension": {
             "required_test": "required_test",
             "optional_test": "optional_test",
         },
@@ -284,9 +274,6 @@ class TestAgentView:
             "prompt_input": {
                 "required_test": "required_test",
             },
-            "prompt_extension": {
-                "required_test": "required_test",
-            },
             "tools": [
                 {
                     "required_test": "required_test",
@@ -323,10 +310,6 @@ class TestAgentView:
                 "required_test": "required_test",
                 "optional_test": "optional_test",
             },
-            "prompt_extension": {
-                "required_test": "required_test",
-                "optional_test": "optional_test",
-            },
             "tools": [
                 {"required_test": "required_test", "optional_test": "optional_test"},
                 {"required_test": "required_test", "optional_test": "optional_test"},
@@ -350,7 +333,6 @@ class TestAgentView:
             assert created.config["tools"][1].get("optional_test") == "optional_test"
             assert created.config["agent_args"].get("optional_test") == "optional_test"
             assert created.config["prompt_input"].get("optional_test") == "optional_test"
-            assert created.config["prompt_extension"].get("optional_test") == "optional_test"
 
     def test_post_creates_agent_do_not_save_empty_field(self, api_client, user, url, config):
         dataset = baker.make(DataSet)
@@ -360,9 +342,6 @@ class TestAgentView:
                 "required_test": "required_test",
             },
             "prompt_input": {
-                "required_test": "required_test",
-            },
-            "prompt_extension": {
                 "required_test": "required_test",
             },
             "tools": [{"required_test": "required_test"}, {"required_test": "required_test"}],
@@ -381,7 +360,6 @@ class TestAgentView:
         class NoArgsDummyAgent:
             AGENT_ARGS = None
             PROMPT_INPUT = PromptInput
-            PROMPT_EXTENSION = PromptExtension
             TOOLS = [FunctionToolConfig(tool_class=NoArgsDummyTool), FunctionToolConfig(tool_class=DummyTool)]
             FILE_UPLOAD = False
 
@@ -471,10 +449,6 @@ class TestAgentDetailsView:
                 "required_test": "required_updated",
                 "optional_test": "optional_updated",
             },
-            "prompt_extension": {
-                "required_test": "required_updated",
-                "optional_test": "optional_updated",
-            },
             "tools": [
                 {"required_test": "required_upated", "optional_test": "optional_updated"},
                 {"required_test": "required_updated", "optional_test": "optional_updated"},
@@ -544,10 +518,6 @@ class TestAgentDetailsView:
                 "optional_test": "optional_updated",
             },
             "prompt_input": {
-                "required_test": "required_updated",
-                "optional_test": "optional_updated",
-            },
-            "prompt_extension": {
                 "required_test": "required_updated",
                 "optional_test": "optional_updated",
             },

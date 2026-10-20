@@ -77,9 +77,6 @@ class BaseToolCallingAgent(BaseAgent):
     def _build_tools(self) -> list[BaseTool]:
         return [tool.as_tool() for tool in self._tools] + self._dynamic_tools
 
-    def _get_system_prompt(self) -> str:
-        return self._system_prompt.format(**self._get_system_prompt_variables())
-
     def _build_invoke_config(self) -> dict[str, Any]:
         if self._callback_handler:
             return {"callbacks": [self._callback_handler]}

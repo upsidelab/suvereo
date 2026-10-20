@@ -25,7 +25,6 @@ def agent_type_config_schema(agent_class) -> dict:
     return {
         "agent_args": get_model_descriptor_from_class_field(agent_class, "AGENT_ARGS"),
         "prompt_input": get_model_descriptor_from_class_field(agent_class, "PROMPT_INPUT"),
-        "prompt_extension": get_model_descriptor_from_class_field(agent_class, "PROMPT_EXTENSION"),
         "tools": [
             get_model_descriptor_from_class_field(tool_config.tool_class, "CONFIGURATION_ARGS")
             for tool_config in getattr(agent_class, "TOOLS", None) or []
@@ -38,7 +37,6 @@ class AgentChoiceSerializer(serializers.Serializer):
     name = serializers.CharField()
     agent_args = serializers.DictField(child=ExtraArgDetailSerializer(), allow_empty=True)
     prompt_input = serializers.DictField(child=ExtraArgDetailSerializer(), allow_empty=True)
-    prompt_extension = serializers.DictField(child=ExtraArgDetailSerializer(), allow_empty=True)
     tools = serializers.ListField(child=serializers.DictField(child=ExtraArgDetailSerializer()), allow_empty=True)
 
 
@@ -51,7 +49,6 @@ class AgentConfigSerializer(ParentDataContextSerializerMixin, serializers.Serial
 
     agent_args = PydanticModelField(agent_field_name="AGENT_ARGS")
     prompt_input = PydanticModelField(agent_field_name="PROMPT_INPUT")
-    prompt_extension = PydanticModelField(agent_field_name="PROMPT_EXTENSION")
     tools = PydanticModelToolListField(agent_field_name="TOOLS", tool_field_name="CONFIGURATION_ARGS")
 
 

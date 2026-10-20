@@ -130,5 +130,4 @@ class RequiredFieldsModel(BaseModel, metaclass=RequiredFieldsMeta):
 class AgentAdditionalArguments(BaseModel):
     AGENT_ARGS: dict[str, str]
     PROMPT_INPUT: dict[str, str]
-    PROMPT_EXTENSION: dict[str, str]
     TOOLS: list[dict[str, str]]

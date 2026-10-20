@@ -207,7 +207,7 @@ export function useAgentForm(
     if (typeof errorData === 'object' && errorData && 'config' in errorData) {
       const configErrors = (errorData as { config: unknown }).config;
       if (typeof configErrors === 'object' && configErrors) {
-        const sectionNames = ['agent_args', 'prompt_input', 'prompt_extension'];
+        const sectionNames = ['agent_args', 'prompt_input'];
         
         sectionNames.forEach(sectionName => {
           parseSingleConfigSection(sectionName, (configErrors as Record<string, unknown>)[sectionName], newFieldErrors);
