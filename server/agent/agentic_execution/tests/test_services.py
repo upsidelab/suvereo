@@ -101,15 +101,15 @@ class TestStart:
             service.start(agent=non_upload_agent, user=user, execution_key="dummy", validated_input={}, uploaded_files=[_make_file()])
 
     def test_raises_for_unsupported_file_extension(self, service, agent, user):
-        with patch("agent.agentic_execution.services.settings.FILE_PARSER_CLASSES", SUPPORTED_EXTENSIONS):
+        with patch("agent.conversation.services.conversation_file_attach_service.settings.FILE_PARSER_CLASSES", SUPPORTED_EXTENSIONS):
             with pytest.raises(UnsupportedFileTypeError) as exc_info:
                 service.start(agent=agent, user=user, execution_key="dummy", validated_input={}, uploaded_files=[_make_file("photo.jpg")])
 
         assert exc_info.value.ext == ".jpg"
 
     def test_attaches_files_as_conversation_files(self, service, agent, user):
-        with patch("agent.agentic_execution.services.settings.FILE_PARSER_CLASSES", SUPPORTED_EXTENSIONS), \
-             patch("agent.agentic_execution.services.FileParsingService.process", return_value="extracted"):
+        with patch("agent.conversation.services.conversation_file_attach_service.settings.FILE_PARSER_CLASSES", SUPPORTED_EXTENSIONS), \
+             patch("agent.conversation.services.conversation_file_attach_service.FileParsingService.process", return_value="extracted"):
             execution = service.start(
                 agent=agent, user=user, execution_key="dummy", validated_input={}, uploaded_files=[_make_file()]
             )
@@ -122,8 +122,8 @@ class TestStart:
         assert cf.file_category == ConversationFile.FileCategory.FILE
 
     def test_detects_image_file_category(self, service, agent, user):
-        with patch("agent.agentic_execution.services.settings.FILE_PARSER_CLASSES", {(".jpg",): "some.Class"}), \
-             patch("agent.agentic_execution.services.FileParsingService.process", return_value=""):
+        with patch("agent.conversation.services.conversation_file_attach_service.settings.FILE_PARSER_CLASSES", {(".jpg",): "some.Class"}), \
+             patch("agent.conversation.services.conversation_file_attach_service.FileParsingService.process", return_value=""):
             execution = service.start(
                 agent=agent, user=user, execution_key="dummy", validated_input={}, uploaded_files=[_make_file("photo.jpg", content_type="image/jpeg")]
             )
@@ -138,8 +138,8 @@ class TestStart:
 
     def test_creates_file_message_for_each_uploaded_file(self, service, agent, user):
         files = [_make_file("doc.pdf"), _make_file("sheet.txt")]
-        with patch("agent.agentic_execution.services.settings.FILE_PARSER_CLASSES", SUPPORTED_EXTENSIONS), \
-             patch("agent.agentic_execution.services.FileParsingService.process", return_value=""):
+        with patch("agent.conversation.services.conversation_file_attach_service.settings.FILE_PARSER_CLASSES", SUPPORTED_EXTENSIONS), \
+             patch("agent.conversation.services.conversation_file_attach_service.FileParsingService.process", return_value=""):
             execution = service.start(
                 agent=agent, user=user, execution_key="dummy", validated_input={}, uploaded_files=files
             )
@@ -150,8 +150,8 @@ class TestStart:
         assert messages.count() == 2
 
     def test_file_message_has_correct_name_and_type(self, service, agent, user):
-        with patch("agent.agentic_execution.services.settings.FILE_PARSER_CLASSES", SUPPORTED_EXTENSIONS), \
-             patch("agent.agentic_execution.services.FileParsingService.process", return_value=""):
+        with patch("agent.conversation.services.conversation_file_attach_service.settings.FILE_PARSER_CLASSES", SUPPORTED_EXTENSIONS), \
+             patch("agent.conversation.services.conversation_file_attach_service.FileParsingService.process", return_value=""):
             execution = service.start(
                 agent=agent, user=user, execution_key="dummy", validated_input={}, uploaded_files=[_make_file("report.pdf")]
             )

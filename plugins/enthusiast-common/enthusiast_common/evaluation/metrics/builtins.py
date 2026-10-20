@@ -1,0 +1,6 @@
+from .auto import AUTO_METRICS
+from .correctness import CORRECTNESS_METRICS
+from .llm import LLM_METRICS
+from .process import PROCESS_METRICS
+
+BUILTIN_METRICS = [*AUTO_METRICS, *CORRECTNESS_METRICS, *PROCESS_METRICS, *LLM_METRICS]

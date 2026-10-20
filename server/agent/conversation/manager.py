@@ -7,6 +7,7 @@ from enthusiast_common.agents import ConfigType
 from enthusiast_common.integrations import BaseToolProvidingIntegration
 
 from account.models import User
+from agent.core.agents.config_overrides import AgentConfigOverrides
 from agent.core.agents.default_config import get_default_config
 from agent.core.registries.agents.agent_registry import AgentRegistry
 from agent.models import Conversation, Message
@@ -24,6 +25,7 @@ class ConversationManager:
         streaming: bool,
         config_type: ConfigType = ConfigType.CONVERSATION,
         tool_scratchpad: Optional[ToolScratchpad] = None,
+        overrides: Optional[AgentConfigOverrides] = None,
     ) -> str:
         """Formulate an answer to a given question and store the decision-making process.
 
@@ -36,9 +38,11 @@ class ConversationManager:
         # later, and it must hit that cache rather than issue a fresh sync query from inside a
         # running event loop.
         agent_class = AgentRegistry().get_agent_class_by_type(conversation.agent.agent_type)
-        if self._should_answer_asynchronously(conversation, agent_class):
+        if self._should_answer_asynchronously(conversation, agent_class, overrides):
             return asyncio.run(
-                self._get_answer_async(conversation, question_message, streaming, config_type, tool_scratchpad)
+                self._get_answer_async(
+                    conversation, question_message, streaming, config_type, tool_scratchpad, overrides
+                )
             )
 
         agent = AgentRegistry().get_conversation_agent(
@@ -46,12 +50,15 @@ class ConversationManager:
             streaming,
             config_type=config_type,
             tool_scratchpad=tool_scratchpad,
+            overrides=overrides,
         )
         response = agent.get_answer(question_message)
 
         return response
 
-    def _should_answer_asynchronously(self, conversation: Conversation, agent_class: type) -> bool:
+    def _should_answer_asynchronously(
+        self, conversation: Conversation, agent_class: type, overrides: Optional[AgentConfigOverrides] = None
+    ) -> bool:
         """Decide whether this turn needs the async path, which exists to await integration tools.
 
         Two things have to hold: the agent has to be able to answer asynchronously at all, and the
@@ -60,11 +67,12 @@ class ConversationManager:
         a data set with nothing connected never pays for an event loop it has no use for.
 
         The resolver comes from the default agent config rather than being imported directly, so a
-        host that swaps its implementation is honoured here as well as in the agent builder.
+        host that swaps its implementation is honoured here as well as in the agent builder; a run's
+        overrides win over both, so an evaluation asks its own resolver.
         """
         if not hasattr(agent_class, "aget_answer"):
             return False
-        resolver_class = get_default_config().integration_plugin_resolver
+        resolver_class = (overrides and overrides.integration_plugin_resolver) or get_default_config().integration_plugin_resolver
         if resolver_class is None:
             return False
         return resolver_class().has_any(conversation.data_set_id, BaseToolProvidingIntegration)
@@ -76,12 +84,14 @@ class ConversationManager:
         streaming: bool,
         config_type: ConfigType,
         tool_scratchpad: Optional[ToolScratchpad],
+        overrides: Optional[AgentConfigOverrides] = None,
     ) -> str:
         agent = await AgentRegistry().aget_conversation_agent(
             conversation,
             streaming,
             config_type=config_type,
             tool_scratchpad=tool_scratchpad,
+            overrides=overrides,
         )
         return await agent.aget_answer(question_message)
 

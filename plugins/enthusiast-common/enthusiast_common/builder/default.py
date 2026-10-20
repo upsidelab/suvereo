@@ -22,7 +22,7 @@ from ..memory import BaseMemoryCompactor
 from ..registry import BaseDBModelsRegistry, BaseEmbeddingProviderRegistry, BaseLanguageModelRegistry
 from ..structures import RepositoriesInstances
 from ..tools import BaseAgentTool, BaseFileTool, BaseFunctionTool, BaseLLMTool
-from ..utils import run_off_event_loop
+from ..utils import deep_merge, run_off_event_loop
 from .base import BaseAgentBuilder, ConfigT
 
 logger = logging.getLogger(__name__)
@@ -133,9 +133,15 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
         return tools
 
     def _inject_additional_arguments(self, agent_instance: BaseAgent) -> None:
+        agent_instance.set_runtime_arguments(self._agent_runtime_arguments())
+
+    def _agent_runtime_arguments(self) -> dict:
+        """The agent's stored runtime arguments, with the config's ``runtime_arguments_patch`` merged in."""
         agent_configuration_id = self._repositories.conversation.get_agent_id(self.conversation_id)
         runtime_arguments = self._repositories.agent.get_agent_configuration_by_id(agent_configuration_id)
-        agent_instance.set_runtime_arguments(runtime_arguments)
+        if patch := self._config.runtime_arguments_patch:
+            return deep_merge(runtime_arguments, patch)
+        return runtime_arguments
 
     def _build_agent(
         self,
@@ -189,16 +195,11 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
         return llm.create(self._data_set_id)
 
     def _build_default_llm(self) -> BaseLanguageModel:
-        llm_registry_class = self._config.registry.llm.registry_class
-        data_set_repo = self._repositories.data_set
-        if providers := self._config.registry.llm.providers:
-            llm_registry = llm_registry_class(providers=providers)
-        else:
-            llm_registry = llm_registry_class(data_set_repo=data_set_repo)
-
+        """The non-streaming LLM used by tools, retrievers and the memory compactor, with the same callbacks."""
         llm = self._config.llm.llm_class(
-            llm_registry=llm_registry,
-            data_set_repo=data_set_repo,
+            llm_registry=self._build_llm_registry(),
+            callbacks=self._build_llm_callback_handlers(),
+            data_set_repo=self._repositories.data_set,
         )
         return llm.create(self._data_set_id)
 
