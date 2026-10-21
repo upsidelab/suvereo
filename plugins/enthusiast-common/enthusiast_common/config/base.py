@@ -4,7 +4,7 @@ from typing import Any, Generic, Optional, Type, TypeVar
 
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.chat_history import BaseChatMessageHistory
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from ..agents import BaseAgent
 from ..injectors.base import BaseInjector
@@ -115,6 +115,7 @@ class AgentConfig(ArbitraryTypeBaseModel, Generic[InjectorT]):
     memory: MemoryConfig
     tools: Optional[list[FunctionToolConfig | LLMToolConfig | AgentToolConfig | FileToolConfig]] = None
     agent_callback_handler: Optional[AgentCallbackHandlerConfig] = None
+    conversation_history_token_limit: int = Field(gt=0)
     memory_compactor_enabled: bool = False
     similarity_searcher: Optional[Type[BaseSimilaritySearcher]] = None
     integration_plugin_resolver: Optional[Type[BaseIntegrationPluginResolver]] = None
@@ -128,3 +129,4 @@ class AgentConfigWithDefaults(AgentConfig, Generic[InjectorT]):
     registry: Optional[RegistryConfig] = None
     llm: Optional[LLMConfig] = None
     memory: Optional[MemoryConfig] = None
+    conversation_history_token_limit: Optional[int] = Field(default=None, gt=0)

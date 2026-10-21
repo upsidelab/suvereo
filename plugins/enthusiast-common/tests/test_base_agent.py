@@ -30,7 +30,8 @@ class RenamingAgent(StubAgent):
 
 def build(agent_class: type[BaseAgent], system_prompt: str, prompt_input=None) -> BaseAgent:
     agent = agent_class(
-        tools=[], llm=MagicMock(), system_prompt=system_prompt, conversation_id=1, injector=MagicMock()
+        tools=[], llm=MagicMock(), system_prompt=system_prompt, conversation_id=1, injector=MagicMock(),
+        conversation_history_token_limit=10_000
     )
     if prompt_input is not None:
         agent.PROMPT_INPUT = prompt_input

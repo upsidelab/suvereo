@@ -156,6 +156,7 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
             conversation_id=self.conversation_id,
             callback_handler=callback_handler,
             injector=self._injector,
+            conversation_history_token_limit=self._config.conversation_history_token_limit,
         )
 
     def _build_llm_registry(self) -> BaseLanguageModelRegistry:
