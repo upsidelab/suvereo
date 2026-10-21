@@ -107,3 +107,4 @@ server/media
 server/media
 
 .claude/*
+!.claude/skills
