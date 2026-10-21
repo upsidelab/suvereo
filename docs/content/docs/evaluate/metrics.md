@@ -1,7 +1,3 @@
----
-sidebar_position: 4
----
-
 # Metrics
 
 A metric measures one thing about every run: a **number**, a **bool** or a **label**. Some are measured on every run with no config; the rest you add under `metrics` in `suite.yaml`, or in a case to add or replace one for that case. `./manage.py listevalmetrics` lists them all with their params.

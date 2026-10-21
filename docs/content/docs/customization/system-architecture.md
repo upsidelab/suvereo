@@ -1,7 +1,3 @@
----
-sidebar_position: 1
----
-
 # System Architecture
 
 Enthusiast contains of two main components:

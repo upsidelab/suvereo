@@ -1,7 +1,3 @@
----
-sidebar_position: 9
----
-
 # Agent Configuration
 
 `AgentConfig` describes how an [agent](/docs/concepts#agent) is assembled: which class runs it, which prompt and tools it uses, and which classes provide its injector, repositories, registries and memory. The [builder](/docs/agents/builder) reads it when it creates the agent.

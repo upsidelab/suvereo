@@ -1,7 +1,3 @@
----
-sidebar_position: 3
----
-
 # Memory
 
 An [agent](/docs/concepts#agent) keeps the context of a [conversation](/docs/concepts#conversation) through two mechanisms: the **persistent chat history**, which is on by default, and the **memory compactor**, which is optional.

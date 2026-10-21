@@ -1,7 +1,3 @@
----
-sidebar_position: 9
----
-
 # Agentic Execution
 
 Agentic execution is a first-class concept distinct from the conversation-based agent flow. Where conversations are interactive (between the user and the agent), executions are **autonomous, programmatic batch jobs**: submitted via API, the LLM agent runs to completion without user interaction, and the caller inspects the result afterward.

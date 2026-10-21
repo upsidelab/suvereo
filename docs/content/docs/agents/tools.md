@@ -1,7 +1,3 @@
----
-sidebar_position: 4
----
-
 # Tools
 
 A tool is a capability an [agent](/docs/concepts#agent) can call while it works. Tools follow a common structure that provides validation and integration with LangChain.

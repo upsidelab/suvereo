@@ -1,7 +1,3 @@
----
-sidebar_position: 4
----
-
 # Creating a Custom Agent
 
 A custom agent lets you define exactly which tools the agent has access to and how it should behave, while Enthusiast takes care of building and running it.

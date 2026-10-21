@@ -1,7 +1,3 @@
----
-sidebar_position: 3
----
-
 # Mocks
 
 Agents reach external systems through integrations: an e-commerce connector, a product source, a document source. During an evaluation, each integration the suite declares is replaced by a mock that records every call and answers from the suite's YAML. Metrics such as `mock_calls` and `mock_called` then read those recorded calls.

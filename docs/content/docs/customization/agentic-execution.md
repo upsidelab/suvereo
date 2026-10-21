@@ -1,7 +1,3 @@
----
-sidebar_position: 5
----
-
 # Creating an Agentic Execution
 
 Agentic executions allow you to run an agent autonomously as a programmatic batch job — no user interaction required. This guide walks through adding an agentic execution definition to an agent plugin.

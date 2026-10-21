@@ -1,7 +1,3 @@
----
-sidebar_position: 1
----
-
 # Evaluate an Agent
 
 An evaluation suite runs your agent on a set of cases, measures every run and writes reports you can compare across models, prompts and code changes. Suites run against real LLMs with mocked integrations, so a run places no real orders and costs a few cents.
