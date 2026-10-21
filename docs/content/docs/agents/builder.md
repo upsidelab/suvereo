@@ -4,209 +4,85 @@ sidebar_position: 5
 
 # Builder
 
-The Builder pattern in Enthusiast provides a systematic approach to constructing complex agent instances with all their dependencies. The system consists of an abstract `BaseAgentBuilder` class that defines the construction interface and a concrete `AgentBuilder` implementation that handles the specific construction logic.
-
-## Overview
-
-The Builder system serves several key purposes:
-
-- **Complex Object Construction**: Manages the creation of agents with multiple dependencies
-- **Dependency Resolution**: Handles the creation and configuration of all agent components
-- **Configuration Management**: Translates configuration objects into concrete instances
-- **Resource Assembly**: Coordinates the assembly of tools, memory systems, and services
+The builder creates a ready [agent](/docs/concepts#agent) from its [configuration](/docs/agents/agent-config): the repositories, registries, language models, injector, tools and callback handlers. It is created for a conversation, so it can read the conversation's data set and the agent's stored settings.
 
 ## Base Agent Builder
 
-### Abstract Interface
-
-The `BaseAgentBuilder` defines the contract that all agent builders must implement:
+`BaseAgentBuilder` is the contract every builder satisfies. It fixes the constructor and a `build()` method, and nothing else:
 
 ```python
 class BaseAgentBuilder(ABC, Generic[ConfigT]):
-    def __init__(self, config: ConfigT, conversation_id: Any, streaming: bool = False):
-        self._llm = None
-        self._embeddings_registry = None
-        self._data_set_id = None
-        self._injector = None
-        self._config = config
-        self.conversation_id = conversation_id
-        self.streaming = streaming
+    def __init__(
+        self,
+        config: ConfigT,
+        conversation_id: Any,
+        streaming: bool = False,
+        tool_scratchpad: Optional[ToolScratchpad] = None,
+    ): ...
 
+    @abstractmethod
     def build(self) -> BaseAgent:
-        """Main build method that orchestrates the construction process"""
-        # Build sequence implementation...
+        """Build and return a fully wired agent for the conversation."""
 ```
 
-### Build Process
+The config provider of an agent can point `BUILDER_CLASS` at any class that satisfies this contract.
 
-The main `build()` method orchestrates the construction process:
+## Default Agent Builder
+
+`AgentBuilder` is the default implementation. Every host-specific piece reaches it through the configuration, so it depends only on contracts from `enthusiast-common`. Agents whose config provider declares no `BUILDER_CLASS` use it.
+
+`build()` runs these steps:
 
 ```python
 def build(self) -> BaseAgent:
-    # 1. Build registries and repositories
     model_registry = self._build_db_models_registry()
     self._build_and_set_repositories(model_registry)
     self._data_set_id = self._repositories.conversation.get_data_set_id(self.conversation_id)
-    
-    # 2. Build core components
-    self._llm = self._build_llm(self._config.llm)
+    self._llm_registry = self._build_llm_registry()
     self._embeddings_registry = self._build_embeddings_registry()
+    self._llm = self._build_llm(self._config.llm)
+    self._default_llm = self._build_default_llm()
     self._injector = self._build_injector()
-    
-    # 3. Build tools and handlers
-    tools = self._build_tools(default_llm=self._llm, injector=self._injector)
+    tools = self._build_tools(default_llm=self._default_llm, injector=self._injector)
     agent_callback_handler = self._build_agent_callback_handler()
-    
-    # 4. Create and configure agent
     agent_instance = self._build_agent(tools, self._llm, agent_callback_handler)
     self._inject_additional_arguments(agent_instance)
-    
     return agent_instance
 ```
 
-### Abstract Methods
+- **Repositories** are created from the classes in the configuration, each bound to its database model.
+- **The agent's language model** streams its answer when `streaming` is true. **The default language model** is the one tools use unless a tool's config sets its own `llm`.
+- **Tools** are created according to the type of their config: `FunctionToolConfig`, `LLMToolConfig`, `FileToolConfig` or `AgentToolConfig`. A sub-agent of an `AgentToolConfig` is built with the same builder class as its parent.
+- **Stored settings** entered in the UI are applied to the agent and its tools as the last step.
 
-The base builder defines several abstract methods that concrete implementations must provide:
+`abuild()` is the async twin. It runs `build()` in a worker thread and then attaches the tools of the [integrations](/docs/concepts#integration) connected to the data set, such as MCP servers. Each integration has ten seconds to answer. One that fails or times out contributes no tools for that turn, and the others are not affected.
 
-#### Core Construction Methods
+## Extending the builder
 
-```python
-@abstractmethod
-def _build_agent(
-    self,
-    tools: list[BaseTool],
-    llm: BaseLanguageModel,
-    callback_handler: BaseCallbackHandler,
-) -> BaseAgent:
-    """Build the final agent instance"""
-    pass
-
-@abstractmethod
-def _build_injector(self) -> BaseInjector:
-    """Build the dependency injection container"""
-    pass
-```
-
-#### Registry and Repository Methods
+A [vertical](/docs/concepts#vertical) can subclass `AgentBuilder` to create the extra resources of its domain. Most of the time only `_build_injector()` is overridden:
 
 ```python
-@abstractmethod
-def _build_llm_registry(self) -> BaseLanguageModelRegistry:
-    """Build the language model registry"""
-    pass
-
-@abstractmethod
-def _build_db_models_registry(self) -> BaseDBModelsRegistry:
-    """Build the database models registry"""
-    pass
-
-@abstractmethod
-def _build_and_set_repositories(self, models_registry: BaseDBModelsRegistry) -> None:
-    """Build and configure data repositories"""
-    pass
-
-@abstractmethod
-def _build_embeddings_registry(self) -> BaseEmbeddingProviderRegistry:
-    """Build the embeddings provider registry"""
-    pass
+class ArticlesAgentBuilder(AgentBuilder[AgentConfig]):
+    def _build_injector(self) -> ArticlesInjector:
+        chat_history = self._build_chat_history()
+        return ArticlesInjector(
+            article_retriever=ArticleRetriever(
+                data_set_id=self._data_set_id,
+                embeddings_registry=self._embeddings_registry,
+                searcher=self._config.similarity_searcher(),
+            ),
+            repositories=self._repositories,
+            chat_history=chat_history,
+            memory_compactor=self._build_memory_compactor(chat_history),
+            tool_scratchpad=self._tool_scratchpad,
+        )
 ```
 
-#### Component Construction Methods
+The builder is attached to an agent through its config provider:
 
 ```python
-@abstractmethod
-def _build_llm(self, llm_config: LLMConfig) -> BaseLanguageModel:
-    """Build the language model instance"""
-    pass
-
-@abstractmethod
-def _build_default_llm(self) -> BaseLanguageModel:
-    """Build the default language model for tools"""
-    pass
-
-@abstractmethod
-def _build_tools(self, default_llm: BaseLanguageModel, injector: BaseInjector) -> list[BaseTool]:
-    """Build all agent tools"""
-    pass
-
-@abstractmethod
-def _build_function_tool(self, config: FunctionToolConfig) -> BaseFunctionTool:
-    """Build function-based tools"""
-    pass
-
-@abstractmethod
-def _build_llm_tool(self, config: LLMToolConfig, default_llm: BaseLanguageModel, injector: BaseInjector) -> BaseLLMTool:
-    """Build LLM-powered tools"""
-    pass
-
-@abstractmethod
-def _build_agent_tool(self, config: AgentToolConfig) -> BaseAgentTool:
-    """Build agent-based tools"""
-    pass
+class ArticlesConfigProvider(BaseAgentConfigProvider):
+    BUILDER_CLASS = ArticlesAgentBuilder
 ```
 
-#### Callback Methods
-
-```python
-@abstractmethod
-def _build_agent_callback_handler(self) -> Optional[BaseCallbackHandler]:
-    """Build the agent callback handler"""
-    pass
-
-@abstractmethod
-def _build_llm_callback_handlers(self) -> Optional[BaseCallbackHandler]:
-    """Build LLM callback handlers"""
-    pass
-```
-
-### Runtime Configuration Injection
-
-The builder automatically injects runtime configuration into constructed agents:
-
-```python
-def _inject_additional_arguments(self, agent_instance: BaseAgent) -> None:
-    """Inject runtime configuration from the database"""
-    agent_configuration_id = self._repositories.conversation.get_agent_id(self.conversation_id)
-    runtime_arguments = self._repositories.agent.get_agent_configuration_by_id(agent_configuration_id)
-    agent_instance.set_runtime_arguments(runtime_arguments)
-```
-
-## Agent Builder Implementation
-
-### Concrete Implementation
-
-The `AgentBuilder` class provides the concrete implementation of all abstract methods, which will be a default builder for all agents, unless custom one is provided:
-
-
-## Usage Patterns
-
-### Basic Usage
-
-```python
-# Create builder with configuration
-builder = AgentBuilder(
-    config=agent_config,
-    conversation_id="conversation_123",
-    streaming=False
-)
-
-# Build the agent
-agent = builder.build()
-
-# Use the agent
-response = agent.get_answer("Hello, how can you help me?")
-```
-
-## Summary
-
-The Builder system in Enthusiast provides a comprehensive and flexible approach to agent construction:
-
-- **BaseAgentBuilder**: Abstract interface defining the construction contract
-- **AgentBuilder**: Concrete implementation handling all construction details
-- **Systematic Construction**: Step-by-step assembly of all agent components
-- **Configuration-Driven**: All construction driven by configuration objects
-- **Dependency Management**: Automatic resolution and assembly of dependencies
-- **Runtime Configuration**: Dynamic configuration injection after construction
-- **Extensibility**: Easy creation of custom builders for specialized agents
-
-By using the Builder pattern, Enthusiast ensures that complex agents are constructed consistently, reliably, and with all necessary dependencies properly configured and connected.
+See [Injector](/docs/agents/injector) for the injector this builder creates.

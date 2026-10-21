@@ -14,13 +14,13 @@ Data sets are separate from each other: an agent only uses content that belongs 
 
 ## Agent
 
-An agent is an AI assistant set up for a specific job. It is created from an agent type supplied by a [plugin](#plugin) and has a name, a description and settings specific to its type. Each agent belongs to one [data set](#data-set).
+An agent is an AI assistant set up for a specific job. It can be defined on top of a [vertical](#vertical) or directly on top of AgentCore. Its definition specifies the [tools](#tool) it can call and the settings it accepts. Each agent has a name, a description and values for those settings, and belongs to one [data set](#data-set).
 
-An agent does its job by calling [tools](#tool). People talk to agents in [conversations](#conversation), and other systems start them in [agentic executions](#agentic-execution).
+An agent does its job by calling tools. People talk to agents in [conversations](#conversation), and other systems start them in [agentic executions](#agentic-execution).
 
 ## Tool
 
-A tool is a capability an agent can call while it works: searching content, reading a file, calling an external service or handing a task to another agent. Tools come with the agent type, from [integrations](#integration) such as MCP servers, and from the [vertical](#vertical) the agent is built on.
+A tool is a capability an agent can call while it works: searching content, reading a file, calling an external service or handing a task to another agent. Tools can come with the agent type, from [integrations](#integration) such as MCP servers, and from the [vertical](#vertical) the agent is built on.
 
 ## Conversation
 
@@ -48,7 +48,7 @@ An entity is a kind of record in a domain, such as an article or a support ticke
 
 ## Vertical
 
-A vertical adds a domain to AgentCore. It defines the domain's entities, its integrations with external systems, and how both are handed to agents as tools. Everything else, including conversations, agentic executions, permissions, models and the UI, comes from AgentCore.
+A vertical adds a domain to AgentCore. It can define the domain's entities, its integrations with external systems, and how both are handed to agents as tools. Everything else, including conversations, agentic executions, permissions, models and the UI, comes from AgentCore.
 
 A vertical is enabled in the instance settings, and agents are then built on top of it. AgentCore also runs without a vertical, with agents that use the basic tools it provides and the tools of any connected MCP server.
 
@@ -56,4 +56,4 @@ A vertical is enabled in the instance settings, and agents are then built on top
 
 ## Plugin
 
-A plugin is a standalone package that extends AgentCore without changing it. Plugins supply language and embedding model providers, integrations, agent types and verticals. All of them are built against shared contracts, which is how AgentCore loads them and how they stay independent of each other.
+A plugin is a standalone package that extends AgentCore without changing it. Plugins can supply language and embedding model providers, integrations, agent types and verticals. All of them are built against shared contracts, which is how AgentCore loads them and how they stay independent of each other.

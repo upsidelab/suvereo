@@ -4,221 +4,113 @@ sidebar_position: 9
 
 # Agent Configuration
 
-The `AgentConfig` is the central configuration system for all agents in the Enthusiast framework. It provides a type-safe, flexible way to configure agent behavior, tools, memory, and dependencies.
+`AgentConfig` describes how an [agent](/docs/concepts#agent) is assembled: which class runs it, which prompt and tools it uses, and which classes provide its injector, repositories, registries and memory. The [builder](/docs/agents/builder) reads it when it creates the agent.
 
-## Overview
+An agent implementation does not need to fill in the whole configuration. It can return an `AgentConfigWithDefaults` with only the fields that are specific to the agent, and the framework fills in the rest from its defaults.
 
-`AgentConfig` is a Pydantic-based configuration class that defines all aspects of an agent's behavior and capabilities. It serves as the blueprint for building agents with specific configurations while maintaining consistency across the system.
+## AgentConfig
 
-## Core Structure
-
-### Base AgentConfig Class
+`AgentConfig` is a Pydantic model.
 
 ```python
 class AgentConfig(ArbitraryTypeBaseModel, Generic[InjectorT]):
     agent_class: Type[BaseAgent]
     llm: LLMConfig
     repositories: RepositoriesConfig
-    retrievers: RetrieversConfig
     injector: Type[InjectorT]
     registry: RegistryConfig
     system_prompt: str
+    memory: MemoryConfig
     tools: Optional[list[FunctionToolConfig | LLMToolConfig | AgentToolConfig | FileToolConfig]] = None
     agent_callback_handler: Optional[AgentCallbackHandlerConfig] = None
+    memory_compactor_enabled: bool = False
+    similarity_searcher: Optional[Type[BaseSimilaritySearcher]] = None
+    integration_plugin_resolver: Optional[Type[BaseIntegrationPluginResolver]] = None
 ```
 
-### Configuration Components
+| Field | Description |
+|---|---|
+| `agent_class` | The agent class to instantiate, for example a subclass of `BaseToolCallingAgent`. |
+| `llm` | `LLMConfig`: the language model class and optional callback handlers. |
+| `repositories` | `RepositoriesConfig`: the repository class for each entity the agent can read: `user`, `message`, `conversation`, `data_set` and `agent`. |
+| `injector` | The injector class, see [Injector](/docs/agents/injector). |
+| `registry` | `RegistryConfig`: the registries for language models, embedding providers and database models. |
+| `system_prompt` | The system prompt. It can contain `{variable}` placeholders, see [Prompts](/docs/agents/prompts). |
+| `memory` | `MemoryConfig`: the chat history class and, optionally, the memory compactor class. |
+| `tools` | The tools of the agent, as `FunctionToolConfig`, `LLMToolConfig`, `AgentToolConfig` or `FileToolConfig`. See [Tools](/docs/agents/tools). |
+| `agent_callback_handler` | Receives agent events. By default, it streams them to the conversation. |
+| `memory_compactor_enabled` | Turns on the memory compactor for this agent. Off by default, see [Memory](/docs/agents/memory). |
+| `similarity_searcher` | The class that runs similarity search for retrievers. |
+| `integration_plugin_resolver` | The class that finds the [integrations](/docs/concepts#integration) connected to a data set, used to attach their tools to the agent. |
 
-#### 1. **agent_class**
-- **Type**: `Type[BaseAgent]`
-- **Required**: Yes
-- **Description**: The specific agent implementation class to instantiate
-- **Example**: `ProductSearchAgent`, `UserManualSearchAgent`
+## Defaults
 
-#### 2. **llm**
-- **Type**: `LLMConfig`
-- **Required**: Yes
-- **Description**: Language model configuration including model selection and callbacks
-- **Components**:
-  - `llm_class`: The language model class to use
-  - `callbacks`: List of callback handlers for monitoring and logging
+`AgentConfigWithDefaults` makes `repositories`, `injector`, `registry`, `llm` and `memory` optional. The framework replaces every field left empty with the value from its default configuration, defined in `server/agent/core/agents/default_config.py`. The default configuration has no system prompt, so an agent supplies its own `system_prompt`:
 
-#### 3. **repositories**
-- **Type**: `RepositoriesConfig`
-- **Required**: Yes
-- **Description**: Data access layer configuration for all entities
-- **Components**:
-  - `user`: User repository implementation
-  - `message`: Message repository implementation
-  - `conversation`: Conversation repository implementation
-  - `data_set`: Dataset repository implementation
-  - `document_chunk`: Document chunk repository implementation
-  - `product`: Product repository implementation
-  - `product_chunk`: Product chunk repository implementation
-  - `agent`: Agent repository implementation
+| Field | Default |
+|---|---|
+| `repositories` | Django repositories for users, messages, conversations, data sets and agents |
+| `injector` | `Injector` |
+| `registry` | `LanguageModelRegistry`, `EmbeddingProviderRegistry` and `BaseDjangoSettingsDBModelRegistry` |
+| `llm` | `BaseLLM` |
+| `memory` | `PersistentChatHistory` and `LLMMemoryCompactor` |
+| `agent_callback_handler` | `ConversationWebSocketCallbackHandler` |
+| `similarity_searcher` | `EmbeddingSimilaritySearcher` |
+| `integration_plugin_resolver` | `IntegrationPluginResolver` |
 
-#### 4. **retrievers**
-- **Type**: `RetrieversConfig`
-- **Required**: Yes
-- **Description**: Document and product retrieval system configuration
-- **Components**:
-  - `document`: Document retriever configuration
-  - `product`: Product retriever configuration
-
-#### 5. **injector**
-- **Type**: `Type[InjectorT]`
-- **Required**: Yes
-- **Description**: Dependency injection container class
-- **Example**: `Injector` (default implementation)
-
-#### 6. **registry**
-- **Type**: `RegistryConfig`
-- **Required**: Yes
-- **Description**: Registry configuration for models, LLMs, and embeddings
-- **Components**:
-  - `llm`: Language model registry configuration
-  - `embeddings`: Embedding provider registry configuration
-  - `model`: Database model registry configuration
-
-#### 7. **system_prompt**
-- **Type**: `str`
-- **Required**: Yes
-- **Description**: The system prompt passed to the agent. May contain `{variable}` placeholders resolved via the agent's `_get_system_prompt_variables()` hook.
-
-#### 8. **tools**
-- **Type**: `Optional[list[FunctionToolConfig | LLMToolConfig | AgentToolConfig]]`
-- **Required**: No
-- **Description**: List of tools available to the agent
-- **Tool Types**:
-  - `FunctionToolConfig`: Simple, stateless operations
-  - `LLMToolConfig`: AI-powered operations with language models
-  - `AgentToolConfig`: Tools that use other agents
-
-#### 9. **memory_compactor_enabled**
-- **Type**: `bool`
-- **Required**: No (default: `False`)
-- **Description**: Enables the memory compactor for this agent. When `True`, an LLM-generated summary of the conversation is persisted every 10 human messages and injected as a `SystemMessage` at the start of each agent call. See [Memory](./memory.md) for details.
-
-#### 10. **agent_callback_handler**
-- **Type**: `Optional[AgentCallbackHandlerConfig]`
-- **Required**: No
-- **Description**: Callback handler for agent-specific events and monitoring
-
-## Default Configuration
-
-The Enthusiast framework provides a comprehensive default configuration that serves as the foundation for all agents. This default configuration is defined in `server/agent/core/agents/default_config.py`.
-
-### Default Configuration Structure
-
-```python
-class DefaultAgentConfig(BaseModel):
-    repositories: RepositoriesConfig
-    retrievers: RetrieversConfig
-    injector: Type[Injector]
-    registry: RegistryConfig
-    llm: LLMConfig
-```
-
-### Default Components
-Ready to use, built in defaults: 
-
-#### **Repositories**
-- **User Repository**: `DjangoUserRepository`
-- **Dataset Repository**: `DjangoDataSetRepository`
-- **Conversation Repository**: `DjangoConversationRepository`
-- **Message Repository**: `DjangoMessageRepository`
-- **Product Repository**: `DjangoProductRepository`
-- **Document Chunk Repository**: `DjangoDocumentChunkRepository`
-- **Product Chunk Repository**: `DjangoProductChunkRepository`
-- **Agent Repository**: `DjangoAgentRepository`
-
-#### **Retrievers**
-- **Document Retriever**: `DocumentRetriever`
-- **Product Retriever**: `ProductRetriever`
-
-#### **Injector**
-- **Default Injector**: `Injector` class for dependency management
-
-#### **Registry**
-- **LLM Registry**: `LanguageModelRegistry`
-- **Embeddings Registry**: `EmbeddingProviderRegistry`
-- **Model Registry**: `BaseDjangoSettingsDBModelRegistry`
-
-#### **LLM Configuration**
-- **LLM**: `BaseLLM`
+An agent built on a [vertical](/docs/concepts#vertical) usually sets none of these except the agent class, prompt and tools. The vertical's builder, declared in the config provider, can take care of its own injector.
 
 ## Configuration Provider
 
-Agent configuration is provided through a `BaseAgentConfigProvider` subclass. The framework registry discovers this class automatically at runtime by scanning the agent's package module.
+An agent implementation provides its configuration through a subclass of `BaseAgentConfigProvider` from `enthusiast_common.agents`.
 
-### **Required ConfigProvider Class**
+- It implements `get_config(config_type) -> AgentConfigWithDefaults`.
+- It can set `BUILDER_CLASS` to a builder class. Without it, the default `AgentBuilder` is used.
+- It must be importable from the same module as the agent class registered in `AVAILABLE_AGENTS`.
 
-- **Base class**: Must subclass `BaseAgentConfigProvider` from `enthusiast_common.agents`
-- **Method**: Must implement `get_config(config_type: ConfigType = ConfigType.CONVERSATION) -> AgentConfigWithDefaults`
-- **Discoverability**: Must be importable at the same module level as the agent class path registered in `AVAILABLE_AGENTS`
-
-The registry derives the discovery path from `AVAILABLE_AGENTS`. For example, with `AVAILABLE_AGENTS = ['enthusiast_agent_catalog_enrichment.CatalogEnrichmentAgent']`, the registry strips the class name and imports `enthusiast_agent_catalog_enrichment`, then scans it for any subclass of `BaseAgentConfigProvider`. The first match is used.
-
-There are no restrictions on file naming or directory layout — as long as the `BaseAgentConfigProvider` subclass is importable from that module (e.g. exported via `__init__.py`), the framework will find it.
-
-### **Example**
+The registry derives the module from `AVAILABLE_AGENTS`: it strips the class name from each path and scans the module for a `BaseAgentConfigProvider` subclass. With `AVAILABLE_AGENTS = ["articles_agent.ArticlesAgent"]`, it looks in `articles_agent`. File names and directory layout are not restricted, as long as the provider can be imported from that module, for example through `__init__.py`.
 
 ```python
 # config.py
-from enthusiast_common.agents import BaseAgentConfigProvider, ConfigType
-from enthusiast_common.config import AgentConfigWithDefaults
+class ArticlesConfigProvider(BaseAgentConfigProvider):
+    BUILDER_CLASS = ArticlesAgentBuilder
 
-from .agent import YourAgent
-from .prompt import YOUR_AGENT_SYSTEM_PROMPT
-
-
-class YourAgentConfigProvider(BaseAgentConfigProvider):
     def get_config(self, config_type: ConfigType = ConfigType.CONVERSATION) -> AgentConfigWithDefaults:
         return AgentConfigWithDefaults(
-            agent_class=YourAgent,
-            system_prompt=YOUR_AGENT_SYSTEM_PROMPT,
-            tools=YourAgent.TOOLS,
+            agent_class=ArticlesAgent,
+            system_prompt=ARTICLES_SYSTEM_PROMPT,
+            tools=ArticlesAgent.TOOLS,
         )
 ```
 
 ```python
 # __init__.py
-from .agent import YourAgent
-from .config import YourAgentConfigProvider
+from .agent import ArticlesAgent
+from .config import ArticlesConfigProvider
 
-__all__ = ["YourAgent", "YourAgentConfigProvider"]
+__all__ = ["ArticlesAgent", "ArticlesConfigProvider"]
 ```
 
-### **Context-Specific Configuration**
+### Configuration per context
 
-`get_config` receives a `config_type` argument that allows returning a different configuration depending on the call context:
+`get_config` receives a `config_type` that tells which kind of run needs the agent:
 
-- `ConfigType.CONVERSATION` — interactive user conversations (default)
-- `ConfigType.AGENTIC_EXECUTION_DEFINITION` — autonomous agentic execution runs
+- `ConfigType.CONVERSATION`: an interactive [conversation](/docs/concepts#conversation), the default
+- `ConfigType.AGENTIC_EXECUTION_DEFINITION`: an autonomous [agentic execution](/docs/concepts#agentic-execution)
+
+An agent that behaves differently in the two contexts returns a different configuration for each:
 
 ```python
 def get_config(self, config_type: ConfigType = ConfigType.CONVERSATION) -> AgentConfigWithDefaults:
     if config_type == ConfigType.AGENTIC_EXECUTION_DEFINITION:
         return AgentConfigWithDefaults(
-            agent_class=YourAgent,
-            system_prompt=YOUR_AGENT_EXECUTION_PROMPT,
-            tools=YourAgent.TOOLS + [LLMToolConfig(tool_class=StopExecutionTool)],
+            agent_class=ArticlesAgent,
+            system_prompt=ARTICLES_EXECUTION_PROMPT,
+            tools=ArticlesAgent.TOOLS + [LLMToolConfig(tool_class=StopExecutionTool)],
         )
     return AgentConfigWithDefaults(
-        agent_class=YourAgent,
-        system_prompt=YOUR_AGENT_SYSTEM_PROMPT,
-        tools=YourAgent.TOOLS,
+        agent_class=ArticlesAgent,
+        system_prompt=ARTICLES_SYSTEM_PROMPT,
+        tools=ArticlesAgent.TOOLS,
     )
 ```
-
-
-## Summary
-
-The `AgentConfig` system provides a robust, flexible, and type-safe way to configure agents in the Enthusiast framework. By understanding its structure, using the default configuration system, and following best practices, developers can create powerful and maintainable agent configurations that leverage the full capabilities of the framework.
-
-Key benefits include:
-- **Type Safety**: Pydantic-based validation ensures configuration integrity
-- **Flexibility**: Support for custom configurations while maintaining defaults
-- **Validation**: Automatic validation of configuration requirements
-- **Extensibility**: Easy to add new configuration options and validators
-- **Consistency**: Standardized configuration patterns across all agents
