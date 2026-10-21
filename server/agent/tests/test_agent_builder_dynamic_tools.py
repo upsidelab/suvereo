@@ -57,6 +57,7 @@ def agent_with_tools(*names: str) -> StubAgent:
         system_prompt="",
         conversation_id=1,
         injector=None,
+        conversation_history_token_limit=10_000,
     )
 
 
