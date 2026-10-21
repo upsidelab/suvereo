@@ -10,6 +10,9 @@ class DataSet(models.Model):
     embedding_vector_dimensions = models.IntegerField(default=512)
     embedding_chunk_size = models.IntegerField(default=3000)
     embedding_chunk_overlap = models.IntegerField(default=150)
+    is_temporary = models.BooleanField(
+        default=False, db_comment="Created for a short-lived purpose, e.g. an evaluation run; hidden and deleted after."
+    )
 
     class Meta:
         db_table_comment = (

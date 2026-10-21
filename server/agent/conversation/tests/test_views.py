@@ -378,6 +378,16 @@ class TestConversationListView:
         assert conversation1.id in conversation_ids
         assert conversation2.id in conversation_ids
 
+    def test_list_conversations_hides_temporary_ones(self, api_client, user, dataset, url):
+        agent = baker.make(Agent, deleted_at=None, dataset=dataset)
+        listed = baker.make(Conversation, user=user, agent=agent, data_set=dataset)
+        baker.make(Conversation, user=user, agent=agent, data_set=dataset, is_temporary=True)
+
+        response = api_client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert [conv["id"] for conv in response.data["results"]] == [listed.id]
+
     def test_list_conversations_filters_by_agent_id(self, api_client, user, dataset, url):
         agent1 = baker.make(Agent, deleted_at=None, dataset=dataset)
         agent2 = baker.make(Agent, deleted_at=None, dataset=dataset)

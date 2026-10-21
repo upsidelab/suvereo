@@ -6,6 +6,7 @@ from enthusiast_common.evaluation.errors import EvalSuiteError
 
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
 from agent.core.registries.agents.agent_registry import AgentNotFoundError, AgentRegistry
+from agent.core.registries.language_models import LanguageModelRegistry
 from agent.evaluation.judge_models_used_by_metrics import judge_models_used_by_metrics
 from agent.evaluation.suite_loader import SuiteLoader
 
@@ -59,7 +60,7 @@ class TestSuiteLoader:
             ({"agent": {"type": "unknown-agent"}}, "has 0 registered executions"),
             ({"agent": {"id": 999}}, "no agent with id 999"),
             ({"execution_key": "farewell"}, "no execution 'farewell'"),
-            ({"models": [{"provider": "Nope", "model": "x"}]}, "Unknown language model provider 'Nope'"),
+            ({"models": [{"provider": "Nope", "model": "x"}]}, "Language model provider 'Nope' is not installed"),
             (
                 {
                     "metrics": [
@@ -72,7 +73,7 @@ class TestSuiteLoader:
                         }
                     ]
                 },
-                "Unknown language model provider 'Nope'",
+                "Language model provider 'Nope' is not installed",
             ),
             (
                 {"metrics": [{"type": "llm_judge", "params": {"criteria": [{"name": "c", "description": "d"}]}}]},
@@ -128,6 +129,22 @@ class TestSuiteLoader:
     def test_fails_early_on_a_suite_the_host_cannot_run(self, tmp_path, changes, message):
         with pytest.raises(EvalSuiteError, match=message):
             _load(tmp_path, **changes)
+
+    def test_a_provider_that_is_not_installed_is_named_with_the_installed_ones(self, tmp_path):
+        with pytest.raises(EvalSuiteError) as error:
+            _load(tmp_path, models=[{"provider": "Anthropic", "model": "claude-sonnet-4-6"}])
+
+        assert str(error.value) == (
+            "Language model provider 'Anthropic' is not installed. Installed: OpenAI. "
+            "Install its model plugin and add it to CATALOG_LANGUAGE_MODEL_PROVIDERS."
+        )
+
+    def test_a_registered_provider_that_cannot_be_imported_says_to_install_it(self, tmp_path):
+        missing = ["enthusiast_model_missing.MissingLanguageModelProvider"]
+
+        with patch.object(LanguageModelRegistry, "_get_plugin_paths", return_value=missing):
+            with pytest.raises(EvalSuiteError, match="A provider in CATALOG_LANGUAGE_MODEL_PROVIDERS can't be loaded"):
+                _load(tmp_path)
 
 
 class TestJudgeModels:

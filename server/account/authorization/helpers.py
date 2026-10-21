@@ -29,9 +29,11 @@ def is_dataset_member(user: User, dataset: DataSet) -> bool:
 
 
 def datasets_visible_to(user: User) -> QuerySet[DataSet]:
+    """The DataSets a user can see; temporary ones, such as evaluation sandboxes, are never listed."""
+    data_sets = DataSet.objects.filter(is_temporary=False)
     if user.has_perm(PERMISSIONS.DATA_SET.VIEW):
-        return DataSet.objects.all()
-    return DataSet.objects.filter(
+        return data_sets
+    return data_sets.filter(
         Q(datasetuserroleassignment__user=user) | Q(datasetgrouproleassignment__group__members=user)
     ).distinct()
 

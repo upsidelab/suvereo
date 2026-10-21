@@ -74,7 +74,7 @@ class AgentView(APIView):
         if not filterset.is_valid():
             return Response(filterset.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        dataset = get_object_or_404(DataSet, pk=filterset.form.cleaned_data["dataset"])
+        dataset = get_object_or_404(DataSet, pk=filterset.form.cleaned_data["dataset"], is_temporary=False)
         enforce_dataset_scoped_permission(self, PERMISSIONS.AGENT.VIEW, dataset)
 
         serializer = AgentListSerializer(filterset.qs, many=True)

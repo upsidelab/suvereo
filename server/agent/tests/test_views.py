@@ -185,6 +185,14 @@ class TestAgentView:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
+    def test_get_a_temporary_datasets_agents_is_not_found(self, admin_api_client, url):
+        sandbox = baker.make(DataSet, is_temporary=True)
+        baker.make(Agent, dataset=sandbox, config={})
+
+        response = admin_api_client.get(f"{url}?dataset={sandbox.pk}")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
     def test_get_empty_list(self, api_client, user, url, dataset_instance):
         _grant_dataset_permission(user, dataset_instance, PERMISSIONS.AGENT.VIEW)
 

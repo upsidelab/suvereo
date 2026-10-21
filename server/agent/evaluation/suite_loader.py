@@ -78,12 +78,23 @@ class SuiteLoader:
     @staticmethod
     def _check_models(loaded: LoadedSuite) -> None:
         """Models under test and every judge model, metric-level ones included, need a known provider."""
-        registry = LanguageModelRegistry()
-        for target in [*loaded.suite.models, *judge_models_used_by_metrics(loaded)]:
-            try:
-                registry.provider_class_by_name(target.provider)
-            except KeyError:
-                raise EvalSuiteError(f"Unknown language model provider '{target.provider}'.") from None
+        targets = [*loaded.suite.models, *judge_models_used_by_metrics(loaded)]
+        if not targets:
+            return
+        try:
+            registered = [provider.NAME for provider in LanguageModelRegistry().get_provider_classes()]
+        except (ImportError, ValueError) as e:
+            raise EvalSuiteError(
+                f"A provider in CATALOG_LANGUAGE_MODEL_PROVIDERS can't be loaded: {str(e).rstrip('.')}. "
+                "Check that its plugin is installed and the class path is right."
+            ) from e
+        for target in targets:
+            if target.provider not in registered:
+                raise EvalSuiteError(
+                    f"Language model provider '{target.provider}' is not installed. Installed: "
+                    f"{', '.join(registered) or 'none'}. Install its model plugin and add it to "
+                    "CATALOG_LANGUAGE_MODEL_PROVIDERS."
+                )
 
     @staticmethod
     def _check_prompt_files(loaded: LoadedSuite) -> None:

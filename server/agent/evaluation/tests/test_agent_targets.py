@@ -2,16 +2,14 @@ from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
 import pytest
-from django.utils import timezone
 from model_bakery import baker
 
 from agent.core.registries.agents.agent_registry import AgentRegistry
-from agent.evaluation.eval_conversations import KEPT_SUMMARY, EvalConversations
+from agent.evaluation.abandoned_runs import AbandonedRuns
 from agent.evaluation.eval_user import EvalUser
-from agent.evaluation.sandbox import KEPT_PREFIX, NAME_PREFIX, EvalSandbox
 from agent.evaluation.targets import ExistingAgentTarget, SandboxAgentTarget
 from agent.models import Agent, Conversation
-from agent.services import AgentPreconfigurationService
+from agent.services import AgentPreconfigurationService, ConversationDeletionService
 from catalog.integrations.resolver import IntegrationPluginResolver
 from catalog.models import DataSet
 
@@ -36,12 +34,12 @@ class TestExistingAgentTarget:
         with ExistingAgentTarget(agent.pk, EvalUser.get(), keep_run_data=True) as target:
             conversation = target.new_conversation()
 
-        assert Conversation.objects.get(pk=conversation.pk).summary == KEPT_SUMMARY
+        assert not Conversation.objects.get(pk=conversation.pk).is_temporary
 
     def test_a_cleanup_failure_is_logged_and_never_hides_the_runs_error(self):
         agent = baker.make(Agent, config={})
 
-        with patch.object(EvalConversations, "delete", side_effect=RuntimeError("protected")):
+        with patch.object(ConversationDeletionService, "delete", side_effect=RuntimeError("protected")):
             with pytest.raises(ValueError, match="the run failed"):
                 with ExistingAgentTarget(agent.pk, EvalUser.get()) as target:
                     target.new_conversation()
@@ -49,28 +47,18 @@ class TestExistingAgentTarget:
 
         assert target._conversation_ids == []
 
-    def test_opening_purges_conversations_abandoned_on_real_data_sets(self):
+    def test_hands_out_temporary_conversations(self):
         agent = baker.make(Agent, config={})
-        user = EvalUser.get()
-        abandoned, kept = EvalConversations.create(agent, user), EvalConversations.create(agent, user)
-        EvalConversations.keep(Conversation.objects.filter(pk=kept.pk))
-        Conversation.objects.filter(pk__in=[abandoned.pk, kept.pk]).update(
-            started_at=timezone.now() - timedelta(hours=7)
-        )
-        someone_elses = baker.make(Conversation, agent=agent, data_set=agent.dataset, summary="Evaluation run")
 
-        with ExistingAgentTarget(agent.pk, user):
-            pass
+        with ExistingAgentTarget(agent.pk, EvalUser.get()) as target:
+            assert target.new_conversation().is_temporary
 
-        assert set(Conversation.objects.values_list("pk", flat=True)) == {kept.pk, someone_elses.pk}
-
-    def test_recent_evaluation_conversations_are_not_purged(self):
+    def test_opening_purges_abandoned_runs(self):
         agent = baker.make(Agent, config={})
-        user = EvalUser.get()
-        live = EvalConversations.create(agent, user)
 
-        assert EvalConversations.purge_abandoned(user) == 0
-        assert Conversation.objects.filter(pk=live.pk).exists()
+        with patch.object(AbandonedRuns, "purge") as purge:
+            with ExistingAgentTarget(agent.pk, EvalUser.get()):
+                purge.assert_called_once_with()
 
     @pytest.mark.parametrize("allowed, resolver", [(False, None), (True, IntegrationPluginResolver)])
     def test_real_integrations_only_when_allowed(self, allowed, resolver):
@@ -91,17 +79,17 @@ class TestSandboxAgentTarget:
 
         with target:
             target.new_conversation()
-            assert target.agent.dataset.name.startswith(NAME_PREFIX)
+            assert target.agent.dataset.is_temporary
             assert target.real_resolver is None
 
-        assert not DataSet.objects.filter(name__startswith=NAME_PREFIX).exists()
+        assert not DataSet.objects.filter(is_temporary=True).exists()
 
     def test_keeping_conversations_moves_the_sandbox_out_of_the_purges_reach(self):
         with SandboxAgentTarget("quickstart", "order-intake", {}, [], EvalUser.get(), keep_run_data=True) as target:
             conversation = target.new_conversation()
 
-        with patch("agent.evaluation.sandbox.ABANDONED_AFTER", timedelta(seconds=-1)):
-            EvalSandbox.purge_abandoned()
+        with patch("agent.evaluation.abandoned_runs.ABANDONED_AFTER", timedelta(seconds=-1)):
+            AbandonedRuns.purge()
 
         assert Conversation.objects.filter(pk=conversation.pk).exists()
-        assert DataSet.objects.get(pk=target.agent.dataset_id).name.startswith(KEPT_PREFIX)
+        assert not DataSet.objects.get(pk=target.agent.dataset_id).is_temporary

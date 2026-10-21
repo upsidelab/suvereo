@@ -12,6 +12,7 @@ from account.tests.public_permission_codes_contract import (
     DATASET_SCOPED_CONTRACT,
     INTEGRATION_VIEW,
 )
+from agent.models import Conversation, Message
 from catalog.models import DataSet
 
 pytestmark = pytest.mark.django_db
@@ -147,3 +148,22 @@ class TestDataSetDetailViewDelete:
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert not DataSet.objects.filter(id=data_set.id).exists()
+
+    def test_deleting_removes_the_conversations_and_their_messages(self, admin_api_client, data_set):
+        conversation = baker.make(Conversation, data_set=data_set, agent__dataset=data_set)
+        message = baker.make(Message, conversation=conversation)
+        Conversation.objects.filter(pk=conversation.pk).update(last_summarized_message=message)
+
+        response = admin_api_client.delete(_url(data_set))
+
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert not Conversation.objects.filter(pk=conversation.pk).exists()
+        assert not Message.objects.filter(pk=message.pk).exists()
+
+    def test_a_temporary_dataset_cannot_be_deleted_through_the_api(self, admin_api_client):
+        sandbox = baker.make(DataSet, is_temporary=True)
+
+        response = admin_api_client.delete(_url(sandbox))
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert DataSet.objects.filter(id=sandbox.id).exists()

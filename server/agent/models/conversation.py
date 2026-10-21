@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
-from django.db.models import Q
+from django.db.models import Max, Q
 from enthusiast_common.structures import LLMFile
 
 from account.authorization import PERMISSIONS, datasets_with_permission
@@ -14,10 +14,16 @@ def conversation_file_path(instance, filename):
 
 class ConversationQuerySet(models.QuerySet):
     def visible_to(self, user) -> "ConversationQuerySet":
-        """Conversations `user` owns or may view through `CONVERSATION.VIEW_ALL` on their data set."""
-        return self.filter(
+        """Conversations `user` owns or may view through `CONVERSATION.VIEW_ALL` on their data set; temporary ones,
+        such as evaluation runs, are never shown."""
+        return self.filter(is_temporary=False).filter(
             Q(user=user) | Q(data_set__in=datasets_with_permission(user, PERMISSIONS.CONVERSATION.VIEW_ALL))
         )
+
+    def last_activity(self):
+        """When the latest of these conversations started or got a message, or None for no conversations."""
+        latest = self.aggregate(started=Max("started_at"), messaged=Max("messages__created_at"))
+        return max((t for t in latest.values() if t is not None), default=None)
 
 
 class Conversation(models.Model):
@@ -34,6 +40,9 @@ class Conversation(models.Model):
         related_name="+",
     )
     agent = models.ForeignKey(Agent, on_delete=models.PROTECT, null=False)
+    is_temporary = models.BooleanField(
+        default=False, db_comment="Created for a short-lived purpose, e.g. an evaluation run; hidden and deleted after."
+    )
 
     objects = ConversationQuerySet.as_manager()
 

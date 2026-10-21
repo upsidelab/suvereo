@@ -4,11 +4,13 @@ from abc import ABC, abstractmethod
 from enthusiast_common.integrations import BaseIntegrationPluginResolver
 
 from account.models import User
-from agent.evaluation.eval_conversations import EvalConversations
-from agent.evaluation.sandbox import EvalSandbox
+from agent.evaluation.abandoned_runs import AbandonedRuns
 from agent.models import Agent, Conversation
+from agent.services import ConversationDeletionService
 
 logger = logging.getLogger(__name__)
+
+SUMMARY = "Evaluation run"
 
 
 class BaseAgentTarget(ABC):
@@ -37,24 +39,25 @@ class BaseAgentTarget(ABC):
         conversations = Conversation.objects.filter(id__in=self._conversation_ids)
         try:
             if self.keep_run_data:
-                EvalConversations.keep(conversations)
+                conversations.update(is_temporary=False)
             else:
-                EvalConversations.delete(conversations)
+                ConversationDeletionService.delete(conversations)
         except Exception:
             logger.exception("Could not clean up the evaluation conversations of agent %s", self.agent)
         finally:
             self._conversation_ids.clear()
 
     def new_conversation(self) -> Conversation:
-        conversation = EvalConversations.create(self.agent, self.user)
+        conversation = Conversation.objects.create(
+            user=self.user, data_set=self.agent.dataset, agent=self.agent, summary=SUMMARY, is_temporary=True
+        )
         self._conversation_ids.append(conversation.id)
         return conversation
 
     def purge_abandoned_runs(self) -> None:
         """Delete what runs that died left behind: their sandboxes, and their conversations on real DataSets."""
         try:
-            EvalSandbox.purge_abandoned()
-            EvalConversations.purge_abandoned(self.user)
+            AbandonedRuns.purge()
         except Exception:
             logger.exception("Could not purge abandoned evaluation runs")
 

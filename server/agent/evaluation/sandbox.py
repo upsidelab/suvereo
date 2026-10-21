@@ -1,32 +1,26 @@
 import logging
-import re
-import secrets
-import time
-from datetime import datetime, timezone
 from typing import Any
 
 from django.db import transaction
+from django.utils import timezone
 from enthusiast_common.evaluation.mocks import BaseMockIntegration
 from enthusiast_common.utils import deep_merge
 
 from agent.core.registries.agents.agent_registry import AgentRegistry
-from agent.evaluation.eval_conversations import ABANDONED_AFTER, EvalConversations
 from agent.evaluation.integrations import IntegrationFixtureSyncer
 from agent.models import Agent, Conversation
 from agent.services import AgentPreconfigurationService
 from catalog.models import DataSet
+from catalog.services import DataSetDeletionService
 
 logger = logging.getLogger(__name__)
 
-NAME_PREFIX = "__eval__"
-#: Same length as NAME_PREFIX, so a kept sandbox's name still fits; purge_abandoned never matches it.
-KEPT_PREFIX = "__kept__"
-NAME_LENGTH = 30
-CREATED_AT = re.compile(rf"^{NAME_PREFIX}([0-9a-f]+)-")
+NAME_LENGTH = DataSet._meta.get_field("name").max_length
 
 
 class EvalSandbox:
-    """A throwaway DataSet and agent for one suite, filled from its mock integrations and deleted afterwards."""
+    """A temporary DataSet (is_temporary, so hidden from the API) and agent for one suite, filled from its mock
+    integrations and deleted afterwards."""
 
     def __init__(self, data_set: DataSet, agent: Agent):
         self.data_set = data_set
@@ -43,7 +37,7 @@ class EvalSandbox:
         agent_class = AgentRegistry().get_agent_class_by_type(agent_type)
         config = deep_merge(AgentPreconfigurationService.default_agent_configuration(agent_class), agent_config)
         with transaction.atomic():
-            data_set = DataSet.objects.create(name=cls._name(suite_name))
+            data_set = DataSet.objects.create(name=cls._name(suite_name), is_temporary=True)
             agent = Agent.objects.create(
                 name=f"Evaluation: {suite_name}"[:255],
                 agent_type=agent_type,
@@ -63,44 +57,17 @@ class EvalSandbox:
 
     def destroy(self) -> None:
         """Delete the DataSet and everything in it, conversations included."""
-        EvalConversations.delete(Conversation.objects.filter(data_set=self.data_set))
-        self.data_set.delete()
+        DataSetDeletionService.delete(self.data_set)
 
     def keep(self) -> None:
-        """Rename the sandbox and mark its conversations kept, so the purges leave them for someone to inspect."""
-        self.data_set.name = KEPT_PREFIX + self.data_set.name.removeprefix(NAME_PREFIX)
-        self.data_set.save(update_fields=["name"])
-        EvalConversations.keep(Conversation.objects.filter(data_set=self.data_set))
-
-    @classmethod
-    def purge_abandoned(cls) -> int:
-        """Delete sandboxes of runs that died: created, and last used by a conversation, over ABANDONED_AFTER ago.
-
-        A run still going keeps its sandbox alive by starting conversations. One that fails is logged and skipped.
-        """
-        purged = 0
-        for data_set in DataSet.objects.filter(name__startswith=NAME_PREFIX):
-            if not cls._is_abandoned(data_set):
-                continue
-            try:
-                cls(data_set, None).destroy()
-            except Exception:
-                logger.warning("Could not purge stale evaluation sandbox %s", data_set.name, exc_info=True)
-                continue
-            purged += 1
-        return purged
-
-    @staticmethod
-    def _is_abandoned(data_set: DataSet) -> bool:
-        match = CREATED_AT.match(data_set.name)
-        if not match:
-            return False
-        now = datetime.now(timezone.utc)
-        created = datetime.fromtimestamp(int(match.group(1), 16), timezone.utc)
-        last_used = EvalConversations.last_activity(Conversation.objects.filter(data_set=data_set)) or created
-        return now - max(created, last_used) > ABANDONED_AFTER
+        """Turn the sandbox and its conversations into regular, listed ones, so the purges leave them for someone to
+        inspect."""
+        self.data_set.is_temporary = False
+        self.data_set.save(update_fields=["is_temporary"])
+        Conversation.objects.filter(data_set=self.data_set).update(is_temporary=False)
 
     @staticmethod
     def _name(suite_name: str) -> str:
-        slug = re.sub(r"[^a-z0-9]+", "-", suite_name.lower()).strip("-")
-        return f"{NAME_PREFIX}{int(time.time()):x}-{secrets.token_hex(2)}-{slug}"[:NAME_LENGTH]
+        """e.g. "Eval order-intake 10-20 14:03", the suite name cut to fit; shown once a sandbox is kept."""
+        stamp = f"{timezone.localtime():%m-%d %H:%M}"
+        return f"Eval {suite_name[: NAME_LENGTH - len(stamp) - 6]} {stamp}"
