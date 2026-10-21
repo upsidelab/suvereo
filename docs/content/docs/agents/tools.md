@@ -53,7 +53,7 @@ Enables tools to call and interact with other agents, creating a hierarchical ag
 
 - **Agent Orchestration**: Call other agents to perform specific tasks
 - **Multi-Agent Workflows**: Coordinate complex operations across multiple agents
-- **Agent Delegation**: Delegate specialized tasks to appropriate agent types
+- **Agent Delegation**: Delegate specialized tasks to appropriate agents
 
 ## Required Class Variables
 

@@ -20,7 +20,7 @@ An agent does its job by calling tools. People talk to agents in [conversations]
 
 ## Tool
 
-A tool is a capability an agent can call while it works: searching content, reading a file, calling an external service or handing a task to another agent. Tools can come with the agent type, from [integrations](#integration) such as MCP servers, and from the [vertical](#vertical) the agent is built on.
+A tool is a capability an agent can call while it works: searching content, reading a file, calling an external service or handing a task to another agent. Tools can come with the agent definition, from [integrations](#integration) such as MCP servers, and from the [vertical](#vertical) the agent is built on.
 
 ## Conversation
 
@@ -30,7 +30,7 @@ A conversation is an interactive exchange between a person and an agent in the w
 
 An agentic execution is an autonomous run of an agent, started through the API with structured input and returning a structured result. No one takes part in the run. It happens in the background and moves through the statuses `pending`, `in_progress` and then `finished` or `failed`.
 
-An agent type can offer several kinds of execution, and the caller picks one with an `execution_key`. Executions suit work that arrives in batches or from other systems, such as processing a stream of documents.
+An agent definition can offer several kinds of execution, and the caller picks one with an `execution_key`. Executions suit work that arrives in batches or from other systems, such as processing a stream of documents.
 
 ## Integration
 
@@ -56,4 +56,4 @@ A vertical is enabled in the instance settings, and agents are then built on top
 
 ## Plugin
 
-A plugin is a standalone package that extends AgentCore without changing it. Plugins can supply language and embedding model providers, integrations, agent types and verticals. All of them are built against shared contracts, which is how AgentCore loads them and how they stay independent of each other.
+A plugin is a standalone package that extends AgentCore without changing it. Plugins can supply language and embedding model providers, integrations, agent definitions and verticals. All of them are built against shared contracts, which is how AgentCore loads them and how they stay independent of each other.
