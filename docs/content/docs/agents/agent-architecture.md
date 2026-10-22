@@ -32,4 +32,4 @@ When an agent is built for a conversation with `abuild()`, the tools provided by
 
 ## Where a vertical fits
 
-The core injector carries repositories, chat history, the memory compactor and the tool scratchpad. It holds no domain data. A [vertical](/docs/concepts#vertical) can extend the injector with its own retrievers and connectors, and supply a builder that creates them. Agents built on the vertical can then reach the domain's data through the injector. See [Injector](/docs/agents/injector) and [Builder](/docs/agents/builder).
+The core injector carries repositories, chat history, the memory compactor and the tool scratchpad. It holds no [domain](/docs/concepts#domain) data. A [vertical](/docs/concepts#vertical) can extend the injector with its own retrievers and connectors, and supply a builder that creates them. Agents built on the vertical can then reach the domain's data through the injector. See [Injector](/docs/agents/injector) and [Builder](/docs/agents/builder).

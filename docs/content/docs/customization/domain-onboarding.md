@@ -66,5 +66,5 @@ The same structure can describe a different domain. The diagram below is an illu
 ## Where to go next
 
 - [System architecture](/docs/customization/system-architecture) shows the components and server modules that this split runs on.
-- [Using the AgentCore starter](/docs/customization/using-enthusiast-starter) covers setting up a codebase for your own extensions.
+- [Using the AgentCore starter](/docs/customization/using-the-agentcore-starter) covers setting up a codebase for your own extensions.
 - [Concepts](/docs/concepts) defines the terms used on this page.

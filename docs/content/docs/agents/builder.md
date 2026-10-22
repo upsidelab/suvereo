@@ -55,7 +55,7 @@ def build(self) -> BaseAgent:
 
 ## Extending the builder
 
-A [vertical](/docs/concepts#vertical) can subclass `AgentBuilder` to create the extra resources of its domain. Most of the time only `_build_injector()` is overridden:
+A [vertical](/docs/concepts#vertical) can subclass `AgentBuilder` to create the extra resources of its [domain](/docs/concepts#domain). Most of the time only `_build_injector()` is overridden:
 
 ```python
 class ArticlesAgentBuilder(AgentBuilder[AgentConfig]):
