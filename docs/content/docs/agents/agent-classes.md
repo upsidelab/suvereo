@@ -59,6 +59,10 @@ class ExampleAgent(BaseToolCallingAgent):
     def get_answer(self, input_text: str) -> str:
         answer = super().get_answer(input_text)
         return answer or self.AGENT_ARGS.fallback_answer
+
+    async def aget_answer(self, input_text: str) -> str:
+        answer = await super().aget_answer(input_text)
+        return answer or self.AGENT_ARGS.fallback_answer
 ```
 
 `SYSTEM_PROMPT` is passed to the agent through `AgentConfig.system_prompt`, see [Prompts](/docs/agents/prompts). The `{output_format}` placeholder is filled from the `output_format` field of `PROMPT_INPUT`. The agent reads `fallback_answer` from `AGENT_ARGS` and returns it when the model produces an empty answer.
@@ -89,3 +93,17 @@ def get_answer(self, input_text: str) -> str:
 ```
 
 `aget_answer()` is the async equivalent. It lets tools supplied by integrations, such as MCP servers, be awaited.
+
+```python
+from enthusiast_common.utils import run_off_event_loop
+
+async def aget_answer(self, input_text: str) -> str:
+    context_messages = await run_off_event_loop(self._build_context_messages)
+    result = await self._build_agent().ainvoke(
+        {"messages": self._build_input_messages(context_messages, input_text)},
+        config=self._build_invoke_config(),
+    )
+    return await run_off_event_loop(self._record_turn, result, context_messages)
+```
+
+The steps that use the database are synchronous Django ORM calls, which cannot run on a thread with a running event loop. `run_off_event_loop` runs them in a worker thread.
