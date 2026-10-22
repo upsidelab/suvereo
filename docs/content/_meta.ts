@@ -13,13 +13,5 @@ export default {
       sidebar: false,
       pagination: false,
     }
-  },
-  agents: {
-    title: "Pre-built Agents",
-    type: "page",
-    theme: {
-      sidebar: false,
-      pagination: false,
-    }
   }
 }
