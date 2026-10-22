@@ -123,7 +123,6 @@ class AgentConfig(ArbitraryTypeBaseModel, Generic[InjectorT]):
 
 
 class AgentConfigWithDefaults(AgentConfig, Generic[InjectorT]):
-    system_prompt: Optional[str] = None
     repositories: Optional[RepositoriesConfig] = None
     injector: Optional[Type[InjectorT]] = None
     registry: Optional[RegistryConfig] = None

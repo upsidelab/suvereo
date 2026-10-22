@@ -45,7 +45,7 @@ class AgentConfig(ArbitraryTypeBaseModel, Generic[InjectorT]):
 
 ## Defaults
 
-`AgentConfigWithDefaults` makes `repositories`, `injector`, `registry`, `llm` and `memory` optional. The framework replaces every field left empty with the value from its default configuration, defined in `server/agent/core/agents/default_config.py`. The default configuration has no system prompt, so an agent supplies its own `system_prompt`:
+`AgentConfigWithDefaults` keeps `agent_class` and `system_prompt` required: they have no default, so every agent supplies its own. It makes `repositories`, `injector`, `registry`, `llm` and `memory` optional, and the framework replaces every field left empty with the value from its default configuration, defined in `server/agent/core/agents/default_config.py`:
 
 | Field | Default |
 |---|---|
