@@ -1,4 +1,5 @@
 const mapping = {
+  "domain-onboarding": "",
   "system-architecture": "",
   "using-enthusiast-starter": "",
   "custom-integration": "",

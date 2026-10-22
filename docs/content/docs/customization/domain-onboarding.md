@@ -1,0 +1,70 @@
+# Domain onboarding
+
+An [agent](/docs/concepts#agent) is only as useful as the data and systems it can reach. A support agent needs your tickets and your help desk, an agent for a store needs the catalog and the order system, and an agent for a clinic needs patient records and the appointment calendar. AgentCore takes care of what stays the same from one [domain](/docs/concepts#domain) to another, and lets you describe what is specific to yours.
+
+This page explains how that split works, so you can see what AgentCore gives you from the start and what you add to bring in a new domain.
+
+## What AgentCore provides on its own
+
+AgentCore is the generic engine behind every agent. Whatever the domain, it provides:
+
+- **Chat with agents** - [conversations](/docs/concepts#conversation) in the web UI.
+- **Automated background tasks** - [agentic executions](/docs/concepts#agentic-execution), started through the API.
+- **Choice of AI models** - the language and embedding model providers, chosen per [data set](/docs/concepts#data-set).
+- **Users, roles and permissions** - who can do what, globally or within a data set.
+- **Storage and configuration** - data sets, and the settings of agents and [integrations](/docs/concepts#integration).
+- **Management UI** - a web frontend, integrated with the API, for managing data sets, agents, integrations, users and access.
+
+Three things in that picture depend on the domain: the data agents work on, the kinds of external systems that can be connected, and the way both reach an agent. The diagram below shows AgentCore without any domain added.
+
+![AgentCore running without a vertical](./img/standalone-core.svg)
+
+Without a domain, each of the three has a generic form:
+
+- **Data** is empty. AgentCore defines no data of its own, so there is nothing domain-specific to expose to agents.
+- **Integration types** include a ready-to-use MCP server integration, which connects an MCP server to a data set and makes its [tools](/docs/concepts#tool) available to agents. The generic integration type is a base for building your own domain-agnostic integrations, for example one that gives agents tools for an external service. Integrations that sync content in need [entities](/docs/concepts#entity) to store it in, so they are defined together with a vertical.
+- **The default agent builder** gives agents what every agent can use: chat history, conversation memory, a scratchpad for tool results and the platform's repositories. It carries no domain data and no domain integrations.
+
+Agents built on this foundation, such as a general assistant, a research agent or a report generator, can work with these basics and with the tools of a connected MCP server.
+
+## What a vertical defines
+
+To bring a domain in, you describe it in a [vertical](/docs/concepts#vertical): an extension of AgentCore that can supply its data, integration types and agent builder in a form that fits the domain. AgentCore provides the rest.
+
+| A vertical defines | What it means |
+|---|---|
+| **Data** | The entities of the domain, such as products or patients. AgentCore stores them, lists them in the UI and indexes their content, so agents can search it by meaning. |
+| **Integration types** | The kinds of external systems the domain relies on. Some bring data in, for example a source that syncs records from an electronic health record system. Others let agents act in a system, for example an appointment scheduling service. |
+| **The agent builder** | How the data and the integrations reach agents. It hands data retrievers, which search the vertical's data, and integration connectors, which reach its external systems, to agents as tools. |
+
+Conversations, agentic executions, permissions, models and the UI are not part of a vertical, since they come from AgentCore. A vertical covers what is specific to the domain.
+
+Agents are then built on top of the vertical. They can use its data, its integrations and the tools the builder provides, and they can also use everything the standalone setup offers. An agent can be shipped as a plugin, as part of a vertical, or in the AgentCore codebase itself. See [Agent architecture](/docs/agents/agent-architecture) for the parts an agent is made of and [Injector](/docs/agents/injector) for how a vertical supplies its resources to them.
+
+## Example: Enthusiast
+
+[Enthusiast](/tools/enthusiast) is a vertical for e-commerce. It describes a store in the three parts:
+
+- **Data:** products and documents.
+- **Integration types:** an e-commerce store type, which acts in a store platform such as Shopify or Shopware, and product and document source types, which sync content in from platforms and content systems.
+- **Agent builder:** data retrievers for products and documents, and connectors for the store platform.
+
+Agents such as Product Search, User Manual Search, Order Intake and Catalog Enrichment (and others) are built on top of it.
+
+![AgentCore with the Enthusiast e-commerce vertical](./img/ecommerce-vertical.svg)
+
+## Example: healthcare
+
+The same structure can describe a different domain. The diagram below is an illustration of how a healthcare vertical could be laid out. It is hypothetical and not maintained by us.
+
+- **Data:** patients, medical history entries and doctors.
+- **Integration types:** an electronic health record system, appointment scheduling and a lab results provider.
+- **Agents:** for example Patient Intake, Appointment Booking and Medical Record Summary.
+
+![An illustration of a healthcare vertical](./img/healthcare-vertical.svg)
+
+## Where to go next
+
+- [System architecture](/docs/customization/system-architecture) shows the components and server modules that this split runs on.
+- [Using the AgentCore starter](/docs/customization/using-enthusiast-starter) covers setting up a codebase for your own extensions.
+- [Concepts](/docs/concepts) defines the terms used on this page.
