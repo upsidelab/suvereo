@@ -8,6 +8,7 @@ class Attempts(BaseMetric):
 
     NAME = "attempts"
     VALUE_TYPE = "number"
+    KINDS = ("execution",)
 
     def measure(self, context: MetricContext) -> MetricResult:
         return MetricResult(value=float(len(context.trace.attempts)))

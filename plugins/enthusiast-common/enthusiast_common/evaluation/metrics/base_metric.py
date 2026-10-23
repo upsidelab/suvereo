@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from pydantic import BaseModel, ValidationError
 
+from ..suite import SuiteKind
 from .errors import MetricConfigError
 from .metric_context import MetricContext
 from .metric_meta import MetricMeta
@@ -15,13 +16,15 @@ BASE_DIR = "base_dir"
 
 
 class BaseMetric(ABC, metaclass=MetricMeta):
-    """Something measured on every run; declares NAME, VALUE_TYPE (number, bool or label) and optionally PARAMS."""
+    """Something measured on every run; declares NAME, VALUE_TYPE (number, bool or label), and optionally PARAMS and
+    the suite KINDS it applies to."""
 
     __abstract__ = True
 
     NAME: ClassVar[str]
     VALUE_TYPE: ClassVar[str]
     PARAMS: ClassVar[type[BaseModel]] = NoParams
+    KINDS: ClassVar[tuple[SuiteKind, ...]] = ("execution", "conversation")
 
     def __init__(self, params: dict[str, Any] | None = None, name: str | None = None, base_dir: Path | None = None):
         """Validate params against PARAMS (relative paths resolve against base_dir); raises MetricConfigError."""
@@ -30,6 +33,10 @@ class BaseMetric(ABC, metaclass=MetricMeta):
         except ValidationError as e:
             raise MetricConfigError(f"Invalid params for metric '{name or self.NAME}': {e}") from e
         self.name = name or self.NAME
+
+    def supports(self, kind: SuiteKind) -> bool:
+        """Whether this metric, with its params, can measure runs of a suite of this kind."""
+        return kind in self.KINDS
 
     @abstractmethod
     def measure(self, context: MetricContext) -> MetricResult:

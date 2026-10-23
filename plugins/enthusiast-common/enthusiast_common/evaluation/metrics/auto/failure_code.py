@@ -10,6 +10,7 @@ class FailureCode(BaseMetric):
 
     NAME = "failure_code"
     VALUE_TYPE = "label"
+    KINDS = ("execution",)
 
     def measure(self, context: MetricContext) -> MetricResult:
         if context.trace.error is not None:

@@ -9,6 +9,7 @@ class FirstAttemptSuccess(BaseMetric):
 
     NAME = "first_attempt_success"
     VALUE_TYPE = "bool"
+    KINDS = ("execution",)
 
     def measure(self, context: MetricContext) -> MetricResult:
         return MetricResult(value=RunOutcome.matches_expected_outcome(context) and len(context.trace.attempts) <= 1)

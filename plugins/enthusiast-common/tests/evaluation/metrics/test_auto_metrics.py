@@ -1,14 +1,18 @@
 import pytest
 from enthusiast_common.evaluation.metrics.auto import (
+    AUTO_METRICS,
     Attempts,
+    ConversationCompleted,
     CostUsd,
     ExecutionSucceeded,
     FailureCode,
     FirstAttemptSuccess,
     InputTokens,
     LLMCalls,
+    Turns,
+    auto_metrics_for,
 )
-from enthusiast_common.evaluation.trace import Attempt, LLMCall
+from enthusiast_common.evaluation.trace import Attempt, LLMCall, Turn
 
 from .contexts import run
 
@@ -43,6 +47,36 @@ class TestOutcomeMetrics:
         assert Attempts().measure(retried).value == 2.0
         assert FirstAttemptSuccess().measure(retried).value is False
         assert FirstAttemptSuccess().measure(run(success=True, attempts=[PASSED])).value is True
+
+
+class TestConversationMetrics:
+    @pytest.mark.parametrize(
+        "fields, completed",
+        [
+            ({"turns": [Turn(user_message="Hi", answer="Hello"), Turn(user_message="Bye", answer="Bye")]}, True),
+            ({"turns": []}, False),
+            ({"turns": [Turn(user_message="Hi", error="RuntimeError: boom")], "error": "RuntimeError: boom"}, False),
+            ({"turns": [Turn(user_message="Hi", answer="Hello")], "error": "TypeError: bad simulator"}, False),
+        ],
+    )
+    def test_conversation_completed_needs_every_turn_answered_and_no_error(self, fields, completed):
+        assert ConversationCompleted().measure(run(**fields)).value is completed
+
+    def test_turns_counts_the_user_messages(self):
+        context = run(turns=[Turn(user_message="Hi", answer="Hello"), Turn(user_message="Bye", answer="Bye")])
+
+        assert Turns().measure(context).value == 2.0
+
+
+class TestAutoMetricsPerKind:
+    def test_each_kind_gets_its_outcome_metrics_and_both_get_the_run_figures(self):
+        execution = {m.NAME for m in auto_metrics_for("execution")}
+        conversation = {m.NAME for m in auto_metrics_for("conversation")}
+
+        assert {"execution_succeeded", "failure_code", "attempts", "first_attempt_success"} <= execution - conversation
+        assert {"conversation_completed", "turns"} <= conversation - execution
+        assert {"duration_s", "cost_usd", "llm_calls", "tool_calls"} <= execution & conversation
+        assert execution | conversation == {m.NAME for m in AUTO_METRICS}
 
 
 class TestRunFigures:

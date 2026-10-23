@@ -2,8 +2,8 @@ import logging
 from pathlib import Path
 
 from enthusiast_common.evaluation.metrics import BaseMetric, MetricContext, MetricError, MetricRegistry, MetricResult
-from enthusiast_common.evaluation.metrics.auto import AUTO_METRICS
-from enthusiast_common.evaluation.suite import MetricConfig, PassThreshold
+from enthusiast_common.evaluation.metrics.auto import auto_metrics_for
+from enthusiast_common.evaluation.suite import MetricConfig, PassThreshold, SuiteKind
 
 from .run_result import ThresholdResult
 
@@ -13,11 +13,12 @@ BOOL_THRESHOLD = PassThreshold(equals=True)
 
 
 class RunScorer:
-    """Measures a run's auto metrics and configured ones, and checks the configured ones' pass thresholds; bools
-    default to equals: true."""
+    """Measures a run's auto metrics (those of the suite's kind) and configured ones, and checks the configured ones'
+    pass thresholds; bools default to equals: true."""
 
-    def __init__(self, base_dir: Path, registry: MetricRegistry | None = None):
+    def __init__(self, base_dir: Path, kind: SuiteKind = "execution", registry: MetricRegistry | None = None):
         self.base_dir = base_dir
+        self.auto_metrics = auto_metrics_for(kind)
         self.registry = registry or MetricRegistry()
 
     def score(
@@ -26,7 +27,7 @@ class RunScorer:
         """Measure the auto metrics and each configured metric, and check pass thresholds: a configured one, or
         equals: true for a bool metric. A metric that cannot be built has no value and misses its threshold, as a
         broken check never passes."""
-        results = {metric.NAME: self._measure_safely(metric(), context) for metric in AUTO_METRICS}
+        results = {metric.NAME: self._measure_safely(metric(), context) for metric in self.auto_metrics}
         thresholds = {}
         for config in configs:
             try:
@@ -48,7 +49,7 @@ class RunScorer:
     ) -> tuple[dict[str, MetricResult], dict[str, ThresholdResult]]:
         """For a run that never ran: the auto metrics, and each configured metric with no value and a missed
         threshold."""
-        results = {metric.NAME: self._measure_safely(metric(), context) for metric in AUTO_METRICS}
+        results = {metric.NAME: self._measure_safely(metric(), context) for metric in self.auto_metrics}
         results |= {config.name: MetricResult(value=None, details={"reason": reason}) for config in configs}
         thresholds = {config.name: ThresholdResult(passed=False, required=config.required) for config in configs}
         return results, thresholds
