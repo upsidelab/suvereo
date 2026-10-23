@@ -187,6 +187,17 @@ class TestConversationView:
         response = api_client.post(url, payload, format="json")
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
+    def test_cannot_post_to_a_temporary_conversation_even_as_its_owner(self, api_client, user):
+        dataset = baker.make(DataSet)
+        agent = baker.make(Agent, deleted_at=None, dataset=dataset)
+        temporary = baker.make(Conversation, user=user, agent=agent, data_set=dataset, is_temporary=True)
+        url = reverse("conversation-details", kwargs={"conversation_id": temporary.id})
+        payload = {"data_set_id": dataset.id, "question_message": "Hello?", "streaming": False}
+
+        response = api_client.post(url, payload, format="json")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
     def test_outsider_cannot_post_to_conversation_they_do_not_own(self, api_client):
         dataset = baker.make(DataSet)
         agent = baker.make(Agent, deleted_at=None, dataset=dataset)

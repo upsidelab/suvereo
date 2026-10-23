@@ -15,7 +15,7 @@ class ConversationDeletionService:
         with transaction.atomic():
             ConversationFile.objects.filter(conversation_id__in=ids).delete()
             AgenticExecution.objects.filter(conversation_id__in=ids).delete()
-            Conversation.objects.filter(id__in=ids).update(last_summarized_message=None)
+            Conversation.all_objects.filter(id__in=ids).update(last_summarized_message=None)
             Message.objects.filter(conversation_id__in=ids).delete()
-            Conversation.objects.filter(id__in=ids).delete()
+            Conversation.all_objects.filter(id__in=ids).delete()
             transaction.on_commit(lambda: [file.delete(save=False) for file in files])

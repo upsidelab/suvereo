@@ -6,14 +6,15 @@ EMAIL = "evaluation@enthusiast.internal"
 
 
 class EvalUser:
-    """The service account evaluation conversations belong to; it is inactive, so it cannot sign in."""
+    """The internal service account evaluation conversations belong to; it is inactive and hidden, so it cannot sign in
+    or be seen."""
 
     @staticmethod
     def get() -> User:
-        if user := User.objects.filter(email=EMAIL).first():
+        if user := User.all_objects.filter(email=EMAIL).first():
             return user
         try:
             with transaction.atomic():
-                return User.objects.create_service_account(EMAIL, is_active=False)
+                return User.objects.create_service_account(EMAIL, is_active=False, is_internal=True)
         except IntegrityError:
-            return User.objects.get(email=EMAIL)
+            return User.all_objects.get(email=EMAIL)

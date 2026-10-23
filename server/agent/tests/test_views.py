@@ -257,6 +257,14 @@ class TestAgentView:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
+    def test_post_on_a_temporary_dataset_is_rejected(self, admin_api_client, url):
+        sandbox = baker.make(DataSet, is_temporary=True)
+
+        response = admin_api_client.post(url, {"dataset": sandbox.id}, format="json")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert not Agent.all_objects.filter(dataset=sandbox).exists()
+
     def test_post_outsider_gets_not_found(self, api_client, url):
         dataset = baker.make(DataSet)
 
@@ -399,6 +407,15 @@ class TestAgentDetailsView:
         # Obscured as 404, not 403 - a non-member shouldn't be able to tell this dataset
         # apart from one that doesn't exist.
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    @pytest.mark.parametrize("method", ["get", "put", "delete"])
+    def test_an_agent_on_a_temporary_dataset_is_not_found(self, admin_api_client, config, method):
+        agent = baker.make(Agent, config=config, dataset=baker.make(DataSet, is_temporary=True))
+
+        response = getattr(admin_api_client, method)(reverse("agent-details", kwargs={"pk": agent.pk}), format="json")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert Agent.all_objects.get(pk=agent.pk).deleted_at is None
 
     def test_outsider_gets_identical_404_body_to_a_nonexistent_agent(self, api_client, agent_instance, url):
         # The two cases must be indistinguishable - not just the same status code, but the

@@ -28,9 +28,9 @@ class AbandonedRuns:
     @classmethod
     def purge_sandboxes(cls) -> int:
         purged = 0
-        for data_set in DataSet.objects.filter(is_temporary=True):
+        for data_set in DataSet.all_objects.filter(is_temporary=True):
             created = Agent.all_objects.filter(dataset=data_set).aggregate(created=Min("created_at"))["created"]
-            if not cls._is_abandoned(created, Conversation.objects.filter(data_set=data_set)):
+            if not cls._is_abandoned(created, Conversation.all_objects.filter(data_set=data_set)):
                 continue
             try:
                 DataSetDeletionService.delete(data_set)
@@ -42,7 +42,9 @@ class AbandonedRuns:
 
     @classmethod
     def purge_conversations(cls) -> int:
-        temporary = Conversation.objects.filter(is_temporary=True, data_set__is_temporary=False, user=EvalUser.get())
+        temporary = Conversation.all_objects.filter(
+            is_temporary=True, data_set__is_temporary=False, user=EvalUser.get()
+        )
         purged = 0
         for data_set_id in temporary.values_list("data_set_id", flat=True).distinct():
             conversations = temporary.filter(data_set_id=data_set_id)

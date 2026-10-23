@@ -11,5 +11,5 @@ class DataSetDeletionService:
     @staticmethod
     def delete(data_set: DataSet) -> None:
         with transaction.atomic():
-            ConversationDeletionService.delete(Conversation.objects.filter(data_set=data_set))
+            ConversationDeletionService.delete(Conversation.all_objects.filter(data_set=data_set))
             data_set.delete()

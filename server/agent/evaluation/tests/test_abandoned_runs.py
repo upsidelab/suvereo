@@ -26,7 +26,7 @@ def _sandbox(age=SEVEN_HOURS_AGO, name="sandbox"):
 def _conversation(agent, data_set, age=SEVEN_HOURS_AGO, is_temporary=True, user=None):
     user = user or EvalUser.get()
     conversation = baker.make(Conversation, agent=agent, data_set=data_set, is_temporary=is_temporary, user=user)
-    Conversation.objects.filter(pk=conversation.pk).update(started_at=timezone.now() - age)
+    Conversation.all_objects.filter(pk=conversation.pk).update(started_at=timezone.now() - age)
     return conversation
 
 
@@ -38,14 +38,14 @@ class TestPurgeSandboxes:
 
         assert AbandonedRuns.purge_sandboxes() == 1
 
-        assert set(DataSet.objects.values_list("pk", flat=True)) == {fresh.pk, regular.pk}
+        assert set(DataSet.all_objects.values_list("pk", flat=True)) == {fresh.pk, regular.pk}
 
     def test_an_old_sandbox_still_starting_conversations_is_kept(self):
         data_set, agent = _sandbox()
         _conversation(agent, data_set, age=timedelta(minutes=5))
 
         assert AbandonedRuns.purge_sandboxes() == 0
-        assert DataSet.objects.filter(pk=data_set.pk).exists()
+        assert DataSet.all_objects.filter(pk=data_set.pk).exists()
 
     def test_a_sandbox_that_cannot_be_deleted_does_not_block_the_rest(self):
         (stuck, _), (stale, _) = _sandbox(name="stuck"), _sandbox(name="stale")
@@ -59,8 +59,8 @@ class TestPurgeSandboxes:
         with patch.object(DataSetDeletionService, "delete", delete_unless_stuck):
             assert AbandonedRuns.purge_sandboxes() == 1
 
-        assert DataSet.objects.filter(pk=stuck.pk).exists()
-        assert not DataSet.objects.filter(pk=stale.pk).exists()
+        assert DataSet.all_objects.filter(pk=stuck.pk).exists()
+        assert not DataSet.all_objects.filter(pk=stale.pk).exists()
 
 
 class TestPurgeConversations:
@@ -71,19 +71,19 @@ class TestPurgeConversations:
 
         assert AbandonedRuns.purge_conversations() == 1
 
-        assert set(Conversation.objects.values_list("pk", flat=True)) == {regular.pk}
-        assert not Conversation.objects.filter(pk=abandoned.pk).exists()
+        assert set(Conversation.all_objects.values_list("pk", flat=True)) == {regular.pk}
+        assert not Conversation.all_objects.filter(pk=abandoned.pk).exists()
 
     def test_recent_temporary_conversations_are_kept(self):
         agent = baker.make(Agent, config={})
         live = _conversation(agent, agent.dataset, age=timedelta(minutes=5))
 
         assert AbandonedRuns.purge_conversations() == 0
-        assert Conversation.objects.filter(pk=live.pk).exists()
+        assert Conversation.all_objects.filter(pk=live.pk).exists()
 
     def test_temporary_conversations_of_other_users_are_left_alone(self):
         agent = baker.make(Agent, config={})
         someone_elses = _conversation(agent, agent.dataset, user=baker.make("account.User"))
 
         assert AbandonedRuns.purge_conversations() == 0
-        assert Conversation.objects.filter(pk=someone_elses.pk).exists()
+        assert Conversation.all_objects.filter(pk=someone_elses.pk).exists()

@@ -36,7 +36,7 @@ class BaseAgentTarget(ABC):
 
     def close(self) -> None:
         """Delete the runs' conversations, or mark them kept; a failure is logged so it never hides the run's error."""
-        conversations = Conversation.objects.filter(id__in=self._conversation_ids)
+        conversations = Conversation.all_objects.filter(id__in=self._conversation_ids)
         try:
             if self.keep_run_data:
                 conversations.update(is_temporary=False)

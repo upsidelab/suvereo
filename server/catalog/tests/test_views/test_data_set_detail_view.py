@@ -166,4 +166,4 @@ class TestDataSetDetailViewDelete:
         response = admin_api_client.delete(_url(sandbox))
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert DataSet.objects.filter(id=sandbox.id).exists()
+        assert DataSet.all_objects.filter(id=sandbox.id).exists()

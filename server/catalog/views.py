@@ -54,7 +54,7 @@ class DataSetDetailView(RetrieveAPIView):
     serializer_class = DataSetSerializer
     permission_classes = [IsAuthenticated]
     lookup_url_kwarg = "data_set_id"
-    queryset = DataSet.objects.filter(is_temporary=False)
+    queryset = DataSet.objects.all()
 
     @swagger_auto_schema(
         operation_description="Retrieve a data set by ID",

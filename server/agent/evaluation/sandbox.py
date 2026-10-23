@@ -64,7 +64,7 @@ class EvalSandbox:
         inspect."""
         self.data_set.is_temporary = False
         self.data_set.save(update_fields=["is_temporary"])
-        Conversation.objects.filter(data_set=self.data_set).update(is_temporary=False)
+        Conversation.all_objects.filter(data_set=self.data_set).update(is_temporary=False)
 
     @staticmethod
     def _name(suite_name: str) -> str:
