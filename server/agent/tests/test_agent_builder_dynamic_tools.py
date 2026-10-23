@@ -89,7 +89,7 @@ class TestAgentBuilderBuildDynamicTools:
     def _make_builder(self, resolver_cls):
         config = MagicMock()
         config.integration_plugin_resolver = resolver_cls
-        builder = AgentBuilder(config=config, conversation_id=1)
+        builder = AgentBuilder(agent_class=MagicMock(), config=config, conversation_id=1)
         builder._data_set_id = 42
         return builder
 

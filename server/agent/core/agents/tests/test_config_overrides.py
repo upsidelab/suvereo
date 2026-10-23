@@ -13,6 +13,8 @@ from agent.core.registries.agents.agent_registry import AgentRegistry
 
 
 class StubAgent(BaseAgent):
+    SYSTEM_PROMPT = "original prompt"
+
     def get_answer(self, input_text: str) -> str:
         return ""
 
@@ -36,7 +38,7 @@ class StubResolver(BaseIntegrationPluginResolver):
 
 @pytest.fixture
 def config():
-    merged = merge_config(AgentConfigWithDefaults(agent_class=StubAgent, system_prompt="original prompt"))
+    merged = merge_config(AgentConfigWithDefaults(system_prompt="original prompt"))
     return merged.model_copy(
         update={
             "llm": merged.llm.model_copy(update={"callbacks": [CallbackHandlerConfig(handler_class=ConfiguredHandler)]})
@@ -88,13 +90,8 @@ class TestAgentConfigOverrides:
 class TestAgentRegistryAppliesOverrides:
     def test_get_conversation_agent_builds_with_the_overridden_config(self, config):
         conversation = MagicMock(id=1)
-        provider = MagicMock(BUILDER_CLASS=None)
-        provider.return_value.get_config.return_value = AgentConfigWithDefaults(
-            agent_class=StubAgent, system_prompt="original prompt"
-        )
-
         with (
-            patch.object(AgentRegistry, "_get_config_provider_class", return_value=provider),
+            patch.object(AgentRegistry, "get_agent_class_by_type", return_value=StubAgent),
             patch("agent.core.registries.agents.agent_registry.AgentBuilder") as builder,
         ):
             AgentRegistry().get_conversation_agent(

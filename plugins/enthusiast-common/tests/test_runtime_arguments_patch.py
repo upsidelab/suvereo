@@ -22,7 +22,7 @@ class TestDeepMerge:
 def _builder(stored: dict, patch: dict | None) -> AgentBuilder:
     config = MagicMock()
     config.runtime_arguments_patch = patch
-    builder = AgentBuilder(config=config, conversation_id=1)
+    builder = AgentBuilder(agent_class=MagicMock(), config=config, conversation_id=1)
     builder._repositories = MagicMock()
     builder._repositories.agent.get_agent_configuration_by_id.return_value = stored
     return builder

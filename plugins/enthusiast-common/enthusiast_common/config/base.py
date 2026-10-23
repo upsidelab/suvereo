@@ -87,7 +87,7 @@ class FileToolConfig(ArbitraryTypeBaseModel):
 
 class AgentToolConfig(ArbitraryTypeBaseModel):
     tool_class: Type[BaseAgentTool]
-    agent: AgentConfig
+    agent_class: Type[BaseAgent]
 
 
 class AgentCallbackHandlerConfig(ArbitraryTypeBaseModel):
@@ -106,7 +106,6 @@ class MemoryConfig(ArbitraryTypeBaseModel):
 
 
 class AgentConfig(ArbitraryTypeBaseModel, Generic[InjectorT]):
-    agent_class: Type[BaseAgent]
     llm: LLMConfig
     repositories: RepositoriesConfig
     injector: Type[InjectorT]

@@ -1,6 +1,6 @@
 import logging
 from abc import ABC, ABCMeta, abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING, Any, Optional, Type
 
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.language_models import BaseLanguageModel
@@ -9,6 +9,11 @@ from pydantic import BaseModel
 
 from ..injectors import BaseInjector
 from ..utils import RequiredFieldsModel, validate_required_vars
+from .config import ConfigType
+
+if TYPE_CHECKING:
+    from ..builder import BaseAgentBuilder
+    from ..config import AgentConfig
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +54,11 @@ class BaseAgent(ABC, ExtraArgsClassBase):
     - ``TOOLS``: the tool configs of the agent. The settings of each tool (``CONFIGURATION_ARGS``) are stored
       per agent as well.
     - ``FILE_UPLOAD``: whether agents of this type accept uploaded files.
+    - ``SYSTEM_PROMPT``: the system prompt template; the fields of ``PROMPT_INPUT`` fill its variables.
+    - ``BUILDER_CLASS``: the builder that assembles the agent. ``None`` selects the framework's default builder;
+      declare one when the agent needs a vertical's builder (e.g. one wiring domain-specific retrievers).
+
+    Override ``get_config`` when the agent needs a different prompt or tools per ``ConfigType``.
 
     The framework only stores the values of ``AGENT_ARGS`` and ``PROMPT_INPUT``. When the agent is built they
     replace the class variables with instances of the models, so ``self.AGENT_ARGS.<field>`` and
@@ -63,6 +73,8 @@ class BaseAgent(ABC, ExtraArgsClassBase):
     TOOLS = []
 
     FILE_UPLOAD = False
+    SYSTEM_PROMPT: Optional[str] = None
+    BUILDER_CLASS: Optional[Type["BaseAgentBuilder"]] = None
 
     def __init__(
         self,
@@ -82,6 +94,17 @@ class BaseAgent(ABC, ExtraArgsClassBase):
         self._injector = injector
         self._conversation_history_token_limit = conversation_history_token_limit
         self._dynamic_tools: list[BaseTool] = []
+
+    @classmethod
+    def get_config(cls, config_type: ConfigType = ConfigType.CONVERSATION) -> "AgentConfig":
+        """Return the agent's configuration for the given context.
+
+        Returns an ``AgentConfigWithDefaults``: fields left unset are filled from the host's defaults. ``ConfigType.CONVERSATION`` is an interactive
+        conversation, ``ConfigType.AGENTIC_EXECUTION_DEFINITION`` an autonomous agentic execution run.
+        """
+        from ..config import AgentConfigWithDefaults
+
+        return AgentConfigWithDefaults(system_prompt=cls.SYSTEM_PROMPT, tools=cls.TOOLS)
 
     def set_dynamic_tools(self, tools: list[BaseTool]) -> None:
         """Attach tools fetched at build time from tool-providing integrations (e.g. MCP servers).

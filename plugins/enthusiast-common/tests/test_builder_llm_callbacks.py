@@ -25,7 +25,7 @@ def _builder(callbacks=None) -> AgentBuilder:
     config.llm.llm_class = RecordingLLM
     config.llm.callbacks = callbacks
     config.registry.llm.providers = None
-    builder = AgentBuilder(config=config, conversation_id=1, streaming=True)
+    builder = AgentBuilder(agent_class=MagicMock(), config=config, conversation_id=1, streaming=True)
     builder._repositories = MagicMock()
     builder._data_set_id = 1
     return builder

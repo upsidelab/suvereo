@@ -53,3 +53,14 @@ class TestSystemPrompt:
         agent = build(RenamingAgent, "{tone_of_voice}, {language}", PromptInput(target_language="Polish"))
 
         assert agent._get_system_prompt() == "friendly, Polish"
+
+
+class TestGetConfig:
+    def test_default_config_carries_the_agents_prompt_and_tools(self):
+        class PromptedAgent(StubAgent):
+            SYSTEM_PROMPT = "Be helpful."
+
+        config = PromptedAgent.get_config()
+
+        assert config.system_prompt == "Be helpful."
+        assert config.tools == PromptedAgent.TOOLS
