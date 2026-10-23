@@ -33,7 +33,7 @@ class EvalCase(EvalModel):
         return turns
 
     @model_validator(mode="after")
-    def _one_way_to_drive_the_agent(self) -> "EvalCase":
+    def _at_most_one_of_input_turns_or_user(self) -> "EvalCase":
         if sum([bool(self.input), bool(self.turns), self.user is not None]) > 1:
             raise ValueError(
                 "Set only one of 'input' (an execution), 'turns' (a scripted user) or 'user' (a simulated one)."

@@ -191,7 +191,7 @@ class TestEvalCase:
             {"turns": ["Hi"], "user": {"goal": "g"}},
         ],
     )
-    def test_only_one_way_to_drive_the_agent_is_allowed(self, case):
+    def test_at_most_one_of_input_turns_or_user_is_set(self, case):
         with pytest.raises(ValidationError, match="only one of"):
             EvalCase.model_validate({"id": "c", **case})
 
