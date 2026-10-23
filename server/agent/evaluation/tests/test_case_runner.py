@@ -199,7 +199,7 @@ class TestCaseRunner:
         with patch.object(EvalExecutionConversation, "__init__", autospec=True, side_effect=init) as spy:
             result = _runner(target, tmp_path).run(_case(), model, variant, repeat=2)
 
-        overrides = spy.call_args.args[2]
+        overrides = spy.call_args.args[3]
         assert overrides.llm_class is PinnedLLM.for_model("OpenAI", "gpt-4o")
         assert overrides.system_prompt == "Be brief."
         assert overrides.agent_config_patch == {"prompt_input": {"tone": "dry"}}

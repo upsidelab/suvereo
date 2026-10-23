@@ -14,6 +14,7 @@ from .base import (
     ModelsRegistryConfig,
     RegistryConfig,
     RepositoriesConfig,
+    ToolConfig,
 )
 
 __all__ = [
@@ -32,4 +33,5 @@ __all__ = [
     "ModelsRegistryConfig",
     "RegistryConfig",
     "RepositoriesConfig",
+    "ToolConfig",
 ]

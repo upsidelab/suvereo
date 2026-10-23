@@ -9,7 +9,6 @@ from pydantic import BaseModel
 
 from ..injectors import BaseInjector
 from ..utils import RequiredFieldsModel, validate_required_vars
-from .config import ConfigType
 
 if TYPE_CHECKING:
     from ..builder import BaseAgentBuilder
@@ -58,7 +57,7 @@ class BaseAgent(ABC, ExtraArgsClassBase):
     - ``BUILDER_CLASS``: the builder that assembles the agent. ``None`` selects the framework's default builder;
       declare one when the agent needs a vertical's builder (e.g. one wiring domain-specific retrievers).
 
-    Override ``get_config`` when the agent needs a different prompt or tools per ``ConfigType``.
+    An agentic execution that needs another prompt or extra tools declares them on its definition.
 
     The framework only stores the values of ``AGENT_ARGS`` and ``PROMPT_INPUT``. When the agent is built they
     replace the class variables with instances of the models, so ``self.AGENT_ARGS.<field>`` and
@@ -96,11 +95,10 @@ class BaseAgent(ABC, ExtraArgsClassBase):
         self._dynamic_tools: list[BaseTool] = []
 
     @classmethod
-    def get_config(cls, config_type: ConfigType = ConfigType.CONVERSATION) -> "AgentConfig":
-        """Return the agent's configuration for the given context.
+    def get_config(cls) -> "AgentConfig":
+        """Return the agent's configuration.
 
-        Returns an ``AgentConfigWithDefaults``: fields left unset are filled from the host's defaults. ``ConfigType.CONVERSATION`` is an interactive
-        conversation, ``ConfigType.AGENTIC_EXECUTION_DEFINITION`` an autonomous agentic execution run.
+        Returns an ``AgentConfigWithDefaults``: fields left unset are filled from the host's defaults.
         """
         from ..config import AgentConfigWithDefaults
 

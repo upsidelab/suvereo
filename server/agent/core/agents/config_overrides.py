@@ -1,6 +1,6 @@
 from typing import Any
 
-from enthusiast_common.config import AgentCallbackHandlerConfig, AgentConfig, CallbackHandlerConfig
+from enthusiast_common.config import AgentCallbackHandlerConfig, AgentConfig, CallbackHandlerConfig, ToolConfig
 from enthusiast_common.config.base import ArbitraryTypeBaseModel
 from enthusiast_common.integrations import BaseIntegrationPluginResolver
 from enthusiast_common.llm import BaseLLM
@@ -15,7 +15,14 @@ class AgentConfigOverrides(ArbitraryTypeBaseModel):
     agent_callback_handler: AgentCallbackHandlerConfig | None = None
     integration_plugin_resolver: type[BaseIntegrationPluginResolver] | None = None
     system_prompt: str | None = None
+    extra_tools: list[ToolConfig] | None = None
     agent_config_patch: dict[str, Any] | None = None
+
+    def with_fallback(self, base: "AgentConfigOverrides") -> "AgentConfigOverrides":
+        """A copy where every field these overrides leave unset takes the value from ``base``."""
+        return self.model_copy(
+            update={name: getattr(base, name) for name in type(self).model_fields if getattr(self, name) is None}
+        )
 
     def apply(self, config: AgentConfig) -> AgentConfig:
         """A copy of the config with these overrides applied; LLM callbacks are added, the rest replaced."""
@@ -34,6 +41,8 @@ class AgentConfigOverrides(ArbitraryTypeBaseModel):
             update["integration_plugin_resolver"] = self.integration_plugin_resolver
         if self.system_prompt is not None:
             update["system_prompt"] = self.system_prompt
+        if self.extra_tools:
+            update["tools"] = [*(config.tools or []), *self.extra_tools]
         if self.agent_config_patch:
             update["runtime_arguments_patch"] = deep_merge(
                 config.runtime_arguments_patch or {}, self.agent_config_patch

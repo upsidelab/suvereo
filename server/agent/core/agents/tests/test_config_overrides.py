@@ -2,10 +2,17 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from enthusiast_common.agents import BaseAgent
-from enthusiast_common.config import AgentCallbackHandlerConfig, AgentConfigWithDefaults, CallbackHandlerConfig
+from enthusiast_common.config import (
+    AgentCallbackHandlerConfig,
+    AgentConfigWithDefaults,
+    CallbackHandlerConfig,
+    LLMToolConfig,
+)
 from enthusiast_common.integrations import BaseIntegrationPluginResolver
 from enthusiast_common.llm import BaseLLM
+from enthusiast_common.tools import BaseLLMTool
 from langchain_core.callbacks import BaseCallbackHandler
+from pydantic import BaseModel
 
 from agent.core.agents.config_overrides import AgentConfigOverrides
 from agent.core.agents.default_config import merge_config
@@ -17,6 +24,20 @@ class StubAgent(BaseAgent):
 
     def get_answer(self, input_text: str) -> str:
         return ""
+
+
+class StubTool(BaseLLMTool):
+    NAME = "stub"
+    DESCRIPTION = "stub"
+    ARGS_SCHEMA = BaseModel
+    RETURN_DIRECT = False
+
+    def run(self):
+        return ""
+
+
+class ExtraTool(StubTool):
+    NAME = "extra"
 
 
 class ConfiguredHandler(BaseCallbackHandler):
@@ -80,6 +101,20 @@ class TestAgentConfigOverrides:
 
     def test_apply_replaces_the_system_prompt(self, config):
         assert AgentConfigOverrides(system_prompt="variant prompt").apply(config).system_prompt == "variant prompt"
+
+    def test_apply_appends_extra_tools_after_the_configured_ones(self, config):
+        first, extra = LLMToolConfig(tool_class=StubTool), LLMToolConfig(tool_class=ExtraTool)
+        configured = config.model_copy(update={"tools": [first]})
+
+        assert AgentConfigOverrides(extra_tools=[extra]).apply(configured).tools == [first, extra]
+
+    def test_with_fallback_fills_only_the_unset_fields(self):
+        overrides = AgentConfigOverrides(system_prompt="variant").with_fallback(
+            AgentConfigOverrides(system_prompt="base", llm_class=PinnedLLM)
+        )
+
+        assert overrides.system_prompt == "variant"
+        assert overrides.llm_class is PinnedLLM
 
     def test_apply_sets_the_agent_config_patch(self, config):
         patch_ = {"prompt_input": {"tone": "formal"}}

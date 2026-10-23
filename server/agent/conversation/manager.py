@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import Optional
 
 from enthusiast_common.agentic_execution.memory import ToolScratchpad
-from enthusiast_common.agents import ConfigType
 from enthusiast_common.integrations import BaseToolProvidingIntegration
 
 from account.models import User
@@ -23,7 +22,6 @@ class ConversationManager:
         conversation: Conversation,
         question_message: str,
         streaming: bool,
-        config_type: ConfigType = ConfigType.CONVERSATION,
         tool_scratchpad: Optional[ToolScratchpad] = None,
         overrides: Optional[AgentConfigOverrides] = None,
     ) -> str:
@@ -35,14 +33,13 @@ class ConversationManager:
         if self._should_answer_asynchronously(conversation, overrides):
             return asyncio.run(
                 self._get_answer_async(
-                    conversation, question_message, streaming, config_type, tool_scratchpad, overrides
+                    conversation, question_message, streaming, tool_scratchpad, overrides
                 )
             )
 
         agent = AgentRegistry().get_conversation_agent(
             conversation,
             streaming,
-            config_type=config_type,
             tool_scratchpad=tool_scratchpad,
             overrides=overrides,
         )
@@ -73,14 +70,12 @@ class ConversationManager:
         conversation: Conversation,
         question_message: str,
         streaming: bool,
-        config_type: ConfigType,
         tool_scratchpad: Optional[ToolScratchpad],
         overrides: Optional[AgentConfigOverrides] = None,
     ) -> str:
         agent = await AgentRegistry().aget_conversation_agent(
             conversation,
             streaming,
-            config_type=config_type,
             tool_scratchpad=tool_scratchpad,
             overrides=overrides,
         )

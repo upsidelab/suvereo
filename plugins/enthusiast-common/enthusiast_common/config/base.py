@@ -90,6 +90,9 @@ class AgentToolConfig(ArbitraryTypeBaseModel):
     agent_class: Type[BaseAgent]
 
 
+ToolConfig = FunctionToolConfig | LLMToolConfig | AgentToolConfig | FileToolConfig
+
+
 class AgentCallbackHandlerConfig(ArbitraryTypeBaseModel):
     handler_class: Type[BaseCallbackHandler]
 
@@ -112,7 +115,7 @@ class AgentConfig(ArbitraryTypeBaseModel, Generic[InjectorT]):
     registry: RegistryConfig
     system_prompt: str
     memory: MemoryConfig
-    tools: Optional[list[FunctionToolConfig | LLMToolConfig | AgentToolConfig | FileToolConfig]] = None
+    tools: Optional[list[ToolConfig]] = None
     agent_callback_handler: Optional[AgentCallbackHandlerConfig] = None
     conversation_history_token_limit: int = Field(gt=0)
     memory_compactor_enabled: bool = False

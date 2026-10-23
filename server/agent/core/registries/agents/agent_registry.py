@@ -3,7 +3,7 @@ from typing import List, Optional, Type
 
 from django.conf import settings
 from enthusiast_common.agentic_execution.memory import ToolScratchpad
-from enthusiast_common.agents import BaseAgent, ConfigType
+from enthusiast_common.agents import BaseAgent
 from enthusiast_common.builder import AgentBuilder
 from utils.base_registry import BaseRegistry
 
@@ -46,12 +46,11 @@ class AgentRegistry(BaseAgentRegistry):
         self,
         conversation: Conversation,
         streaming: bool,
-        config_type: ConfigType = ConfigType.CONVERSATION,
         tool_scratchpad: Optional[ToolScratchpad] = None,
         overrides: Optional[AgentConfigOverrides] = None,
     ) -> BaseAgent:
         try:
-            builder = self._build_agent_builder(conversation, streaming, config_type, tool_scratchpad, overrides)
+            builder = self._build_agent_builder(conversation, streaming, tool_scratchpad, overrides)
             return builder.build()
         except Exception as e:
             raise AgentRegistryError(f"Failed to build agent for conversation {conversation.id}") from e
@@ -60,12 +59,11 @@ class AgentRegistry(BaseAgentRegistry):
         self,
         conversation: Conversation,
         streaming: bool,
-        config_type: ConfigType = ConfigType.CONVERSATION,
         tool_scratchpad: Optional[ToolScratchpad] = None,
         overrides: Optional[AgentConfigOverrides] = None,
     ) -> BaseAgent:
         try:
-            builder = self._build_agent_builder(conversation, streaming, config_type, tool_scratchpad, overrides)
+            builder = self._build_agent_builder(conversation, streaming, tool_scratchpad, overrides)
             return await builder.abuild()
         except Exception as e:
             raise AgentRegistryError(f"Failed to build agent for conversation {conversation.id}") from e
@@ -74,13 +72,12 @@ class AgentRegistry(BaseAgentRegistry):
         self,
         conversation: Conversation,
         streaming: bool,
-        config_type: ConfigType,
         tool_scratchpad: Optional[ToolScratchpad],
         overrides: Optional[AgentConfigOverrides] = None,
     ):
         agent_class = self.get_agent_class_by_type(conversation.agent.agent_type)
         builder_cls = agent_class.BUILDER_CLASS or AgentBuilder
-        config = merge_config(partial=agent_class.get_config(config_type=config_type))
+        config = merge_config(partial=agent_class.get_config())
         if overrides:
             config = overrides.apply(config)
         return builder_cls(

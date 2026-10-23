@@ -2,6 +2,7 @@ from celery import Task, shared_task
 from enthusiast_common.agentic_execution import ExecutionFailureCode
 
 from agent.agentic_execution.conversation import ExecutionConversation
+from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
 from agent.agentic_execution.runner import AgenticExecutionRunner
 from agent.models.agentic_execution import AgenticExecution
 
@@ -25,8 +26,9 @@ def run_agentic_execution_task(execution_id: int):
     execution = AgenticExecution.objects.select_related("agent", "conversation__agent").get(pk=execution_id)
     execution.mark_in_progress()
 
+    definition = AgenticExecutionDefinitionRegistry().get_by_key(execution.execution_key)
     result = AgenticExecutionRunner().run(
-        execution.execution_key, execution.input, ExecutionConversation(execution.conversation)
+        execution.execution_key, execution.input, ExecutionConversation(execution.conversation, definition)
     )
 
     if result.success:
