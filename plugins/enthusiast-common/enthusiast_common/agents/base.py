@@ -71,6 +71,7 @@ class BaseAgent(ABC, ExtraArgsClassBase):
         system_prompt: str,
         conversation_id: Any,
         injector: BaseInjector,
+        conversation_history_token_limit: int,
         callback_handler: BaseCallbackHandler | None = None,
     ):
         self._tools = tools
@@ -79,6 +80,7 @@ class BaseAgent(ABC, ExtraArgsClassBase):
         self._conversation_id = conversation_id
         self._callback_handler = callback_handler
         self._injector = injector
+        self._conversation_history_token_limit = conversation_history_token_limit
         self._dynamic_tools: list[BaseTool] = []
 
     def set_dynamic_tools(self, tools: list[BaseTool]) -> None:

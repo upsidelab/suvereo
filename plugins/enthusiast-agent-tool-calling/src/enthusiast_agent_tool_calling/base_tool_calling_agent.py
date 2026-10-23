@@ -10,8 +10,6 @@ from langgraph.graph.state import CompiledStateGraph
 
 from enthusiast_agent_tool_calling.context_window_builder import ContextWindowBuilder
 
-MAX_HISTORY_TOKENS = 3000
-
 
 class BaseToolCallingAgent(BaseAgent):
     DEFAULT_FILE_TOOLS = [FileListTool, FileRetrievalTool]
@@ -72,7 +70,7 @@ class BaseToolCallingAgent(BaseAgent):
         return ContextWindowBuilder(
             chat_history=self._injector.chat_history,
             memory_compactor=self._injector.memory_compactor,
-        ).build(max_tokens=MAX_HISTORY_TOKENS)
+        ).build(max_tokens=self._conversation_history_token_limit)
 
     def _build_tools(self) -> list[BaseTool]:
         return [tool.as_tool() for tool in self._tools] + self._dynamic_tools

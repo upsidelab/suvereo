@@ -1,5 +1,6 @@
 from typing import Optional, Type
 
+from django.conf import settings
 from enthusiast_common.config import (
     AgentCallbackHandlerConfig,
     AgentConfig,
@@ -39,6 +40,7 @@ class DefaultAgentConfig(BaseModel):
     registry: RegistryConfig
     llm: LLMConfig
     memory: MemoryConfig
+    conversation_history_token_limit: int
     agent_callback_handler: Optional[AgentCallbackHandlerConfig] = None
     similarity_searcher: Optional[Type[BaseSimilaritySearcher]] = None
     integration_plugin_resolver: Optional[Type[BaseIntegrationPluginResolver]] = None
@@ -64,6 +66,7 @@ def get_default_config() -> DefaultAgentConfig:
             chat_history_class=PersistentChatHistory,
             compactor_class=LLMMemoryCompactor,
         ),
+        conversation_history_token_limit=settings.DEFAULT_CONVERSATION_HISTORY_TOKEN_LIMIT,
         agent_callback_handler=AgentCallbackHandlerConfig(handler_class=ConversationWebSocketCallbackHandler),
         similarity_searcher=EmbeddingSimilaritySearcher,
         integration_plugin_resolver=IntegrationPluginResolver,
