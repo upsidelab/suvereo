@@ -7,14 +7,15 @@ from ..suite import EvalCase
 from .base import BaseCaseSource
 
 LIST_SEPARATOR = ";"
-DOTTED_PREFIXES = ("input", "expected")
+DOTTED_PREFIXES = ("input", "expected", "user")
 PLAIN_COLUMNS = ("id", "description")
-LIST_COLUMNS = ("tags", "files")
+LIST_COLUMNS = ("tags", "files", "turns")
 JSON_STARTS = ("[", "{", '"')
 
 
 class CsvCaseSource(BaseCaseSource):
-    """A CSV file with one case per row; only cells starting with '[', '{' or '"' are parsed as JSON."""
+    """A CSV file with one case per row; only cells starting with '[', '{' or '"' are parsed as JSON, and a list
+    column takes a JSON list or ';'-separated items."""
 
     def load(self) -> list[EvalCase]:
         try:
@@ -41,25 +42,32 @@ class CsvCaseSource(BaseCaseSource):
     def _row_to_case(self, row: dict[str, str | None], line: int) -> dict[str, Any]:
         if None in row:
             raise CaseSourceError(self.path, "Row has more cells than the header has columns.", row=line)
-        case: dict[str, Any] = {"input": {}, "expected": {}, "extra": {}}
+        case: dict[str, Any] = {"extra": {}}
         for column, cell in row.items():
             if cell is None or cell.strip() == "":
                 continue
             prefix, _, path = column.partition(".")
             if column in PLAIN_COLUMNS:
                 case[column] = cell.strip()
-            elif column in LIST_COLUMNS:
-                case[column] = [item.strip() for item in cell.split(LIST_SEPARATOR) if item.strip()]
             else:
                 try:
+                    if column in LIST_COLUMNS:
+                        case[column] = self._parse_list(cell)
+                        continue
                     value = self._parse_cell(cell)
                     if prefix in DOTTED_PREFIXES:
-                        self._set_path(case[prefix], path.split("."), value)
+                        self._set_path(case.setdefault(prefix, {}), path.split("."), value)
                     else:
                         case["extra"][column] = value
                 except ValueError as e:
                     raise CaseSourceError(self.path, str(e), row=line, column=column) from e
         return case
+
+    @classmethod
+    def _parse_list(cls, cell: str) -> list[Any]:
+        if cell.strip().startswith("["):
+            return cls._parse_cell(cell)
+        return [item.strip() for item in cell.split(LIST_SEPARATOR) if item.strip()]
 
     @staticmethod
     def _parse_cell(cell: str) -> Any:

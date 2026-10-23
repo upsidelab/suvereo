@@ -11,6 +11,7 @@ from .metric_config import MetricConfig
 from .model_target import ModelTarget
 from .prompt_variant import PromptVariant
 from .report_name import DEFAULT_REPORTS, ReportName
+from .suite_kind import SuiteKind
 
 CasesSpec = str | list[str | EvalCase]
 
@@ -21,6 +22,10 @@ class EvalSuite(EvalModel):
     name: str = Field(default="", description="Defaults to the suite's directory name.")
     description: str = ""
     agent: AgentRef
+    kind: SuiteKind | None = Field(
+        default=None,
+        description="Defaults to execution when the agent type has an execution definition, otherwise conversation.",
+    )
     execution_key: str | None = Field(default=None, description="Optional when the agent type has one definition.")
     integrations: list[IntegrationConfig] = []
     models: list[ModelTarget] = Field(default=[], description="Empty runs the DataSet's configured model.")

@@ -1,5 +1,12 @@
 import pytest
-from enthusiast_common.evaluation.suite import EvalCase, EvalSuite, IntegrationConfig, MetricConfig, PassThreshold
+from enthusiast_common.evaluation.suite import (
+    EvalCase,
+    EvalSuite,
+    IntegrationConfig,
+    MetricConfig,
+    PassThreshold,
+    UserConfig,
+)
 from pydantic import ValidationError
 
 MINIMAL = {
@@ -84,6 +91,7 @@ class TestEvalSuite:
             {"agent": {"id": 1, "config": {"a": 1}}},
             {"variants": [{"name": "default", "system_prompt_file": "p.txt"}]},
             {"variants": [{"name": "empty"}]},
+            {"kind": "chat"},
         ],
     )
     def test_invalid_suites_are_rejected(self, changes):
@@ -161,6 +169,48 @@ class TestEvalSuite:
 
         assert [m.name for m in metrics] == ["line_items", "single_place_order", "retried", "stopped"]
         assert metrics[0].pass_threshold is None
+
+    @pytest.mark.parametrize("kind", ["execution", "conversation", None])
+    def test_kind_is_optional_and_left_for_the_loader_to_resolve(self, kind):
+        assert EvalSuite.model_validate(_suite(kind=kind)).kind == kind
+
+
+class TestEvalCase:
+    def test_a_conversation_case_has_turns_or_a_user(self):
+        scripted = EvalCase.model_validate({"id": "s", "turns": ["Hi", "Under 50 EUR"]})
+        simulated = EvalCase.model_validate({"id": "u", "user": {"goal": "Find a kettle"}})
+
+        assert scripted.turns == ["Hi", "Under 50 EUR"]
+        assert simulated.user.goal == "Find a kettle"
+
+    @pytest.mark.parametrize(
+        "case",
+        [
+            {"input": {"a": 1}, "turns": ["Hi"]},
+            {"input": {"a": 1}, "user": {"goal": "g"}},
+            {"turns": ["Hi"], "user": {"goal": "g"}},
+        ],
+    )
+    def test_only_one_way_to_drive_the_agent_is_allowed(self, case):
+        with pytest.raises(ValidationError, match="only one of"):
+            EvalCase.model_validate({"id": "c", **case})
+
+
+class TestUserConfig:
+    def test_defaults(self):
+        user = UserConfig(goal="Find a kettle")
+
+        assert (user.persona, user.max_turns, user.class_path, user.params) == ("", 10, None, {})
+
+    def test_a_custom_simulator_is_written_as_class_and_needs_no_goal(self):
+        user = UserConfig.model_validate({"class": "my.Simulator", "params": {"mood": "angry"}})
+
+        assert user.class_path == "my.Simulator"
+
+    @pytest.mark.parametrize("user", [{}, {"persona": "terse"}, {"goal": "g", "max_turns": 0}])
+    def test_invalid_users_are_rejected(self, user):
+        with pytest.raises(ValidationError):
+            UserConfig.model_validate(user)
 
 
 class TestPassThreshold:

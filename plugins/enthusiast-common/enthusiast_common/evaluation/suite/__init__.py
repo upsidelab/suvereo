@@ -8,6 +8,8 @@ from .model_target import ModelTarget
 from .pass_threshold import PassThreshold
 from .prompt_variant import DEFAULT_VARIANT, PromptVariant
 from .report_name import DEFAULT_REPORTS, ReportName
+from .suite_kind import SuiteKind
+from .user_config import UserConfig
 
 __all__ = [
     "DEFAULT_REPORTS",
@@ -24,4 +26,6 @@ __all__ = [
     "ModelTarget",
     "PromptVariant",
     "ReportName",
+    "SuiteKind",
+    "UserConfig",
 ]

@@ -7,6 +7,7 @@ from .attempt import Attempt
 from .llm_call import LLMCall
 from .mock_call import MockCall
 from .tool_call import ToolCall
+from .turn import Turn
 
 
 class ExecutionTrace(BaseModel):
@@ -16,6 +17,7 @@ class ExecutionTrace(BaseModel):
     tool_calls: list[ToolCall] = []
     attempts: list[Attempt] = []
     mock_calls: list[MockCall] = []
+    turns: list[Turn] = []
     scratchpad: dict[str, Any] = {}
     output: dict[str, Any] | None = None
     execution_result: ExecutionResult | None = None
@@ -48,6 +50,10 @@ class ExecutionTrace(BaseModel):
         """Add one pass of the execution's validator loop."""
         self.attempts.append(attempt)
 
+    def record_turn(self, turn: Turn) -> None:
+        """Add one finished turn of a conversation."""
+        self.turns.append(turn)
+
     def tool_calls_named(self, name: str) -> list[ToolCall]:
         """The agent's calls to one tool, in order."""
         return [c for c in self.tool_calls if c.name == name]
@@ -55,6 +61,14 @@ class ExecutionTrace(BaseModel):
     def mock_calls_to(self, method: str) -> list[MockCall]:
         """The calls mocks received to one method, in order."""
         return [c for c in self.mock_calls if c.method == method]
+
+    def tool_calls_in(self, turn: Turn) -> list[ToolCall]:
+        """The agent's tool calls made while answering one turn, in order."""
+        return [c for c in self.tool_calls if c.run_id in turn.tool_call_run_ids]
+
+    def llm_calls_in(self, turn: Turn) -> list[LLMCall]:
+        """The LLM calls made while answering one turn, nested ones included."""
+        return [c for c in self.llm_calls if c.run_id in turn.llm_call_run_ids]
 
     def llm_calls_within(self, tool_call: ToolCall) -> list[LLMCall]:
         """The LLM calls made anywhere inside a tool call, also through chains the tool ran."""
