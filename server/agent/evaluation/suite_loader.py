@@ -33,6 +33,7 @@ class SuiteLoader:
         loaded = SuiteReader().read(path)
         if selection is not None:
             loaded = selection.apply(loaded)
+        self._check_execution_suite(loaded)
         execution = self._resolve_execution(loaded.suite)
         self._check_sandbox_agent_type(loaded.suite)
         self._check_prompt_files(loaded)
@@ -55,6 +56,15 @@ class SuiteLoader:
                 f"Agent type '{agent_type}' has {len(definitions)} registered executions; set 'execution_key'."
             )
         return definitions[0]
+
+    @staticmethod
+    def _check_execution_suite(loaded: LoadedSuite) -> None:
+        """Only execution suites run so far; a conversation suite or case fails rather than running as an execution."""
+        if loaded.suite.kind == "conversation":
+            raise EvalSuiteError("Conversation suites can't be run yet; set 'kind: execution' or leave it out.")
+        for case in loaded.cases:
+            if case.turns or case.user is not None:
+                raise EvalSuiteError(f"Case '{case.id}': conversation cases ('turns', 'user') can't be run yet.")
 
     @staticmethod
     def _check_sandbox_agent_type(suite: EvalSuite) -> None:

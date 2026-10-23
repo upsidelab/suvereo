@@ -195,6 +195,11 @@ class TestEvalCase:
         with pytest.raises(ValidationError, match="only one of"):
             EvalCase.model_validate({"id": "c", **case})
 
+    @pytest.mark.parametrize("turns", [[""], ["Hi", "  "]])
+    def test_a_turn_must_have_text(self, turns):
+        with pytest.raises(ValidationError, match="must have text"):
+            EvalCase.model_validate({"id": "c", "turns": turns})
+
 
 class TestUserConfig:
     def test_defaults(self):

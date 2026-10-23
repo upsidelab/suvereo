@@ -79,7 +79,7 @@ A **candidate** is one model and variant, shown as `<model label>/<variant>`. A 
 - `expected.mock_calls.<method>[i].<arg>`: the arguments of a mock's i-th call, read by `mock_calls`. An empty list expects no calls.
 - `expected.failure_code`: the run should fail with this code; `execution_succeeded` then checks for that failure.
 
-In `cases.csv` each row is a case: `id`, `description`, `tags` and `files` (`;`-separated), `input.<field>`, `expected.<dotted.path>` (numbers index lists), and any other column, which reaches custom metrics as `case.extra`. A cell starting with `[`, `{` or `"` is parsed as JSON; any other cell stays text. CSV and YAML cases can be mixed; ids must be unique.
+In `cases.csv` each row is a case: `id`, `description`, `tags` and `files` (`;`-separated, or a JSON list), `input.<field>`, `expected.<dotted.path>` (numbers index lists), and any other column, which reaches custom metrics as `case.extra`. A cell starting with `[`, `{` or `"` is parsed as JSON; any other cell stays text. CSV and YAML cases can be mixed; ids must be unique.
 
 ## Metrics
 

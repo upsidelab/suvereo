@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Any
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 
 from .base import EvalModel
 from .integration_config import IntegrationConfig
@@ -24,6 +24,13 @@ class EvalCase(EvalModel):
     expected: dict[str, Any] = Field(default={}, description="Free-form; metrics read the paths they need.")
     metrics: list[MetricConfig] = Field(default=[], description="Added to the suite's, or replacing them by name.")
     extra: dict[str, Any] = Field(default={}, description="Other CSV columns, for custom metrics.")
+
+    @field_validator("turns")
+    @classmethod
+    def _turns_are_not_blank(cls, turns: list[str]) -> list[str]:
+        if any(not turn.strip() for turn in turns):
+            raise ValueError("A turn must have text.")
+        return turns
 
     @model_validator(mode="after")
     def _one_way_to_drive_the_agent(self) -> "EvalCase":
