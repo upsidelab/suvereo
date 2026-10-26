@@ -2,7 +2,13 @@ from unittest.mock import patch
 
 import pytest
 from enthusiast_common.evaluation.loaded_suite import LoadedSuite
-from enthusiast_common.evaluation.suite import EvalCase, EvalSuite, ModelTarget, PromptVariant
+from enthusiast_common.evaluation.suite import (
+    AgenticExecutionEvalCase,
+    ConversationEvalCase,
+    EvalSuite,
+    ModelTarget,
+    PromptVariant,
+)
 from model_bakery import baker
 
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
@@ -58,7 +64,7 @@ def _runner(target, tmp_path, **changes):
 
 
 def _case(**fields):
-    return EvalCase(id="ada", input={"name": "Ada"}, **fields)
+    return AgenticExecutionEvalCase(id="ada", input={"name": "Ada"}, **fields)
 
 
 class TestCaseRunner:
@@ -87,6 +93,14 @@ class TestCaseRunner:
         assert result.trace.error == "ValueError: down"
         assert result.metrics["failure_code"].value == "RUNTIME_ERROR"
         assert result.thresholds["greeted_once"].passed
+
+    def test_a_conversation_case_is_refused_rather_than_run_as_an_execution(self, target, tmp_path):
+        case = ConversationEvalCase(id="chat", user_messages=["Hi"])
+
+        result = _runner(target, tmp_path).run(case)
+
+        assert result.trace.error == "TypeError: Case 'chat' is not an execution case; this suite runs executions."
+        assert not result.passed
 
     def test_a_failure_while_setting_up_is_recorded_too(self, target, tmp_path):
         variant = PromptVariant(name="v2", system_prompt_file="missing.txt")

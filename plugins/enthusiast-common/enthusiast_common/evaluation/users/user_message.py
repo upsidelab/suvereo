@@ -1,8 +1,6 @@
-from typing import Literal
-
 from pydantic import BaseModel, Field, model_validator
 
-StopReason = Literal["done", "gave_up"]
+from .stop_reason import StopReason
 
 
 class UserMessage(BaseModel):
@@ -19,12 +17,15 @@ class UserMessage(BaseModel):
 
     @classmethod
     def say(cls, text: str) -> "UserMessage":
+        """A message to send to the agent."""
         return cls(text=text)
 
     @classmethod
     def stop(cls, reason: StopReason) -> "UserMessage":
+        """A stop: the user is done, or gave up."""
         return cls(stop_reason=reason)
 
     @property
     def is_stop(self) -> bool:
+        """Whether the user stops here rather than sending a message."""
         return self.stop_reason is not None

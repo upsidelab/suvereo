@@ -1,13 +1,16 @@
 import pytest
 from enthusiast_common.evaluation.suite import (
+    AgenticExecutionEvalCase,
+    AnyEvalCase,
+    ConversationEvalCase,
     EvalCase,
     EvalSuite,
     IntegrationConfig,
     MetricConfig,
     PassThreshold,
-    UserConfig,
+    SimulatedUserConfig,
 )
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
 
 MINIMAL = {
     "agent": {"id": 12},
@@ -74,7 +77,7 @@ class TestEvalSuite:
 
         assert suite.integrations[0].class_path.endswith("ECommerceMockIntegration")
         assert suite.models[1].display_label == "sonnet"
-        assert isinstance(suite.cases[2], EvalCase)
+        assert isinstance(suite.cases[2], AgenticExecutionEvalCase)
 
     def test_an_unknown_key_is_an_error_rather_than_ignored(self):
         with pytest.raises(ValidationError, match="repeat"):
@@ -176,46 +179,52 @@ class TestEvalSuite:
 
 
 class TestEvalCase:
-    def test_a_conversation_case_has_turns_or_a_user(self):
-        scripted = EvalCase.model_validate({"id": "s", "turns": ["Hi", "Under 50 EUR"]})
-        simulated = EvalCase.model_validate({"id": "u", "user": {"goal": "Find a kettle"}})
-
-        assert scripted.turns == ["Hi", "Under 50 EUR"]
-        assert simulated.user.goal == "Find a kettle"
-
     @pytest.mark.parametrize(
-        "case",
+        "case, case_class",
         [
-            {"input": {"a": 1}, "turns": ["Hi"]},
-            {"input": {"a": 1}, "user": {"goal": "g"}},
-            {"turns": ["Hi"], "user": {"goal": "g"}},
+            ({"input": {"name": "Ada"}}, AgenticExecutionEvalCase),
+            ({}, AgenticExecutionEvalCase),
+            ({"user_messages": ["Hi", "Under 50 EUR"]}, ConversationEvalCase),
+            ({"simulated_user": {"goal": "Find a kettle"}}, ConversationEvalCase),
         ],
     )
-    def test_at_most_one_of_input_turns_or_user_is_set(self, case):
-        with pytest.raises(ValidationError, match="only one of"):
-            EvalCase.model_validate({"id": "c", **case})
+    def test_a_case_is_read_as_the_class_its_fields_describe(self, case, case_class):
+        assert type(TypeAdapter(AnyEvalCase).validate_python({"id": "c", **case})) is case_class
 
-    @pytest.mark.parametrize("turns", [[""], ["Hi", "  "]])
-    def test_a_turn_must_have_text(self, turns):
+    @pytest.mark.parametrize(
+        "case, message",
+        [
+            ({"input": {"a": 1}, "user_messages": ["Hi"]}, "input\n  Extra inputs are not permitted"),
+            ({"input": {"a": 1}, "simulated_user": {"goal": "g"}}, "input\n  Extra inputs are not permitted"),
+            ({"user_messages": ["Hi"], "simulated_user": {"goal": "g"}}, "Set either 'user_messages'"),
+            ({"user_messages": []}, "Set either 'user_messages'"),
+        ],
+    )
+    def test_a_case_is_an_execution_or_a_conversation_never_both(self, case, message):
+        with pytest.raises(ValidationError, match=message):
+            TypeAdapter(AnyEvalCase).validate_python({"id": "c", **case})
+
+    @pytest.mark.parametrize("user_messages", [[""], ["Hi", "  "]])
+    def test_a_user_message_must_have_text(self, user_messages):
         with pytest.raises(ValidationError, match="must have text"):
-            EvalCase.model_validate({"id": "c", "turns": turns})
+            ConversationEvalCase(id="c", user_messages=user_messages)
 
 
-class TestUserConfig:
+class TestSimulatedUserConfig:
     def test_defaults(self):
-        user = UserConfig(goal="Find a kettle")
+        user = SimulatedUserConfig(goal="Find a kettle")
 
         assert (user.persona, user.max_turns, user.class_path, user.params) == ("", 10, None, {})
 
     def test_a_custom_simulator_is_written_as_class_and_needs_no_goal(self):
-        user = UserConfig.model_validate({"class": "my.Simulator", "params": {"mood": "angry"}})
+        user = SimulatedUserConfig.model_validate({"class": "my.Simulator", "params": {"mood": "angry"}})
 
         assert user.class_path == "my.Simulator"
 
     @pytest.mark.parametrize("user", [{}, {"persona": "terse"}, {"goal": "g", "max_turns": 0}])
     def test_invalid_users_are_rejected(self, user):
         with pytest.raises(ValidationError):
-            UserConfig.model_validate(user)
+            SimulatedUserConfig.model_validate(user)
 
 
 class TestPassThreshold:

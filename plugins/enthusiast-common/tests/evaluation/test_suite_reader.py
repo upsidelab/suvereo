@@ -37,6 +37,6 @@ class TestEvalSuiteJsonSchema:
 
         assert "class" in schema["$defs"]["IntegrationConfig"]["properties"]
         assert "in" in schema["$defs"]["PassThreshold"]["properties"]
-        assert "class" in schema["$defs"]["UserConfig"]["properties"]
+        assert "class" in schema["$defs"]["SimulatedUserConfig"]["properties"]
         assert schema["properties"]["kind"]["anyOf"][0]["enum"] == ["execution", "conversation"]
         assert set(schema["required"]) == {"agent", "metrics", "cases"}

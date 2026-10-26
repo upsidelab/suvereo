@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from ..suite import EvalCase
+from ..suite import ConversationEvalCase
 from ..trace import Turn
 from .user_message import UserMessage
 
@@ -8,10 +8,10 @@ from .user_message import UserMessage
 class BaseUserSimulator(ABC):
     """Plays the user in a conversation case; the runner sends its messages until it stops or max_turns is reached."""
 
-    def __init__(self, case: EvalCase):
-        """The case's ``user`` holds a simulated user's goal, persona and params; a scripted case has none."""
+    def __init__(self, case: ConversationEvalCase):
+        """``simulated_user`` holds the case's goal, persona and params; a case with fixed user messages has none."""
         self.case = case
-        self.config = case.user
+        self.simulated_user = case.simulated_user
 
     @abstractmethod
     def next_message(self, turns: list[Turn]) -> UserMessage:

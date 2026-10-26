@@ -1,4 +1,7 @@
 from .agent_ref import AgentRef
+from .agentic_execution_eval_case import AgenticExecutionEvalCase
+from .any_eval_case import AnyEvalCase, case_kind
+from .conversation_eval_case import ConversationEvalCase
 from .eval_case import EvalCase
 from .eval_suite import CasesSpec, EvalSuite
 from .integration_config import IntegrationConfig
@@ -8,15 +11,18 @@ from .model_target import ModelTarget
 from .pass_threshold import PassThreshold
 from .prompt_variant import DEFAULT_VARIANT, PromptVariant
 from .report_name import DEFAULT_REPORTS, ReportName
+from .simulated_user_config import SimulatedUserConfig
 from .suite_kind import SuiteKind
-from .user_config import UserConfig
 
 __all__ = [
     "DEFAULT_REPORTS",
     "DEFAULT_VARIANT",
     "Aggregate",
     "AgentRef",
+    "AgenticExecutionEvalCase",
+    "AnyEvalCase",
     "CasesSpec",
+    "ConversationEvalCase",
     "EvalCase",
     "EvalSuite",
     "PassThreshold",
@@ -26,6 +32,7 @@ __all__ = [
     "ModelTarget",
     "PromptVariant",
     "ReportName",
+    "SimulatedUserConfig",
     "SuiteKind",
-    "UserConfig",
+    "case_kind",
 ]

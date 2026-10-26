@@ -7,9 +7,9 @@ from ..suite import EvalCase
 from .base import BaseCaseSource
 
 LIST_SEPARATOR = ";"
-DOTTED_PREFIXES = ("input", "expected", "user")
+DOTTED_PREFIXES = ("input", "expected", "simulated_user")
 PLAIN_COLUMNS = ("id", "description")
-LIST_COLUMNS = ("tags", "files", "turns")
+LIST_COLUMNS = ("tags", "files", "user_messages")
 JSON_STARTS = ("[", "{", '"')
 
 

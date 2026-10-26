@@ -5,7 +5,7 @@ import time
 from enthusiast_common.config import AgentCallbackHandlerConfig, CallbackHandlerConfig
 from enthusiast_common.evaluation.loaded_suite import LoadedSuite
 from enthusiast_common.evaluation.metrics import MetricContext, MetricResult
-from enthusiast_common.evaluation.suite import EvalCase, ModelTarget, PromptVariant
+from enthusiast_common.evaluation.suite import AgenticExecutionEvalCase, EvalCase, ModelTarget, PromptVariant
 from enthusiast_common.evaluation.suite.prompt_variant import DEFAULT_VARIANT
 from enthusiast_common.evaluation.trace import ExecutionTrace, TraceRecorder
 
@@ -127,6 +127,8 @@ class CaseRunner:
         """Set up and run the case, recording any exception as the trace's error; returns the agent's run time."""
         conversation, started = None, None
         try:
+            if not isinstance(case, AgenticExecutionEvalCase):
+                raise TypeError(f"Case '{case.id}' is not an execution case; this suite runs executions.")
             integrations = [self._mocks.build(config) for config in self.loaded.suite.integrations_for(case)]
             for integration in integrations:
                 integration.recorder = recorder

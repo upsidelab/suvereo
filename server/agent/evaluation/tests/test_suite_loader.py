@@ -125,8 +125,8 @@ class TestSuiteLoader:
                 "only for label metrics",
             ),
             ({"kind": "conversation"}, "Conversation suites can't be run yet"),
-            ({"cases": [{"id": "chat", "turns": ["Hi"]}]}, "Case 'chat': conversation cases"),
-            ({"cases": [{"id": "chat", "user": {"goal": "Say hi"}}]}, "Case 'chat': conversation cases"),
+            ({"cases": [{"id": "chat", "user_messages": ["Hi"]}]}, "Case 'chat': conversation cases"),
+            ({"cases": [{"id": "chat", "simulated_user": {"goal": "Say hi"}}]}, "Case 'chat': conversation cases"),
         ],
     )
     def test_fails_early_on_a_suite_the_host_cannot_run(self, tmp_path, changes, message):

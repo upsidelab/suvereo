@@ -1,11 +1,13 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any
+from typing import Any, get_args
 
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
 
 from ..errors import CaseSourceError
-from ..suite import EvalCase
+from ..suite import AnyEvalCase, EvalCase, SuiteKind
+
+CASE = TypeAdapter(AnyEvalCase)
 
 
 class BaseCaseSource(ABC):
@@ -22,7 +24,7 @@ class BaseCaseSource(ABC):
         if not isinstance(data, dict):
             raise CaseSourceError(self.path, f"A case must be a mapping, got {type(data).__name__}.", row=row)
         try:
-            case = EvalCase.model_validate(data)
+            case = CASE.validate_python(data)
         except ValidationError as e:
             raise CaseSourceError(self.path, self._describe(e), row=row) from e
         return case.model_copy(update={"files": [self._resolve_file(f, row) for f in case.files]})
@@ -36,4 +38,12 @@ class BaseCaseSource(ABC):
 
     @staticmethod
     def _describe(error: ValidationError) -> str:
-        return "; ".join(f"{'.'.join(str(p) for p in e['loc']) or 'case'}: {e['msg']}" for e in error.errors())
+        """Each problem as 'field: message', naming the kind of case it was read as."""
+        problems = []
+        for e in error.errors():
+            location, kind = list(e["loc"]), None
+            if location and location[0] in get_args(SuiteKind):
+                kind = location.pop(0)
+            where = ".".join(str(p) for p in location) or "case"
+            problems.append(f"{where}: {e['msg']}" + (f" ({kind} case)" if kind else ""))
+        return "; ".join(problems)
