@@ -5,7 +5,7 @@ import time
 from enthusiast_common.agentic_execution.memory import ToolScratchpad
 from enthusiast_common.agents import ConfigType
 from enthusiast_common.evaluation.suite import ConversationEvalCase, EvalCase
-from enthusiast_common.evaluation.trace import ConversationEnding, TraceRecorder, Turn
+from enthusiast_common.evaluation.trace import StopReason, TraceRecorder, Turn
 from enthusiast_common.evaluation.users import BaseUserSimulator
 
 from agent.conversation.manager import ConversationManager
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class ConversationRunDriver(BaseRunDriver):
     """Chats with the agent turn by turn, the case's user simulator writing the user's side, until it stops, the
-    case's turn limit is reached or a turn raises; records on the trace how the conversation ended."""
+    case's turn limit is reached or a turn raises; records on the trace why it stopped."""
 
     def run(
         self, case: EvalCase, conversation: Conversation, overrides: AgentConfigOverrides, recorder: TraceRecorder
@@ -30,11 +30,11 @@ class ConversationRunDriver(BaseRunDriver):
         trace, scratchpad = recorder.trace, ToolScratchpad()
         try:
             simulator = UserSimulatorRegistry().simulator_for(case)
-            trace.ended_by = self._converse(
+            trace.stop_reason = self._converse(
                 simulator, self._max_turns(case), conversation, overrides, scratchpad, recorder
             )
         except Exception:
-            trace.ended_by = ConversationEnding.ERROR
+            trace.stop_reason = StopReason.ERROR
             raise
         finally:
             trace.scratchpad = scratchpad.entries()
@@ -48,18 +48,18 @@ class ConversationRunDriver(BaseRunDriver):
         overrides: AgentConfigOverrides,
         scratchpad: ToolScratchpad,
         recorder: TraceRecorder,
-    ) -> ConversationEnding:
+    ) -> StopReason:
         trace = recorder.trace
         while max_turns is None or len(trace.turns) < max_turns:
             message = simulator.next_message(trace.turns)
             if message.is_stop:
-                return ConversationEnding(message.stop_reason)
+                return message.stop_reason
             turn = self._take_turn(message.text, conversation, overrides, scratchpad, recorder)
             trace.record_turn(turn)
             if turn.error is not None:
                 trace.error = turn.error
-                return ConversationEnding.ERROR
-        return ConversationEnding.MAX_TURNS
+                return StopReason.ERROR
+        return StopReason.MAX_TURNS
 
     @staticmethod
     def _max_turns(case: ConversationEvalCase) -> int | None:

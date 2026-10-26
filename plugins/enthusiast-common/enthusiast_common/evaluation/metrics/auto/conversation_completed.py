@@ -1,4 +1,4 @@
-from ...trace import ConversationEnding
+from ...trace import StopReason
 from ..base_metric import BaseMetric
 from ..metric_context import MetricContext
 from ..metric_result import MetricResult
@@ -14,4 +14,4 @@ class ConversationCompleted(BaseMetric):
     def measure(self, context: MetricContext) -> MetricResult:
         trace = context.trace
         answered = bool(trace.turns) and all(turn.answer is not None for turn in trace.turns)
-        return MetricResult(value=answered and trace.error is None and trace.ended_by == ConversationEnding.DONE)
+        return MetricResult(value=answered and trace.error is None and trace.stop_reason == StopReason.DONE)

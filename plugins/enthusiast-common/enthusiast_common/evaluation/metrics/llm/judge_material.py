@@ -3,15 +3,15 @@ from collections import Counter
 from typing import Any, Literal
 
 from ...suite import AgenticExecutionEvalCase, ConversationEvalCase
-from ...trace import ConversationEnding
+from ...trace import StopReason
 from ..metric_context import MetricContext
 
 Section = Literal["input", "outcome", "output", "expected", "trace_summary"]
 MAX_SUMMARY_VALUE = 1000
 CONVERSATION_ENDINGS = {
-    ConversationEnding.DONE: "the user finished",
-    ConversationEnding.GAVE_UP: "the user gave up",
-    ConversationEnding.MAX_TURNS: "cut off at the case's turn limit",
+    StopReason.DONE: "the user finished",
+    StopReason.GAVE_UP: "the user gave up",
+    StopReason.MAX_TURNS: "cut off at the case's turn limit",
 }
 
 
@@ -81,7 +81,7 @@ class JudgeMaterial:
             return f"crashed after {len(trace.turns)} turn(s): {trace.error}"
         if not trace.turns:
             return "ended before the first turn"
-        ending = CONVERSATION_ENDINGS.get(trace.ended_by, "ended")
+        ending = CONVERSATION_ENDINGS.get(trace.stop_reason, "ended")
         return f"conversation of {len(trace.turns)} turn(s), every turn answered; {ending}"
 
     @classmethod

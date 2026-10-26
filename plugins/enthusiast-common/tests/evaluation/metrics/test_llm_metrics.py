@@ -93,7 +93,7 @@ class TestLLMJudge:
         )
 
     @pytest.mark.parametrize(
-        "turns, error, ended_by, ended",
+        "turns, error, stop_reason, ended",
         [
             (ANSWERED, None, "done", "conversation of 2 turn(s), every turn answered; the user finished"),
             (ANSWERED, None, "gave_up", "conversation of 2 turn(s), every turn answered; the user gave up"),
@@ -112,9 +112,9 @@ class TestLLMJudge:
             ([], None, "done", "ended before the first turn"),
         ],
     )
-    def test_a_conversations_outcome_states_how_the_conversation_ended(self, turns, error, ended_by, ended):
+    def test_a_conversations_outcome_states_how_the_conversation_ended(self, turns, error, stop_reason, ended):
         judge = ScriptedJudge('{"score": 1}')
-        trace = ExecutionTrace(turns=turns, error=error, ended_by=ended_by)
+        trace = ExecutionTrace(turns=turns, error=error, stop_reason=stop_reason)
         context = MetricContext(
             trace=trace, case=ConversationEvalCase(id="c", user_messages=["Hi", "Bye"]), judge=judge
         )

@@ -55,15 +55,15 @@ class TestConversationMetrics:
     @pytest.mark.parametrize(
         "fields, completed",
         [
-            ({"turns": ANSWERED, "ended_by": "done"}, True),
-            ({"turns": ANSWERED, "ended_by": "gave_up"}, False),
-            ({"turns": ANSWERED, "ended_by": "max_turns"}, False),
-            ({"turns": [], "ended_by": "done"}, False),
+            ({"turns": ANSWERED, "stop_reason": "done"}, True),
+            ({"turns": ANSWERED, "stop_reason": "gave_up"}, False),
+            ({"turns": ANSWERED, "stop_reason": "max_turns"}, False),
+            ({"turns": [], "stop_reason": "done"}, False),
             (
                 {"turns": [Turn(user_message="Hi", error="RuntimeError: boom")], "error": "RuntimeError: boom"},
                 False,
             ),
-            ({"turns": ANSWERED[:1], "error": "RuntimeError: bad simulator", "ended_by": "error"}, False),
+            ({"turns": ANSWERED[:1], "error": "RuntimeError: bad simulator", "stop_reason": "error"}, False),
         ],
     )
     def test_conversation_completed_needs_every_turn_answered_and_the_user_done(self, fields, completed):
@@ -72,9 +72,9 @@ class TestConversationMetrics:
     @pytest.mark.parametrize(
         "fields, end",
         [
-            ({"ended_by": "done"}, "done"),
-            ({"ended_by": "gave_up"}, "gave_up"),
-            ({"ended_by": "max_turns"}, "max_turns"),
+            ({"stop_reason": "done"}, "done"),
+            ({"stop_reason": "gave_up"}, "gave_up"),
+            ({"stop_reason": "max_turns"}, "max_turns"),
             ({"error": "RuntimeError: sandbox down"}, "error"),
         ],
     )

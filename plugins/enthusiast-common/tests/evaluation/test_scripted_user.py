@@ -29,7 +29,16 @@ class TestUserMessage:
         assert not UserMessage.say("Hi").is_stop
         assert UserMessage.stop(StopReason.GAVE_UP).is_stop
 
-    @pytest.mark.parametrize("fields", [{}, {"text": "Hi", "stop_reason": "done"}, {"text": ""}])
+    @pytest.mark.parametrize(
+        "fields",
+        [
+            {},
+            {"text": "Hi", "stop_reason": "done"},
+            {"text": ""},
+            {"stop_reason": "max_turns"},
+            {"stop_reason": "error"},
+        ],
+    )
     def test_needs_exactly_one_of_a_message_or_a_stop(self, fields):
         with pytest.raises(ValidationError):
             UserMessage(**fields)
