@@ -64,3 +64,19 @@ class TestGetConfig:
 
         assert config.system_prompt == "Be helpful."
         assert config.tools == PromptedAgent.TOOLS
+        assert config.memory_compactor_enabled is False
+
+    def test_history_token_limit_defaults_to_the_hosts(self):
+        assert StubAgent.get_config().conversation_history_token_limit is None
+
+    def test_agent_can_set_its_history_token_limit(self):
+        class LimitedAgent(StubAgent):
+            CONVERSATION_HISTORY_TOKEN_LIMIT = 4000
+
+        assert LimitedAgent.get_config().conversation_history_token_limit == 4000
+
+    def test_memory_compactor_is_opt_in(self):
+        class CompactingAgent(StubAgent):
+            MEMORY_COMPACTOR_ENABLED = True
+
+        assert CompactingAgent.get_config().memory_compactor_enabled is True

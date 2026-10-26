@@ -54,6 +54,9 @@ class BaseAgent(ABC, ExtraArgsClassBase):
       per agent as well.
     - ``FILE_UPLOAD``: whether agents of this type accept uploaded files.
     - ``SYSTEM_PROMPT``: the system prompt template; the fields of ``PROMPT_INPUT`` fill its variables.
+    - ``CONVERSATION_HISTORY_TOKEN_LIMIT``: how many tokens of conversation history the agent sends to the model.
+      ``None`` keeps the host's default.
+    - ``MEMORY_COMPACTOR_ENABLED``: whether the agent summarises old messages to stay within the history limit.
     - ``BUILDER_CLASS``: the builder that assembles the agent. ``None`` selects the framework's default builder;
       declare one when the agent needs a vertical's builder (e.g. one wiring domain-specific retrievers).
 
@@ -73,6 +76,8 @@ class BaseAgent(ABC, ExtraArgsClassBase):
 
     FILE_UPLOAD = False
     SYSTEM_PROMPT: Optional[str] = None
+    CONVERSATION_HISTORY_TOKEN_LIMIT: Optional[int] = None
+    MEMORY_COMPACTOR_ENABLED = False
     BUILDER_CLASS: Optional[Type["BaseAgentBuilder"]] = None
 
     def __init__(
@@ -102,7 +107,12 @@ class BaseAgent(ABC, ExtraArgsClassBase):
         """
         from ..config import AgentConfigWithDefaults
 
-        return AgentConfigWithDefaults(system_prompt=cls.SYSTEM_PROMPT, tools=cls.TOOLS)
+        return AgentConfigWithDefaults(
+            system_prompt=cls.SYSTEM_PROMPT,
+            tools=cls.TOOLS,
+            conversation_history_token_limit=cls.CONVERSATION_HISTORY_TOKEN_LIMIT,
+            memory_compactor_enabled=cls.MEMORY_COMPACTOR_ENABLED,
+        )
 
     def set_dynamic_tools(self, tools: list[BaseTool]) -> None:
         """Attach tools fetched at build time from tool-providing integrations (e.g. MCP servers).
