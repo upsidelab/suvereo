@@ -1,0 +1,4 @@
+html,
+html:has(*:focus) {
+  scroll-padding-top: calc(var(--nextra-navbar-height) + 0.5rem);
+}
