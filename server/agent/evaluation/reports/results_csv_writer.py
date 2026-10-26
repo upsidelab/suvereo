@@ -11,7 +11,7 @@ from .suite_report import SuiteReport
 
 OUTCOME_COLUMNS = {
     "execution": ["execution_succeeded", "failure_code", "attempts", "first_attempt_success"],
-    "conversation": ["conversation_completed", "turns"],
+    "conversation": ["conversation_completed", "conversation_end", "turns"],
 }
 PERFORMANCE_COLUMNS = [
     "duration_s",

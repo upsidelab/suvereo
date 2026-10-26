@@ -3,6 +3,7 @@ from enthusiast_common.evaluation.metrics.auto import (
     AUTO_METRICS,
     Attempts,
     ConversationCompleted,
+    ConversationEnd,
     CostUsd,
     ExecutionSucceeded,
     FailureCode,
@@ -17,6 +18,7 @@ from enthusiast_common.evaluation.trace import Attempt, LLMCall, Turn
 from .contexts import run
 
 PASSED, FAILED = Attempt(number=1, response="", passed=True), Attempt(number=1, response="", passed=False)
+ANSWERED = [Turn(user_message="Hi", answer="Hello"), Turn(user_message="Bye", answer="Bye")]
 
 
 class TestOutcomeMetrics:
@@ -53,17 +55,34 @@ class TestConversationMetrics:
     @pytest.mark.parametrize(
         "fields, completed",
         [
-            ({"turns": [Turn(user_message="Hi", answer="Hello"), Turn(user_message="Bye", answer="Bye")]}, True),
-            ({"turns": []}, False),
-            ({"turns": [Turn(user_message="Hi", error="RuntimeError: boom")], "error": "RuntimeError: boom"}, False),
-            ({"turns": [Turn(user_message="Hi", answer="Hello")], "error": "TypeError: bad simulator"}, False),
+            ({"turns": ANSWERED, "ended_by": "done"}, True),
+            ({"turns": ANSWERED, "ended_by": "gave_up"}, False),
+            ({"turns": ANSWERED, "ended_by": "max_turns"}, False),
+            ({"turns": [], "ended_by": "done"}, False),
+            (
+                {"turns": [Turn(user_message="Hi", error="RuntimeError: boom")], "error": "RuntimeError: boom"},
+                False,
+            ),
+            ({"turns": ANSWERED[:1], "error": "RuntimeError: bad simulator", "ended_by": "error"}, False),
         ],
     )
-    def test_conversation_completed_needs_every_turn_answered_and_no_error(self, fields, completed):
+    def test_conversation_completed_needs_every_turn_answered_and_the_user_done(self, fields, completed):
         assert ConversationCompleted().measure(run(**fields)).value is completed
 
+    @pytest.mark.parametrize(
+        "fields, end",
+        [
+            ({"ended_by": "done"}, "done"),
+            ({"ended_by": "gave_up"}, "gave_up"),
+            ({"ended_by": "max_turns"}, "max_turns"),
+            ({"error": "RuntimeError: sandbox down"}, "error"),
+        ],
+    )
+    def test_conversation_end_labels_how_the_conversation_ended(self, fields, end):
+        assert ConversationEnd().measure(run(**fields)).value == end
+
     def test_turns_counts_the_user_messages(self):
-        context = run(turns=[Turn(user_message="Hi", answer="Hello"), Turn(user_message="Bye", answer="Bye")])
+        context = run(turns=ANSWERED)
 
         assert Turns().measure(context).value == 2.0
 
@@ -74,7 +93,7 @@ class TestAutoMetricsPerKind:
         conversation = {m.NAME for m in auto_metrics_for("conversation")}
 
         assert {"execution_succeeded", "failure_code", "attempts", "first_attempt_success"} <= execution - conversation
-        assert {"conversation_completed", "turns"} <= conversation - execution
+        assert {"conversation_completed", "conversation_end", "turns"} <= conversation - execution
         assert {"duration_s", "cost_usd", "llm_calls", "tool_calls"} <= execution & conversation
         assert execution | conversation == {m.NAME for m in AUTO_METRICS}
 

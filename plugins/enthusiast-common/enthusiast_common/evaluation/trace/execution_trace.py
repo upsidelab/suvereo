@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 from ...agentic_execution.result import ExecutionResult
 from .attempt import Attempt
+from .conversation_ending import ConversationEnding
 from .llm_call import LLMCall
 from .mock_call import MockCall
 from .tool_call import ToolCall
@@ -18,6 +19,7 @@ class ExecutionTrace(BaseModel):
     attempts: list[Attempt] = []
     mock_calls: list[MockCall] = []
     turns: list[Turn] = []
+    ended_by: ConversationEnding | None = None
     scratchpad: dict[str, Any] = {}
     output: dict[str, Any] | None = None
     execution_result: ExecutionResult | None = None

@@ -56,12 +56,16 @@ class TestResultsCsvWriter:
 
     def test_a_conversation_suite_shows_its_own_outcome_columns(self, tmp_path):
         conversation = run_result("ada")
-        conversation.metrics |= {"conversation_completed": MetricResult(value=True), "turns": MetricResult(value=3.0)}
+        conversation.metrics |= {
+            "conversation_completed": MetricResult(value=False),
+            "conversation_end": MetricResult(value="gave_up"),
+            "turns": MetricResult(value=3.0),
+        }
 
         [path] = ResultsCsvWriter().write(suite_report(tmp_path, [conversation], kind="conversation"), tmp_path)
 
         [ada] = _rows(path)
-        assert (ada["conversation_completed"], ada["turns"]) == ("true", "3.0")
+        assert (ada["conversation_completed"], ada["conversation_end"], ada["turns"]) == ("false", "gave_up", "3.0")
         assert "attempts" not in ada and "execution_succeeded" not in ada
 
     def test_links_trace_files_only_when_traces_are_written(self, tmp_path):

@@ -18,8 +18,8 @@ from agent.evaluation.aggregation import DERIVED_METRICS
 from agent.evaluation.integrations import MockIntegrationFactory
 from agent.evaluation.judge_models_used_by_metrics import judge_models_used_by_metrics
 from agent.evaluation.runner.case_runner import JUDGE_COST
-from agent.evaluation.runner.conversation_run_driver import ConversationRunDriver
 from agent.evaluation.suite_selection import SuiteSelection
+from agent.evaluation.user_simulator_registry import UserSimulatorRegistry
 from agent.models import Agent
 
 
@@ -57,9 +57,12 @@ class SuiteLoader:
 
     @staticmethod
     def _resolve_kind(suite: EvalSuite, agent_type: str) -> SuiteKind:
-        """The suite's kind, or execution when the agent type has an execution definition, otherwise conversation."""
+        """The suite's kind; otherwise execution when it names an execution key or the agent type has an execution
+        definition, and conversation when neither."""
         if suite.kind is not None:
             return suite.kind
+        if suite.execution_key:
+            return "execution"
         return "execution" if AgenticExecutionDefinitionRegistry().get_by_agent_type(agent_type) else "conversation"
 
     @staticmethod
@@ -209,6 +212,6 @@ class SuiteLoader:
                         f"Case '{case.id}': 'simulated_user' needs 'class', a custom simulator, for now."
                     )
                 try:
-                    ConversationRunDriver.simulator_class(case.simulated_user.class_path)
-                except (ImportError, TypeError) as e:
+                    UserSimulatorRegistry.simulator_class(case.simulated_user.class_path)
+                except EvalSuiteError as e:
                     raise EvalSuiteError(f"Case '{case.id}': can't load the user simulator: {e}") from e

@@ -61,6 +61,8 @@ class TestBaseMetric:
             ({"VALUE_TYPE": "bool"}, "NAME"),
             ({"NAME": "x"}, "VALUE_TYPE"),
             ({"NAME": "x", "VALUE_TYPE": "percentage"}, "percentage"),
+            ({"NAME": "x", "VALUE_TYPE": "bool", "KINDS": ("chat",)}, "chat"),
+            ({"NAME": "x", "VALUE_TYPE": "bool", "KINDS": ()}, "KINDS"),
         ],
     )
     def test_a_concrete_metric_must_declare_its_contract(self, namespace, message):

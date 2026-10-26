@@ -2,15 +2,15 @@ import json
 import logging
 import time
 
-from django.utils.module_loading import import_string
 from enthusiast_common.agentic_execution.memory import ToolScratchpad
 from enthusiast_common.agents import ConfigType
 from enthusiast_common.evaluation.suite import ConversationEvalCase, EvalCase
-from enthusiast_common.evaluation.trace import TraceRecorder, Turn
-from enthusiast_common.evaluation.users import BaseUserSimulator, ScriptedUser
+from enthusiast_common.evaluation.trace import ConversationEnding, TraceRecorder, Turn
+from enthusiast_common.evaluation.users import BaseUserSimulator
 
 from agent.conversation.manager import ConversationManager
 from agent.core.agents.config_overrides import AgentConfigOverrides
+from agent.evaluation.user_simulator_registry import UserSimulatorRegistry
 from agent.models import Conversation
 
 from .base_run_driver import BaseRunDriver
@@ -19,48 +19,52 @@ logger = logging.getLogger(__name__)
 
 
 class ConversationRunDriver(BaseRunDriver):
-    """Chats with the agent turn by turn, the case's user simulator writing the user's side, until it stops or the
-    case's turn limit is reached; a turn that raises ends the conversation with the error."""
+    """Chats with the agent turn by turn, the case's user simulator writing the user's side, until it stops, the
+    case's turn limit is reached or a turn raises; records on the trace how the conversation ended."""
 
     def run(
         self, case: EvalCase, conversation: Conversation, overrides: AgentConfigOverrides, recorder: TraceRecorder
     ) -> None:
         if not isinstance(case, ConversationEvalCase):
             raise TypeError(f"Case '{case.id}' is not a conversation case; this suite runs conversations.")
-        simulator, max_turns = self.simulator_for(case), self.max_turns_for(case)
         trace, scratchpad = recorder.trace, ToolScratchpad()
         try:
-            while len(trace.turns) < max_turns:
-                message = simulator.next_message(trace.turns)
-                if message.is_stop:
-                    break
-                turn = self._take_turn(message.text, conversation, overrides, scratchpad, recorder)
-                trace.record_turn(turn)
-                if turn.error is not None:
-                    trace.error = turn.error
-                    break
+            simulator = UserSimulatorRegistry().simulator_for(case)
+            trace.ended_by = self._converse(
+                simulator, self._max_turns(case), conversation, overrides, scratchpad, recorder
+            )
+        except Exception:
+            trace.ended_by = ConversationEnding.ERROR
+            raise
         finally:
             trace.scratchpad = scratchpad.entries()
             trace.output = self._output(trace.turns)
 
-    @classmethod
-    def simulator_for(cls, case: ConversationEvalCase) -> BaseUserSimulator:
-        """ScriptedUser for a case with user messages, otherwise the custom simulator its simulated user names."""
-        if case.user_messages:
-            return ScriptedUser(case)
-        return cls.simulator_class(case.simulated_user.class_path)(case)
+    def _converse(
+        self,
+        simulator: BaseUserSimulator,
+        max_turns: int | None,
+        conversation: Conversation,
+        overrides: AgentConfigOverrides,
+        scratchpad: ToolScratchpad,
+        recorder: TraceRecorder,
+    ) -> ConversationEnding:
+        trace = recorder.trace
+        while max_turns is None or len(trace.turns) < max_turns:
+            message = simulator.next_message(trace.turns)
+            if message.is_stop:
+                return ConversationEnding(message.stop_reason)
+            turn = self._take_turn(message.text, conversation, overrides, scratchpad, recorder)
+            trace.record_turn(turn)
+            if turn.error is not None:
+                trace.error = turn.error
+                return ConversationEnding.ERROR
+        return ConversationEnding.MAX_TURNS
 
     @staticmethod
-    def simulator_class(path: str) -> type[BaseUserSimulator]:
-        """The BaseUserSimulator subclass at a dotted path; raises ImportError or TypeError."""
-        simulator_class = import_string(path)
-        if not (isinstance(simulator_class, type) and issubclass(simulator_class, BaseUserSimulator)):
-            raise TypeError(f"{path} is not a BaseUserSimulator.")
-        return simulator_class
-
-    @staticmethod
-    def max_turns_for(case: ConversationEvalCase) -> int:
-        return len(case.user_messages) if case.user_messages else case.simulated_user.max_turns
+    def _max_turns(case: ConversationEvalCase) -> int | None:
+        """A simulated user's turn limit; fixed user messages end with the last one."""
+        return case.simulated_user.max_turns if case.simulated_user is not None else None
 
     @staticmethod
     def _take_turn(
@@ -97,8 +101,8 @@ class ConversationRunDriver(BaseRunDriver):
 
     @staticmethod
     def _output(turns: list[Turn]) -> dict | None:
-        """The last answer, plus its fields when it is a JSON object, so output metrics can check them."""
-        answer = turns[-1].answer if turns else None
+        """The last answer given, plus its fields when it is a JSON object, so output metrics can check them."""
+        answer = next((turn.answer for turn in reversed(turns) if turn.answer is not None), None)
         if answer is None:
             return None
         try:

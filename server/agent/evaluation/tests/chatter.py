@@ -47,6 +47,13 @@ class EndlessUser(BaseUserSimulator):
         return UserMessage.say("more")
 
 
+class GivingUpUser(BaseUserSimulator):
+    """Says hi once, then gives up."""
+
+    def next_message(self, turns: list[Turn]) -> UserMessage:
+        return UserMessage.stop(StopReason.GAVE_UP) if turns else UserMessage.say("Hi")
+
+
 class FailingUser(BaseUserSimulator):
     """Says hi, then fails while writing its second message."""
 

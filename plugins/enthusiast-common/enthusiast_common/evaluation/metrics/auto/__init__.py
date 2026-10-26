@@ -2,6 +2,7 @@ from ...suite import SuiteKind
 from ..base_metric import BaseMetric
 from .attempts import Attempts
 from .conversation_completed import ConversationCompleted
+from .conversation_end import ConversationEnd
 from .cost_usd import CostUsd
 from .duration_seconds import DurationSeconds
 from .execution_succeeded import ExecutionSucceeded
@@ -20,6 +21,7 @@ AUTO_METRICS = [
     Attempts,
     FirstAttemptSuccess,
     ConversationCompleted,
+    ConversationEnd,
     Turns,
     DurationSeconds,
     CostUsd,
@@ -39,6 +41,7 @@ __all__ = [
     "AUTO_METRICS",
     "Attempts",
     "ConversationCompleted",
+    "ConversationEnd",
     "CostUsd",
     "DurationSeconds",
     "ExecutionSucceeded",

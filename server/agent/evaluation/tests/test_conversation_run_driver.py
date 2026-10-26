@@ -66,6 +66,7 @@ class TestConversationRunDriver:
         assert (second.llm_call_run_ids, second.tool_call_run_ids) == (["llm-2"], [])
         assert all(turn.duration_s is not None for turn in result.trace.turns)
         assert result.trace.output == {"answer": "You said: thanks"}
+        assert result.trace.ended_by == "done"
         assert [c.method for c in result.trace.mock_calls] == ["greet"]
 
     def test_every_turn_goes_to_the_same_conversation_as_a_chat_with_the_runs_overrides(self, chat, target, tmp_path):
@@ -93,6 +94,8 @@ class TestConversationRunDriver:
         assert [t.user_message for t in result.trace.turns] == ["greet Ada", "boom"]
         assert result.trace.turns[1].error == "RuntimeError: model down"
         assert result.trace.error == "RuntimeError: model down"
+        assert result.trace.ended_by == "error"
+        assert result.trace.output == {"answer": "Hello Ada"}
         assert result.metrics["conversation_completed"].value is False
         assert not result.passed
 
@@ -107,15 +110,28 @@ class TestConversationRunDriver:
         result = _run(target, tmp_path, ConversationEvalCase(id="c", simulated_user=user))
 
         assert [t.user_message for t in result.trace.turns] == ["greet Bob", "thanks"]
+        assert result.trace.ended_by == "done"
         assert result.passed
 
-    def test_a_simulator_that_never_stops_is_cut_off_at_max_turns(self, chat, target, tmp_path):
+    def test_a_simulator_that_never_stops_is_cut_off_at_max_turns_and_fails(self, chat, target, tmp_path):
         user = {"class": f"{CHATTER}.EndlessUser", "max_turns": 3}
 
         result = _run(target, tmp_path, ConversationEvalCase(id="c", simulated_user=user))
 
         assert len(result.trace.turns) == 3
-        assert result.metrics["conversation_completed"].value is True
+        assert result.trace.ended_by == "max_turns"
+        assert result.metrics["conversation_completed"].value is False
+
+    def test_a_user_that_gives_up_fails_the_run(self, chat, target, tmp_path):
+        result = _run(
+            target, tmp_path, ConversationEvalCase(id="c", simulated_user={"class": f"{CHATTER}.GivingUpUser"})
+        )
+
+        assert len(result.trace.turns) == 1
+        assert result.trace.ended_by == "gave_up"
+        assert result.metrics["conversation_end"].value == "gave_up"
+        assert result.metrics["conversation_completed"].value is False
+        assert not result.passed
 
     def test_a_simulator_that_fails_keeps_the_turns_and_output_so_far(self, chat, target, tmp_path):
         result = _run(
@@ -125,4 +141,5 @@ class TestConversationRunDriver:
         assert [t.answer for t in result.trace.turns] == ["You said: Hi"]
         assert result.trace.output == {"answer": "You said: Hi"}
         assert result.trace.error == "RuntimeError: simulator broke"
+        assert result.trace.ended_by == "error"
         assert result.metrics["conversation_completed"].value is False

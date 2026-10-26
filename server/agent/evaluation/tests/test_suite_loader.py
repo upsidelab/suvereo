@@ -61,6 +61,11 @@ class TestSuiteLoader:
 
         assert (loaded.suite.kind, loaded.suite.execution_key) == ("conversation", None)
 
+    def test_an_execution_key_makes_the_suite_an_execution_so_a_wrong_key_is_named(self, tmp_path):
+        with patch.object(AgenticExecutionDefinitionRegistry, "get_all", return_value=[]):
+            with pytest.raises(EvalSuiteError, match="has no execution 'greeting'"):
+                _load(tmp_path, execution_key="greeting")
+
     def test_any_agent_can_be_run_as_a_conversation(self, tmp_path):
         user = {"class": f"{CHATTER}.PoliteUser", "params": {"name": "Ada"}}
 

@@ -11,6 +11,7 @@ CRITERIA = [
     {"name": "completeness", "description": "Every line item is ordered", "weight": 3},
     {"name": "no_invented_skus", "description": "No SKU absent from the document"},
 ]
+ANSWERED = [Turn(user_message="Hi", answer="Hello"), Turn(user_message="Bye", answer="Bye")]
 
 
 def _judged(judge, **trace_fields):
@@ -92,24 +93,28 @@ class TestLLMJudge:
         )
 
     @pytest.mark.parametrize(
-        "turns, error, ended",
+        "turns, error, ended_by, ended",
         [
+            (ANSWERED, None, "done", "conversation of 2 turn(s), every turn answered; the user finished"),
+            (ANSWERED, None, "gave_up", "conversation of 2 turn(s), every turn answered; the user gave up"),
             (
-                [Turn(user_message="Hi", answer="Hello"), Turn(user_message="Bye", answer="Bye")],
+                ANSWERED,
                 None,
-                "conversation of 2 turn(s), every turn answered",
+                "max_turns",
+                "conversation of 2 turn(s), every turn answered; cut off at the case's turn limit",
             ),
             (
                 [Turn(user_message="Hi", error="RuntimeError: down")],
                 "RuntimeError: down",
+                "error",
                 "crashed after 1 turn(s): RuntimeError: down",
             ),
-            ([], None, "ended before the first turn"),
+            ([], None, "done", "ended before the first turn"),
         ],
     )
-    def test_a_conversations_outcome_states_how_the_conversation_ended(self, turns, error, ended):
+    def test_a_conversations_outcome_states_how_the_conversation_ended(self, turns, error, ended_by, ended):
         judge = ScriptedJudge('{"score": 1}')
-        trace = ExecutionTrace(turns=turns, error=error)
+        trace = ExecutionTrace(turns=turns, error=error, ended_by=ended_by)
         context = MetricContext(
             trace=trace, case=ConversationEvalCase(id="c", user_messages=["Hi", "Bye"]), judge=judge
         )
