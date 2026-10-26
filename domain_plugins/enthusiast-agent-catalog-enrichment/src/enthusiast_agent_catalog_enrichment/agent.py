@@ -1,8 +1,11 @@
+from ecommerce_vertical.builder import EcommerceAgentBuilder
 from enthusiast_agent_tool_calling import BaseToolCallingAgent
 from enthusiast_common.config.base import LLMToolConfig
 from enthusiast_common.utils import RequiredFieldsModel
 from enthusiast_ecommerce_agent_tools import UpsertProductDetailsTool
 from pydantic import Field, Json
+
+from .prompt import CATALOG_ENRICHMENT_TOOL_CALLING_AGENT_PROMPT
 
 
 class ExtractDataPromptInput(RequiredFieldsModel):
@@ -14,6 +17,8 @@ class ExtractDataPromptInput(RequiredFieldsModel):
 class CatalogEnrichmentAgent(BaseToolCallingAgent):
     AGENT_KEY = "enthusiast-agent-catalog-enrichment"
     NAME = "Catalog Enrichment"
+    SYSTEM_PROMPT = CATALOG_ENRICHMENT_TOOL_CALLING_AGENT_PROMPT
+    BUILDER_CLASS = EcommerceAgentBuilder
     PROMPT_INPUT = ExtractDataPromptInput
     FILE_UPLOAD = True
     TOOLS = [
