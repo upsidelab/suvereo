@@ -38,7 +38,9 @@ class TestBaseMetric:
     def test_measures_a_run(self):
         trace = ExecutionTrace(attempts=[Attempt(number=1, response="{}", passed=True)])
 
-        result = AttemptsAtMost({"threshold": 1}).measure(MetricContext(trace=trace, case=EvalCase(id="c")))
+        result = AttemptsAtMost({"threshold": 1}).measure(
+            MetricContext(trace=trace, case=EvalCase(id="c"), kind="execution")
+        )
 
         assert result.value is True
 

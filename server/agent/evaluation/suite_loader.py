@@ -153,7 +153,7 @@ class SuiteLoader:
                 except MetricError as e:
                     raise EvalSuiteError(f"Case '{case.id}': {e}") from e
                 if not metric.supports(kind):
-                    raise EvalSuiteError(f"Metric '{config.name}' ({config.type}) can't measure a {kind} suite.")
+                    raise EvalSuiteError(f"Metric '{config.name}' ({config.type}) can't measure {kind} suites.")
                 params = metric.params
                 if isinstance(params, JudgePromptParams) and params.judge is None and loaded.suite.judge is None:
                     raise EvalSuiteError(

@@ -1,12 +1,15 @@
 import json
 from collections import Counter
+from textwrap import indent
 from typing import Any, Literal
 
-from ...suite import AgenticExecutionEvalCase, ConversationEvalCase
+from ...suite import AgenticExecutionEvalCase, ConversationEvalCase, SuiteKind
 from ...trace import StopReason
 from ..metric_context import MetricContext
 
-Section = Literal["input", "outcome", "output", "expected", "trace_summary"]
+Section = Literal["input", "outcome", "output", "expected", "trace_summary", "transcript"]
+#: Sections only a conversation has.
+CONVERSATION_SECTIONS: set[Section] = {"transcript"}
 MAX_SUMMARY_VALUE = 1000
 CONVERSATION_ENDINGS = {
     StopReason.DONE: "the user finished",
@@ -25,9 +28,11 @@ class JudgeMaterial:
         input is the case input and file names (for a conversation, the user messages sent and the simulated user's
         goal and persona), outcome states how the run ended and which mocked systems it called (so "nothing was
         ordered" is stated, not left to be noticed), output and expected are JSON, trace_summary lists the tool calls,
-        mock calls and validator attempts.
+        mock calls and validator attempts, and transcript is a conversation's messages in order, each indented under its
+        speaker so an answer's own markdown can't pass for a heading, with the tools the agent called in each turn.
         """
         renderers = {
+            "transcript": lambda: cls._transcript(context),
             "output": lambda: cls._as_json(context.trace.output),
             "expected": lambda: cls._as_json(context.case.expected),
             "input": lambda: cls._as_json(cls._input(context)),
@@ -41,8 +46,9 @@ class JudgeMaterial:
         return json.dumps(value, indent=2, default=str, ensure_ascii=False)
 
     @staticmethod
-    def _is_conversation(context: MetricContext) -> bool:
-        return isinstance(context.case, ConversationEvalCase)
+    def fits(sections: list[Section], kind: SuiteKind) -> bool:
+        """Whether a run of this kind has every one of these sections."""
+        return kind == "conversation" or not CONVERSATION_SECTIONS & set(sections)
 
     @staticmethod
     def _input(context: MetricContext) -> dict[str, Any]:
@@ -60,7 +66,7 @@ class JudgeMaterial:
     def _outcome(cls, context: MetricContext) -> str:
         trace = context.trace
         result = trace.execution_result
-        if cls._is_conversation(context):
+        if context.kind == "conversation":
             ended = cls._conversation_outcome(context)
         elif trace.error or result is None:
             ended = f"crashed: {trace.error or 'no result'}"
@@ -83,6 +89,21 @@ class JudgeMaterial:
             return "ended before the first turn"
         ending = CONVERSATION_ENDINGS.get(trace.stop_reason, "ended")
         return f"conversation of {len(trace.turns)} turn(s), every turn answered; {ending}"
+
+    @staticmethod
+    def _transcript(context: MetricContext) -> str:
+        trace, blocks = context.trace, []
+        for number, turn in enumerate(trace.turns, start=1):
+            lines = [f"turn {number}", f"user:\n{indent(turn.user_message, '  ')}"]
+            tools = [f"{call.name} (raised)" if call.error else call.name for call in trace.tool_calls_in(turn)]
+            if tools:
+                lines.append(f"tools called: {', '.join(tools)}")
+            if turn.answer is not None:
+                lines.append(f"agent:\n{indent(turn.answer, '  ')}")
+            else:
+                lines.append(f"agent raised:\n{indent(turn.error or '', '  ')}")
+            blocks.append("\n".join(lines))
+        return "\n\n".join(blocks) or "(no turns)"
 
     @classmethod
     def _trace_summary(cls, context: MetricContext) -> str:

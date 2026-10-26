@@ -4,19 +4,28 @@ from typing import ClassVar
 
 from pydantic import BaseModel, ConfigDict, ValidationInfo, model_validator
 
-from ...suite import ModelTarget
+from ...suite import ModelTarget, SuiteKind
 from ..base_metric import BASE_DIR
+from ..metric_context import MetricContext
+from .judge_material import JudgeMaterial, Section
 
 
 class JudgePromptParams(BaseModel):
-    """Params every LLM metric shares: the judge model to ask and an optional custom prompt template."""
+    """Params every LLM metric shares: the judge model to ask, what it sees of the run (by default, DEFAULT_INCLUDE
+    for the run's kind) and an optional custom prompt template."""
 
     model_config = ConfigDict(extra="forbid")
 
     #: The placeholders a custom prompt may use; subclasses list theirs. {material} is required.
     PLACEHOLDERS: ClassVar[tuple[str, ...]] = ("material",)
+    #: The sections the judge sees when the suite sets no 'include', per suite kind; subclasses set theirs.
+    DEFAULT_INCLUDE: ClassVar[dict[SuiteKind, list[Section]]] = {
+        "execution": ["outcome", "output"],
+        "conversation": ["outcome", "transcript"],
+    }
 
     judge: ModelTarget | None = None
+    include: list[Section] | None = None
     prompt: str | None = None
     prompt_file: Path | None = None
 
@@ -34,6 +43,14 @@ class JudgePromptParams(BaseModel):
         if self.prompt is not None:
             self._check_placeholders(self.prompt)
         return self
+
+    def include_for(self, context: MetricContext) -> list[Section]:
+        """The sections the judge sees of this run: the suite's 'include', or the default for the run's kind."""
+        return self.include if self.include is not None else self.DEFAULT_INCLUDE[context.kind]
+
+    def fits(self, kind: SuiteKind) -> bool:
+        """Whether runs of this kind have every section the judge is shown."""
+        return JudgeMaterial.fits(self.include or [], kind)
 
     def _check_placeholders(self, template: str) -> None:
         try:

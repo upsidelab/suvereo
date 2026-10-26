@@ -4,6 +4,7 @@ from typing import ClassVar, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from ...suite import SuiteKind
 from ..base_judge_client import BaseJudgeClient
 from ..base_metric import BaseMetric
 from ..metric_context import MetricContext
@@ -46,10 +47,13 @@ class ScoreRange(BaseModel):
 
 class LLMJudgeParams(JudgePromptParams):
     PLACEHOLDERS: ClassVar[tuple[str, ...]] = ("name", "description", "scale", "material")
+    DEFAULT_INCLUDE: ClassVar[dict[SuiteKind, list[Section]]] = {
+        "execution": ["outcome", "output", "expected"],
+        "conversation": ["outcome", "transcript", "expected"],
+    }
 
     criteria: list[Criterion] = Field(min_length=1)
     scale: Literal["binary", "1-5"] | ScoreRange = "binary"
-    include: list[Section] = ["outcome", "output", "expected"]
     samples: int = Field(default=1, ge=1, le=9)
 
     @model_validator(mode="after")
@@ -74,10 +78,13 @@ class LLMJudge(BaseMetric):
     VALUE_TYPE = "number"
     PARAMS = LLMJudgeParams
 
+    def supports(self, kind: SuiteKind) -> bool:
+        return super().supports(kind) and self.params.fits(kind)
+
     def measure(self, context: MetricContext) -> MetricResult:
         if context.judge is None:
             return MetricResult(value=None, details={"reason": "no judge model is configured"})
-        material = JudgeMaterial.build_prompt_text(context, self.params.include)
+        material = JudgeMaterial.build_prompt_text(context, self.params.include_for(context))
         scores, reasoning, unreadable = {}, {}, []
         for criterion in self.params.criteria:
             verdicts = [
