@@ -1,6 +1,6 @@
 ---
 name: add-agent
-description: Scaffold a new Enthusiast agent (tool-calling agent package, config provider, tools, prompt, optional agentic execution) and register it in settings. Use when asked to add, create or build a new agent.
+description: Scaffold a new Enthusiast agent (tool-calling agent package, tools, prompt, optional agentic execution) and register it in settings. Use when asked to add, create or build a new agent.
 ---
 
 # Add an agent
@@ -14,8 +14,8 @@ There are two ways to ship it:
 Sections marked *(standalone plugin only)* are skipped for in-codebase agents. Everything else applies to both.
 
 Where to look in this repo:
-- Contracts: `plugins/enthusiast-common/` (`BaseAgent`, `BaseAgentConfigProvider`, tools, config models, agentic execution) — read its `AGENTS.md`.
-- Base agent to subclass: `plugins/enthusiast-agent-tool-calling/` (also the reference for the package layout and `pyproject.toml`).
+- Contracts: `plugins/enthusiast-common/` (`BaseAgent`, tools, config models, agentic execution) — read its `AGENTS.md`.
+- Base agent to subclass: `BaseAgentConfigProvider` (`plugins/enthusiast-agent-tool-calling/`) (also the reference for the package layout and `pyproject.toml`).
 - Registry that loads agents: `server/agent/core/registries/agents/agent_registry.py`.
 
 ## 1. Settle the design first
@@ -34,9 +34,8 @@ The agent package has the same contents in both cases:
 
 ```
 <package>/
-  __init__.py       # exports the agent and the config provider
+  __init__.py       # exports the agent
   agent.py
-  config.py
   prompt.py
   tools/            # only if the agent has its own tools
     __init__.py
@@ -83,38 +82,24 @@ class <Name>Agent(BaseToolCallingAgent):
 - `AGENT_KEY` is stored on agents in the database: unique, and never changed after release.
 - Tool config types come from `enthusiast_common.config`: `FunctionToolConfig`, `LLMToolConfig` (the tool gets an LLM), `AgentToolConfig`, `FileToolConfig`.
 
-## 4. Config provider (`config.py`)
+## 4. Configuration (class variables on the agent)
 
-```python
-from enthusiast_common.agents import BaseAgentConfigProvider, ConfigType
-from enthusiast_common.config import AgentConfigWithDefaults
+The agent declares its whole configuration with class variables. Everything else (LLM, repositories, memory, registries) comes from the server's defaults.
 
-from .agent import <Name>Agent
-from .prompt import <NAME>_AGENT_PROMPT
+- `AGENT_KEY`: unique identifier of the agent type; agentic execution definitions refer to it.
+- `NAME`: the name shown in the UI.
+- `SYSTEM_PROMPT`: the system prompt template (`prompt.py`); the fields of `PROMPT_INPUT` fill its `{variables}`.
+- `TOOLS`: the tool configs; the settings of each tool (`CONFIGURATION_ARGS`) are stored per agent.
+- `AGENT_ARGS`: a `RequiredFieldsModel` of per-agent settings that change how the agent behaves; shown as a form section in the UI.
+- `PROMPT_INPUT`: a `RequiredFieldsModel` of per-agent settings used as system prompt variables, also shown in the UI.
+- `FILE_UPLOAD`: whether the agent accepts uploaded files (`True` adds the default file tools).
+- `BUILDER_CLASS`: the builder that assembles the agent; set a vertical's builder only when the agent needs its retrievers, otherwise the default `AgentBuilder` is used.
+- `CONVERSATION_HISTORY_TOKEN_LIMIT`: how many tokens of conversation history are sent to the model; unset keeps the server's default.
+- `MEMORY_COMPACTOR_ENABLED`: `True` opts in to summarising old messages and passing that summary to LLM as context (default is skipping the messages beyond the history token limit).
 
+A different prompt or extra tools for agentic execution go on the execution definition (section 7), not on the agent.
 
-class <Name>ConfigProvider(BaseAgentConfigProvider):
-    def get_config(self, config_type: ConfigType = ConfigType.CONVERSATION) -> AgentConfigWithDefaults:
-        return AgentConfigWithDefaults(
-            system_prompt=<NAME>_AGENT_PROMPT,
-            agent_class=<Name>Agent,
-            tools=<Name>Agent.TOOLS,
-        )
-```
-
-Everything else (LLM, repositories, memory, registries) comes from the server's defaults.
-
-- Set `BUILDER_CLASS = <Vertical>AgentBuilder` on the provider only when a vertical builder is needed.
-- Branch on `config_type` only when the agent supports agentic execution: `ConfigType.CONVERSATION` vs `ConfigType.AGENTIC_EXECUTION_DEFINITION` (typically a different prompt and an extra tool that stops the run).
-
-The registry finds the provider by importing the module path of the agent (the dotted path minus the class name) and looking for a `BaseAgentConfigProvider` subclass in it, so `__init__.py` must export the provider next to the agent:
-
-```python
-from .agent import <Name>Agent
-from .config import <Name>ConfigProvider
-
-__all__ = ["<Name>Agent", "<Name>ConfigProvider"]
-```
+`__init__.py` exports the agent: `__all__ = ["<Name>Agent"]`.
 
 ## 5. Tools (`tools/`)
 
@@ -186,6 +171,8 @@ class <Name>AgenticExecutionDefinition(BaseAgenticExecutionDefinition):
     NAME = "<Human Name>"
     INPUT_TYPE = <Name>AgenticExecutionInput
     VALIDATORS = [StopExecutionValidator, IsValidJsonValidator]
+    SYSTEM_PROMPT = <NAME>_EXECUTION_PROMPT  # optional
+    EXTRA_TOOLS = [LLMToolConfig(tool_class=StopExecutionTool)]  # optional
 
     def execute(self, input_data: <Name>AgenticExecutionInput, conversation: ExecutionConversationInterface) -> str:
         return conversation.ask(input_data.additional_instructions or "<default task>")
