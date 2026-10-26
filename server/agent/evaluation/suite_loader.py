@@ -39,7 +39,7 @@ class SuiteLoader:
             loaded = selection.apply(loaded)
         agent_type = loaded.suite.agent.type or self._existing_agent_type(loaded.suite.agent.id)
         kind = self._resolve_kind(loaded.suite, agent_type)
-        execution = self._resolve_execution(loaded.suite, agent_type) if kind == "execution" else None
+        execution = self._resolve_execution(loaded.suite, agent_type) if kind == SuiteKind.EXECUTION else None
         if execution is None and loaded.suite.execution_key:
             raise EvalSuiteError("'execution_key' is for execution suites; this is a conversation suite.")
         self._check_sandbox_agent_type(loaded.suite)
@@ -62,8 +62,10 @@ class SuiteLoader:
         if suite.kind is not None:
             return suite.kind
         if suite.execution_key:
-            return "execution"
-        return "execution" if AgenticExecutionDefinitionRegistry().get_by_agent_type(agent_type) else "conversation"
+            return SuiteKind.EXECUTION
+        if AgenticExecutionDefinitionRegistry().get_by_agent_type(agent_type):
+            return SuiteKind.EXECUTION
+        return SuiteKind.CONVERSATION
 
     @staticmethod
     def _resolve_execution(suite: EvalSuite, agent_type: str) -> type[BaseAgenticExecutionDefinition]:

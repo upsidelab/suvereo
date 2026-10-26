@@ -24,7 +24,7 @@ class BaseMetric(ABC, metaclass=MetricMeta):
     NAME: ClassVar[str]
     VALUE_TYPE: ClassVar[str]
     PARAMS: ClassVar[type[BaseModel]] = NoParams
-    KINDS: ClassVar[tuple[SuiteKind, ...]] = ("execution", "conversation")
+    KINDS: ClassVar[tuple[SuiteKind, ...]] = (SuiteKind.EXECUTION, SuiteKind.CONVERSATION)
 
     def __init__(self, params: dict[str, Any] | None = None, name: str | None = None, base_dir: Path | None = None):
         """Validate params against PARAMS (relative paths resolve against base_dir); raises MetricConfigError."""

@@ -32,7 +32,10 @@ logger = logging.getLogger(__name__)
 
 JUDGE_COST = "judge_cost_usd"
 #: The auto metric a run of each suite kind must pass, besides its required thresholds.
-OUTCOME_METRIC: dict[SuiteKind, str] = {"execution": "execution_succeeded", "conversation": "conversation_completed"}
+OUTCOME_METRIC: dict[SuiteKind, str] = {
+    SuiteKind.EXECUTION: "execution_succeeded",
+    SuiteKind.CONVERSATION: "conversation_completed",
+}
 
 
 class CaseRunner:
@@ -148,7 +151,7 @@ class CaseRunner:
         return time.perf_counter() - started if started is not None else None
 
     def _driver_for(self, loaded: LoadedSuite) -> BaseRunDriver:
-        if self.kind == "conversation":
+        if self.kind == SuiteKind.CONVERSATION:
             return ConversationRunDriver()
         return ExecutionRunDriver(loaded.suite.execution_key)
 

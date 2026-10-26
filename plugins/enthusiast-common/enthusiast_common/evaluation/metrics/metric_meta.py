@@ -1,5 +1,4 @@
 import inspect
-from typing import get_args
 
 from pydantic import BaseModel
 
@@ -21,7 +20,6 @@ class MetricMeta(ExtraArgsClassBaseMeta):
             return cls
         if cls.VALUE_TYPE not in VALUE_TYPES:
             raise TypeError(f"Metric '{name}' has VALUE_TYPE '{cls.VALUE_TYPE}'; use one of {', '.join(VALUE_TYPES)}.")
-        kinds = get_args(SuiteKind)
-        if not cls.KINDS or any(kind not in kinds for kind in cls.KINDS):
-            raise TypeError(f"Metric '{name}' has KINDS {cls.KINDS!r}; use one or more of {', '.join(kinds)}.")
+        if not cls.KINDS or any(not isinstance(kind, SuiteKind) for kind in cls.KINDS):
+            raise TypeError(f"Metric '{name}' has KINDS {cls.KINDS!r}; use one or more of {', '.join(SuiteKind)}.")
         return cls

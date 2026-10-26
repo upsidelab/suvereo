@@ -1,3 +1,4 @@
+from ...suite import SuiteKind
 from ...trace import StopReason
 from ..base_metric import BaseMetric
 from ..metric_context import MetricContext
@@ -9,7 +10,7 @@ class ConversationEnd(BaseMetric):
 
     NAME = "conversation_end"
     VALUE_TYPE = "label"
-    KINDS = ("conversation",)
+    KINDS = (SuiteKind.CONVERSATION,)
 
     def measure(self, context: MetricContext) -> MetricResult:
         trace = context.trace

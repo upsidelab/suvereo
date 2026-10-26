@@ -33,7 +33,7 @@ class TraceEvent(BaseMetric):
     PARAMS = TraceEventParams
 
     def supports(self, kind: SuiteKind) -> bool:
-        return kind == "execution" or self.params.event.partition(":")[0] not in EXECUTION_EVENTS
+        return kind == SuiteKind.EXECUTION or self.params.event.partition(":")[0] not in EXECUTION_EVENTS
 
     def measure(self, context: MetricContext) -> MetricResult:
         name, _, code = self.params.event.partition(":")

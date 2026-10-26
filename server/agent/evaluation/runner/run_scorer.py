@@ -16,7 +16,7 @@ class RunScorer:
     """Measures a run's auto metrics (those of the suite's kind) and configured ones, and checks the configured ones'
     pass thresholds; bools default to equals: true."""
 
-    def __init__(self, base_dir: Path, kind: SuiteKind = "execution", registry: MetricRegistry | None = None):
+    def __init__(self, base_dir: Path, kind: SuiteKind = SuiteKind.EXECUTION, registry: MetricRegistry | None = None):
         self.base_dir = base_dir
         self.auto_metrics = auto_metrics_for(kind)
         self.registry = registry or MetricRegistry()

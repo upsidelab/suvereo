@@ -1,6 +1,8 @@
 from pathlib import Path
 from typing import Any, Literal, NamedTuple
 
+from enthusiast_common.evaluation.suite import SuiteKind
+
 from agent.evaluation.resolved_kind import resolved_kind
 from agent.evaluation.runner import RunResult
 
@@ -10,8 +12,8 @@ from .judge_reasoning import REASONING, JudgeReasoning
 from .suite_report import SuiteReport
 
 OUTCOME_COLUMNS = {
-    "execution": ["execution_succeeded", "failure_code", "attempts", "first_attempt_success"],
-    "conversation": ["conversation_completed", "conversation_end", "turns"],
+    SuiteKind.EXECUTION: ["execution_succeeded", "failure_code", "attempts", "first_attempt_success"],
+    SuiteKind.CONVERSATION: ["conversation_completed", "conversation_end", "turns"],
 }
 PERFORMANCE_COLUMNS = [
     "duration_s",

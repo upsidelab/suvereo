@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, get_args
+from typing import Any
 
 from pydantic import TypeAdapter, ValidationError
 
@@ -42,7 +42,7 @@ class BaseCaseSource(ABC):
         problems = []
         for e in error.errors():
             location, kind = list(e["loc"]), None
-            if location and location[0] in get_args(SuiteKind):
+            if location and location[0] in set(SuiteKind):
                 kind = location.pop(0)
             where = ".".join(str(p) for p in location) or "case"
             problems.append(f"{where}: {e['msg']}" + (f" ({kind} case)" if kind else ""))
