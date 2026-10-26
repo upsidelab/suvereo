@@ -48,8 +48,8 @@ class ScoreRange(BaseModel):
 class LLMJudgeParams(JudgePromptParams):
     PLACEHOLDERS: ClassVar[tuple[str, ...]] = ("name", "description", "scale", "material")
     DEFAULT_INCLUDE: ClassVar[dict[SuiteKind, list[Section]]] = {
-        "execution": ["outcome", "output", "expected"],
-        "conversation": ["outcome", "transcript", "expected"],
+        SuiteKind.EXECUTION: ["outcome", "output", "expected"],
+        SuiteKind.CONVERSATION: ["outcome", "transcript", "expected"],
     }
 
     criteria: list[Criterion] = Field(min_length=1)

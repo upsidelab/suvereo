@@ -48,7 +48,7 @@ class JudgeMaterial:
     @staticmethod
     def fits(sections: list[Section], kind: SuiteKind) -> bool:
         """Whether a run of this kind has every one of these sections."""
-        return kind == "conversation" or not CONVERSATION_SECTIONS & set(sections)
+        return kind == SuiteKind.CONVERSATION or not CONVERSATION_SECTIONS & set(sections)
 
     @staticmethod
     def _input(context: MetricContext) -> dict[str, Any]:
@@ -66,7 +66,7 @@ class JudgeMaterial:
     def _outcome(cls, context: MetricContext) -> str:
         trace = context.trace
         result = trace.execution_result
-        if context.kind == "conversation":
+        if context.kind == SuiteKind.CONVERSATION:
             ended = cls._conversation_outcome(context)
         elif trace.error or result is None:
             ended = f"crashed: {trace.error or 'no result'}"

@@ -338,7 +338,7 @@ class TotalQuantity(BaseMetric):
   type: my_package.metrics.TotalQuantity # the dotted path of your class
 ```
 
-- **`context`** holds the `trace` (`output`, `tool_calls`, `mock_calls`, `llm_calls`, `attempts`, `error`, with helpers such as `tool_calls_named` and `mock_calls_to`), the `case` (`input`, `expected`, and `extra` for other CSV columns), the suite's `kind` (`execution` or `conversation`), `duration_s`, `cost_usd` and the `judge` client.
+- **`context`** holds the `trace` (`output`, `tool_calls`, `mock_calls`, `llm_calls`, `attempts`, `error`, and for a conversation its `turns` and `stop_reason`, with helpers such as `tool_calls_named`, `mock_calls_to` and `tool_calls_in(turn)`), the `case` (`expected` and `extra` for other CSV columns, plus `input` in an execution suite, or `user_messages` and `simulated_user` in a conversation suite), the suite's `kind` (`execution` or `conversation`), `duration_s`, `cost_usd` and the `judge` client.
 - **`MetricResult`** takes the `value`, `details` that `report.md` lists under a missed threshold, and `components`, numbers that get their own `results.csv` columns; `binary_components=True` shows them as success or failure.
 - **No value:** return `value=None` with a `reason` when the case gives nothing to measure. An exception is caught and recorded as the metric's `error`; the other metrics still run.
 - **Params** are validated when the suite loads, so `validateeval` reports a typo before any run. A relative path in params resolves against the suite directory through the validation context key `base_dir`.

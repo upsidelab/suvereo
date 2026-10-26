@@ -20,8 +20,8 @@ class JudgePromptParams(BaseModel):
     PLACEHOLDERS: ClassVar[tuple[str, ...]] = ("material",)
     #: The sections the judge sees when the suite sets no 'include', per suite kind; subclasses set theirs.
     DEFAULT_INCLUDE: ClassVar[dict[SuiteKind, list[Section]]] = {
-        "execution": ["outcome", "output"],
-        "conversation": ["outcome", "transcript"],
+        SuiteKind.EXECUTION: ["outcome", "output"],
+        SuiteKind.CONVERSATION: ["outcome", "transcript"],
     }
 
     judge: ModelTarget | None = None
