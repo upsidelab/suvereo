@@ -1,9 +1,9 @@
-import json
 from statistics import median
 from typing import ClassVar, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from ...json_reply import JsonReply
 from ...suite import SuiteKind
 from ..base_judge_client import BaseJudgeClient
 from ..base_metric import BaseMetric
@@ -130,12 +130,4 @@ class LLMJudge(BaseMetric):
 
     @staticmethod
     def _parse_verdict(reply: str) -> dict:
-        decoder = json.JSONDecoder()
-        for start in (i for i, char in enumerate(reply) if char == "{"):
-            try:
-                value, _ = decoder.raw_decode(reply, start)
-            except json.JSONDecodeError:
-                continue
-            if isinstance(value, dict) and "score" in value:
-                return value
-        return {}
+        return next((value for value in JsonReply.objects(reply) if "score" in value), {})

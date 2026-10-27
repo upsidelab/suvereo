@@ -1,5 +1,4 @@
-import json
-
+from ...json_reply import JsonReply
 from ...suite import ConversationEvalCase, SuiteKind
 from ..base_metric import BaseMetric
 from ..llm.judge_material import JudgeMaterial
@@ -41,12 +40,4 @@ class GoalReached(BaseMetric):
 
     @staticmethod
     def _verdict(reply: str) -> dict | None:
-        decoder = json.JSONDecoder()
-        for start in (i for i, char in enumerate(reply) if char == "{"):
-            try:
-                value, _ = decoder.raw_decode(reply, start)
-            except json.JSONDecodeError:
-                continue
-            if isinstance(value, dict) and isinstance(value.get("reached"), bool):
-                return value
-        return None
+        return next((value for value in JsonReply.objects(reply) if isinstance(value.get("reached"), bool)), None)

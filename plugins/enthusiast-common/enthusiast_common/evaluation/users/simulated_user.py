@@ -1,6 +1,6 @@
-import json
 from textwrap import indent
 
+from ..json_reply import JsonReply
 from ..trace import StopReason, Turn
 from .base_user_simulator import BaseUserSimulator
 from .user_message import USER_STOP_REASONS, UserMessage
@@ -58,14 +58,7 @@ class SimulatedUser(BaseUserSimulator):
 
     @staticmethod
     def _parse(reply: str) -> UserMessage | None:
-        decoder = json.JSONDecoder()
-        for start in (i for i, char in enumerate(reply) if char == "{"):
-            try:
-                value, _ = decoder.raw_decode(reply, start)
-            except json.JSONDecodeError:
-                continue
-            if not isinstance(value, dict):
-                continue
+        for value in JsonReply.objects(reply):
             stop, text = value.get("stop"), value.get("message")
             if stop in USER_STOP_REASONS:
                 return UserMessage.stop(StopReason(stop))
