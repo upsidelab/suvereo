@@ -1,11 +1,5 @@
-from abc import ABC, abstractmethod
-
-from ..suite import ModelTarget
+from ..base_model_client import BaseModelClient
 
 
-class BaseJudgeClient(ABC):
+class BaseJudgeClient(BaseModelClient):
     """The model LLM-based metrics ask; the host implements it with the suite's judge model and tracks its cost."""
-
-    @abstractmethod
-    def complete(self, prompt: str, model: ModelTarget | None = None) -> str:
-        """Ask the judge one question and return its text reply; model overrides the suite's judge for this call."""

@@ -1,18 +1,22 @@
 from django.utils.module_loading import import_string
+from enthusiast_common.evaluation.base_model_client import BaseModelClient
 from enthusiast_common.evaluation.errors import EvalSuiteError
 from enthusiast_common.evaluation.suite import ConversationEvalCase
-from enthusiast_common.evaluation.users import BaseUserSimulator, ScriptedUser
+from enthusiast_common.evaluation.users import BaseUserSimulator, ScriptedUser, SimulatedUser
 
 
 class UserSimulatorRegistry:
-    """Finds the user simulator of a conversation case: ScriptedUser for fixed user messages, otherwise the class its
-    simulated user names by dotted path."""
+    """Finds the user simulator of a conversation case: ScriptedUser for fixed user messages, the class a simulated
+    user names by dotted path, or else SimulatedUser, an LLM playing it."""
 
-    def simulator_for(self, case: ConversationEvalCase) -> BaseUserSimulator:
-        """A simulator playing the case's user; raises EvalSuiteError when its class can't be loaded."""
+    def simulator_for(self, case: ConversationEvalCase, llm: BaseModelClient | None = None) -> BaseUserSimulator:
+        """A simulator playing the case's user, given the suite's user model; raises EvalSuiteError when its class
+        can't be loaded."""
         if case.user_messages:
             return ScriptedUser(case)
-        return self.simulator_class(case.simulated_user.class_path)(case)
+        if case.simulated_user.class_path is not None:
+            return self.simulator_class(case.simulated_user.class_path)(case, llm)
+        return SimulatedUser(case, llm)
 
     @staticmethod
     def simulator_class(path: str) -> type[BaseUserSimulator]:

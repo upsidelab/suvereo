@@ -17,15 +17,18 @@ from agent.core.registries.language_models import LanguageModelRegistry
 from agent.evaluation.aggregation import DERIVED_METRICS
 from agent.evaluation.integrations import MockIntegrationFactory
 from agent.evaluation.judge_models_used_by_metrics import judge_models_used_by_metrics
-from agent.evaluation.runner.case_runner import JUDGE_COST
+from agent.evaluation.runner.case_runner import JUDGE_COST, USER_COST
 from agent.evaluation.suite_selection import SuiteSelection
+from agent.evaluation.user_model_in_use import user_model_in_use
 from agent.evaluation.user_simulator_registry import UserSimulatorRegistry
 from agent.models import Agent
 
 
 def reserved_metric_names(kind: SuiteKind) -> set[str]:
-    """Names a suite of this kind can't give its metrics: its auto metrics, the judge cost and the derived rates."""
-    return {metric.NAME for metric in auto_metrics_for(kind)} | {JUDGE_COST} | set(DERIVED_METRICS)
+    """Names a suite of this kind can't give its metrics: its auto metrics, the judge cost (and in a conversation the
+    simulated users' cost) and the derived rates."""
+    costs = {JUDGE_COST, USER_COST} if kind == SuiteKind.CONVERSATION else {JUDGE_COST}
+    return {metric.NAME for metric in auto_metrics_for(kind)} | costs | set(DERIVED_METRICS)
 
 
 class SuiteLoader:
@@ -101,8 +104,10 @@ class SuiteLoader:
 
     @staticmethod
     def _check_models(loaded: LoadedSuite) -> None:
-        """Models under test and every judge model, metric-level ones included, need a known provider."""
-        targets = [*loaded.suite.models, *judge_models_used_by_metrics(loaded)]
+        """Models under test, every judge model (metric-level ones included) and the user model need a known
+        provider."""
+        user_model = user_model_in_use(loaded)
+        targets = [*loaded.suite.models, *judge_models_used_by_metrics(loaded), *([user_model] if user_model else [])]
         if not targets:
             return
         try:
@@ -199,8 +204,10 @@ class SuiteLoader:
 
     @staticmethod
     def _check_conversation_cases(loaded: LoadedSuite, agent_type: str) -> None:
-        """Each case is a conversation case, with fixed user messages or a simulated user whose simulator can be
-        loaded; for now a simulated user needs a custom simulator ('class')."""
+        """Each case is a conversation case, with fixed user messages or a simulated user: a custom one needs a
+        loadable class, and a goal needs the judge, which decides whether it was reached and plays the user when no
+        user_model is set."""
+        suite = loaded.suite
         for case in loaded.cases:
             if not isinstance(case, ConversationEvalCase):
                 raise EvalSuiteError(
@@ -208,12 +215,16 @@ class SuiteLoader:
                     f"'{agent_type}' has no registered execution, or the suite sets 'kind: conversation'); give it "
                     "'user_messages' or 'simulated_user'."
                 )
-            if case.simulated_user is not None:
-                if case.simulated_user.class_path is None:
-                    raise EvalSuiteError(
-                        f"Case '{case.id}': 'simulated_user' needs 'class', a custom simulator, for now."
-                    )
+            user = case.simulated_user
+            if user is None:
+                continue
+            if user.goal and suite.judge is None:
+                raise EvalSuiteError(
+                    f"Case '{case.id}': the judge decides whether the simulated user's goal was reached; set 'judge' "
+                    "in the suite."
+                )
+            if user.class_path is not None:
                 try:
-                    UserSimulatorRegistry.simulator_class(case.simulated_user.class_path)
+                    UserSimulatorRegistry.simulator_class(user.class_path)
                 except EvalSuiteError as e:
                     raise EvalSuiteError(f"Case '{case.id}': can't load the user simulator: {e}") from e

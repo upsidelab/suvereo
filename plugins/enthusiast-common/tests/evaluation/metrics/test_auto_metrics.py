@@ -1,4 +1,5 @@
 import pytest
+from enthusiast_common.evaluation.metrics import MetricContext
 from enthusiast_common.evaluation.metrics.auto import (
     AUTO_METRICS,
     Attempts,
@@ -8,14 +9,17 @@ from enthusiast_common.evaluation.metrics.auto import (
     ExecutionSucceeded,
     FailureCode,
     FirstAttemptSuccess,
+    GoalReached,
     InputTokens,
     LLMCalls,
     Turns,
     auto_metrics_for,
 )
-from enthusiast_common.evaluation.trace import Attempt, LLMCall, Turn
+from enthusiast_common.evaluation.suite import ConversationEvalCase
+from enthusiast_common.evaluation.trace import Attempt, ExecutionTrace, LLMCall, Turn
 
 from .contexts import run
+from .scripted_judge import ScriptedJudge
 
 PASSED, FAILED = Attempt(number=1, response="", passed=True), Attempt(number=1, response="", passed=False)
 ANSWERED = [Turn(user_message="Hi", answer="Hello"), Turn(user_message="Bye", answer="Bye")]
@@ -93,7 +97,7 @@ class TestAutoMetricsPerKind:
         conversation = {m.NAME for m in auto_metrics_for("conversation")}
 
         assert {"execution_succeeded", "failure_code", "attempts", "first_attempt_success"} <= execution - conversation
-        assert {"conversation_completed", "conversation_end", "turns"} <= conversation - execution
+        assert {"conversation_completed", "conversation_end", "goal_reached", "turns"} <= conversation - execution
         assert {"duration_s", "cost_usd", "llm_calls", "tool_calls"} <= execution & conversation
         assert execution | conversation == {m.NAME for m in AUTO_METRICS}
 
@@ -108,3 +112,50 @@ class TestRunFigures:
 
     def test_a_missing_figure_is_not_measured_rather_than_zero(self):
         assert CostUsd().measure(run()).value is None
+
+
+def _goal_context(judge=None, simulated_user=None, turns=ANSWERED) -> MetricContext:
+    case = (
+        ConversationEvalCase(id="c", simulated_user=simulated_user)
+        if simulated_user
+        else ConversationEvalCase(id="c", user_messages=["Hi", "Bye"])
+    )
+    return MetricContext(trace=ExecutionTrace(turns=turns), case=case, kind="conversation", judge=judge)
+
+
+class TestGoalReached:
+    GOAL = {"goal": "Get a greeting"}
+
+    @pytest.mark.parametrize("reached", [True, False])
+    def test_the_judge_decides_from_the_goal_and_the_transcript(self, reached):
+        judge = ScriptedJudge(f'{{"reached": {str(reached).lower()}, "reasoning": "it said hello"}}')
+
+        result = GoalReached().measure(_goal_context(judge, self.GOAL))
+
+        assert (result.value, result.details["reasoning"]) == (reached, "it said hello")
+        assert "Goal: Get a greeting" in judge.prompts[0]
+        assert "## transcript\nturn 1\nuser:\n  Hi" in judge.prompts[0]
+
+    @pytest.mark.parametrize(
+        "context, reason",
+        [
+            (_goal_context(ScriptedJudge("{}")), "the case has no simulated user goal"),
+            (_goal_context(None, GOAL), "no judge model is configured"),
+        ],
+    )
+    def test_without_a_goal_or_a_judge_nothing_is_measured(self, context, reason):
+        result = GoalReached().measure(context)
+
+        assert (result.value, result.details["reason"]) == (None, reason)
+
+    def test_a_conversation_that_never_started_did_not_reach_its_goal(self):
+        judge = ScriptedJudge('{"reached": true}')
+
+        assert GoalReached().measure(_goal_context(judge, self.GOAL, turns=[])).value is False
+        assert judge.prompts == []
+
+    def test_an_unreadable_verdict_is_not_scored(self):
+        result = GoalReached().measure(_goal_context(ScriptedJudge('{"reached": "maybe"}'), self.GOAL))
+
+        assert result.value is None
+        assert result.details["error"] == "unreadable judge reply"

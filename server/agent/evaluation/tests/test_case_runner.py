@@ -114,12 +114,14 @@ class TestCaseRunner:
     def test_a_conversation_run_that_never_ran_gets_the_conversation_outcome(self, target, tmp_path):
         loaded = _runner(target, tmp_path, kind="conversation", execution_key=None).loaded
 
-        result = CaseRunner.errored_result(
-            loaded, ConversationEvalCase(id="c", user_messages=["Hi"]), None, None, 1, "No sandbox"
-        )
+        case = ConversationEvalCase(id="c", simulated_user={"goal": "Get a greeting"})
+
+        result = CaseRunner.errored_result(loaded, case, None, None, 1, "No sandbox")
 
         assert not result.passed
         assert result.metrics["conversation_completed"].value is False
+        assert result.metrics["goal_reached"].details == {"reasoning": "the conversation never started"}
+        assert result.metrics["user_cost_usd"].value == 0.0
         assert "attempts" not in result.metrics
 
     def test_a_judge_no_metric_asks_is_never_built(self, target, tmp_path):

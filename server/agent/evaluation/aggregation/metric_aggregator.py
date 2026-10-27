@@ -4,7 +4,7 @@ from enthusiast_common.evaluation.metrics.auto import AUTO_METRICS, Attempts
 from enthusiast_common.evaluation.suite import Aggregate
 
 from agent.evaluation.runner import RunResult
-from agent.evaluation.runner.case_runner import JUDGE_COST
+from agent.evaluation.runner.case_runner import JUDGE_COST, USER_COST
 from agent.evaluation.suite_metric_configs import suite_metric_configs
 
 from .candidate_metrics import CandidateMetrics
@@ -27,7 +27,10 @@ class MetricAggregator:
     @classmethod
     def for_suite(cls, loaded: LoadedSuite) -> "MetricAggregator":
         """An aggregator knowing the value type and declared aggregate of every metric the suite measures."""
-        value_types = {metric.NAME: metric.VALUE_TYPE for metric in AUTO_METRICS} | {JUDGE_COST: "number"}
+        value_types = {metric.NAME: metric.VALUE_TYPE for metric in AUTO_METRICS} | {
+            JUDGE_COST: "number",
+            USER_COST: "number",
+        }
         aggregates: dict[str, Aggregate] = {}
         registry = MetricRegistry()
         for config in suite_metric_configs(loaded).values():

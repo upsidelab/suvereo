@@ -5,7 +5,7 @@ from django.conf import settings
 from enthusiast_common.evaluation.errors import EvalSuiteError
 from enthusiast_common.evaluation.loaded_suite import LoadedSuite
 from enthusiast_common.evaluation.metrics import MetricResult
-from enthusiast_common.evaluation.suite import AgenticExecutionEvalCase, EvalSuite
+from enthusiast_common.evaluation.suite import AgenticExecutionEvalCase, ConversationEvalCase, EvalSuite
 from enthusiast_common.evaluation.trace import ExecutionTrace
 from model_bakery import baker
 
@@ -101,6 +101,20 @@ class TestSuiteRunner:
         loaded = _loaded(tmp_path, baker.make(Agent, config={}), models=[{"provider": "OpenAI", "model": "gpt-new"}])
 
         with pytest.raises(EvalSuiteError, match="gpt-new has no price"):
+            SuiteRunner(loaded, SuiteRunOptions(budget_usd=1.0)).run()
+
+    def test_a_budget_with_an_unpriced_user_model_is_refused(self, tmp_path):
+        simulated = ConversationEvalCase(id="u", simulated_user={"class": "my.Simulator"})
+        loaded = _loaded(
+            tmp_path,
+            baker.make(Agent, config={}),
+            cases=[simulated],
+            kind="conversation",
+            execution_key=None,
+            user_model={"provider": "OpenAI", "model": "user-new"},
+        )
+
+        with pytest.raises(EvalSuiteError, match="user-new has no price"):
             SuiteRunner(loaded, SuiteRunOptions(budget_usd=1.0)).run()
 
     def test_an_unpriced_run_stops_a_budgeted_suite(self, tmp_path):

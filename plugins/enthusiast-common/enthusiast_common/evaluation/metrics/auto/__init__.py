@@ -8,6 +8,7 @@ from .duration_seconds import DurationSeconds
 from .execution_succeeded import ExecutionSucceeded
 from .failure_code import FailureCode
 from .first_attempt_success import FirstAttemptSuccess
+from .goal_reached import GoalReached
 from .input_tokens import InputTokens
 from .llm_calls import LLMCalls
 from .output_tokens import OutputTokens
@@ -22,6 +23,7 @@ AUTO_METRICS = [
     FirstAttemptSuccess,
     ConversationCompleted,
     ConversationEnd,
+    GoalReached,
     Turns,
     DurationSeconds,
     CostUsd,
@@ -47,6 +49,7 @@ __all__ = [
     "ExecutionSucceeded",
     "FailureCode",
     "FirstAttemptSuccess",
+    "GoalReached",
     "InputTokens",
     "LLMCalls",
     "OutputTokens",

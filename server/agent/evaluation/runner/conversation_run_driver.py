@@ -4,6 +4,7 @@ import time
 
 from enthusiast_common.agentic_execution.memory import ToolScratchpad
 from enthusiast_common.agents import ConfigType
+from enthusiast_common.evaluation.base_model_client import BaseModelClient
 from enthusiast_common.evaluation.suite import ConversationEvalCase, EvalCase
 from enthusiast_common.evaluation.trace import StopReason, TraceRecorder, Turn
 from enthusiast_common.evaluation.users import BaseUserSimulator
@@ -23,13 +24,18 @@ class ConversationRunDriver(BaseRunDriver):
     case's turn limit is reached or a turn raises; records on the trace why it stopped."""
 
     def run(
-        self, case: EvalCase, conversation: Conversation, overrides: AgentConfigOverrides, recorder: TraceRecorder
+        self,
+        case: EvalCase,
+        conversation: Conversation,
+        overrides: AgentConfigOverrides,
+        recorder: TraceRecorder,
+        user_llm: BaseModelClient | None = None,
     ) -> None:
         if not isinstance(case, ConversationEvalCase):
             raise TypeError(f"Case '{case.id}' is not a conversation case; this suite runs conversations.")
         trace, scratchpad = recorder.trace, ToolScratchpad()
         try:
-            simulator = UserSimulatorRegistry().simulator_for(case)
+            simulator = UserSimulatorRegistry().simulator_for(case, user_llm)
             trace.stop_reason = self._converse(
                 simulator, self._max_turns(case), conversation, overrides, scratchpad, recorder
             )

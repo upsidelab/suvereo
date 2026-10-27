@@ -1,3 +1,4 @@
+from enthusiast_common.evaluation.base_model_client import BaseModelClient
 from enthusiast_common.evaluation.suite import AgenticExecutionEvalCase, EvalCase
 from enthusiast_common.evaluation.trace import TraceRecorder
 
@@ -16,7 +17,12 @@ class ExecutionRunDriver(BaseRunDriver):
         self.execution_key = execution_key
 
     def run(
-        self, case: EvalCase, conversation: Conversation, overrides: AgentConfigOverrides, recorder: TraceRecorder
+        self,
+        case: EvalCase,
+        conversation: Conversation,
+        overrides: AgentConfigOverrides,
+        recorder: TraceRecorder,
+        user_llm: BaseModelClient | None = None,
     ) -> None:
         if not isinstance(case, AgenticExecutionEvalCase):
             raise TypeError(f"Case '{case.id}' is not an execution case; this suite runs executions.")
