@@ -30,13 +30,14 @@ Each run writes to `<suite>/results/<date>-<id>/`, and `results/latest` points a
 
 | File | What it holds |
 |---|---|
-| `report.md` | The verdict (when the suite sets `min_pass_rate`), a comparison of candidates with a short legend, failures grouped by the pass threshold they missed, with the judge's reasoning and a link to each trace, flaky cases and run details. Start here. |
+| `report.md` | The verdict (when the suite sets `min_pass_rate`), a comparison of candidates with a short legend, failures grouped by the pass threshold they missed, with the judge's reasoning and a link to each trace (for a conversation, how it ended, its last turns and a link to its transcript), flaky cases and run details. Start here. |
 | `summary.json` | The same verdict and figures for scripts and CI. |
 | `results.csv` | One row per run: every metric, whether it met its pass threshold, the judge's reasoning, cost and tokens. |
 | `comparison.csv` | One row per candidate (model × prompt variant). |
 | `cases.csv` | One row per case and candidate: pass, fail or flaky. |
 | `metrics.csv` | One row per run and metric with its details as JSON, for pivots and charts. |
 | `runs/*.json` | Each run's metric results and pass thresholds, then its full trace: LLM calls, tool calls, mock calls, attempts. |
+| `transcripts/*.md` | In a conversation suite, each run as a readable dialogue: how it ended, the simulated user's goal, persona and facts, and every message with the tools called in its turn. |
 
 The CSVs open directly in a spreadsheet. The exit code tells CI how the run went: `0` every candidate reached the suite's `min_pass_rate` (or it sets none), `1` one fell below it, `2` the suite or an option is invalid, `3` the budget ran out, `4` the run crashed.
 

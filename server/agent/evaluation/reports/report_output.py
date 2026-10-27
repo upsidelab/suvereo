@@ -11,6 +11,7 @@ from .results_csv_writer import ResultsCsvWriter
 from .suite_report import SuiteReport
 from .summary_json_writer import SummaryJsonWriter
 from .trace_files_writer import TraceFilesWriter
+from .transcripts_writer import TranscriptsWriter
 
 WRITERS: list[type[BaseReportWriter]] = [
     ReportMdWriter,
@@ -19,6 +20,7 @@ WRITERS: list[type[BaseReportWriter]] = [
     CasesCsvWriter,
     MetricsCsvWriter,
     TraceFilesWriter,
+    TranscriptsWriter,
 ]
 
 

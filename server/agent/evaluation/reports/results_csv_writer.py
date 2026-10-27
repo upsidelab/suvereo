@@ -3,7 +3,6 @@ from typing import Any, Literal, NamedTuple
 
 from enthusiast_common.evaluation.suite import SuiteKind
 
-from agent.evaluation.resolved_kind import resolved_kind
 from agent.evaluation.runner import RunResult
 
 from .base_report_writer import BaseReportWriter
@@ -36,9 +35,9 @@ class ResultsCsvWriter(BaseReportWriter):
 
     def write(self, report: SuiteReport, run_dir: Path) -> list[Path]:
         metric_columns = self._metric_columns(report)
-        kind = resolved_kind(report.loaded.suite)
-        outcome_columns = OUTCOME_COLUMNS[kind]
-        performance_columns = [*PERFORMANCE_COLUMNS, *([USER_COST_COLUMN] if kind == SuiteKind.CONVERSATION else [])]
+        outcome_columns = OUTCOME_COLUMNS[report.kind]
+        conversation = report.kind == SuiteKind.CONVERSATION
+        performance_columns = [*PERFORMANCE_COLUMNS, *([USER_COST_COLUMN] if conversation else [])]
         header = [
             *["run_id", "case_id", "tags", "candidate", "provider", "model", "variant", "repeat"],
             *["passed", "error", *outcome_columns, *performance_columns],

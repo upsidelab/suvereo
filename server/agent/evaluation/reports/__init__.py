@@ -18,6 +18,7 @@ from .suite_verdict import SuiteVerdict
 from .summary_file import SummaryFile
 from .summary_json_writer import SummaryJsonWriter
 from .trace_files_writer import TraceFilesWriter
+from .transcripts_writer import TranscriptsWriter
 
 __all__ = [
     "BaseReportWriter",
@@ -40,4 +41,5 @@ __all__ = [
     "SummaryFile",
     "SummaryJsonWriter",
     "TraceFilesWriter",
+    "TranscriptsWriter",
 ]

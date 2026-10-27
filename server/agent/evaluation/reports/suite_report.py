@@ -3,9 +3,11 @@ import re
 
 from enthusiast_common.evaluation.loaded_suite import LoadedSuite
 from enthusiast_common.evaluation.metrics import BaseMetric, MetricRegistry
-from enthusiast_common.evaluation.suite import EvalCase, MetricConfig, PassThreshold, ReportName
+from enthusiast_common.evaluation.metrics.auto import GoalReached, Turns
+from enthusiast_common.evaluation.suite import EvalCase, MetricConfig, PassThreshold, ReportName, SuiteKind
 
-from agent.evaluation.aggregation import PASS_RATE, CandidateMetrics, MetricAggregator
+from agent.evaluation.aggregation import PASS_RATE, RATES, CandidateMetrics, MetricAggregator
+from agent.evaluation.resolved_kind import resolved_kind
 from agent.evaluation.runner import RunResult
 from agent.evaluation.runner.run_result import DEFAULT_MODEL
 from agent.evaluation.runner.run_scorer import BOOL_THRESHOLD
@@ -37,6 +39,7 @@ class SuiteReport:
     ):
         self.loaded = loaded
         self.result = result
+        self.kind = resolved_kind(loaded.suite)
         self.git = git or GitState()
         self.args = args or []
         self.reports: list[ReportName] = loaded.suite.reports if reports is None else reports
@@ -54,6 +57,17 @@ class SuiteReport:
     @property
     def runs(self) -> list[RunResult]:
         return self.result.runs
+
+    @property
+    def rates(self) -> tuple[str, ...]:
+        """The rates every candidate reports, by the suite's kind."""
+        return RATES[self.kind]
+
+    @property
+    def outcome_figures(self) -> list[str]:
+        """The auto metrics comparisons show besides the rates: in a conversation, the goal_reached rate and the mean
+        turns."""
+        return [GoalReached.NAME, Turns.NAME] if self.kind == SuiteKind.CONVERSATION else []
 
     def case_outcomes(self) -> list[CaseOutcome]:
         """Each case's outcome per candidate that ran it, in case then comparison order."""
@@ -85,6 +99,16 @@ class SuiteReport:
     def linked_trace_path(self, run: RunResult) -> str | None:
         """The run's trace file for other reports to link to; None when the traces report isn't selected."""
         return self.trace_path(run) if "traces" in self.reports else None
+
+    def transcript_path(self, run: RunResult) -> str:
+        """Where the transcripts report writes the run's conversation, relative to the run directory."""
+        return f"transcripts/{self.run_id(run)}.md"
+
+    def linked_transcript_path(self, run: RunResult) -> str | None:
+        """The run's transcript for other reports to link to; None unless a conversation selected the report."""
+        return (
+            self.transcript_path(run) if self.kind == SuiteKind.CONVERSATION and "transcripts" in self.reports else None
+        )
 
     def provider_of(self, model_label: str) -> str:
         """The provider of a model under test, by its label; empty for the DataSet's configured model."""

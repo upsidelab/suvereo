@@ -56,7 +56,7 @@ Only `agent`, `metrics` and `cases` are required. [Suites and Cases](./suites) w
 | `budget_usd` | Spending limit for a run. |
 | `min_pass_rate` | Minimum pass rate per candidate, e.g. `0.8`. With it, `report.md` opens with a verdict and a candidate below it exits `1`; without it the run reports its results and gives no verdict. |
 | `metrics` | Measured on every case. |
-| `reports` | Any of `report`, `results`, `comparison`, `cases`, `metrics`, `traces` (default `report`, `results`). `summary.json` is always written. |
+| `reports` | Any of `report`, `results`, `comparison`, `cases`, `metrics`, `traces`, `transcripts` (default `report`, `results`). `summary.json` is always written. |
 | `cases` | A case file, a directory of them, inline cases, or a list of these. |
 
 A **candidate** is one model and variant, shown as `<model label>/<variant>`. A model's `pricing` (`input_per_million`, `output_per_million`, `cached_input_per_million`) overrides the bundled price table for that model.
@@ -128,7 +128,7 @@ Each metric is explained with an example in [Metrics](./metrics).
 
 ### Aggregates
 
-Across runs, numbers aggregate as `mean`, bools as `rate` and labels as `distribution`; set `aggregate` to `mean`, `rate`, `sum`, `min`, `max`, `p50`, `p95` or `distribution` to change it. Each candidate also gets `pass_rate`, `first_attempt_pass_rate` and `flaky_rate`. A case is `flaky` when its repeats both passed and failed.
+Across runs, numbers aggregate as `mean`, bools as `rate` and labels as `distribution`; set `aggregate` to `mean`, `rate`, `sum`, `min`, `max`, `p50`, `p95` or `distribution` to change it. Each candidate also gets `pass_rate`, `flaky_rate` and, in an execution suite, `first_attempt_pass_rate`. A case is `flaky` when its repeats both passed and failed.
 
 ## Results and history
 

@@ -108,7 +108,7 @@ A run passes when it meets every required pass threshold of its metrics, see [Me
 
 ### `reports`
 
-What to write to `results/<date>-<id>/` besides `summary.json`, which is always written: `report`, `results`, `comparison`, `cases`, `metrics` and `traces`. The default is `report` and `results`; `--reports` overrides it. [Getting started](./getting-started#2-read-the-results) says what each holds.
+What to write to `results/<date>-<id>/` besides `summary.json`, which is always written: `report`, `results`, `comparison`, `cases`, `metrics`, `traces` and, for a conversation suite, `transcripts`. The default is `report` and `results`; `--reports` overrides it. [Getting started](./getting-started#2-read-the-results) says what each holds.
 
 ### `integrations`
 

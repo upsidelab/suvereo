@@ -4,6 +4,7 @@ from datetime import datetime
 
 import pytest
 from enthusiast_common.evaluation.metrics import MetricResult
+from enthusiast_common.evaluation.suite import ConversationEvalCase
 
 from agent.evaluation.reports import (
     CasesCsvWriter,
@@ -14,9 +15,18 @@ from agent.evaluation.reports import (
     ResultsCsvWriter,
     RunDirectory,
     TraceFilesWriter,
+    TranscriptsWriter,
 )
 
-from .suite_reports import judged_run, judged_suite_report, loaded_suite, run_result, suite_report
+from .suite_reports import (
+    conversation_run,
+    conversation_suite_report,
+    judged_run,
+    judged_suite_report,
+    loaded_suite,
+    run_result,
+    suite_report,
+)
 
 
 def _rows(path):
@@ -137,6 +147,15 @@ class TestComparisonCsvWriter:
         assert (rows[0]["cost_mean_usd"], rows[0]["duration_p95_s"]) == ("0.02", "2.0")
         assert "user_cost_total_usd" not in rows[0]
 
+    def test_a_conversation_suite_has_its_own_rates_and_outcome_figures(self, tmp_path):
+        runs = [conversation_run("ada", passed=True), conversation_run("bob")]
+
+        [path] = ComparisonCsvWriter().write(conversation_suite_report(tmp_path, runs), tmp_path)
+
+        [row] = _rows(path)
+        assert "first_attempt_pass_rate" not in row
+        assert (row["pass_rate"], row["goal_reached__rate"], row["turns__mean"]) == ("0.5", "0.5", "3.0")
+
     def test_a_conversation_suite_totals_what_its_simulated_users_cost(self, tmp_path):
         runs = [run_result("ada"), run_result("bob")]
         for run in runs:
@@ -234,6 +253,36 @@ class TestReportOutput:
         assert suite_report(tmp_path, []).reports == ["report", "results"]
         assert suite_report(tmp_path, [], reports=["cases"]).reports == ["cases"]
         assert suite_report(tmp_path, [], ["metrics"], reports=["cases"]).reports == ["metrics"]
+
+
+class TestTranscriptsWriter:
+    def test_writes_each_conversation_as_a_readable_dialogue(self, tmp_path):
+        run = conversation_run(answers=("## Sizes\n- small\n- large",))
+        raised = {"answer": None, "error": "RuntimeError: down", "tool_call_run_ids": []}
+        run.trace.turns.append(run.trace.turns[0].model_copy(update=raised))
+        report = conversation_suite_report(tmp_path, [run], ["transcripts", "traces"])
+
+        [path] = TranscriptsWriter().write(report, tmp_path)
+
+        text = path.read_text()
+        assert path.relative_to(tmp_path).as_posix() == "transcripts/ada__gpt__default__r1.md"
+        assert text.startswith("# ada · gpt/default · repeat 1\n- passed: no\n- ended: gave_up after 2 turn(s)\n")
+        assert '- goal: Order a mug\n- persona: terse\n- facts: {"size": "large"}\n' in text
+        assert "- trace: [runs/ada__gpt__default__r1.json](../runs/ada__gpt__default__r1.json)" in text
+        assert "## Turn 1\n\n**User**\n\n> message 1\n\n<small>tools called: find_mug (raised)</small>" in text
+        assert "**Agent**\n\n> ## Sizes\n> - small\n> - large" in text
+        assert "## Turn 2\n\n**User**\n\n> message 1\n\n**Agent raised**\n\n> RuntimeError: down" in text
+
+    def test_a_goal_written_over_several_lines_stays_in_the_header(self, tmp_path):
+        case = ConversationEvalCase(id="ada", simulated_user={"goal": "Order a mug\nin large"})
+        report = suite_report(tmp_path, [conversation_run()], ["transcripts"], cases=[case], kind="conversation")
+
+        [path] = TranscriptsWriter().write(report, tmp_path)
+
+        assert "- goal: Order a mug in large\n" in path.read_text()
+
+    def test_an_execution_suite_has_no_transcripts(self, tmp_path):
+        assert TranscriptsWriter().write(suite_report(tmp_path, [run_result("ada")], ["transcripts"]), tmp_path) == []
 
 
 class TestRunDirectory:

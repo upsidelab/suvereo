@@ -4,9 +4,8 @@ from typing import Any
 from enthusiast_common.evaluation.metrics.auto import CostUsd, DurationSeconds
 from enthusiast_common.evaluation.suite import SuiteKind
 
-from agent.evaluation.aggregation import FIRST_ATTEMPT_PASS_RATE, FLAKY_RATE, PASS_RATE, CandidateMetrics
+from agent.evaluation.aggregation import CandidateMetrics
 from agent.evaluation.aggregation.metric_aggregate import DEFAULT_AGGREGATE_NAMES, MetricAggregate
-from agent.evaluation.resolved_kind import resolved_kind
 from agent.evaluation.runner.case_runner import JUDGE_COST, USER_COST
 
 from .base_report_writer import BaseReportWriter
@@ -18,10 +17,10 @@ COST_TOTALS = {JUDGE_COST: "judge_cost_total_usd", USER_COST: "user_cost_total_u
 
 
 class ComparisonCsvWriter(BaseReportWriter):
-    """comparison.csv: one row per candidate (model x prompt variant), by pass rate then mean cost, with its pass,
-    first-attempt and flaky rates, each metric under its aggregate (<name>__mean, <name>__rate, <name>__distribution
-    as label counts such as yes:3;no:1), latency and cost, with the judge's and, in conversations, the simulated users'
-    totalled apart."""
+    """comparison.csv: one row per candidate (model x prompt variant), by pass rate then mean cost, with its rates
+    (RATES, by suite kind), a conversation's goal_reached rate and mean turns, each metric under its aggregate
+    (<name>__mean, <name>__rate, <name>__distribution as label counts such as yes:3;no:1), latency and cost, with the
+    judge's and, in conversations, the simulated users' totalled apart."""
 
     NAME = "comparison"
 
@@ -30,9 +29,10 @@ class ComparisonCsvWriter(BaseReportWriter):
             name: self._aggregate_column_name(name, config.aggregate, report)
             for name, config in report.metric_configs.items()
         }
-        costs = [JUDGE_COST, *([USER_COST] if resolved_kind(report.loaded.suite) == SuiteKind.CONVERSATION else [])]
+        costs = [JUDGE_COST, *([USER_COST] if report.kind == SuiteKind.CONVERSATION else [])]
         header = [
-            *["candidate", "provider", "model", "variant", "runs", PASS_RATE, FIRST_ATTEMPT_PASS_RATE, FLAKY_RATE],
+            *["candidate", "provider", "model", "variant", "runs", *report.rates],
+            *(self._aggregate_column_name(name, None, report) for name in report.outcome_figures),
             *metric_columns.values(),
             *["duration_p50_s", "duration_p95_s", "cost_mean_usd", "cost_total_usd"],
             *(COST_TOTALS[cost] for cost in costs),
@@ -42,7 +42,7 @@ class ComparisonCsvWriter(BaseReportWriter):
                 *[candidate.candidate, report.provider_of(candidate.model), candidate.model, candidate.variant],
                 *[
                     len(candidate.runs),
-                    *(self._metric_value(candidate, rate) for rate in (PASS_RATE, FIRST_ATTEMPT_PASS_RATE, FLAKY_RATE)),
+                    *(self._metric_value(candidate, name) for name in [*report.rates, *report.outcome_figures]),
                 ],
                 *(self._aggregate_value(candidate, name, report) for name in metric_columns),
                 *[

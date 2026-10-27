@@ -8,7 +8,15 @@ from agent.evaluation.reports import ExitCode, GitState, ReportMdWriter, SuiteRe
 from agent.evaluation.runner import ThresholdResult
 from agent.evaluation.runner.suite_run_result import SuiteRunResult
 
-from .suite_reports import judged_run, judged_suite_report, loaded_suite, run_result, suite_report
+from .suite_reports import (
+    conversation_run,
+    conversation_suite_report,
+    judged_run,
+    judged_suite_report,
+    loaded_suite,
+    run_result,
+    suite_report,
+)
 
 
 def _flaky_and_failing_runs():
@@ -97,8 +105,40 @@ class TestSummaryJsonWriter:
         ]
         assert summary["cost"]["spent_usd"] == 0.0
 
+    def test_a_conversation_candidate_has_its_own_rates_and_outcome_figures(self, tmp_path):
+        report = conversation_suite_report(tmp_path, [conversation_run("ada", passed=True), conversation_run("bob")])
+
+        [candidate] = SummaryJsonWriter().summary(report)["candidates"]
+
+        assert "first_attempt_pass_rate" not in candidate
+        assert (candidate["pass_rate"], candidate["flaky_rate"]) == (0.5, 0.0)
+        assert candidate["outcomes"] == {"goal_reached": 0.5, "turns": 3.0}
+
 
 class TestReportMdWriter:
+    def test_a_failed_conversation_shows_how_it_ended_and_its_last_turns(self, tmp_path):
+        report = conversation_suite_report(tmp_path, [conversation_run("ada")], ["report", "transcripts"])
+
+        ReportMdWriter().write(report, tmp_path)
+
+        text = (tmp_path / "report.md").read_text()
+        assert "| Candidate | Runs | Pass rate | Flaky | goal_reached | turns |" in text
+        assert "**goal_reached**: % of runs with a goal whose simulated user reached it" in text
+        assert "  - ended: gave_up after 3 turn(s)\n  - last turns:\n    - **user** (turn 2): message 2\n" in text
+        assert "message 1" not in text
+        assert "    - **agent**: Anything else?" in text
+        assert "  - transcript: [transcripts/ada__gpt__default__r1.md](transcripts/ada__gpt__default__r1.md)" in text
+
+    def test_a_conversation_that_never_started_shows_no_last_turns(self, tmp_path):
+        run = conversation_run("ada")
+        run.trace = ExecutionTrace(error="Sandbox failed")
+
+        ReportMdWriter().write(conversation_suite_report(tmp_path, [run]), tmp_path)
+
+        text = (tmp_path / "report.md").read_text()
+        assert "  - ended: never started" in text
+        assert "last turns" not in text
+
     def test_explains_the_verdict_comparison_failures_and_flaky_cases(self, tmp_path):
         [path] = ReportMdWriter().write(suite_report(tmp_path, _flaky_and_failing_runs()), tmp_path)
 

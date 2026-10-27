@@ -3,8 +3,6 @@ import json
 from pathlib import Path
 from typing import Any
 
-from agent.evaluation.aggregation import FIRST_ATTEMPT_PASS_RATE, FLAKY_RATE, PASS_RATE
-
 from .run_directory import RESULTS_DIR
 from .suite_report import SuiteReport
 from .suite_verdict import SuiteVerdict
@@ -40,7 +38,7 @@ class RunHistory:
                     "candidate": c.candidate,
                     "prompt_hash": self._prompt_hash(report, c.variant),
                     "runs": len(c.runs),
-                    **{name: c.metrics[name].value for name in (PASS_RATE, FIRST_ATTEMPT_PASS_RATE, FLAKY_RATE)},
+                    **{name: c.metrics[name].value for name in report.rates},
                     "cost_mean_usd": c.cost_mean_usd,
                 }
                 history.write(json.dumps(line, default=str) + "\n")
