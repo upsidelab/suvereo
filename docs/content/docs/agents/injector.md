@@ -1,7 +1,3 @@
----
-sidebar_position: 3
----
-
 # Injector
 
 The injector is the container that gives an [agent](/docs/concepts#agent) and its [tools](/docs/concepts#tool) access to the resources they work with. The agent receives it when it is built, and tools receive it through their constructor.

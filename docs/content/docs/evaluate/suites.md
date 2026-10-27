@@ -1,7 +1,3 @@
----
-sidebar_position: 2
----
-
 # Suites and Cases
 
 A suite is a directory with a `suite.yaml` and its cases. `suite.yaml` holds what every case shares: the agent, the models to compare, the mocks and the metrics. Each case holds what is specific to one test: the documents the agent gets and the right result for them.

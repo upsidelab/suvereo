@@ -1,7 +1,3 @@
----
-sidebar_position: 1
----
-
 # Integrate LangSmith
 
 [LangSmith](https://www.langchain.com/langsmith) is a developer platform that helps teams manage LLM-powered application lifecycle. 

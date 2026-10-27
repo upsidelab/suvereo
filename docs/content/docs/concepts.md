@@ -1,7 +1,3 @@
----
-sidebar_position: 2
----
-
 # Concepts
 
 This page explains the concepts and terminology used across the AgentCore documentation and codebase.

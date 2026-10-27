@@ -1,7 +1,3 @@
----
-sidebar_position: 7
----
-
 # Agent Architecture
 
 This page describes the parts an [agent](/docs/concepts#agent) is made of and how they fit together. Each part has its own page.

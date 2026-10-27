@@ -1,7 +1,3 @@
----
-sidebar_position: 1
----
-
 # Manage Users
 
 Creating separate user accounts helps you manage access to data sets.

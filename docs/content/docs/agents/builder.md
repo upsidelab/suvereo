@@ -1,7 +1,3 @@
----
-sidebar_position: 5
----
-
 # Builder
 
 The builder creates a ready [agent](/docs/concepts#agent) from its [configuration](/docs/agents/agent-config): the repositories, registries, language models, injector, tools and callback handlers. It is created for a conversation, so it can read the conversation's data set and the agent's stored settings.

@@ -1,7 +1,3 @@
----
-sidebar_position: 4
----
-
 # Run an Agentic Execution via the API
 
 Agentic executions are autonomous agent jobs submitted programmatically and polled for results. Unlike conversations, there is no back-and-forth — you submit input, wait for the job to finish, and retrieve structured output.

@@ -1,7 +1,3 @@
----
-sidebar_position: 6
----
-
 # Prompts
 
 The system prompt defines an [agent's](/docs/concepts#agent) role and behavior: what it does, which [tools](/docs/concepts#tool) it uses and how it answers.
