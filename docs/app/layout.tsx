@@ -3,6 +3,7 @@ import { Head } from "nextra/components";
 import { getPageMap } from "nextra/page-map";
 import "nextra-theme-docs/style.css";
 import "./anchors.css";
+import "./diagrams.css";
 import Logo from "@/app/logo";
 import { GoogleTagManager } from "@next/third-parties/google"
 

@@ -38,9 +38,13 @@ Integrations serve two purposes:
 
 AgentCore includes a ready-made integration for MCP servers. An MCP server is an external server that exposes tools through the Model Context Protocol. Once it is connected to a data set by signing in with OAuth, its tools are available to the data set's agents.
 
+## Domain
+
+A domain is a field of business with its own data, systems and workflows, such as e-commerce or healthcare. AgentCore is not tied to a domain. A [vertical](#vertical) describes one: the kinds of records it works with, the external systems it relies on and how agents reach them. Agents are then set up for a job within that domain.
+
 ## Entity
 
-An entity is a kind of record in a domain, such as an article or a support ticket. AgentCore defines no entities of its own: they come from a [vertical](#vertical). AgentCore stores the entities, lists them in the UI and indexes their content, so agents can retrieve what is relevant to a question.
+An entity is a kind of record in a [domain](#domain), such as an article or a support ticket. AgentCore defines no entities of its own: they come from a [vertical](#vertical). AgentCore stores the entities, lists them in the UI and indexes their content, so agents can retrieve what is relevant to a question.
 
 ## Vertical
 

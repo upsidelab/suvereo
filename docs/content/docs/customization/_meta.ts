@@ -1,6 +1,7 @@
 const mapping = {
+  "domain-onboarding": "",
   "system-architecture": "",
-  "using-enthusiast-starter": "",
+  "using-the-agentcore-starter": "",
   "custom-integration": "",
   "custom-agent": "",
   "agentic-execution": "",
