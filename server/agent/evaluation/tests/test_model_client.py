@@ -6,11 +6,11 @@ from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
 from langchain_core.messages import AIMessage
 
 from agent.core.registries.language_models import LanguageModelRegistry
-from agent.evaluation.judge_client import EvalJudgeClient
+from agent.evaluation.model_client import EvalModelClient
 from agent.evaluation.pricing_table import PricingTable
 
 
-class TestEvalJudgeClient:
+class TestEvalModelClient:
     def test_answers_and_tallies_its_own_cost(self):
         reply = AIMessage(
             content='{"score": 1}',
@@ -24,14 +24,14 @@ class TestEvalJudgeClient:
         pricing = PricingTable({"judge-model": ModelPricing(input_per_million=2, output_per_million=8)})
 
         with patch.object(LanguageModelRegistry, "provider_class_by_name", return_value=provider):
-            judge = EvalJudgeClient(ModelTarget(provider="Anthropic", model="judge-model"), pricing)
+            judge = EvalModelClient(ModelTarget(provider="Anthropic", model="judge-model"), pricing)
             answer = judge.complete("grade this")
 
         provider.assert_called_once_with("judge-model")
         assert answer == '{"score": 1}'
         assert judge.cost().usd == 2.0
 
-    def test_a_metric_can_ask_another_model_priced_by_its_own_pricing(self):
+    def test_a_call_can_ask_another_model_priced_by_its_own_pricing(self):
         def reply(model):
             return AIMessage(
                 content=model,
@@ -50,7 +50,7 @@ class TestEvalJudgeClient:
         )
 
         with patch.object(LanguageModelRegistry, "provider_class_by_name", return_value=provider):
-            judge = EvalJudgeClient(ModelTarget(provider="OpenAI", model="judge-model"), pricing)
+            judge = EvalModelClient(ModelTarget(provider="OpenAI", model="judge-model"), pricing)
             strong = ModelTarget(
                 provider="OpenAI",
                 model="strong-model",
@@ -62,6 +62,6 @@ class TestEvalJudgeClient:
         assert provider.call_count == 2
         assert judge.cost().usd == 22.0
 
-    def test_without_any_judge_model_asking_fails(self):
-        with pytest.raises(ValueError, match="No judge model"):
-            EvalJudgeClient(None, PricingTable({})).complete("grade this")
+    def test_without_any_model_asking_fails(self):
+        with pytest.raises(ValueError, match="No model to ask"):
+            EvalModelClient(None, PricingTable({})).complete("grade this")

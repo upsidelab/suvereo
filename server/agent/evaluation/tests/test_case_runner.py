@@ -14,7 +14,7 @@ from model_bakery import baker
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
 from agent.evaluation.eval_user import EvalUser
 from agent.evaluation.integrations import EvalIntegrationPluginResolver
-from agent.evaluation.judge_client import EvalJudgeClient
+from agent.evaluation.model_client import EvalModelClient
 from agent.evaluation.pinned_llm import PinnedLLM
 from agent.evaluation.pricing_table import PricingTable, TraceCost
 from agent.evaluation.runner import CaseRunner, EvalExecutionConversation
@@ -134,7 +134,7 @@ class TestCaseRunner:
         judge = {"provider": "OpenAI", "model": "judge-x"}
         metrics = [{"type": "llm_judge", "params": {"criteria": [{"name": "c", "description": "d"}], "judge": judge}}]
 
-        with patch.object(EvalJudgeClient, "complete", return_value='{"score": 1}') as complete:
+        with patch.object(EvalModelClient, "complete", return_value='{"score": 1}') as complete:
             result = _runner(target, tmp_path, metrics=metrics).run(_case())
 
         assert result.metrics["llm_judge"].value == 1.0
@@ -162,8 +162,8 @@ class TestCaseRunner:
         judged = [{"type": "llm_judge", "params": {"criteria": [{"name": "c", "description": "d"}]}}]
 
         with (
-            patch.object(EvalJudgeClient, "cost", return_value=unpriced),
-            patch.object(EvalJudgeClient, "complete", return_value='{"score": 1}'),
+            patch.object(EvalModelClient, "cost", return_value=unpriced),
+            patch.object(EvalModelClient, "complete", return_value='{"score": 1}'),
         ):
             runner = _runner(target, tmp_path, judge={"provider": "OpenAI", "model": "judge-x"}, metrics=judged)
             result = runner.run(_case())

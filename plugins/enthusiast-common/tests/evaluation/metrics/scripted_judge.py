@@ -1,8 +1,8 @@
-from enthusiast_common.evaluation.metrics import BaseJudgeClient
+from enthusiast_common.evaluation.base_model_client import BaseModelClient
 from enthusiast_common.evaluation.suite import ModelTarget
 
 
-class ScriptedJudge(BaseJudgeClient):
+class ScriptedJudge(BaseModelClient):
     """Replies with prepared answers in turn, the last one repeating, and keeps the prompts and models it was sent."""
 
     def __init__(self, *replies: str):

@@ -1,8 +1,8 @@
 from pydantic import BaseModel, ConfigDict
 
+from ..base_model_client import BaseModelClient
 from ..suite import EvalCase, SuiteKind
 from ..trace import ExecutionTrace
-from .base_judge_client import BaseJudgeClient
 
 
 class MetricContext(BaseModel):
@@ -16,4 +16,4 @@ class MetricContext(BaseModel):
     kind: SuiteKind
     duration_s: float | None = None
     cost_usd: float | None = None
-    judge: BaseJudgeClient | None = None
+    judge: BaseModelClient | None = None

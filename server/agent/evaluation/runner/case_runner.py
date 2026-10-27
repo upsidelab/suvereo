@@ -12,7 +12,6 @@ from enthusiast_common.evaluation.trace import ExecutionTrace, TraceRecorder
 from agent.conversation.services.conversation_file_attach_service import ConversationFileAttachService
 from agent.core.agents.config_overrides import AgentConfigOverrides
 from agent.evaluation.integrations import EvalIntegrationPluginResolver, MockIntegrationFactory
-from agent.evaluation.judge_client import EvalJudgeClient
 from agent.evaluation.judge_models_used_by_metrics import judge_models_used_by_metrics
 from agent.evaluation.model_client import EvalModelClient
 from agent.evaluation.pinned_llm import PinnedLLM
@@ -79,7 +78,7 @@ class CaseRunner:
         duration_s = self._run_agent(case, model, variant, recorder, user_llm)
 
         cost = self.pricing.trace_cost(recorder.trace)
-        judge = EvalJudgeClient(suite.judge, self.pricing) if self._has_judge else None
+        judge = EvalModelClient(suite.judge, self.pricing) if self._has_judge else None
         metrics, thresholds = self._scorer.score(
             suite.metrics_for(case),
             MetricContext(

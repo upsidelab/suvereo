@@ -29,7 +29,7 @@ class EvalModelClient(BaseModelClient):
         """Ask the given model, or else the default one; raises ValueError when neither is set."""
         target = model or self.target
         if target is None:
-            raise ValueError("No model to ask: set it in the suite.")
+            raise ValueError("No model to ask: set 'judge' in the suite or in the metric's params.")
         return self._llm_for(target).invoke(prompt).text
 
     def cost(self) -> TraceCost:

@@ -9,7 +9,6 @@ from model_bakery import baker
 from agent.conversation.manager import ConversationManager
 from agent.evaluation.eval_user import EvalUser
 from agent.evaluation.integrations import EvalIntegrationPluginResolver
-from agent.evaluation.judge_client import EvalJudgeClient
 from agent.evaluation.model_client import EvalModelClient
 from agent.evaluation.pricing_table import PricingTable, TraceCost
 from agent.evaluation.runner import CaseRunner
@@ -202,14 +201,20 @@ class TestSimulatedUserConversation:
 
     def test_the_user_model_cost_is_its_own_figure_and_counts_toward_the_spend(self, chat, target, tmp_path):
         def cost(client):
-            usd = 0.02 if isinstance(client, EvalJudgeClient) else 0.05
+            usd = 0.02 if client.target.model == self.JUDGE["model"] else 0.05
             return TraceCost(usd=usd, priced_usd=usd)
 
         with (
             patch.object(EvalModelClient, "complete", autospec=True, side_effect=FakeModels()),
             patch.object(EvalModelClient, "cost", autospec=True, side_effect=cost),
         ):
-            result = _run(target, tmp_path, ConversationEvalCase(id="c", simulated_user=self.USER), judge=self.JUDGE)
+            result = _run(
+                target,
+                tmp_path,
+                ConversationEvalCase(id="c", simulated_user=self.USER),
+                judge=self.JUDGE,
+                user_model={"provider": "OpenAI", "model": "gpt-4.1-nano"},
+            )
 
         assert (result.metrics["user_cost_usd"].value, result.metrics["judge_cost_usd"].value) == (0.05, 0.02)
         assert result.priced_spend_usd == pytest.approx(0.07)
