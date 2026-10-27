@@ -167,13 +167,14 @@ class FakeModels:
 
 class TestSimulatedUserConversation:
     JUDGE = {"provider": "OpenAI", "model": "gpt-4o-mini"}
+    MODELS = {"judge": JUDGE, "user_model": {"provider": "OpenAI", "model": "gpt-4.1-nano"}}
     USER = {"goal": "Get Ada greeted", "facts": {"name": "Ada"}}
 
-    def test_an_llm_plays_the_user_and_the_judge_decides_the_goal(self, chat, target, tmp_path):
+    def test_the_user_model_plays_the_user_and_the_judge_decides_the_goal(self, chat, target, tmp_path):
         models = FakeModels()
 
         with patch.object(EvalModelClient, "complete", autospec=True, side_effect=models):
-            result = _run(target, tmp_path, ConversationEvalCase(id="c", simulated_user=self.USER), judge=self.JUDGE)
+            result = _run(target, tmp_path, ConversationEvalCase(id="c", simulated_user=self.USER), **self.MODELS)
 
         assert [t.user_message for t in result.trace.turns] == ["greet Ada"]
         assert result.trace.stop_reason == "done"
@@ -182,21 +183,6 @@ class TestSimulatedUserConversation:
         assert result.metrics["goal_reached"].value is True
         assert result.metrics["user_cost_usd"].value == 0.0
         assert result.passed
-
-    def test_a_user_model_set_in_the_suite_plays_the_user(self, chat, target, tmp_path):
-        user_model = {"provider": "OpenAI", "model": "gpt-4.1-nano"}
-
-        models = FakeModels()
-
-        with patch.object(EvalModelClient, "complete", autospec=True, side_effect=models):
-            _run(
-                target,
-                tmp_path,
-                ConversationEvalCase(id="c", simulated_user=self.USER),
-                judge=self.JUDGE,
-                user_model=user_model,
-            )
-
         assert models.models_asked == {"gpt-4.1-nano", "gpt-4o-mini"}
 
     def test_the_user_model_cost_is_its_own_figure_and_counts_toward_the_spend(self, chat, target, tmp_path):
@@ -212,8 +198,7 @@ class TestSimulatedUserConversation:
                 target,
                 tmp_path,
                 ConversationEvalCase(id="c", simulated_user=self.USER),
-                judge=self.JUDGE,
-                user_model={"provider": "OpenAI", "model": "gpt-4.1-nano"},
+                **self.MODELS,
             )
 
         assert (result.metrics["user_cost_usd"].value, result.metrics["judge_cost_usd"].value) == (0.05, 0.02)

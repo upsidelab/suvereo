@@ -17,6 +17,8 @@ pytestmark = pytest.mark.django_db
 
 GREETER = f"{GreeterMockIntegration.__module__}.GreeterMockIntegration"
 CHATTER = "agent.evaluation.tests.chatter"
+JUDGE = {"provider": "OpenAI", "model": "gpt-4o-mini"}
+USER_MODEL = {"provider": "OpenAI", "model": "gpt-4.1-nano"}
 
 
 @pytest.fixture(autouse=True)
@@ -83,8 +85,12 @@ class TestSuiteLoader:
         [
             ({"cases": [{"id": "chat"}]}, "Case 'chat' is an execution case"),
             (
+                {"judge": JUDGE, "cases": [{"id": "chat", "simulated_user": {"goal": "Say hi"}}]},
+                "a simulated user needs a model; set 'user_model'",
+            ),
+            (
                 {
-                    "user_model": {"provider": "OpenAI", "model": "gpt-4o-mini"},
+                    "user_model": USER_MODEL,
                     "cases": [{"id": "chat", "simulated_user": {"goal": "Say hi"}}],
                 },
                 "the judge decides whether the simulated user's goal was reached",
@@ -107,14 +113,22 @@ class TestSuiteLoader:
         with pytest.raises(EvalSuiteError, match=message):
             _load(tmp_path, kind="conversation", **{"cases": [{"id": "chat", "user_messages": ["Hi"]}], **changes})
 
-    def test_a_simulated_user_plays_with_the_judge_when_no_user_model_is_set(self, tmp_path):
-        judge = {"provider": "OpenAI", "model": "gpt-4o-mini"}
+    def test_a_simulated_user_plays_with_the_user_model_and_the_judge_decides_its_goal(self, tmp_path):
         user = {"goal": "Get a greeting", "facts": {"name": "Ada"}}
 
-        loaded = _load(tmp_path, kind="conversation", judge=judge, cases=[{"id": "u", "simulated_user": user}])
+        loaded = _load(
+            tmp_path,
+            kind="conversation",
+            judge=JUDGE,
+            user_model=USER_MODEL,
+            cases=[{"id": "u", "simulated_user": user}],
+        )
 
         assert loaded.cases[0].simulated_user.facts == {"name": "Ada"}
-        assert user_model_in_use(loaded) == judge_models_used_by_metrics(loaded)[0]
+        assert (user_model_in_use(loaded).model, judge_models_used_by_metrics(loaded)[0].model) == (
+            "gpt-4.1-nano",
+            "gpt-4o-mini",
+        )
 
     @pytest.mark.parametrize("name", ["turns", "goal_reached", "user_cost_usd"])
     def test_conversation_figures_are_reserved_only_in_conversation_suites(self, tmp_path, name):

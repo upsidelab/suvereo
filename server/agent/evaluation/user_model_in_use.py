@@ -16,8 +16,5 @@ def has_user_goals(loaded: LoadedSuite) -> bool:
 
 
 def user_model_in_use(loaded: LoadedSuite) -> ModelTarget | None:
-    """The model simulated users ask: the suite's user_model, else its judge; none when no case has a simulated
-    user."""
-    if not has_simulated_users(loaded):
-        return None
-    return loaded.suite.user_model or loaded.suite.judge
+    """The model simulated users ask, the suite's user_model; none when no case has a simulated user."""
+    return loaded.suite.user_model if has_simulated_users(loaded) else None

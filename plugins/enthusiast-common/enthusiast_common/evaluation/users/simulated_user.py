@@ -31,7 +31,7 @@ class SimulatedUser(BaseUserSimulator):
 
     def next_message(self, turns: list[Turn]) -> UserMessage:
         if self.llm is None:
-            raise ValueError("The simulated user needs a model; set 'user_model' or 'judge' in the suite.")
+            raise ValueError("The simulated user needs a model; set 'user_model' in the suite.")
         prompt = self._prompt(turns)
         reply = ""
         for _ in range(ATTEMPTS):

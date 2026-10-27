@@ -32,9 +32,7 @@ class EvalSuite(EvalModel):
     models: list[ModelTarget] = Field(default=[], description="Empty runs the DataSet's configured model.")
     variants: list[PromptVariant] = []
     judge: ModelTarget | None = None
-    user_model: ModelTarget | None = Field(
-        default=None, description="The model playing simulated users; defaults to the judge."
-    )
+    user_model: ModelTarget | None = Field(default=None, description="The model playing simulated users.")
     repeats: int = Field(default=1, ge=1)
     budget_usd: float | None = Field(default=None, gt=0)
     min_pass_rate: float | None = Field(

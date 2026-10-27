@@ -204,9 +204,8 @@ class SuiteLoader:
 
     @staticmethod
     def _check_conversation_cases(loaded: LoadedSuite, agent_type: str) -> None:
-        """Each case is a conversation case, with fixed user messages or a simulated user: a custom one needs a
-        loadable class, and a goal needs the judge, which decides whether it was reached and plays the user when no
-        user_model is set."""
+        """Each case is a conversation case, with fixed user messages or a simulated user: an LLM one needs
+        user_model, a custom one a loadable class, and a goal needs the judge, which decides whether it was reached."""
         suite = loaded.suite
         for case in loaded.cases:
             if not isinstance(case, ConversationEvalCase):
@@ -218,6 +217,10 @@ class SuiteLoader:
             user = case.simulated_user
             if user is None:
                 continue
+            if user.class_path is None and suite.user_model is None:
+                raise EvalSuiteError(
+                    f"Case '{case.id}': a simulated user needs a model; set 'user_model' in the suite."
+                )
             if user.goal and suite.judge is None:
                 raise EvalSuiteError(
                     f"Case '{case.id}': the judge decides whether the simulated user's goal was reached; set 'judge' "
