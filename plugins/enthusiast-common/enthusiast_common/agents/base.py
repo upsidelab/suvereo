@@ -36,12 +36,12 @@ class ExtraArgsClassBase(metaclass=AgentExtraArgsClassBaseMeta):
 
 
 class BaseAgent(ABC, ExtraArgsClassBase):
-    """Base class of every agent type.
+    """Base class of every agent.
 
     Subclasses implement ``get_answer`` and declare these class variables:
 
     - ``NAME``: the name shown in the UI.
-    - ``AGENT_KEY``: unique identifier of the agent type. Agentic execution definitions refer to it.
+    - ``AGENT_KEY``: unique identifier of the agent class. Agentic execution definitions refer to it.
     - ``AGENT_ARGS``: a ``RequiredFieldsModel`` of per-agent settings, meant for what changes how the agent
       behaves. Its fields become a form section in the UI and the values are stored per agent.
     - ``PROMPT_INPUT``: a ``RequiredFieldsModel`` of per-agent settings, used as variables of the system prompt:

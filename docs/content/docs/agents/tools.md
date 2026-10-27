@@ -4,7 +4,7 @@ sidebar_position: 4
 
 # Tools
 
-Tools in Enthusiast are modular components that extend agent capabilities by providing specific functionalities. They follow a standardized architecture that ensures consistency, validation, and easy integration with the LangChain ecosystem.
+A tool is a capability an [agent](/docs/concepts#agent) can call while it works. Tools follow a common structure that provides validation and integration with LangChain.
 
 ## Overview
 
@@ -12,9 +12,9 @@ Tools serve as the building blocks for agent functionality, allowing agents to:
 - Search and retrieve information
 - Process data and generate content
 - Interact with external systems
-- Perform specific business logic operations
+- Perform specific operations
 
-Each tool is a self-contained unit with defined inputs, outputs, and execution logic that can be easily integrated into agent workflows.
+Each tool defines its inputs, its output and its logic. An agent lists its tools in `TOOLS`, see [Agent Classes](/docs/agents/agent-classes). [Integrations](/docs/concepts#integration) such as MCP servers can also supply tools, see [Tools from integrations](#tools-from-integrations).
 
 ## Architecture
 
@@ -41,7 +41,11 @@ Extends `BaseTool` with language model capabilities and injector access:
 
 - **Language Model Integration**: Access to LLM instances for AI-powered operations
 - **Injector Pattern**: Dependency injection for data access and external services
-- **Dataset Context**: Awareness of the current dataset being processed
+- **Data set context**: Awareness of the current [data set](/docs/concepts#data-set)
+
+#### `BaseFileTool`
+
+Works with files attached to a conversation. Besides the language model and injector, it receives the conversation id and the language model registry. `BaseToolCallingAgent` adds two file tools, `FileListTool` and `FileRetrievalTool`, to every agent that sets `FILE_UPLOAD = True`.
 
 #### `BaseAgentTool`
 
@@ -49,11 +53,11 @@ Enables tools to call and interact with other agents, creating a hierarchical ag
 
 - **Agent Orchestration**: Call other agents to perform specific tasks
 - **Multi-Agent Workflows**: Coordinate complex operations across multiple agents
-- **Agent Delegation**: Delegate specialized tasks to appropriate agent types
+- **Agent Delegation**: Delegate specialized tasks to appropriate agents
 
 ## Required Class Variables
 
-All tools must define these class variables to ensure proper validation and functionality:
+Tools define these class variables to ensure proper validation and functionality. `CONFIGURATION_ARGS` is optional and defaults to `None`:
 
 ### `NAME` (str)
 A unique identifier for the tool. Used by agents to reference and call the tool.
@@ -96,6 +100,8 @@ RETURN_DIRECT = False
 ### `CONFIGURATION_ARGS` (RequiredFieldsModel or None)
 Optional configuration parameters that can be set at runtime. If not needed, set to `None`.
 
+The fields are set per agent when the agent is created or updated through the API, and the UI shows them as a form and handles them. They are stored with the agent and applied to the tool when the agent is built.
+
 **Example:**
 ```python
 CONFIGURATION_ARGS = None
@@ -136,12 +142,6 @@ class ExampleTool(BaseLLMTool):
     ARGS_SCHEMA = ExampleToolInput
     RETURN_DIRECT = False
     CONFIGURATION_ARGS = None
-
-    def __init__(self, data_set_id: int, llm: BaseLanguageModel, injector: BaseInjector):
-        super().__init__(data_set_id=data_set_id, llm=llm, injector=injector)
-        self.data_set_id = data_set_id
-        self.llm = llm
-        self.injector = injector
 
     def run(self, input_field: str):
         # Tool implementation logic here
@@ -197,3 +197,7 @@ Tools automatically integrate with the LangChain ecosystem through the `as_tool(
 - **Used by agents** for task execution
 - **Chained together** in complex workflows
 - **Monitored and logged** through LangChain's observability features
+
+## Tools from integrations
+
+Integrations that provide tools, such as MCP server integrations, supply tools when the agent is built for a conversation. They are attached next to the agent's own tools. If a name is already taken by one of the agent's tools, or by an integration that was resolved earlier, the later tool is dropped and a warning is logged. This means a connected server cannot replace a tool the agent defines.

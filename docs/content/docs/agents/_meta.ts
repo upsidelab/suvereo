@@ -1,6 +1,6 @@
 const mapping = {
   "agent-architecture": "",
-  "agent-types": "",
+  "agent-classes": "",
   "agent-config": "",
   "injector": "",
   "memory": "",

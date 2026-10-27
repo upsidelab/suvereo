@@ -4,50 +4,36 @@ sidebar_position: 3
 
 # Memory
 
-Enthusiast manages conversation memory through two complementary mechanisms: **persistent chat history** and an optional **memory compactor**. Together they ensure agents have accurate, token-efficient access to conversation context.
+An [agent](/docs/concepts#agent) keeps the context of a [conversation](/docs/concepts#conversation) through two mechanisms: the **persistent chat history**, which is on by default, and the **memory compactor**, which is optional.
 
-## Overview
+## Context window
 
-Memory in Enthusiast serves two main purposes:
-1. **Conversation Persistence**: Storing and retrieving chat history from the database via `PersistentChatHistory`
-2. **Context Management**: Assembling the right messages for each LLM call via `ContextWindowBuilder`
+On every turn, the agent sends the language model these messages, in this order:
 
-On every agent invocation the context window is built as follows:
-
-```
-[SystemMessage: summary of earlier conversation]   ← only when compactor has a summary
-[trim_messages: most recent 3000 tokens of history]
-[new HumanMessage]
-```
+1. **The system prompt** of the agent, see [Prompts](/docs/agents/prompts). It is passed separately from the chat history.
+2. (optional) **A summary of the earlier conversation**, sent as a second system message. It is included only when the [memory compactor](#memory-compactor) is enabled and has produced a summary.
+3. **The most recent messages** of the chat history, trimmed to a budget of 3000 tokens.
+4. **The new message** from the person.
 
 ## Chat History
 
-**Class**: `PersistentChatHistory`  
-**Base**: `BaseChatMessageHistory`
+`PersistentChatHistory`, a `BaseChatMessageHistory`, stores every message of the conversation in the database. It is available to agents and tools as `chat_history` on the [injector](/docs/agents/injector).
 
-`PersistentChatHistory` stores all conversation messages in the database and is the single source of truth for chat history. It is injected into every agent via the `chat_history` property on `BaseInjector`.
+- It stores all message types: human, AI, tool calls, tool results and intermediate steps.
+- It interleaves parallel tool calls with their results, so the conversation is reconstructed correctly.
+- `messages_after(message_id)` returns the messages added after a given one, which the compactor uses to summarize incrementally.
 
-**Key Features**:
-- Persists all message types: human, AI, tool calls, tool results, intermediate steps
-- Interleaves parallel tool calls with their results for correct reconstruction
-- Provides `messages_after(message_id)` for incremental compaction
-- Accessible via `self._injector.chat_history` inside an agent
+## Context Window Builder
 
-## Context Window
+`ContextWindowBuilder` assembles the messages for each turn. It is part of the `enthusiast-agent-tool-calling` plugin, and `BaseToolCallingAgent` uses it.
 
-**Class**: `ContextWindowBuilder`
+- It keeps the most recent messages that fit the token budget, starting on a human message.
+- It counts tokens approximately.
+- When the compactor has a summary, it adds it at the start as a `SystemMessage`.
 
-`ContextWindowBuilder` assembles the list of messages passed to the LLM on each agent call. It trims history to fit the token budget and optionally prepends a summary from the memory compactor.
+The budget is `MAX_HISTORY_TOKENS`, set to 3000 in `base_tool_calling_agent.py`.
 
-**Key Features**:
-- Trims history to the most recent 3000 tokens using `strategy="last"`
-- Prepends a `SystemMessage` with the compacted summary when one is available
-- Token counting uses an approximate counter
-
-**Configuration**:
 ```python
-MAX_HISTORY_TOKENS = 3000  # configurable in base_tool_calling_agent.py
-
 context_messages = ContextWindowBuilder(
     chat_history=self._injector.chat_history,
     memory_compactor=self._injector.memory_compactor,
@@ -56,93 +42,40 @@ context_messages = ContextWindowBuilder(
 
 ## Memory Compactor
 
-The memory compactor is an optional mechanism that generates an LLM-based summary of the conversation and persists it to the database. It ensures that context beyond the token-trimming window is not silently lost.
+The memory compactor keeps a summary of the conversation, written by the language model and stored with the conversation. It is meant to be used together with the trimming above: the trimming keeps recent messages, and the summary carries what was said before them.
 
 ### How it works
 
-Every **10 human messages**, the compactor invokes the LLM to produce a summary of the conversation so far. The summary is stored on the `Conversation` record and injected as a `SystemMessage` at the start of each subsequent agent call:
+After each turn, the agent calls `compact_if_needed()`. Once 10 human messages have been added since the last summary, the compactor asks the language model for a new one. The summary is stored on the `Conversation` record and added to the context of each following turn.
 
-```
-[SystemMessage: summary of earlier conversation]
-[trim_messages: most recent 3000 tokens]
-[new HumanMessage]
-```
-
-Summarisation is **incremental** — subsequent compactions send only the new messages alongside the existing summary, so the cost of each compaction stays constant regardless of conversation length.
+Summaries are incremental. A new one is built from the previous summary and the messages added since, so the cost of a compaction does not grow with the length of the conversation.
 
 ### Enabling the compactor
 
-The compactor is opt-in per agent type via `memory_compactor_enabled` in `AgentConfig`. Set it to `True` in the `AgentConfigWithDefaults` returned from your agent's `get_config()`:
+The compactor is off by default. An agent turns it on with `memory_compactor_enabled` in the configuration returned by its config provider:
 
 ```python
-# your_agent/config.py
-
-def get_config() -> AgentConfigWithDefaults:
+def get_config(self, config_type: ConfigType = ConfigType.CONVERSATION) -> AgentConfigWithDefaults:
     return AgentConfigWithDefaults(
-        agent_class=MyAgent,
-        system_prompt="...",
-        tools=[...],
+        agent_class=ArticlesAgent,
+        system_prompt=ARTICLES_SYSTEM_PROMPT,
+        tools=ArticlesAgent.TOOLS,
         memory_compactor_enabled=True,
     )
 ```
 
-No agent gets a compactor unless it explicitly opts in.
+The compactor class comes from `memory.compactor_class` in the configuration, which the default configuration (the AgentCore server's `DefaultAgentConfig`) sets to `LLMMemoryCompactor`. If `memory_compactor_enabled` is true and no compactor class is set, building the agent fails.
 
 ## Customization
 
-### Custom Injector
+### Custom memory compactor
 
-`BaseInjector` exposes `chat_history` (required) and `memory_compactor` (optional). Custom injectors must implement `chat_history`:
-
-```python
-from enthusiast_common.injectors import BaseInjector
-from enthusiast_common.memory import BaseMemoryCompactor
-from langchain_core.chat_history import BaseChatMessageHistory
-from typing import Optional
-
-class Injector(BaseInjector):
-    def __init__(
-        self,
-        document_retriever: BaseRetriever,
-        product_retriever: BaseRetriever,
-        repositories: RepositoriesInstances,
-        chat_history: BaseChatMessageHistory,
-        memory_compactor: Optional[BaseMemoryCompactor] = None,
-    ):
-        super().__init__(repositories)
-        self._document_retriever = document_retriever
-        self._product_retriever = product_retriever
-        self._chat_history = chat_history
-        self._memory_compactor = memory_compactor
-
-    @property
-    def document_retriever(self) -> BaseRetriever:
-        return self._document_retriever
-
-    @property
-    def product_retriever(self) -> BaseRetriever:
-        return self._product_retriever
-
-    @property
-    def chat_history(self) -> BaseChatMessageHistory:
-        return self._chat_history
-
-    @property
-    def memory_compactor(self) -> Optional[BaseMemoryCompactor]:
-        return self._memory_compactor
-```
-
-### Custom Memory Compactor
-
-To implement a custom compactor, subclass `BaseMemoryCompactor` from `enthusiast-common`:
+To change how summaries are made, subclass `BaseMemoryCompactor` from `enthusiast-common`:
 
 ```python
-from enthusiast_common.memory import BaseMemoryCompactor
-from typing import Optional
-
 class MyMemoryCompactor(BaseMemoryCompactor):
     def get_summary(self) -> Optional[str]:
-        """Return the persisted summary, or None if not yet generated."""
+        """Return the persisted summary, or None if there is none yet."""
         ...
 
     def compact_if_needed(self) -> None:
@@ -150,46 +83,23 @@ class MyMemoryCompactor(BaseMemoryCompactor):
         ...
 ```
 
-Build it in your `AgentBuilder` and pass it to the injector:
+Then point the configuration at it:
 
 ```python
-class MyAgentBuilder(BaseAgentBuilder):
-    def _build_injector(self) -> BaseInjector:
-        chat_history = self._build_chat_history()
-        memory_compactor = MyMemoryCompactor(...) if self._config.memory_compactor_enabled else None
-        return self._config.injector(
-            product_retriever=self._build_product_retriever(),
-            document_retriever=self._build_document_retriever(),
-            repositories=self._repositories,
-            chat_history=chat_history,
-            memory_compactor=memory_compactor,
-        )
+AgentConfigWithDefaults(
+    ...
+    memory=MemoryConfig(
+        chat_history_class=PersistentChatHistory,
+        compactor_class=MyMemoryCompactor,
+    ),
+    memory_compactor_enabled=True,
+)
 ```
 
-## Usage Examples
+Alternatively, the class can be set as the default compactor, by using it as `compactor_class` in the `memory` of the AgentCore server's `DefaultAgentConfig` (`server/agent/core/agents/default_config.py`). It is then used by every agent whose configuration leaves `memory` empty.
 
-### Accessing chat history in an agent
+The builder creates the compactor as `compactor_class(conversation_repo, conversation_id, llm, chat_history)`.
 
-`chat_history` is accessible via `self._injector` inside any agent class:
+### Custom injector
 
-```python
-from enthusiast_common.agents import BaseAgent
-from langchain_core.messages import HumanMessage
-
-class MyAgent(BaseAgent):
-    def get_answer(self, input_text: str) -> str:
-        history = self._injector.chat_history
-        context = ContextWindowBuilder(
-            chat_history=history,
-            memory_compactor=self._injector.memory_compactor,
-        ).build(max_tokens=3000)
-
-        input_messages = context + [HumanMessage(content=input_text)]
-        result = self._agent.invoke({"messages": input_messages})
-        history.add_messages(result["messages"][len(context):])
-
-        if self._injector.memory_compactor:
-            self._injector.memory_compactor.compact_if_needed()
-
-        return result["output"]
-```
+The injector exposes `chat_history` and `memory_compactor`. The default `Injector` already carries both, so a [vertical's](/docs/concepts#vertical) injector that extends it can pass them along, see [Injector](/docs/agents/injector).
