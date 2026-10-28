@@ -1,5 +1,5 @@
 [project]
-name = "enthusiast"
+name = "suvereo"
 
 requires-python = ">=3.10, <4.0"
 dependencies = [

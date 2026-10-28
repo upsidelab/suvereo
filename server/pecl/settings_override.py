@@ -1,10 +1,10 @@
 # Plugin entry point.
 #
-# A vertical installs itself on top of agentcore by editing (or shipping) this file.
+# A vertical installs itself on top of Suvereo by editing (or shipping) this file.
 # pecl/settings.py imports it (`from pecl.settings_override import *`) and merges
 # INSTALLED_VERTICALS into INSTALLED_APPS.
 #
-# Out of the box (no vertical) agentcore runs standalone, so every list here is empty.
+# Out of the box (no vertical) Suvereo runs standalone, so every list here is empty.
 #
 # Example — an ecommerce vertical would set:
 #

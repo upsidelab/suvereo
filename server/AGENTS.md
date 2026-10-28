@@ -1,6 +1,6 @@
 # Server
 
-The backend of Enthusiast: an API that serves agent configuration and conversations. It manages data sets, agents, integrations, users and permissions, runs agents (conversations stream over WebSocket) and handles background work such as indexing and file processing.
+The backend of Suvereo: an API that serves agent configuration and conversations. It manages data sets, agents, integrations, users and permissions, runs agents (conversations stream over WebSocket) and handles background work such as indexing and file processing.
 
 Django 5 + DRF + Celery + Channels. Run commands from `server/`.
 
@@ -36,7 +36,7 @@ Apps expose their API under `/api/` and are mounted at the root in `pecl/urls.py
 
 ## Settings and plugins
 
-`pecl/settings.py` holds defaults; `pecl/settings_override.py` holds the configuration of a concrete Enthusiast instance. It is valid with no vertical configured. There you choose the LLM and embedding providers, agents and agentic executions, and, if used, verticals with their entities and the agents, integrations and integration managers built on top of them. Dotted paths in these settings are loaded through registries: `INSTALLED_VERTICALS` (merged into `INSTALLED_APPS`), `AVAILABLE_AGENTS`, `AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS`, `CATALOG_LANGUAGE_MODEL_PROVIDERS`, `CATALOG_EMBEDDING_PROVIDERS`, `CATALOG_INTEGRATION_PLUGINS`, `CATALOG_INTEGRATION_MANAGERS`, `CATALOG_ENTITY_PLUGINS`, `FILE_PARSER_CLASSES`.
+`pecl/settings.py` holds defaults; `pecl/settings_override.py` holds the configuration of a concrete Suvereo instance. It is valid with no vertical configured. There you choose the LLM and embedding providers, agents and agentic executions, and, if used, verticals with their entities and the agents, integrations and integration managers built on top of them. Dotted paths in these settings are loaded through registries: `INSTALLED_VERTICALS` (merged into `INSTALLED_APPS`), `AVAILABLE_AGENTS`, `AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS`, `CATALOG_LANGUAGE_MODEL_PROVIDERS`, `CATALOG_EMBEDDING_PROVIDERS`, `CATALOG_INTEGRATION_PLUGINS`, `CATALOG_INTEGRATION_MANAGERS`, `CATALOG_ENTITY_PLUGINS`, `FILE_PARSER_CLASSES`.
 
 ## Code conventions
 
