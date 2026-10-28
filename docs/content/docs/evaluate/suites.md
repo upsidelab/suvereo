@@ -64,7 +64,7 @@ Which agent to test. Set one of:
 | `{type: <agent key>, config: {...}}` | The same, with this agent config. |
 | `{id: <agent id>}` | An agent you already configured in the UI, with its DataSet and catalog as they are. The suite's mocks replace its integrations; one the suite leaves unmocked runs for real only with `--allow-real-integrations`. |
 
-The agent type must be in `AVAILABLE_AGENTS` and its execution in `AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS`. `execution_key` picks the execution when the agent type has more than one.
+The agent type must be in `AVAILABLE_AGENTS` and its execution in `AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS`. `execution_key` picks the execution when the agent type has more than one. An agent type with no execution runs as a conversation suite, and `kind: conversation` runs any agent through chat; see [Conversations](./conversations).
 
 ### `models`
 
@@ -94,14 +94,18 @@ A **candidate** is one model and one variant, shown as `gpt-4o-mini/v2`. `--prom
 
 ### `judge`
 
-The model `llm_judge` and `llm_classify` ask, `{provider, model}` like a model. Pick one other than the models under test, as a model favours its own answers. A metric can name its own with `params.judge`. The judge's cost is reported as `judge_cost_usd`, apart from the agent's.
+The model `llm_judge` and `llm_classify` ask, and in a conversation suite the one deciding `goal_reached`, `{provider, model}` like a model. Pick one other than the models under test, as a model favours its own answers. A metric can name its own with `params.judge`. The judge's cost is reported as `judge_cost_usd`, apart from the agent's.
+
+### `user_model`
+
+The model playing simulated users in a conversation suite, `{provider, model}` like a model; see [Conversations](./conversations). Its cost is reported as `user_cost_usd`.
 
 ### Run size and limits
 
 | Field | Meaning | Default |
 |---|---|---|
 | `repeats` | Runs per case, model and variant. Above 1, cases whose repeats disagree show as flaky. | 1 |
-| `budget_usd` | The run stops once this much is spent, agent and judge together, and is marked partial (exit code 3). `--budget` overrides it. | no limit |
+| `budget_usd` | The run stops once this much is spent, agent, judge and simulated users together, and is marked partial (exit code 3). `--budget` overrides it. | no limit |
 | `min_pass_rate` | The share of runs each candidate must pass, 0–1. With it, `report.md` opens with a verdict and a candidate below it makes the run exit 1. Without it the run only reports. | none |
 
 A run passes when it meets every required pass threshold of its metrics, see [Metrics](./metrics).
@@ -153,6 +157,7 @@ expected:                              # the right result, read by the metrics
 | `description`, `tags` | Shown with the case's failed runs; tags also select cases with `--tag`. |
 | `files` | Attached to the conversation, relative to the case file: PDFs and images (`.png`, `.jpg`). |
 | `input` | The execution's other input fields, if the agent takes any, checked against its input type. |
+| `user_messages`, `simulated_user` | In a conversation suite, the user's side of the dialogue in place of `input`; see [Conversations](./conversations). |
 | `expected` | What the metrics compare the run with, see below. |
 | `integrations` | Changes to the suite's mocks for this case only. |
 | `metrics` | Metrics added for this case, or replacing the suite's metric of the same `name`. |

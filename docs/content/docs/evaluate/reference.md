@@ -47,11 +47,13 @@ Only `agent`, `metrics` and `cases` are required. [Suites and Cases](./suites) w
 |---|---|
 | `name`, `description` | The name defaults to the suite's directory name. |
 | `agent` | `{type: <agent key>, config: {...}}` runs in a throwaway sandbox DataSet; `{id: N}` runs an existing agent. |
+| `kind` | `execution` or `conversation`; defaults to `execution` when the agent type has an agentic execution. See [Conversations](./conversations). |
 | `execution_key` | The agentic execution to run; needed only when the agent type has several. |
 | `integrations` | The mocks, see [Mocks](./mocks). |
 | `models` | `{provider, model, label, pricing}` each. Left empty, the DataSet's configured model runs. |
 | `variants` | `{name, system_prompt_file}` and/or `{name, agent_config}`, each compared against `default`, the agent's own prompt. `agent_config` is deep-merged over the agent's config; lists are replaced whole. |
-| `judge` | The model `llm_judge` and `llm_classify` ask. |
+| `judge` | The model `llm_judge` and `llm_classify` ask; it also decides `goal_reached`. |
+| `user_model` | The model playing simulated users in a conversation suite. |
 | `repeats` | Runs per case, model and variant (default 1). |
 | `budget_usd` | Spending limit for a run. |
 | `min_pass_rate` | Minimum pass rate per candidate, e.g. `0.8`. With it, `report.md` opens with a verdict and a candidate below it exits `1`; without it the run reports its results and gives no verdict. |
@@ -69,6 +71,8 @@ A **candidate** is one model and variant, shown as `<model label>/<variant>`. A 
 | `description`, `tags` | Shown with the case's failed runs in `report.md`; tags also select cases with `--tag`. |
 | `files` | Attached to the conversation, relative to the case file: PDFs and images (`.png`, `.jpg`). |
 | `input` | The execution's input fields. |
+| `user_messages` | In a conversation, the user's messages, sent in order. |
+| `simulated_user` | In a conversation, an LLM user: `goal`, `persona`, `facts`, `max_turns`, or `class` and `params` for your own simulator. |
 | `expected` | What metrics compare against, see below. |
 | `integrations` | Overrides of the suite's mocks: `config` is deep-merged, and a method's behaviour replaces the suite's. |
 | `metrics` | Added to the suite's, or replacing one of the same `name`. |
@@ -97,6 +101,8 @@ Every metric config takes `type`, `name` (defaults to the type; required to use 
 | `cost_usd` | number | The agent's LLM cost in USD; the judge's is `judge_cost_usd` |
 | `input_tokens`, `output_tokens` | number | Tokens over every LLM call |
 | `llm_calls`, `tool_calls` | number | LLM calls and tool calls the run made |
+
+A conversation suite measures `conversation_completed`, `conversation_end`, `turns`, `goal_reached` and `user_cost_usd` in place of the first four; see [Conversations](./conversations#what-a-run-measures).
 
 **Set in the suite** with `type`:
 
