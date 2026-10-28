@@ -1,9 +1,9 @@
 from importlib import import_module
 from typing import List, Type
 
-from enthusiast_common.registry import BaseEmbeddingProviderRegistry
-from enthusiast_common.registry.embeddings import EmbeddingProvider
-from enthusiast_common.repositories import BaseDataSetRepository
+from suvereo_common.registry import BaseEmbeddingProviderRegistry
+from suvereo_common.registry.embeddings import EmbeddingProvider
+from suvereo_common.repositories import BaseDataSetRepository
 from utils.base_registry import BaseRegistry
 
 from agent.core.repositories import DjangoDataSetRepository

@@ -1,7 +1,7 @@
-from enthusiast_common.evaluation.loaded_suite import LoadedSuite
-from enthusiast_common.evaluation.metrics import MetricRegistry
-from enthusiast_common.evaluation.metrics.auto import AUTO_METRICS, Attempts
-from enthusiast_common.evaluation.suite import Aggregate, SuiteKind
+from suvereo_common.evaluation.loaded_suite import LoadedSuite
+from suvereo_common.evaluation.metrics import MetricRegistry
+from suvereo_common.evaluation.metrics.auto import AUTO_METRICS, Attempts
+from suvereo_common.evaluation.suite import Aggregate, SuiteKind
 
 from agent.evaluation.resolved_kind import resolved_kind
 from agent.evaluation.runner import RunResult

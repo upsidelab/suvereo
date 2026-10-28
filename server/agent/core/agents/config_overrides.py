@@ -1,10 +1,10 @@
 from typing import Any
 
-from enthusiast_common.config import AgentCallbackHandlerConfig, AgentConfig, CallbackHandlerConfig, ToolConfig
-from enthusiast_common.config.base import ArbitraryTypeBaseModel
-from enthusiast_common.integrations import BaseIntegrationPluginResolver
-from enthusiast_common.llm import BaseLLM
-from enthusiast_common.utils import deep_merge
+from suvereo_common.config import AgentCallbackHandlerConfig, AgentConfig, CallbackHandlerConfig, ToolConfig
+from suvereo_common.config.base import ArbitraryTypeBaseModel
+from suvereo_common.integrations import BaseIntegrationPluginResolver
+from suvereo_common.llm import BaseLLM
+from suvereo_common.utils import deep_merge
 
 
 class AgentConfigOverrides(ArbitraryTypeBaseModel):

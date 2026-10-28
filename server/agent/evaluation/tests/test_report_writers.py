@@ -3,8 +3,8 @@ import json
 from datetime import datetime
 
 import pytest
-from enthusiast_common.evaluation.metrics import MetricResult
-from enthusiast_common.evaluation.suite import ConversationEvalCase
+from suvereo_common.evaluation.metrics import MetricResult
+from suvereo_common.evaluation.suite import ConversationEvalCase
 
 from agent.evaluation.reports import (
     CasesCsvWriter,

@@ -1,9 +1,9 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from enthusiast_common.agentic_execution import BaseAgenticExecutionDefinition, ExecutionInputType
-from enthusiast_common.config import LLMToolConfig
-from enthusiast_common.tools.base import BaseLLMTool
+from suvereo_common.agentic_execution import BaseAgenticExecutionDefinition, ExecutionInputType
+from suvereo_common.config import LLMToolConfig
+from suvereo_common.tools.base import BaseLLMTool
 from pydantic import BaseModel, ValidationError
 
 from agent.agentic_execution.conversation import ExecutionConversation

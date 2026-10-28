@@ -1,4 +1,4 @@
-from enthusiast_common.tools import BaseLLMTool
+from suvereo_common.tools import BaseLLMTool
 from langchain_core.prompts import PromptTemplate
 from pydantic import BaseModel, Field
 

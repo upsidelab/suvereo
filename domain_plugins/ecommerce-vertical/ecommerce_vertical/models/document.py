@@ -1,5 +1,5 @@
 from django.db import models
-from enthusiast_common.entities import DomainEntity, EntityField
+from suvereo_common.entities import DomainEntity, EntityField
 
 
 class Document(DomainEntity, models.Model):

@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from enthusiast_common.integrations import BaseIntegration, BaseSourceIntegrationManager
+from suvereo_common.integrations import BaseIntegration, BaseSourceIntegrationManager
 from model_bakery import baker
 
 from catalog.integrations.registry import IntegrationManagerRegistry

@@ -1,6 +1,6 @@
 import json
 
-from enthusiast_common.tools import BaseLLMTool
+from suvereo_common.tools import BaseLLMTool
 from enthusiast_ecommerce_common.errors import RetrieverError
 from pydantic import BaseModel, Field
 

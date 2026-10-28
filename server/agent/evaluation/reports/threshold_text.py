@@ -1,4 +1,4 @@
-from enthusiast_common.evaluation.suite import PassThreshold
+from suvereo_common.evaluation.suite import PassThreshold
 
 from .csv_table import CsvTable
 from .markdown_text import MarkdownText

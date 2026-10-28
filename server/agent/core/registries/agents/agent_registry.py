@@ -2,9 +2,9 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Type
 
 from django.conf import settings
-from enthusiast_common.agentic_execution.memory import ToolScratchpad
-from enthusiast_common.agents import BaseAgent
-from enthusiast_common.builder import AgentBuilder
+from suvereo_common.agentic_execution.memory import ToolScratchpad
+from suvereo_common.agents import BaseAgent
+from suvereo_common.builder import AgentBuilder
 from utils.base_registry import BaseRegistry
 
 from agent.core.agents.config_overrides import AgentConfigOverrides

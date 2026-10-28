@@ -1,4 +1,4 @@
-from enthusiast_common.integrations import BaseIntegrationPluginResolver
+from suvereo_common.integrations import BaseIntegrationPluginResolver
 
 from account.models import User
 from agent.models import Agent

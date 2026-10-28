@@ -262,11 +262,11 @@ CELERY_BEAT_SCHEDULE = {
 }
 
 CATALOG_LANGUAGE_MODEL_PROVIDERS = [
-    "enthusiast_model_openai.OpenAILanguageModelProvider",
+    "suvereo_model_openai.OpenAILanguageModelProvider",
 ]
 
 CATALOG_EMBEDDING_PROVIDERS = [
-    "enthusiast_model_openai.OpenAIEmbeddingProvider",
+    "suvereo_model_openai.OpenAIEmbeddingProvider",
 ]
 
 # Configuration of installed plugins

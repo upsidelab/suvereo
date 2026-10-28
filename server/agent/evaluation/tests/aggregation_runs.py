@@ -1,5 +1,5 @@
-from enthusiast_common.evaluation.metrics import MetricResult
-from enthusiast_common.evaluation.trace import ExecutionTrace
+from suvereo_common.evaluation.metrics import MetricResult
+from suvereo_common.evaluation.trace import ExecutionTrace
 
 from agent.evaluation.runner import RunResult
 

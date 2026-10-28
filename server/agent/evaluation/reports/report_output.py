@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from enthusiast_common.evaluation.suite import ReportName
+from suvereo_common.evaluation.suite import ReportName
 
 from .base_report_writer import BaseReportWriter
 from .cases_csv_writer import CasesCsvWriter

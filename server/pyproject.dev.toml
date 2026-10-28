@@ -12,8 +12,8 @@ dependencies = [
     "django-environ (==0.12.0)",
     "djangorestframework (==3.16.0)",
     "drf-yasg (==1.21.10)",
-    "enthusiast-common (==1.7.0)",
-    "enthusiast-model-openai (==1.5.0)",
+    "suvereo-common (==1.7.0)",
+    "suvereo-model-openai (==1.5.0)",
     "langchain (>=1.2.0,<2.0.0)",
     "langchain-text-splitters (>=0.3.0,<1.0.0)",
     "pgvector (==0.4.1)",
@@ -32,8 +32,8 @@ dependencies = [
 
 
 [tool.poetry.group.dev.dependencies]
-enthusiast-common = { path = "../plugins/enthusiast-common", develop = true }
-enthusiast-model-openai = { path = "../plugins/enthusiast-model-openai", develop = true }
+suvereo-common = { path = "../plugins/suvereo-common", develop = true }
+suvereo-model-openai = { path = "../plugins/suvereo-model-openai", develop = true }
 
 [tool.poetry]
 package-mode = false

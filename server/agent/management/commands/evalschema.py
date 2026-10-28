@@ -1,7 +1,7 @@
 import json
 
 from django.core.management.base import BaseCommand
-from enthusiast_common.evaluation.suite import EvalSuite
+from suvereo_common.evaluation.suite import EvalSuite
 
 
 class Command(BaseCommand):

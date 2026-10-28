@@ -1,8 +1,8 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from enthusiast_common.evaluation.chat_message import ChatMessage
-from enthusiast_common.evaluation.suite import ModelPricing, ModelTarget
+from suvereo_common.evaluation.chat_message import ChatMessage
+from suvereo_common.evaluation.suite import ModelPricing, ModelTarget
 from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 

@@ -1,7 +1,7 @@
 from functools import cached_property
 from typing import Any
 
-from enthusiast_common.evaluation.mocks import BaseMockIntegration, FixtureRecords
+from suvereo_common.evaluation.mocks import BaseMockIntegration, FixtureRecords
 
 from ..connectors import ECommercePlatformConnector
 from ..interfaces import ECommerceIntegrationPlugin

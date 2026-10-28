@@ -1,6 +1,6 @@
 from typing import Any
 
-from enthusiast_common.evaluation.mocks import MockConfigError
+from suvereo_common.evaluation.mocks import MockConfigError
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 from ..structures import DocumentDetails

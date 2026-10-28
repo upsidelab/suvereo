@@ -1,7 +1,7 @@
 from typing import List, Type
 
 from django.conf import settings
-from enthusiast_common.integrations import BaseIntegration, BaseOAuthIntegration
+from suvereo_common.integrations import BaseIntegration, BaseOAuthIntegration
 from utils.base_registry import BaseRegistry
 
 from catalog.integrations.config_patch import config_writer_for

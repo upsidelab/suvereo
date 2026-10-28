@@ -2,8 +2,8 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
-from enthusiast_common.config import FunctionToolConfig
-from enthusiast_common.tools import BaseFunctionTool
+from suvereo_common.config import FunctionToolConfig
+from suvereo_common.tools import BaseFunctionTool
 from pydantic import BaseModel
 from rest_framework import serializers
 from rest_framework.exceptions import APIException, ValidationError

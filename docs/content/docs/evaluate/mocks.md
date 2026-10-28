@@ -48,7 +48,7 @@ Methods that build a component (`build_connector() -> ECommercePlatformConnector
 When answers depend on earlier calls, subclass `BaseMock`. Declared behaviour still wins; `_answer_unmatched_call` answers every other call:
 
 ```python
-from enthusiast_common.evaluation.mocks import BaseMock
+from suvereo_common.evaluation.mocks import BaseMock
 
 
 class CartConnectorMock(BaseMock):

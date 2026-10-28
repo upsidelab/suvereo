@@ -1,5 +1,5 @@
 import requests
-from enthusiast_common.utils import RequiredFieldsModel
+from suvereo_common.utils import RequiredFieldsModel
 from enthusiast_ecommerce_common.interfaces import DocumentSourcePlugin
 from enthusiast_ecommerce_common.structures import DocumentDetails
 from pydantic import Field

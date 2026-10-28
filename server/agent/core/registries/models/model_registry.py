@@ -3,7 +3,7 @@ from typing import Type
 
 from django.conf import settings
 from django.db import models
-from enthusiast_common.registry import BaseDBModelsRegistry
+from suvereo_common.registry import BaseDBModelsRegistry
 
 
 class BaseDjangoSettingsDBModelRegistry(BaseDBModelsRegistry[models.Model]):

@@ -1,5 +1,5 @@
-from enthusiast_common.evaluation.loaded_suite import LoadedSuite
-from enthusiast_common.evaluation.suite import MetricConfig
+from suvereo_common.evaluation.loaded_suite import LoadedSuite
+from suvereo_common.evaluation.suite import MetricConfig
 
 
 def suite_metric_configs(loaded: LoadedSuite) -> dict[str, MetricConfig]:

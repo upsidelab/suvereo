@@ -21,7 +21,7 @@ On every turn, the agent sends the language model these messages, in this order:
 
 ## Context Window Builder
 
-`ContextWindowBuilder` assembles the messages for each turn. It is part of the `enthusiast-agent-tool-calling` plugin, and `BaseToolCallingAgent` uses it.
+`ContextWindowBuilder` assembles the messages for each turn. It is part of the `suvereo-agent-tool-calling` plugin, and `BaseToolCallingAgent` uses it.
 
 - It keeps the most recent messages that fit the token budget, starting on a human message.
 - It counts tokens approximately.
@@ -66,7 +66,7 @@ The compactor class comes from `memory.compactor_class` in the configuration, wh
 
 ### Custom memory compactor
 
-To change how summaries are made, subclass `BaseMemoryCompactor` from `enthusiast-common`:
+To change how summaries are made, subclass `BaseMemoryCompactor` from `suvereo-common`:
 
 ```python
 class MyMemoryCompactor(BaseMemoryCompactor):

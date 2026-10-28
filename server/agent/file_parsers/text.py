@@ -1,6 +1,6 @@
 from typing import IO, AnyStr
 
-from enthusiast_common.services.file import BaseFileParser
+from suvereo_common.services.file import BaseFileParser
 
 
 class PlainTextFileParser(BaseFileParser):

@@ -1,14 +1,14 @@
 from pathlib import Path
 
-from enthusiast_common.agentic_execution import BaseAgenticExecutionDefinition
-from enthusiast_common.evaluation.errors import EvalSuiteError
-from enthusiast_common.evaluation.loaded_suite import LoadedSuite
-from enthusiast_common.evaluation.metrics import MetricError, MetricRegistry
-from enthusiast_common.evaluation.metrics.auto import auto_metrics_for
-from enthusiast_common.evaluation.metrics.llm import JudgePromptParams
-from enthusiast_common.evaluation.mocks.errors import MockError
-from enthusiast_common.evaluation.suite import AgenticExecutionEvalCase, ConversationEvalCase, EvalSuite, SuiteKind
-from enthusiast_common.evaluation.suite_reader import SuiteReader
+from suvereo_common.agentic_execution import BaseAgenticExecutionDefinition
+from suvereo_common.evaluation.errors import EvalSuiteError
+from suvereo_common.evaluation.loaded_suite import LoadedSuite
+from suvereo_common.evaluation.metrics import MetricError, MetricRegistry
+from suvereo_common.evaluation.metrics.auto import auto_metrics_for
+from suvereo_common.evaluation.metrics.llm import JudgePromptParams
+from suvereo_common.evaluation.mocks.errors import MockError
+from suvereo_common.evaluation.suite import AgenticExecutionEvalCase, ConversationEvalCase, EvalSuite, SuiteKind
+from suvereo_common.evaluation.suite_reader import SuiteReader
 from pydantic import ValidationError
 
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry

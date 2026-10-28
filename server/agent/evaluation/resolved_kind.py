@@ -1,4 +1,4 @@
-from enthusiast_common.evaluation.suite import EvalSuite, SuiteKind
+from suvereo_common.evaluation.suite import EvalSuite, SuiteKind
 
 
 def resolved_kind(suite: EvalSuite) -> SuiteKind:

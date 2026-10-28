@@ -1,6 +1,6 @@
 from abc import abstractmethod
 
-from enthusiast_common.integrations import BaseIntegration
+from suvereo_common.integrations import BaseIntegration
 
 from enthusiast_ecommerce_common.interfaces.integration_managers import BaseDocumentSourceManager
 from enthusiast_ecommerce_common.structures import DocumentDetails

@@ -25,7 +25,7 @@ The config provider of an agent can point `BUILDER_CLASS` at any class that sati
 
 ## Default Agent Builder
 
-`AgentBuilder` is the default implementation. Every host-specific piece reaches it through the configuration, so it depends only on contracts from `enthusiast-common`. Agents whose config provider declares no `BUILDER_CLASS` use it.
+`AgentBuilder` is the default implementation. Every host-specific piece reaches it through the configuration, so it depends only on contracts from `suvereo-common`. Agents whose config provider declares no `BUILDER_CLASS` use it.
 
 `build()` runs these steps:
 

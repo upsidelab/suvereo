@@ -1,4 +1,4 @@
-from enthusiast_common.retrievers import BaseVectorStoreRetriever
+from suvereo_common.retrievers import BaseVectorStoreRetriever
 
 from ecommerce_vertical.models import DocumentChunk
 

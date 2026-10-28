@@ -2,11 +2,11 @@ import json
 import logging
 import time
 
-from enthusiast_common.agentic_execution.memory import ToolScratchpad
-from enthusiast_common.evaluation.base_model_client import BaseModelClient
-from enthusiast_common.evaluation.suite import ConversationEvalCase, EvalCase
-from enthusiast_common.evaluation.trace import StopReason, TraceRecorder, Turn
-from enthusiast_common.evaluation.users import BaseUserSimulator
+from suvereo_common.agentic_execution.memory import ToolScratchpad
+from suvereo_common.evaluation.base_model_client import BaseModelClient
+from suvereo_common.evaluation.suite import ConversationEvalCase, EvalCase
+from suvereo_common.evaluation.trace import StopReason, TraceRecorder, Turn
+from suvereo_common.evaluation.users import BaseUserSimulator
 
 from agent.conversation.manager import ConversationManager
 from agent.core.agents.config_overrides import AgentConfigOverrides

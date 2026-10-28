@@ -3,8 +3,8 @@ import logging
 from enum import StrEnum
 from typing import List, Optional
 
-from enthusiast_common.injectors import BaseInjector
-from enthusiast_common.tools import BaseLLMTool
+from suvereo_common.injectors import BaseInjector
+from suvereo_common.tools import BaseLLMTool
 from enthusiast_ecommerce_common import ProductDetails
 from enthusiast_ecommerce_common.connectors import ECommercePlatformConnector
 from enthusiast_ecommerce_common.structures import ProductUpdateDetails

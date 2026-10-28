@@ -2,7 +2,7 @@ import io
 from unittest.mock import MagicMock, patch
 
 import pytest
-from enthusiast_common.agentic_execution import BaseAgenticExecutionDefinition, ExecutionInputType, ExecutionResult
+from suvereo_common.agentic_execution import BaseAgenticExecutionDefinition, ExecutionInputType, ExecutionResult
 from model_bakery import baker
 
 from account.models import User

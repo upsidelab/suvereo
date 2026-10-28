@@ -3,7 +3,7 @@ import threading
 from unittest.mock import patch
 
 import pytest
-from enthusiast_common.utils import run_off_event_loop
+from suvereo_common.utils import run_off_event_loop
 
 
 class TestRunOffEventLoop:

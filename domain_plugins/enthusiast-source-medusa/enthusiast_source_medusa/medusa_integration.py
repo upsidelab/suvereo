@@ -1,6 +1,6 @@
 from typing import Optional
 
-from enthusiast_common.utils import RequiredFieldsModel
+from suvereo_common.utils import RequiredFieldsModel
 from enthusiast_ecommerce_common.connectors import ECommercePlatformConnector
 from enthusiast_ecommerce_common.interfaces import ECommerceIntegrationPlugin, ProductSourcePlugin
 from pydantic import Field

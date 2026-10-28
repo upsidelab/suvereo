@@ -1,6 +1,6 @@
 import pytest
-from enthusiast_common.evaluation.errors import EvalSuiteError
-from enthusiast_common.evaluation.suite import AgenticExecutionEvalCase
+from suvereo_common.evaluation.errors import EvalSuiteError
+from suvereo_common.evaluation.suite import AgenticExecutionEvalCase
 
 from agent.evaluation.suite_selection import SuiteSelection
 

@@ -73,7 +73,7 @@ Drop sections that do not apply. Goals and requirements go in Summary or Design 
 - Bad: "This service doesn't handle retries, isn't responsible for auth, and doesn't replace the job queue."
 - Good: "The gateway routes requests and stamps a trace ID. The client retries; the session service handles auth."
 
-**6. Ground it in the code.** Name the real modules, classes, settings and extension points the design touches (`enthusiast-common` contracts, registries, `account.authorization`). Follow the conventions in `AGENTS.md`; a design that needs a new abstraction layer where an extension point exists must justify it in a decision block.
+**6. Ground it in the code.** Name the real modules, classes, settings and extension points the design touches (`suvereo-common` contracts, registries, `account.authorization`). Follow the conventions in `AGENTS.md`; a design that needs a new abstraction layer where an extension point exists must justify it in a decision block.
 
 ## Before finishing, check
 

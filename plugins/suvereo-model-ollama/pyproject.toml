@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "suvereo-model-ollama"
+version = "1.4.0"
+description = "A plugin for Suvereo that provides an Ollama connector."
+authors = ["Rafal Cymerys <rafal@upsidelab.io>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+langchain-core = "^1.2"
+python = "^3.10"
+suvereo-common = ">=1.7.0,<2"
+langchain-ollama = "^1.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

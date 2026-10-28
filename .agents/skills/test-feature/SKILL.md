@@ -64,4 +64,4 @@ Create data with `baker.make(Model, ...)`; specify only the fields the test depe
 
 ## Plugin code
 
-Plugins under `plugins/` keep their tests in their own `tests/` directory, mocking the LLM and the injector (see `plugins/enthusiast-integration-mcp/tests/`). `enthusiast-common` tests run from the server's environment: `cd server && poetry run pytest ../plugins/enthusiast-common/tests`.
+Plugins under `plugins/` keep their tests in their own `tests/` directory, mocking the LLM and the injector (see `plugins/suvereo-integration-mcp/tests/`). `suvereo-common` tests run from the server's environment: `cd server && poetry run pytest ../plugins/suvereo-common/tests`.

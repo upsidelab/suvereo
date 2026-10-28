@@ -1,7 +1,7 @@
 from typing import Optional, Type
 
 from django.conf import settings
-from enthusiast_common.config import (
+from suvereo_common.config import (
     AgentCallbackHandlerConfig,
     AgentConfig,
     AgentConfigWithDefaults,
@@ -13,9 +13,9 @@ from enthusiast_common.config import (
     RegistryConfig,
     RepositoriesConfig,
 )
-from enthusiast_common.injectors import Injector
-from enthusiast_common.integrations import BaseIntegrationPluginResolver
-from enthusiast_common.retrievers import BaseSimilaritySearcher
+from suvereo_common.injectors import Injector
+from suvereo_common.integrations import BaseIntegrationPluginResolver
+from suvereo_common.retrievers import BaseSimilaritySearcher
 from pydantic import BaseModel
 
 from agent.core.callbacks import ConversationWebSocketCallbackHandler

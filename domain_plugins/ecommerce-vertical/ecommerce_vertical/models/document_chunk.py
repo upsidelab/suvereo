@@ -1,5 +1,5 @@
 from django.db import models
-from enthusiast_common.indexing import BaseEmbeddingChunk
+from suvereo_common.indexing import BaseEmbeddingChunk
 
 
 class DocumentChunk(BaseEmbeddingChunk):

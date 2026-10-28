@@ -1,5 +1,5 @@
 from django.conf import settings
-from enthusiast_common.integrations import BaseSourceIntegrationManager
+from suvereo_common.integrations import BaseSourceIntegrationManager
 from utils.base_registry import BaseRegistry
 
 from agent.core.registries.embeddings import EmbeddingProviderRegistry

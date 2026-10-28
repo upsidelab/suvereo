@@ -2,12 +2,12 @@ import logging
 import mimetypes
 import time
 
-from enthusiast_common.config import AgentCallbackHandlerConfig, CallbackHandlerConfig
-from enthusiast_common.evaluation.loaded_suite import LoadedSuite
-from enthusiast_common.evaluation.metrics import MetricContext, MetricResult
-from enthusiast_common.evaluation.suite import EvalCase, ModelTarget, PromptVariant, SuiteKind
-from enthusiast_common.evaluation.suite.prompt_variant import DEFAULT_VARIANT
-from enthusiast_common.evaluation.trace import ExecutionTrace, TraceRecorder
+from suvereo_common.config import AgentCallbackHandlerConfig, CallbackHandlerConfig
+from suvereo_common.evaluation.loaded_suite import LoadedSuite
+from suvereo_common.evaluation.metrics import MetricContext, MetricResult
+from suvereo_common.evaluation.suite import EvalCase, ModelTarget, PromptVariant, SuiteKind
+from suvereo_common.evaluation.suite.prompt_variant import DEFAULT_VARIANT
+from suvereo_common.evaluation.trace import ExecutionTrace, TraceRecorder
 
 from agent.conversation.services.conversation_file_attach_service import ConversationFileAttachService
 from agent.core.agents.config_overrides import AgentConfigOverrides

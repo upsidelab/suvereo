@@ -1,6 +1,6 @@
 import textwrap
 
-from enthusiast_common.tools import BaseLLMTool
+from suvereo_common.tools import BaseLLMTool
 from pydantic import BaseModel
 
 

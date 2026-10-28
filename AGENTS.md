@@ -9,7 +9,7 @@ The core is domain-agnostic and defines no domain entities of its own. It runs s
 ```
 server/       Django backend (API, Celery, WebSocket) — see server/AGENTS.md
 frontend/     React + TypeScript UI — see frontend/AGENTS.md
-plugins/      Core plugins: enthusiast-common contracts, LLM providers, MCP integration, tool-calling agent
+plugins/      Core plugins: suvereo-common contracts, LLM providers, MCP integration, tool-calling agent
 docs/         Documentation site (Next.js)
 specs/        Design specs, written before implementation
 adrs/         Architectural decision records — the why behind intentional design
@@ -17,7 +17,7 @@ adrs/         Architectural decision records — the why behind intentional desi
 
 Docker: `docker-compose.yml` (production), `docker-compose.development.yml` (development; postgres with pgvector, redis, api, frontend, worker, beat).
 
-Each plugin under `plugins/` is a standalone Poetry package. Contracts shared by all of them live in `plugins/enthusiast-common` — see its `AGENTS.md`.
+Each plugin under `plugins/` is a standalone Poetry package. Contracts shared by all of them live in `plugins/suvereo-common` — see its `AGENTS.md`.
 
 ## Concepts
 

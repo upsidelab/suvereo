@@ -1,5 +1,5 @@
 import pytest
-from enthusiast_common.evaluation.mocks import MockConfigError
+from suvereo_common.evaluation.mocks import MockConfigError
 from enthusiast_ecommerce_common import ECommercePlatformConnector, ProductDetails, ProductUpdateDetails
 from enthusiast_ecommerce_common.connectors.errors import ECommerceConnectorError
 from enthusiast_ecommerce_common.evaluation import ECommerceConnectorMock

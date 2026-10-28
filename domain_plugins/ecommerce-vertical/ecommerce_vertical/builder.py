@@ -1,7 +1,7 @@
 from typing import Optional
 
-from enthusiast_common.builder import AgentBuilder
-from enthusiast_common.config import AgentConfig
+from suvereo_common.builder import AgentBuilder
+from suvereo_common.config import AgentConfig
 from enthusiast_ecommerce_common.connectors import ECommercePlatformConnector
 from enthusiast_ecommerce_common.interfaces import ECommerceIntegrationPlugin
 

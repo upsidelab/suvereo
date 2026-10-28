@@ -3,7 +3,7 @@ from collections import Counter
 from statistics import mean, pstdev
 from typing import Any
 
-from enthusiast_common.evaluation.suite import Aggregate
+from suvereo_common.evaluation.suite import Aggregate
 from pydantic import BaseModel
 
 #: Aggregate names that read another figure: a bool's rate is its mean.

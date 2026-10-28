@@ -1,5 +1,5 @@
-from enthusiast_common.agentic_execution import BaseAgenticExecutionDefinition, ExecutionConversationInterface
-from enthusiast_common.agentic_execution.memory import ToolScratchpad
+from suvereo_common.agentic_execution import BaseAgenticExecutionDefinition, ExecutionConversationInterface
+from suvereo_common.agentic_execution.memory import ToolScratchpad
 
 from agent.conversation.manager import ConversationManager
 from agent.core.agents.config_overrides import AgentConfigOverrides

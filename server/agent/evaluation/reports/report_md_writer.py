@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from enthusiast_common.evaluation.metrics.auto import DurationSeconds
-from enthusiast_common.evaluation.suite import SuiteKind
+from suvereo_common.evaluation.metrics.auto import DurationSeconds
+from suvereo_common.evaluation.suite import SuiteKind
 
 from agent.evaluation.aggregation import FLAKY_RATE, PASS_RATE
 from agent.evaluation.runner import RunResult

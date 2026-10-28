@@ -1,4 +1,4 @@
-from enthusiast_common.evaluation.mocks import BaseMockIntegration
+from suvereo_common.evaluation.mocks import BaseMockIntegration
 
 from catalog.integrations.sync_service import IntegrationSyncService
 from catalog.models import DataSet, Integration

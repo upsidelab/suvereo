@@ -4,7 +4,7 @@ import pytest
 from django.contrib.auth.models import Permission
 from django.core.cache import caches
 from django.urls import reverse
-from enthusiast_common.oauth import NoAuthorizationRequired, OAuthAuthorizationRequest, OAuthClientCredentials
+from suvereo_common.oauth import NoAuthorizationRequired, OAuthAuthorizationRequest, OAuthClientCredentials
 from model_bakery import baker
 from rest_framework import status
 

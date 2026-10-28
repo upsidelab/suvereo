@@ -1,4 +1,4 @@
-from enthusiast_common.evaluation.metrics.auto import CostUsd
+from suvereo_common.evaluation.metrics.auto import CostUsd
 from pydantic import BaseModel
 
 from agent.evaluation.runner import RunResult

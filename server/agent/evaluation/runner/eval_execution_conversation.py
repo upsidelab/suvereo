@@ -1,6 +1,6 @@
-from enthusiast_common.agentic_execution import BaseAgenticExecutionDefinition
-from enthusiast_common.agentic_execution.validators import ValidatorResponse
-from enthusiast_common.evaluation.trace import Attempt, TraceRecorder
+from suvereo_common.agentic_execution import BaseAgenticExecutionDefinition
+from suvereo_common.agentic_execution.validators import ValidatorResponse
+from suvereo_common.evaluation.trace import Attempt, TraceRecorder
 
 from agent.agentic_execution.conversation import ExecutionConversation
 from agent.core.agents.config_overrides import AgentConfigOverrides

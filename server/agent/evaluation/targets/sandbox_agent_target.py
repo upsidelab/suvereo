@@ -1,8 +1,8 @@
 import logging
 from typing import Any
 
-from enthusiast_common.evaluation.mocks import BaseMockIntegration
-from enthusiast_common.integrations import BaseIntegrationPluginResolver
+from suvereo_common.evaluation.mocks import BaseMockIntegration
+from suvereo_common.integrations import BaseIntegrationPluginResolver
 
 from account.models import User
 from agent.evaluation.sandbox import EvalSandbox

@@ -2,7 +2,7 @@ import logging
 from typing import Any, Optional, TypeVar
 
 from django.db.models import QuerySet
-from enthusiast_common.integrations import BaseIntegration, BaseIntegrationPluginResolver
+from suvereo_common.integrations import BaseIntegration, BaseIntegrationPluginResolver
 from pydantic import ValidationError
 
 from catalog.integrations.registry import IntegrationPluginRegistry

@@ -1,6 +1,6 @@
 from typing import Any
 
-from enthusiast_common.integrations import BaseOAuthIntegration
+from suvereo_common.integrations import BaseOAuthIntegration
 from pydantic import ValidationError as PydanticValidationError
 from rest_framework import serializers
 

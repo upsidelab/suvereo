@@ -1,7 +1,7 @@
 """What the OAuth views need from this host, kept out of the views themselves."""
 
 from django.urls import reverse
-from enthusiast_common.integrations import BaseOAuthIntegration
+from suvereo_common.integrations import BaseOAuthIntegration
 
 from catalog.integrations.oauth import config
 from catalog.integrations.registry import IntegrationPluginRegistry

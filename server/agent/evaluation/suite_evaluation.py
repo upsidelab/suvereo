@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from enthusiast_common.evaluation.loaded_suite import LoadedSuite
-from enthusiast_common.evaluation.suite import ReportName
+from suvereo_common.evaluation.loaded_suite import LoadedSuite
+from suvereo_common.evaluation.suite import ReportName
 from pydantic import BaseModel, ConfigDict
 
 from agent.evaluation.reports import (

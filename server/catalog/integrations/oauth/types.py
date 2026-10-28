@@ -2,7 +2,7 @@
 
 from typing import NotRequired, TypedDict
 
-from enthusiast_common.oauth import OAuthPendingAuthorization
+from suvereo_common.oauth import OAuthPendingAuthorization
 
 
 class PendingFlow(TypedDict):

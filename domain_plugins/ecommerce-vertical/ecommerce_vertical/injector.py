@@ -1,6 +1,6 @@
 from typing import Optional
 
-from enthusiast_common.injectors import Injector
+from suvereo_common.injectors import Injector
 from enthusiast_ecommerce_common.connectors import ECommercePlatformConnector
 
 from ecommerce_vertical.retrievers import DocumentRetriever, ProductRetriever

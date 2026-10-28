@@ -1,6 +1,6 @@
 from functools import cached_property
 
-from enthusiast_common.evaluation.mocks import BaseMockIntegration, FixtureRecords
+from suvereo_common.evaluation.mocks import BaseMockIntegration, FixtureRecords
 
 from ..interfaces import DocumentSourcePlugin
 from ..structures import DocumentDetails

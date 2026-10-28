@@ -1,7 +1,7 @@
-from enthusiast_common.evaluation.loaded_suite import LoadedSuite
-from enthusiast_common.evaluation.metrics import MetricResult
-from enthusiast_common.evaluation.suite import AgenticExecutionEvalCase, ConversationEvalCase, EvalSuite
-from enthusiast_common.evaluation.trace import ExecutionTrace, ToolCall, Turn
+from suvereo_common.evaluation.loaded_suite import LoadedSuite
+from suvereo_common.evaluation.metrics import MetricResult
+from suvereo_common.evaluation.suite import AgenticExecutionEvalCase, ConversationEvalCase, EvalSuite
+from suvereo_common.evaluation.trace import ExecutionTrace, ToolCall, Turn
 
 from agent.evaluation.reports import SuiteReport
 from agent.evaluation.runner import RunResult, ThresholdResult

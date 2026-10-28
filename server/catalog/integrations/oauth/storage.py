@@ -3,7 +3,7 @@
 import hashlib
 
 from django.core.cache import cache
-from enthusiast_common.oauth import OAuthClientCredentials
+from suvereo_common.oauth import OAuthClientCredentials
 
 from catalog.integrations.oauth.config import (
     CLIENT_LIFETIME_SECONDS,

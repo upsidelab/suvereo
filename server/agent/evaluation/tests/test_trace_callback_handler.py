@@ -1,4 +1,4 @@
-from enthusiast_common.evaluation.trace import TraceRecorder
+from suvereo_common.evaluation.trace import TraceRecorder
 from langchain_core.documents import Document
 from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
 from langchain_core.messages import AIMessage

@@ -2,8 +2,8 @@ import asyncio
 from datetime import datetime
 from typing import Optional
 
-from enthusiast_common.agentic_execution.memory import ToolScratchpad
-from enthusiast_common.integrations import BaseToolProvidingIntegration
+from suvereo_common.agentic_execution.memory import ToolScratchpad
+from suvereo_common.integrations import BaseToolProvidingIntegration
 
 from account.models import User
 from agent.core.agents.config_overrides import AgentConfigOverrides

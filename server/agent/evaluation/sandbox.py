@@ -3,8 +3,8 @@ from typing import Any
 
 from django.db import transaction
 from django.utils import timezone
-from enthusiast_common.evaluation.mocks import BaseMockIntegration
-from enthusiast_common.utils import deep_merge
+from suvereo_common.evaluation.mocks import BaseMockIntegration
+from suvereo_common.utils import deep_merge
 
 from agent.core.registries.agents.agent_registry import AgentRegistry
 from agent.evaluation.integrations import IntegrationFixtureSyncer

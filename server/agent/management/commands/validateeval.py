@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 
 from django.core.management.base import BaseCommand
-from enthusiast_common.evaluation.errors import EvalSuiteError
+from suvereo_common.evaluation.errors import EvalSuiteError
 
 from agent.evaluation.reports import ExitCode
 from agent.evaluation.runner import SuiteRunner

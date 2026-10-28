@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 import yaml
-from enthusiast_common.evaluation.errors import EvalSuiteError
+from suvereo_common.evaluation.errors import EvalSuiteError
 
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
 from agent.core.registries.agents.agent_registry import AgentNotFoundError, AgentRegistry

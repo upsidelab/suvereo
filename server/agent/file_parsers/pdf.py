@@ -2,7 +2,7 @@ import base64
 from io import BytesIO
 from typing import IO, AnyStr
 
-from enthusiast_common.services.file import BaseFileParser
+from suvereo_common.services.file import BaseFileParser
 from PIL import ImageOps
 from pypdf import PdfWriter
 

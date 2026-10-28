@@ -1,6 +1,6 @@
 import pytest
-from enthusiast_common.evaluation.suite import ModelPricing
-from enthusiast_common.evaluation.trace import ExecutionTrace, LLMCall
+from suvereo_common.evaluation.suite import ModelPricing
+from suvereo_common.evaluation.trace import ExecutionTrace, LLMCall
 
 from agent.evaluation.pricing_table import PricingTable
 

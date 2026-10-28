@@ -1,7 +1,7 @@
 from dataclasses import replace
 from typing import Any
 
-from enthusiast_common.evaluation.mocks import BaseMock
+from suvereo_common.evaluation.mocks import BaseMock
 
 from ..connectors import ECommercePlatformConnector
 from ..connectors.errors import ECommerceConnectorError

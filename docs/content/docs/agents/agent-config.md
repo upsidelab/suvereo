@@ -58,7 +58,7 @@ An agent built on a [vertical](/docs/concepts#vertical) usually sets none of the
 
 ## Configuration Provider
 
-An agent implementation provides its configuration through a subclass of `BaseAgentConfigProvider` from `enthusiast_common.agents`.
+An agent implementation provides its configuration through a subclass of `BaseAgentConfigProvider` from `suvereo_common.agents`.
 
 - It implements `get_config(config_type) -> AgentConfigWithDefaults`.
 - It can set `BUILDER_CLASS` to a builder class. Without it, the default `AgentBuilder` is used.

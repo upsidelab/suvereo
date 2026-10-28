@@ -38,8 +38,8 @@ catalog_knowledge_agent/
 ### 1. Define the agent (`agent.py`)
 
 ```python
-from enthusiast_agent_tool_calling import BaseToolCallingAgent
-from enthusiast_common.config.base import LLMToolConfig
+from suvereo_agent_tool_calling import BaseToolCallingAgent
+from suvereo_common.config.base import LLMToolConfig
 
 from .tools import DocumentRetrievalTool, ProductCatalogSampleTool, ProductSearchTool
 
@@ -78,8 +78,8 @@ Returns a sample of products from the catalog. The agent uses this first to unde
 ```python
 import textwrap
 
-from enthusiast_common.injectors import BaseInjector
-from enthusiast_common.tools import BaseLLMTool
+from suvereo_common.injectors import BaseInjector
+from suvereo_common.tools import BaseLLMTool
 from langchain_core.language_models import BaseLanguageModel
 from pydantic import BaseModel
 
@@ -120,8 +120,8 @@ Searches the product catalog using a natural-language description.
 ```python
 import json
 
-from enthusiast_common.injectors import BaseInjector
-from enthusiast_common.tools import BaseLLMTool
+from suvereo_common.injectors import BaseInjector
+from suvereo_common.tools import BaseLLMTool
 from langchain_core.language_models import BaseLanguageModel
 from pydantic import BaseModel, Field
 
@@ -159,8 +159,8 @@ class ProductSearchTool(BaseLLMTool):
 Retrieves relevant content from uploaded documents (manuals, policies, FAQs, etc.).
 
 ```python
-from enthusiast_common.injectors import BaseInjector
-from enthusiast_common.tools import BaseLLMTool
+from suvereo_common.injectors import BaseInjector
+from suvereo_common.tools import BaseLLMTool
 from langchain_core.language_models import BaseLanguageModel
 from pydantic import BaseModel, Field
 
@@ -207,8 +207,8 @@ __all__ = ["DocumentRetrievalTool", "ProductCatalogSampleTool", "ProductSearchTo
 ### 4. Create the config provider (`config.py`)
 
 ```python
-from enthusiast_common.agents import BaseAgentConfigProvider, ConfigType
-from enthusiast_common.config import AgentConfigWithDefaults
+from suvereo_common.agents import BaseAgentConfigProvider, ConfigType
+from suvereo_common.config import AgentConfigWithDefaults
 
 from .agent import CatalogKnowledgeAgent
 from .prompt import CATALOG_KNOWLEDGE_AGENT_SYSTEM_PROMPT

@@ -1,6 +1,6 @@
 from abc import ABC
 
-from enthusiast_common.integrations import BaseSourceIntegrationManager
+from suvereo_common.integrations import BaseSourceIntegrationManager
 
 
 class BaseDocumentSourceManager(BaseSourceIntegrationManager, ABC):

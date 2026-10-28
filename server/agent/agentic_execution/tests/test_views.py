@@ -4,7 +4,7 @@ import pytest
 from django.contrib.auth.models import Permission
 from django.urls import reverse
 from django.utils import timezone
-from enthusiast_common.agentic_execution import BaseAgenticExecutionDefinition, ExecutionInputType, ExecutionResult
+from suvereo_common.agentic_execution import BaseAgenticExecutionDefinition, ExecutionInputType, ExecutionResult
 from model_bakery import baker
 from rest_framework import status
 from rest_framework.test import APIClient

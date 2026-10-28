@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
-from enthusiast_common.evaluation.metrics import BaseMetric
-from enthusiast_common.evaluation.metrics.auto import AUTO_METRICS
-from enthusiast_common.evaluation.metrics.builtins import BUILTIN_METRICS
+from suvereo_common.evaluation.metrics import BaseMetric
+from suvereo_common.evaluation.metrics.auto import AUTO_METRICS
+from suvereo_common.evaluation.metrics.builtins import BUILTIN_METRICS
 from pydantic import BaseModel
 
 

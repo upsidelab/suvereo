@@ -1,6 +1,6 @@
 # Agent Classes
 
-An agent is a Python class. `BaseAgent`, from `enthusiast-common`, is the contract every agent class fulfils, and Suvereo provides one implementation of it, `BaseToolCallingAgent`, which is the recommended starting point. An agent class can be defined anywhere, for example in a [plugin](/docs/concepts#plugin), in a vertical or in the Suvereo codebase itself. Wherever it lives, it is registered in `AVAILABLE_AGENTS` and used to create [agents](/docs/concepts#agent) in the UI.
+An agent is a Python class. `BaseAgent`, from `suvereo-common`, is the contract every agent class fulfils, and Suvereo provides one implementation of it, `BaseToolCallingAgent`, which is the recommended starting point. An agent class can be defined anywhere, for example in a [plugin](/docs/concepts#plugin), in a vertical or in the Suvereo codebase itself. Wherever it lives, it is registered in `AVAILABLE_AGENTS` and used to create [agents](/docs/concepts#agent) in the UI.
 
 ## The BaseAgent contract
 
@@ -69,7 +69,7 @@ When the agent is built, the class variables `AGENT_ARGS` and `PROMPT_INPUT` are
 
 ## BaseToolCallingAgent
 
-`BaseToolCallingAgent` implements the standard tool calling pattern, which relies on the function calling support of the language model. It is the recommended base class for new agents. It lives in the `enthusiast-agent-tool-calling` plugin.
+`BaseToolCallingAgent` implements the standard tool calling pattern, which relies on the function calling support of the language model. It is the recommended base class for new agents. It lives in the `suvereo-agent-tool-calling` plugin.
 
 `get_answer()` runs one turn:
 
@@ -91,7 +91,7 @@ def get_answer(self, input_text: str) -> str:
 `aget_answer()` is the async equivalent. It lets tools supplied by integrations, such as MCP servers, be awaited.
 
 ```python
-from enthusiast_common.utils import run_off_event_loop
+from suvereo_common.utils import run_off_event_loop
 
 async def aget_answer(self, input_text: str) -> str:
     context_messages = await run_off_event_loop(self._build_context_messages)

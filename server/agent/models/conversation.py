@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.db.models import Max, Q
-from enthusiast_common.structures import LLMFile
+from suvereo_common.structures import LLMFile
 
 from account.authorization import PERMISSIONS, datasets_with_permission
 from agent.models.agent import Agent
