@@ -6,7 +6,7 @@
 #
 # Out of the box (no vertical) Suvereo runs standalone, so every list here is empty.
 #
-# Example — an ecommerce vertical would set:
+# Example — Enthusiast (an eCommerce vertical) would set:
 #
 #     INSTALLED_VERTICALS = ["ecommerce_vertical"]
 #     AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS = [

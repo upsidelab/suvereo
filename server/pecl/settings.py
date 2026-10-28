@@ -298,7 +298,7 @@ FILE_PARSER_CLASSES: dict[tuple[str] : str] = {
 }
 UPLOADED_FILE_RETENTION_PERIOD_HOURS: int = 48
 
-SERVICE_ACCOUNT_DOMAIN = env.str("SERVICE_ACCOUNT_DOMAIN", "enthusiast.internal")
+SERVICE_ACCOUNT_DOMAIN = env.str("SERVICE_ACCOUNT_DOMAIN", "suvereo.internal")
 
 try:
     from pecl.settings_override import *  # noqa: F401, F403

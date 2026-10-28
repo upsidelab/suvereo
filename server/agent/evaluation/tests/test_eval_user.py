@@ -4,7 +4,7 @@ import pytest
 from django.db.models import QuerySet
 
 from account.models import User
-from agent.evaluation.eval_user import EMAIL, EvalUser
+from agent.evaluation.eval_user import EvalUser
 
 pytestmark = pytest.mark.django_db
 
@@ -26,7 +26,7 @@ class TestEvalUser:
         assert User.all_objects.filter(pk=user.pk).exists()
 
     def test_an_account_created_concurrently_is_reused(self):
-        existing = User.objects.create_service_account(EMAIL, is_active=False, is_internal=True)
+        existing = User.objects.create_service_account(EvalUser.email(), is_active=False, is_internal=True)
 
         with patch.object(QuerySet, "first", return_value=None):
             assert EvalUser.get() == existing
