@@ -152,15 +152,17 @@ class FakeModels:
     judge says the goal was reached."""
 
     def __init__(self):
-        self.user_prompts: list[str] = []
+        self.user_systems: list[str] = []
+        self.user_conversations: list[list] = []
         self.models_asked: set[str] = set()
 
-    def __call__(self, client, prompt, model=None):
+    def __call__(self, client, messages, system=None, model=None):
         self.models_asked.add((model or client.target).model)
-        if "Decide from the transcript whether the" in prompt:
+        if "Decide from the transcript whether the" in messages[-1].text:
             return '{"reached": true, "reasoning": "Ada was greeted"}'
-        self.user_prompts.append(prompt)
-        if len(self.user_prompts) == 1:
+        self.user_systems.append(system)
+        self.user_conversations.append(messages)
+        if len(self.user_conversations) == 1:
             return '{"message": "greet Ada", "stop": null}'
         return '{"message": null, "stop": "done"}'
 
@@ -173,13 +175,13 @@ class TestSimulatedUserConversation:
     def test_the_user_model_plays_the_user_and_the_judge_decides_the_goal(self, chat, target, tmp_path):
         models = FakeModels()
 
-        with patch.object(EvalModelClient, "complete", autospec=True, side_effect=models):
+        with patch.object(EvalModelClient, "chat", autospec=True, side_effect=models):
             result = _run(target, tmp_path, ConversationEvalCase(id="c", simulated_user=self.USER), **self.MODELS)
 
         assert [t.user_message for t in result.trace.turns] == ["greet Ada"]
         assert result.trace.stop_reason == "done"
-        assert "- name: Ada" in models.user_prompts[0]
-        assert "assistant:\n  Hello Ada" in models.user_prompts[1]
+        assert "- name: Ada" in models.user_systems[0]
+        assert models.user_conversations[1][-1].text == "Hello Ada"
         assert result.metrics["goal_reached"].value is True
         assert result.metrics["user_cost_usd"].value == 0.0
         assert result.passed
@@ -191,7 +193,7 @@ class TestSimulatedUserConversation:
             return TraceCost(usd=usd, priced_usd=usd)
 
         with (
-            patch.object(EvalModelClient, "complete", autospec=True, side_effect=FakeModels()),
+            patch.object(EvalModelClient, "chat", autospec=True, side_effect=FakeModels()),
             patch.object(EvalModelClient, "cost", autospec=True, side_effect=cost),
         ):
             result = _run(

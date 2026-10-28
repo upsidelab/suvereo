@@ -1,9 +1,10 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from enthusiast_common.evaluation.chat_message import ChatMessage
 from enthusiast_common.evaluation.suite import ModelPricing, ModelTarget
 from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from agent.core.registries.language_models import LanguageModelRegistry
 from agent.evaluation.model_client import EvalModelClient
@@ -30,6 +31,24 @@ class TestEvalModelClient:
         provider.assert_called_once_with("judge-model")
         assert answer == '{"score": 1}'
         assert judge.cost().usd == 2.0
+
+    def test_a_chat_goes_to_the_model_as_its_system_prompt_and_messages_in_order(self):
+        provider = MagicMock()
+        llm = provider.return_value.provide_language_model.return_value
+        llm.invoke.return_value.text = "Under 50 EUR"
+        messages = [ChatMessage(role="user", text="Hi"), ChatMessage(role="assistant", text="Budget?")]
+
+        with patch.object(LanguageModelRegistry, "provider_class_by_name", return_value=provider):
+            client = EvalModelClient(ModelTarget(provider="OpenAI", model="user-model"), PricingTable({}))
+            answer = client.chat(messages, "Play a user")
+
+        sent = llm.invoke.call_args.args[0]
+        assert answer == "Under 50 EUR"
+        assert [(type(m), m.content) for m in sent] == [
+            (SystemMessage, "Play a user"),
+            (HumanMessage, "Hi"),
+            (AIMessage, "Budget?"),
+        ]
 
     def test_a_call_can_ask_another_model_priced_by_its_own_pricing(self):
         def reply(model):

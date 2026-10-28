@@ -1,9 +1,11 @@
 from threading import Lock
 
 from enthusiast_common.evaluation.base_model_client import BaseModelClient
+from enthusiast_common.evaluation.chat_message import ChatMessage
 from enthusiast_common.evaluation.suite import ModelTarget
 from enthusiast_common.evaluation.trace import TraceRecorder
 from langchain_core.language_models import BaseChatModel
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from agent.core.registries.language_models import LanguageModelRegistry
 from agent.evaluation.pricing_table import PricingTable, TraceCost
@@ -25,12 +27,14 @@ class EvalModelClient(BaseModelClient):
         self._llms: dict[tuple[str, str], BaseChatModel] = {}
         self._lock = Lock()
 
-    def complete(self, prompt: str, model: ModelTarget | None = None) -> str:
+    def chat(self, messages: list[ChatMessage], system: str | None = None, model: ModelTarget | None = None) -> str:
         """Ask the given model, or else the default one; raises ValueError when neither is set."""
         target = model or self.target
         if target is None:
             raise ValueError("No model to ask: set 'judge' in the suite or in the metric's params.")
-        return self._llm_for(target).invoke(prompt).text
+        sent = [SystemMessage(system)] if system else []
+        sent += [HumanMessage(m.text) if m.role == "user" else AIMessage(m.text) for m in messages]
+        return self._llm_for(target).invoke(sent).text
 
     def cost(self) -> TraceCost:
         """What every model this client asked has cost so far."""
