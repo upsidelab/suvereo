@@ -34,7 +34,7 @@ FULL = {
     "min_pass_rate": 0.8,
     "integrations": [
         {
-            "class": "enthusiast_ecommerce_common.evaluation.ECommerceMockIntegration",
+            "class": "enthusiast_vertical_common.evaluation.ECommerceMockIntegration",
             "config": {
                 "catalog": "data/products.yaml",
                 "behaviour": {"create_order_with_items": {"returns": "ORD-{n}"}},

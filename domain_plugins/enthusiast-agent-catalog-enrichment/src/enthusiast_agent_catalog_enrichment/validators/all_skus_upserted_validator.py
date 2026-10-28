@@ -5,7 +5,7 @@ from suvereo_common.agentic_execution import (
     ValidatorSuccessResponse,
 )
 from suvereo_common.agentic_execution.memory import ToolScratchpad
-from enthusiast_ecommerce_agent_tools.tools.upsert_product_details_tool import (
+from enthusiast_vertical_tools.tools.upsert_product_details_tool import (
     UpsertMemoryEntry,
     UpsertProductDetailsTool,
 )

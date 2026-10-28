@@ -34,7 +34,7 @@ Name the plugin interface and declare behaviours. Every method is generated from
 
 ```yaml
 integrations:
-  - interface: enthusiast_ecommerce_common.interfaces.ECommerceIntegrationPlugin
+  - interface: enthusiast_vertical_common.interfaces.ECommerceIntegrationPlugin
     config:
       behaviour:
         create_order_with_items: {returns: "ORD-{n}"}
@@ -86,12 +86,12 @@ class ECommerceMockIntegration(BaseMockIntegration, ECommerceIntegrationPlugin):
 
 | Integration | Data | What it gives the agent |
 |---|---|---|
-| `enthusiast_ecommerce_common.evaluation.ECommerceMockIntegration` | `catalog`: a YAML, JSON or CSV file, or an inline list of products (`sku` and `name` required; `description`, `price`, `stock` and more optional) | The catalog synced for product search, and a shop connector with in-memory orders (`ORD-1`, `ORD-2`, …), stock and an admin URL. Ordering an unknown SKU raises `ECommerceConnectorError`. |
-| `enthusiast_ecommerce_common.evaluation.DocumentMockIntegration` | `documents`: records with `url`, `title` and `content` | The documents synced, with embeddings, for document search agents. |
+| `enthusiast_vertical_common.evaluation.ECommerceMockIntegration` | `catalog`: a YAML, JSON or CSV file, or an inline list of products (`sku` and `name` required; `description`, `price`, `stock` and more optional) | The catalog synced for product search, and a shop connector with in-memory orders (`ORD-1`, `ORD-2`, …), stock and an admin URL. Ordering an unknown SKU raises `ECommerceConnectorError`. |
+| `enthusiast_vertical_common.evaluation.DocumentMockIntegration` | `documents`: records with `url`, `title` and `content` | The documents synced, with embeddings, for document search agents. |
 
 ```yaml
 integrations:
-  - class: enthusiast_ecommerce_common.evaluation.ECommerceMockIntegration
+  - class: enthusiast_vertical_common.evaluation.ECommerceMockIntegration
     config:
       data: {catalog: data/products.yaml}
       behaviour: {create_order_with_items: {raises: {error: ECommerceConnectorError, message: "Out of stock"}}}

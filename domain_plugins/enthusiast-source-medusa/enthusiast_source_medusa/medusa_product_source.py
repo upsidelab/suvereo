@@ -2,8 +2,8 @@ import json
 from typing import Any, Optional
 
 from suvereo_common.utils import RequiredFieldsModel
-from enthusiast_ecommerce_common.interfaces import ProductSourcePlugin
-from enthusiast_ecommerce_common.structures import ProductDetails
+from enthusiast_vertical_common.interfaces import ProductSourcePlugin
+from enthusiast_vertical_common.structures import ProductDetails
 from pydantic import Field
 
 from .medusa_api_client import MedusaAPIClient

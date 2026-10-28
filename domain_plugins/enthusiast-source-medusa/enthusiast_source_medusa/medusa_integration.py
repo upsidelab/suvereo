@@ -1,8 +1,8 @@
 from typing import Optional
 
 from suvereo_common.utils import RequiredFieldsModel
-from enthusiast_ecommerce_common.connectors import ECommercePlatformConnector
-from enthusiast_ecommerce_common.interfaces import ECommerceIntegrationPlugin, ProductSourcePlugin
+from enthusiast_vertical_common.connectors import ECommercePlatformConnector
+from enthusiast_vertical_common.interfaces import ECommerceIntegrationPlugin, ProductSourcePlugin
 from pydantic import Field
 
 from .medusa_platform_connector import MedusaPlatformConnector

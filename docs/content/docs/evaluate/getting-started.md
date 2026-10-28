@@ -74,7 +74,7 @@ agent: {type: my-agent}
 models: [{provider: OpenAI, model: gpt-4o-mini}]
 budget_usd: 0.10
 integrations:
-  - class: enthusiast_ecommerce_common.evaluation.ECommerceMockIntegration
+  - class: enthusiast_vertical_common.evaluation.ECommerceMockIntegration
     config: {data: {catalog: catalog.yaml}}
 metrics:
   - {type: tool_called, name: one_order, params: {name: place_order}, pass_threshold: {equals: 1}}
@@ -100,7 +100,7 @@ description: The shop rejects the order; the run must fail cleanly
 tags: [error-path]
 files: [po-out-of-stock.pdf]
 integrations:
-  - class: enthusiast_ecommerce_common.evaluation.ECommerceMockIntegration
+  - class: enthusiast_vertical_common.evaluation.ECommerceMockIntegration
     config: {behaviour: {create_order_with_items: {raises: {error: ECommerceConnectorError, message: "Out of stock"}}}}
 expected:
   failure_code: validation_failed
