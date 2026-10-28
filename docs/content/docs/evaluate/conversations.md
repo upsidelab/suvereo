@@ -1,7 +1,3 @@
----
-sidebar_position: 3
----
-
 # Conversations
 
 A conversation suite tests an agent through chat: each case is a dialogue of several turns, in which the agent can ask questions and the user answers them. It uses the same `suite.yaml`, mocks, metrics, reports and commands as any suite.
