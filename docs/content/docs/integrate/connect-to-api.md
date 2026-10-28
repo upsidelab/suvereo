@@ -1,6 +1,6 @@
-# Connect to Enthusiast's API
+# Connect to Suvereo's API
 
-Once you have the API token for a service account, you can connect to Enthusiast's API.
+Once you have the API token for a service account, you can connect to Suvereo's API.
 
 ## Trying out the API Using Swagger UI
 
@@ -25,7 +25,7 @@ The Swagger UI lists all available endpoints organized by functionality. You can
 
 ## Using `curl`
 
-To authenticate with Enthusiast's API using `curl` from the terminal, include the API token in the header of each request:
+To authenticate with Suvereo's API using `curl` from the terminal, include the API token in the header of each request:
 
 - **GET and DELETE Request**:
   ```bash

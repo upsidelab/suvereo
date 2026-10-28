@@ -1,7 +1,7 @@
 const mapping = {
   "domain-onboarding": "",
   "system-architecture": "",
-  "using-the-agentcore-starter": "",
+  "using-the-suvereo-starter": "",
   "custom-integration": "",
   "custom-agent": "",
   "agentic-execution": "",

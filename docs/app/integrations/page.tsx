@@ -10,18 +10,18 @@ const H1 = mdxComponents.h1;
 const H2 = mdxComponents.h2;
 
 export const metadata: Metadata = {
-  title: "Integrations | Enthusiast",
+  title: "Integrations | Suvereo",
 }
 
 export default async function Page() {
   const metadata = {
-    title: "Integrations | Enthusiast",
+    title: "Integrations | Suvereo",
     description: "",
   }
   return (
     <Wrapper toc={[]} metadata={metadata} sourceCode={""} >
       <H1>Integrations</H1>
-      <P>Enthusiast comes with a set of ready-to-use integrations that connect your agents to language models (e.g. Gemini and Azure OpenAI).</P>
+      <P>Suvereo comes with a set of ready-to-use integrations that connect your agents to language models (e.g. Gemini and Azure OpenAI).</P>
       <P>They allow you to leverage enterprise-grade AI models for enhanced security and performance. Furthermore, each of these integrations can be customized and extended by a developer.</P>
       <H2>Language Models</H2>
       <Cards>
@@ -33,7 +33,7 @@ export default async function Page() {
         <IntegrationCard name="Mistral" imageSrc="/tools/enthusiast/img/integrations/mistral.png" href="/integrations/mistral/" />
       </Cards>
       <H2>Build a Custom Integration</H2>
-      <P>These ready-made integrations cover common use cases. If you need to connect a system that isn’t listed here, Enthusiast allows you to build custom integrations tailored to your stack.</P>
+      <P>These ready-made integrations cover common use cases. If you need to connect a system that isn’t listed here, Suvereo allows you to build custom integrations tailored to your stack.</P>
       <Cards.Card className="x:my-4" title="Learn How to Build a Custom Integration" href="/docs/customization/custom-integration" arrow />
     </Wrapper>
   )

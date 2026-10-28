@@ -1,6 +1,6 @@
 # Creating a Custom Agent
 
-A custom agent lets you define exactly which tools the agent has access to and how it should behave, while Enthusiast takes care of building and running it.
+A custom agent lets you define exactly which tools the agent has access to and how it should behave, while Suvereo takes care of building and running it.
 
 ## Example: Catalog Knowledge Agent
 

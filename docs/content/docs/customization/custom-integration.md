@@ -1,6 +1,6 @@
 # Building a Custom Integration
 
-Custom integrations let you connect Enthusiast to systems that aren’t supported out of the box.
+Custom integrations let you connect Suvereo to systems that aren’t supported out of the box.
 
 ## Types of Integrations.
 
@@ -143,7 +143,7 @@ silently shadowing the original.
 
 No agent configuration is needed. Once a server is connected, the data set's agents pick up its tools on their next
 conversation turn, as long as they can answer asynchronously - which every agent built on `BaseToolCallingAgent` can.
-Data sets with no MCP server connected are untouched: Enthusiast checks for connected servers before doing any of the
+Data sets with no MCP server connected are untouched: Suvereo checks for connected servers before doing any of the
 extra work, so nothing changes for them.
 
 ## Building a Tool Providing Integration
@@ -156,7 +156,7 @@ Your integration class must define the same static fields as any other integrati
 - `get_tools(self)` - An async method returning the LangChain tools this integration currently makes available.
 
 Set `ALLOWS_MULTIPLE_INSTANCES = True` if a data set should be allowed to hold more than one instance of your type.
-Enthusiast discovers tool providers generically, so agents pick up your tools alongside any connected MCP servers
+Suvereo discovers tool providers generically, so agents pick up your tools alongside any connected MCP servers
 without knowing your integration exists.
 
 ### Example Implementation

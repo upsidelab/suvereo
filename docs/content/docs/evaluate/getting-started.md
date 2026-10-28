@@ -131,6 +131,6 @@ Code metrics check what the agent produced; a judge reads the trace and grades h
 
 ## 7. Add a mock
 
-Anything your agent reaches outside Agent Core goes through an integration, and a suite replaces each one with a mock. [Mocks](./mocks) covers the three ways to build one, from a few lines of YAML to a mock integration your vertical ships.
+Anything your agent reaches outside Suvereo goes through an integration, and a suite replaces each one with a mock. [Mocks](./mocks) covers the three ways to build one, from a few lines of YAML to a mock integration your vertical ships.
 
 For every option, field and metric, see the [Reference](./reference).

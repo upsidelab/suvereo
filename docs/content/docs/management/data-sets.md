@@ -1,11 +1,11 @@
 # Managing Data Sets
 
 
-A Data Set is the top-level abstraction in Enthusiast. It represents a collection of products and documents and allows users to run agent requests on it. Data sets are isolated, meaning the agent will only use data from the specified data set in a request. You can also restrict access to data sets by user or service account.
+A Data Set is the top-level abstraction in Suvereo. It represents a collection of content and allows users to run agent requests on it. Data sets are isolated, meaning the agent will only use data from the specified data set in a request. You can also restrict access to data sets by user or service account.
 
 While a single data set is usually enough to get started, there are scenarios where additional data sets can be useful, such as:
 
-- **Multi-brand ecommerce:** Managing multiple brands within a single Enthusiast deployment.
+- **Multiple brands or departments:** Managing them within a single Suvereo deployment.
 - **Experimentation:** Testing different models and configurations
 - **Content language separation:** Creating data sets per language to improve response accuracy.
 

@@ -26,7 +26,7 @@ text{font-family:Helvetica,Arial,sans-serif;fill:#1f2a3c}
 <rect x="480" y="56" width="380" height="56" rx="10" fill="#ffffff" stroke="#1f2a3c" stroke-width="2"/>
 <text x="670.0" y="89.0" text-anchor="middle" class="nt">Contracts for agents, integrations, verticals</text>
 <rect x="430" y="190" width="750" height="200" rx="14" fill="#f4f6fb" stroke="#c3cad9" stroke-width="2"/>
-<text x="446" y="216" text-anchor="start" class="ct">AgentCore server</text>
+<text x="446" y="216" text-anchor="start" class="ct">Suvereo server</text>
 <rect x="460" y="240" width="210" height="70" rx="10" fill="#ffffff" stroke="#1f2a3c" stroke-width="2"/>
 <text x="565.0" y="272.0" text-anchor="middle" class="nt">API</text>
 <text x="565.0" y="290.0" text-anchor="middle" class="ns">REST API and WebSocket</text>

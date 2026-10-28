@@ -1,6 +1,6 @@
 # Agent Classes
 
-An agent is a Python class. `BaseAgent`, from `enthusiast-common`, is the contract every agent class fulfils, and AgentCore provides one implementation of it, `BaseToolCallingAgent`, which is the recommended starting point. An agent class can be defined anywhere, for example in a [plugin](/docs/concepts#plugin), in a vertical or in the AgentCore codebase itself. Wherever it lives, it is registered in `AVAILABLE_AGENTS` and used to create [agents](/docs/concepts#agent) in the UI.
+An agent is a Python class. `BaseAgent`, from `enthusiast-common`, is the contract every agent class fulfils, and Suvereo provides one implementation of it, `BaseToolCallingAgent`, which is the recommended starting point. An agent class can be defined anywhere, for example in a [plugin](/docs/concepts#plugin), in a vertical or in the Suvereo codebase itself. Wherever it lives, it is registered in `AVAILABLE_AGENTS` and used to create [agents](/docs/concepts#agent) in the UI.
 
 ## The BaseAgent contract
 

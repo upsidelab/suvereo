@@ -8,7 +8,7 @@
   <rect x="1380" y="24" width="300" height="672" rx="16" fill="#faf8ff" stroke="#7c3aed" stroke-width="3"/>
   <text x="1540" y="58" text-anchor="middle" font-size="15" fill="#7c3aed" letter-spacing="1">AGENTS</text>
   <rect x="20" y="60" width="290" height="300" rx="12" fill="#1e293b"/>
-  <text x="165" y="100" text-anchor="middle" font-size="26" font-weight="700" fill="#fff">AgentCore</text>
+  <text x="165" y="100" text-anchor="middle" font-size="26" font-weight="700" fill="#fff">Suvereo</text>
   <text x="165" y="125" text-anchor="middle" font-size="14" fill="#cbd5e1">the generic engine behind every agent</text>
   <line x1="45" y1="145" x2="285" y2="145" stroke="#475569" stroke-width="1"/>
   <g font-size="16" fill="#fff">
