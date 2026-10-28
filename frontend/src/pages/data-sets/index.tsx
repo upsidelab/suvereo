@@ -5,7 +5,7 @@ import { PageMain } from "@/components/util/page-main.tsx";
 export function DataSetsIndex() {
   return (
     <PageMain>
-      <PageHeading title="Manage Data Sets" description="Organize your products and documents with data sets." />
+      <PageHeading title="Manage Data Sets" description="Organize your content with data sets." />
       <DataSetList />
     </PageMain>
   )

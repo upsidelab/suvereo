@@ -1,6 +1,6 @@
 # Frontend
 
-The management platform for Enthusiast: an admin-panel-style UI for configuring data sets, agents and integrations, managing users, groups and roles with granular permissions, and chatting with agents. It talks to the server API.
+The management platform for Suvereo: an admin-panel-style UI for configuring data sets, agents and integrations, managing users, groups and roles with granular permissions, and chatting with agents. It talks to the server API.
 
 React 18 + TypeScript + Vite + Tailwind. Run commands from `frontend/` with pnpm.
 

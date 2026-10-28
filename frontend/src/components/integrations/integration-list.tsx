@@ -242,7 +242,7 @@ export function IntegrationList({ dataSetId }: IntegrationListProps) {
           <div className="py-4">
             <p className="text-sm text-gray-600">
               Are you sure you want to delete this integration? This action cannot be undone.
-              Products and documents imported by this integration will be deleted as well.
+              Entities imported by this integration will be deleted as well.
             </p>
           </div>
           <div className="flex justify-end space-x-2">

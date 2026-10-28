@@ -1,6 +1,6 @@
-# Enthusiast Frontend
+# Suvereo Frontend
 
-This directory contains the frontend of Enthusiast.
+This directory contains the frontend of Suvereo.
 
 ## Getting started
 

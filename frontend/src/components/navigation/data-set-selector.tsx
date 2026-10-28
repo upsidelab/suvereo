@@ -38,10 +38,10 @@ export function DataSetSelector() {
         >
           <div
             className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-            <img src={logoUrl} srcSet={logoSvgUrl} alt="Enthusiast" className="size-8 rounded-lg"/>
+            <img src={logoUrl} srcSet={logoSvgUrl} alt="Suvereo" className="size-8 rounded-lg"/>
           </div>
           <div className="flex flex-col gap-0.5 leading-none">
-            <span className="font-semibold">Enthusiast</span>
+            <span className="font-semibold">Suvereo</span>
             <span className="">{activeDataSet()?.name}</span>
           </div>
           <ChevronsUpDown className="ml-auto" />
