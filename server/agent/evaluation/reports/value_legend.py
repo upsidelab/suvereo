@@ -1,4 +1,4 @@
-from enthusiast_common.evaluation.suite import PassThreshold
+from enthusiast_common.evaluation.suite import PassThreshold, SuiteKind
 
 from agent.evaluation.aggregation.metric_aggregate import DEFAULT_AGGREGATE_NAMES
 
@@ -29,8 +29,17 @@ FAILURE_FIELDS = {
     "errors": "schema errors",
     "reason": "why it wasn't measured",
     "error": "what stopped the run",
+    "ended": "how the conversation ended (done, gave_up, max_turns, error) and its length",
+    "last turns": "the conversation's last messages, cut short",
+    "transcript": "the whole conversation, turn by turn",
     "says": "judge score per criterion (success or failure, or 0–1 on a scale) and why",
     "trace": "the run's every LLM, tool and mock call, as JSON",
+}
+
+
+OUTCOME_FIGURE_WORDS = {
+    "goal_reached": "% of runs with a goal whose simulated user reached it, as the judge read the transcript",
+    "turns": "avg turns per conversation",
 }
 
 
@@ -46,8 +55,9 @@ class ValueLegend:
                 ("Runs", "cases × repeats"),
                 ("Pass rate", cls._pass_rate_words(report.loaded.suite.min_pass_rate)),
                 ("Flaky", "cases whose repeats disagreed"),
+                *((name, OUTCOME_FIGURE_WORDS[name]) for name in report.outcome_figures),
                 *((name, cls._metric_words(report, name)) for name in report.metric_configs),
-                ("Cost / run", "avg agent LLM cost, judge excluded"),
+                ("Cost / run", cls._cost_words(report)),
                 ("p95 time (s)", "95% of runs finished within"),
             ]
         )
@@ -58,6 +68,12 @@ class ValueLegend:
         used = {"says" if field.endswith(" says") else field: field for field in failure_fields}
         used |= {"missed": "❌ metric"} if "missed" in used else {}
         return cls._legend([(used[key], meaning) for key, meaning in FAILURE_FIELDS.items() if key in used])
+
+    @staticmethod
+    def _cost_words(report: SuiteReport) -> str:
+        if report.kind == SuiteKind.CONVERSATION:
+            return "avg agent LLM cost, judge and simulated users excluded"
+        return "avg agent LLM cost, judge excluded"
 
     @staticmethod
     def _pass_rate_words(min_pass_rate: float | None) -> str:

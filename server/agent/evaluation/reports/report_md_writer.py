@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from enthusiast_common.evaluation.metrics.auto import DurationSeconds
+from enthusiast_common.evaluation.suite import SuiteKind
 
 from agent.evaluation.aggregation import FLAKY_RATE, PASS_RATE
 from agent.evaluation.runner import RunResult
@@ -11,6 +12,7 @@ from .markdown_text import MarkdownText
 from .suite_report import SuiteReport
 from .suite_verdict import SuiteVerdict
 from .threshold_text import threshold_words
+from .transcript_markdown import TranscriptMarkdown
 from .value_legend import ValueLegend
 from .verdict_section import VerdictSection
 
@@ -19,8 +21,9 @@ EMPTY = (None, "", [], {})
 
 class ReportMdWriter(BaseReportWriter):
     """report.md, for people and coding agents: the verdict, a comparison of the candidates, the diff against a
-    baseline run, each failed run with the pass thresholds it missed (values, the judge's reasoning, errors and a
-    link to the trace), flaky cases, and how the run was made."""
+    baseline run, each failed run with the pass thresholds it missed (values, the judge's reasoning, errors, a
+    conversation's ending and last turns, and links to the trace and transcript), flaky cases, and how the run was
+    made."""
 
     NAME = "report"
 
@@ -41,7 +44,8 @@ class ReportMdWriter(BaseReportWriter):
     @staticmethod
     def _comparison_section(report: SuiteReport) -> str:
         metrics = list(report.metric_configs)
-        header = ["Candidate", "Runs", "Pass rate", "Flaky", *metrics, "Cost / run", "p95 time (s)"]
+        figures = report.outcome_figures
+        header = ["Candidate", "Runs", "Pass rate", "Flaky", *figures, *metrics, "Cost / run", "p95 time (s)"]
         rows = []
         for c in report.candidates:
             duration = c.metrics.get(DurationSeconds.NAME)
@@ -51,6 +55,7 @@ class ReportMdWriter(BaseReportWriter):
                     len(c.runs),
                     MarkdownText.cell(c.metrics[PASS_RATE].value),
                     MarkdownText.cell(c.metrics[FLAKY_RATE].value),
+                    *(MarkdownText.cell(c.metrics[f].value) if f in c.metrics else "–" for f in figures),
                     *(MarkdownText.cell(c.metrics[m].value) if m in c.metrics else "–" for m in metrics),
                     MarkdownText.usd(c.cost_mean_usd),
                     MarkdownText.cell(duration.p95 if duration else None),
@@ -115,6 +120,9 @@ class ReportMdWriter(BaseReportWriter):
                     fields |= dict.fromkeys(["missed", *(k for k, v in result.details.items() if v not in EMPTY)])
             fields |= dict.fromkeys(f"{name} says" for name, r in run.metrics.items() if JudgeReasoning.lines(r))
             fields |= dict.fromkeys(["error"] if run.trace.error else [])
+            fields |= dict.fromkeys(["ended"] if report.kind == SuiteKind.CONVERSATION else [])
+            fields |= dict.fromkeys(["last turns"] if report.kind == SuiteKind.CONVERSATION and run.trace.turns else [])
+            fields |= dict.fromkeys(["transcript"] if report.linked_transcript_path(run) else [])
             fields |= dict.fromkeys(["trace"] if report.linked_trace_path(run) else [])
         return [field for field in fields if field != REASONING]
 
@@ -135,6 +143,12 @@ class ReportMdWriter(BaseReportWriter):
                 lines += [f"    - {reason}" for reason in reasons]
         if run.trace.error:
             lines.append(f"  - error: {MarkdownText.one_line(run.trace.error)}")
+        if report.kind == SuiteKind.CONVERSATION:
+            lines.append(f"  - ended: {TranscriptMarkdown.ending(run.trace)}")
+            if last_turns := TranscriptMarkdown.last_turns(run.trace):
+                lines += ["  - last turns:", *(f"    - {line}" for line in last_turns)]
+        if transcript := report.linked_transcript_path(run):
+            lines.append(f"  - transcript: [{transcript}]({transcript})")
         if trace := report.linked_trace_path(run):
             lines.append(f"  - trace: [{trace}]({trace}) ({len(run.trace.tool_calls)} tool calls)")
         return "\n".join(lines)

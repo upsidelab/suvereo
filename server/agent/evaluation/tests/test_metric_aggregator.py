@@ -56,8 +56,8 @@ class TestMetricAggregator:
         for conversation in runs:
             del conversation.metrics["attempts"]
 
-        [candidate] = MetricAggregator({"turns": "number"}).aggregate_per_candidate(runs)
+        [candidate] = MetricAggregator({"turns": "number"}, kind="conversation").aggregate_per_candidate(runs)
 
-        assert candidate.metrics["pass_rate"].value == 0.5
-        assert candidate.metrics["first_attempt_pass_rate"].value is None
+        assert (candidate.metrics["pass_rate"].value, candidate.metrics["flaky_rate"].value) == (0.5, 0.0)
+        assert "first_attempt_pass_rate" not in candidate.metrics
         assert candidate.metrics["turns"].value == 2.5

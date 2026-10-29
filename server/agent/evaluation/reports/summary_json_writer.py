@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from agent.evaluation.aggregation import FIRST_ATTEMPT_PASS_RATE, FLAKY_RATE, PASS_RATE, CandidateMetrics
+from agent.evaluation.aggregation import CandidateMetrics
 from agent.evaluation.runner import RunResult
 
 from .base_report_writer import BaseReportWriter
@@ -16,9 +16,10 @@ class SummaryJsonWriter(BaseReportWriter):
     """summary.json, always written (ReportOutput runs it whatever is selected): the compact, machine-readable result
     for scripts, CI and coding agents.
 
-    Holds the verdict (status, exit code), how the run was started, each candidate's rates and metric values, each
-    pass threshold's pass rate, each case's status per candidate, the runs that failed with the thresholds they
-    missed, the diff against a baseline run (--baseline), and the cost against the budget.
+    Holds the verdict (status, exit code), how the run was started, each candidate's rates, outcome figures (e.g. a
+    conversation's goal_reached rate and mean turns) and metric values, each pass threshold's pass rate, each case's
+    status per candidate, the runs that failed with the thresholds they missed, the diff against a baseline run
+    (--baseline), and the cost against the budget.
     """
 
     NAME = "summary"
@@ -60,7 +61,7 @@ class SummaryJsonWriter(BaseReportWriter):
 
     @staticmethod
     def _candidate_summary(candidate: CandidateMetrics, report: SuiteReport, verdict: SuiteVerdict) -> dict[str, Any]:
-        rates = {name: candidate.metrics[name].value for name in (PASS_RATE, FIRST_ATTEMPT_PASS_RATE, FLAKY_RATE)}
+        rates = {name: candidate.metrics[name].value for name in report.rates}
         return {
             "candidate": candidate.candidate,
             "provider": report.provider_of(candidate.model),
@@ -69,6 +70,9 @@ class SummaryJsonWriter(BaseReportWriter):
             "runs": len(candidate.runs),
             **rates,
             "below_min_pass_rate": candidate.candidate in verdict.below_min_pass_rate,
+            "outcomes": {
+                name: candidate.metrics[name].value for name in report.outcome_figures if name in candidate.metrics
+            },
             "metrics": {
                 name: candidate.metrics[name].value for name in report.metric_configs if name in candidate.metrics
             },

@@ -1,7 +1,7 @@
 from enthusiast_common.evaluation.loaded_suite import LoadedSuite
 from enthusiast_common.evaluation.metrics import MetricResult
-from enthusiast_common.evaluation.suite import AgenticExecutionEvalCase, EvalSuite
-from enthusiast_common.evaluation.trace import ExecutionTrace
+from enthusiast_common.evaluation.suite import AgenticExecutionEvalCase, ConversationEvalCase, EvalSuite
+from enthusiast_common.evaluation.trace import ExecutionTrace, ToolCall, Turn
 
 from agent.evaluation.reports import SuiteReport
 from agent.evaluation.runner import RunResult, ThresholdResult
@@ -89,3 +89,30 @@ def judged_suite_report(tmp_path, runs, selected=None) -> SuiteReport:
 def suite_report(tmp_path, runs, selected=None, git=None, baseline=None, **suite_changes) -> SuiteReport:
     result = SuiteRunResult(suite="orders", planned_runs=len(runs), runs=runs, spent_usd=0.0)
     return SuiteReport(loaded_suite(tmp_path, **suite_changes), result, selected, git=git, baseline=baseline)
+
+
+CONVERSATION_CASES = [
+    ConversationEvalCase(
+        id="ada", simulated_user={"goal": "Order a mug", "persona": "terse", "facts": {"size": "large"}}
+    ),
+    ConversationEvalCase(id="bob", user_messages=["Hi"]),
+]
+
+
+def conversation_run(case_id="ada", passed=False, answers=("Which size?", "Done, ordered.", "Anything else?")):
+    """A conversation run of one turn per answer, the first calling a tool that raised; the user gave up."""
+    run = run_result(case_id, passed=passed)
+    del run.metrics["attempts"]
+    turns = [
+        Turn(user_message=f"message {n}", answer=answer, tool_call_run_ids=["t"] if n == 1 else [])
+        for n, answer in enumerate(answers, start=1)
+    ]
+    run.trace = ExecutionTrace(
+        turns=turns, stop_reason="gave_up", tool_calls=[ToolCall(run_id="t", name="find_mug", error="timeout")]
+    )
+    run.metrics |= {"turns": MetricResult(value=float(len(turns))), "goal_reached": MetricResult(value=passed)}
+    return run
+
+
+def conversation_suite_report(tmp_path, runs, selected=None) -> SuiteReport:
+    return suite_report(tmp_path, runs, selected, cases=CONVERSATION_CASES, kind="conversation")

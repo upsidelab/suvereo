@@ -1,8 +1,9 @@
 from enthusiast_common.evaluation.loaded_suite import LoadedSuite
 from enthusiast_common.evaluation.metrics import MetricRegistry
 from enthusiast_common.evaluation.metrics.auto import AUTO_METRICS, Attempts
-from enthusiast_common.evaluation.suite import Aggregate
+from enthusiast_common.evaluation.suite import Aggregate, SuiteKind
 
+from agent.evaluation.resolved_kind import resolved_kind
 from agent.evaluation.runner import RunResult
 from agent.evaluation.runner.case_runner import JUDGE_COST, USER_COST
 from agent.evaluation.suite_metric_configs import suite_metric_configs
@@ -14,15 +15,25 @@ PASS_RATE = "pass_rate"
 FIRST_ATTEMPT_PASS_RATE = "first_attempt_pass_rate"
 FLAKY_RATE = "flaky_rate"
 DERIVED_METRICS = (PASS_RATE, FIRST_ATTEMPT_PASS_RATE, FLAKY_RATE)
+#: The rates a suite of each kind reports; conversations have no attempts, so no first-attempt rate.
+RATES: dict[SuiteKind, tuple[str, ...]] = {
+    SuiteKind.EXECUTION: DERIVED_METRICS,
+    SuiteKind.CONVERSATION: (PASS_RATE, FLAKY_RATE),
+}
 
 
 class MetricAggregator:
-    """Aggregates runs per candidate: every metric and component, and the pass, first-attempt and flaky rates; the
-    first-attempt rate has no value for conversations, which have no attempts."""
+    """Aggregates runs per candidate: every metric and component, and the rates of the suite's kind (RATES)."""
 
-    def __init__(self, value_types: dict[str, str], aggregates: dict[str, Aggregate] | None = None):
+    def __init__(
+        self,
+        value_types: dict[str, str],
+        aggregates: dict[str, Aggregate] | None = None,
+        kind: SuiteKind = SuiteKind.EXECUTION,
+    ):
         self.value_types = value_types
         self.aggregates = aggregates or {}
+        self.kind = kind
 
     @classmethod
     def for_suite(cls, loaded: LoadedSuite) -> "MetricAggregator":
@@ -37,7 +48,7 @@ class MetricAggregator:
             value_types[config.name] = registry.metric_class(config.type).VALUE_TYPE
             if config.aggregate:
                 aggregates[config.name] = config.aggregate
-        return cls(value_types, aggregates)
+        return cls(value_types, aggregates, resolved_kind(loaded.suite))
 
     def aggregate_per_candidate(self, runs: list[RunResult]) -> list[CandidateMetrics]:
         """One entry per candidate, in the order their first run appears."""
@@ -56,8 +67,9 @@ class MetricAggregator:
         ]
 
     def aggregate_runs(self, runs: list[RunResult]) -> dict[str, MetricAggregate]:
-        """Every metric over the runs, plus the derived rates."""
-        return self._aggregate_measured_metrics(runs) | self._pass_and_flaky_rates(runs)
+        """Every metric over the runs, plus the rates of the suite's kind."""
+        rates = self._rates(runs)
+        return self._aggregate_measured_metrics(runs) | {name: rates[name] for name in RATES[self.kind]}
 
     def _aggregate_measured_metrics(self, runs: list[RunResult]) -> dict[str, MetricAggregate]:
         names = list(dict.fromkeys(name for run in runs for name in run.metrics))
@@ -75,7 +87,7 @@ class MetricAggregator:
         return summary
 
     @staticmethod
-    def _pass_and_flaky_rates(runs: list[RunResult]) -> dict[str, MetricAggregate]:
+    def _rates(runs: list[RunResult]) -> dict[str, MetricAggregate]:
         outcomes: dict[str, list[bool]] = {}
         for run in runs:
             outcomes.setdefault(run.case_id, []).append(run.passed)
