@@ -2,8 +2,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-from enthusiast_common.evaluation.errors import EvalSuiteError
 from pydantic import BaseModel, ValidationError
+from suvereo_common.evaluation.errors import EvalSuiteError
 
 from .case_outcome import CaseStatus
 from .run_directory import LATEST_LINK, RESULTS_DIR

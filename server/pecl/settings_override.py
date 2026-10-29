@@ -1,14 +1,14 @@
 # Plugin entry point.
 #
-# A vertical installs itself on top of agentcore by editing (or shipping) this file.
+# A vertical installs itself on top of Suvereo by editing (or shipping) this file.
 # pecl/settings.py imports it (`from pecl.settings_override import *`) and merges
 # INSTALLED_VERTICALS into INSTALLED_APPS.
 #
-# Out of the box (no vertical) agentcore runs standalone, so every list here is empty.
+# Out of the box (no vertical) Suvereo runs standalone, so every list here is empty.
 #
-# Example — an ecommerce vertical would set:
+# Example — Enthusiast (an eCommerce vertical) would set:
 #
-#     INSTALLED_VERTICALS = ["ecommerce_vertical"]
+#     INSTALLED_VERTICALS = ["enthusiast_vertical"]
 #     AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS = [
 #         "enthusiast_agent_catalog_enrichment.CatalogEnrichmentAgenticExecutionDefinition",
 #     ]
@@ -17,13 +17,13 @@
 #         "enthusiast_source_medusa.MedusaIntegration",
 #     ]
 #     CATALOG_INTEGRATION_MANAGERS = [
-#         "ecommerce_vertical.sync.ProductSourceManager",
-#         "ecommerce_vertical.sync.DocumentSourceManager",
-#         "ecommerce_vertical.sync.ECommerceIntegrationManager",
+#         "enthusiast_vertical.sync.ProductSourceManager",
+#         "enthusiast_vertical.sync.DocumentSourceManager",
+#         "enthusiast_vertical.sync.ECommerceIntegrationManager",
 #     ]
 #     CATALOG_ENTITY_PLUGINS = [
-#         "ecommerce_vertical.models.Product",
-#         "ecommerce_vertical.models.Document",
+#         "enthusiast_vertical.models.Product",
+#         "enthusiast_vertical.models.Document",
 #     ]
 
 INSTALLED_VERTICALS = []

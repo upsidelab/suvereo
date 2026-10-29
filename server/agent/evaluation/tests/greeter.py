@@ -1,9 +1,9 @@
 import json
 from abc import ABC, abstractmethod
 
-from enthusiast_common.agentic_execution import BaseAgenticExecutionDefinition, ExecutionInputType
-from enthusiast_common.evaluation.mocks import BaseMock, BaseMockIntegration
-from enthusiast_common.integrations import BaseIntegration
+from suvereo_common.agentic_execution import BaseAgenticExecutionDefinition, ExecutionInputType
+from suvereo_common.evaluation.mocks import BaseMock, BaseMockIntegration
+from suvereo_common.integrations import BaseIntegration
 
 from agent.evaluation.integrations import EvalIntegrationPluginResolver
 

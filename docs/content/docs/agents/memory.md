@@ -21,7 +21,7 @@ On every turn, the agent sends the language model these messages, in this order:
 
 ## Context Window Builder
 
-`ContextWindowBuilder` assembles the messages for each turn. It is part of the `enthusiast-agent-tool-calling` plugin, and `BaseToolCallingAgent` uses it.
+`ContextWindowBuilder` assembles the messages for each turn. It is part of the `suvereo-agent-tool-calling` plugin, and `BaseToolCallingAgent` uses it.
 
 - It keeps the most recent messages that fit the token limit, starting on a human message.
 - It counts tokens approximately.
@@ -60,13 +60,13 @@ def get_config(self, config_type: ConfigType = ConfigType.CONVERSATION) -> Agent
     )
 ```
 
-The compactor class comes from `memory.compactor_class` in the configuration, which the default configuration (the AgentCore server's `DefaultAgentConfig`) sets to `LLMMemoryCompactor`. If `memory_compactor_enabled` is true and no compactor class is set, building the agent fails.
+The compactor class comes from `memory.compactor_class` in the configuration, which the default configuration (the Suvereo server's `DefaultAgentConfig`) sets to `LLMMemoryCompactor`. If `memory_compactor_enabled` is true and no compactor class is set, building the agent fails.
 
 ## Customization
 
 ### Custom memory compactor
 
-To change how summaries are made, subclass `BaseMemoryCompactor` from `enthusiast-common`:
+To change how summaries are made, subclass `BaseMemoryCompactor` from `suvereo-common`:
 
 ```python
 class MyMemoryCompactor(BaseMemoryCompactor):
@@ -92,7 +92,7 @@ AgentConfigWithDefaults(
 )
 ```
 
-Alternatively, the class can be set as the default compactor, by using it as `compactor_class` in the `memory` of the AgentCore server's `DefaultAgentConfig` (`server/agent/core/agents/default_config.py`). It is then used by every agent whose configuration leaves `memory` empty.
+Alternatively, the class can be set as the default compactor, by using it as `compactor_class` in the `memory` of the Suvereo server's `DefaultAgentConfig` (`server/agent/core/agents/default_config.py`). It is then used by every agent whose configuration leaves `memory` empty.
 
 The builder creates the compactor as `compactor_class(conversation_repo, conversation_id, llm, chat_history)`.
 

@@ -40,7 +40,7 @@ export function DeleteDataSetModal({ open, onOpenChange, dataSet, onConfirm }: D
         <div className="py-4 space-y-2">
           <p className="text-sm">Are you sure you want to delete <strong>"{dataSet.name}"</strong>?</p>
           <p className="text-sm text-muted-foreground">
-            This will also permanently delete all products, documents, sources, agents, conversations, and the eCommerce integration associated with this data set.
+            This will also permanently delete all entities, sources, agents, conversations, and integrations associated with this data set.
           </p>
           <p className="text-sm text-muted-foreground">This action cannot be undone.</p>
         </div>

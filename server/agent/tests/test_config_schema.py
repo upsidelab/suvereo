@@ -1,11 +1,11 @@
 from unittest.mock import patch
 
 import pytest
-from enthusiast_common.config import FunctionToolConfig
-from enthusiast_common.tools import BaseFunctionTool
-from enthusiast_common.utils import RequiredFieldsModel
 from model_bakery import baker
 from pydantic import Field
+from suvereo_common.config import FunctionToolConfig
+from suvereo_common.tools import BaseFunctionTool
+from suvereo_common.utils import RequiredFieldsModel
 
 from agent.models.agent import Agent
 from agent.serializers.configuration import AgentSerializer, agent_type_config_schema, agent_type_display_name

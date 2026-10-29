@@ -1,8 +1,8 @@
 import requests
-from enthusiast_common.utils import RequiredFieldsModel
-from enthusiast_ecommerce_common.interfaces import DocumentSourcePlugin
-from enthusiast_ecommerce_common.structures import DocumentDetails
+from enthusiast_vertical_common.interfaces import DocumentSourcePlugin
+from enthusiast_vertical_common.structures import DocumentDetails
 from pydantic import Field
+from suvereo_common.utils import RequiredFieldsModel
 
 
 class SanityCMSConfig(RequiredFieldsModel):

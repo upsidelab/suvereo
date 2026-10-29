@@ -1,6 +1,6 @@
 import logging
 
-from enthusiast_common.agents import BaseAgent
+from suvereo_common.agents import BaseAgent
 from utils.functions import get_model_descriptor_default_value_from_class
 
 from agent.core.registries.agents.agent_registry import AgentRegistry

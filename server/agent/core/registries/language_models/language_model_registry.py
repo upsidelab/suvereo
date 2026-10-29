@@ -1,9 +1,9 @@
 from importlib import import_module
 from typing import List, Type
 
-from enthusiast_common.registry import BaseLanguageModelRegistry
-from enthusiast_common.registry.llm import LanguageModelProvider
-from enthusiast_common.repositories import BaseDataSetRepository
+from suvereo_common.registry import BaseLanguageModelRegistry
+from suvereo_common.registry.llm import LanguageModelProvider
+from suvereo_common.repositories import BaseDataSetRepository
 from utils.base_registry import BaseRegistry
 
 from agent.core.repositories import DjangoDataSetRepository

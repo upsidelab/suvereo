@@ -1,8 +1,8 @@
 from pathlib import Path
 from typing import Any
 
-from enthusiast_common.evaluation.metrics.auto import CostUsd, DurationSeconds
-from enthusiast_common.evaluation.suite import SuiteKind
+from suvereo_common.evaluation.metrics.auto import CostUsd, DurationSeconds
+from suvereo_common.evaluation.suite import SuiteKind
 
 from agent.evaluation.aggregation import CandidateMetrics
 from agent.evaluation.aggregation.metric_aggregate import DEFAULT_AGGREGATE_NAMES, MetricAggregate

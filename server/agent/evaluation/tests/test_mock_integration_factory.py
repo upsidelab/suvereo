@@ -1,8 +1,8 @@
 from pathlib import Path
 
 import pytest
-from enthusiast_common.evaluation.errors import EvalSuiteError
-from enthusiast_common.evaluation.suite import IntegrationConfig
+from suvereo_common.evaluation.errors import EvalSuiteError
+from suvereo_common.evaluation.suite import IntegrationConfig
 
 from agent.evaluation.integrations import MockIntegrationFactory
 

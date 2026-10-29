@@ -2,9 +2,9 @@ services:
   postgres:
     image: pgvector/pgvector:pg17
     environment:
-      - POSTGRES_USER=enthusiast
-      - POSTGRES_PASSWORD=enthusiast
-      - POSTGRES_DB=enthusiast
+      - POSTGRES_USER=suvereo
+      - POSTGRES_PASSWORD=suvereo
+      - POSTGRES_DB=suvereo
   redis:
     image: redis:latest
   frontend:

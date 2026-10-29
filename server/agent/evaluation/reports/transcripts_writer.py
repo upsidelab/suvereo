@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from enthusiast_common.evaluation.suite import ConversationEvalCase, SuiteKind
+from suvereo_common.evaluation.suite import ConversationEvalCase, SuiteKind
 
 from agent.evaluation.runner import RunResult
 

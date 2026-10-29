@@ -2,12 +2,6 @@
 
 from django.db import migrations, models
 
-EVAL_USER_EMAIL = "evaluation@enthusiast.internal"
-
-
-def mark_eval_user_internal(apps, schema_editor):
-    apps.get_model("account", "User").objects.filter(email=EVAL_USER_EMAIL).update(is_internal=True)
-
 
 class Migration(migrations.Migration):
     dependencies = [
@@ -19,9 +13,8 @@ class Migration(migrations.Migration):
             model_name="user",
             name="is_internal",
             field=models.BooleanField(
-                db_comment="Used by Agent Core itself, e.g. evaluation runs; hidden and cannot sign in.",
+                db_comment="Used by Suvereo itself, e.g. evaluation runs; hidden and cannot sign in.",
                 default=False,
             ),
         ),
-        migrations.RunPython(mark_eval_user_internal, migrations.RunPython.noop),
     ]

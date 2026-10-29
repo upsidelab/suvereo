@@ -2,7 +2,7 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from contextvars import copy_context
 
-from enthusiast_common.evaluation.trace import TraceRecorder
+from suvereo_common.evaluation.trace import TraceRecorder
 
 from agent.evaluation.run_context import EvalRunContext
 

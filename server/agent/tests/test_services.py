@@ -1,10 +1,10 @@
 from unittest.mock import patch
 
 import pytest
-from enthusiast_common.config import FunctionToolConfig
-from enthusiast_common.tools import BaseFunctionTool
-from enthusiast_common.utils import RequiredFieldsModel
 from pydantic import Field
+from suvereo_common.config import FunctionToolConfig
+from suvereo_common.tools import BaseFunctionTool
+from suvereo_common.utils import RequiredFieldsModel
 
 from agent.core.registries.agents.agent_registry import AgentRegistry
 from agent.models import Agent

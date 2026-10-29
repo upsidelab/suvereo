@@ -16,7 +16,7 @@ Use agentic executions when you want to:
 Create a Pydantic model describing what callers must supply. The server derives the JSON schema from this class and validates incoming requests against it.
 
 ```python
-from enthusiast_common.agentic_execution import ExecutionInputType
+from suvereo_common.agentic_execution import ExecutionInputType
 
 class MyExecutionInput(ExecutionInputType):
     additional_instructions: str | None = None
@@ -28,7 +28,7 @@ class MyExecutionInput(ExecutionInputType):
 If your execution has domain-specific failure modes, extend `ExecutionFailureCode`:
 
 ```python
-from enthusiast_common.agentic_execution import ExecutionFailureCode
+from suvereo_common.agentic_execution import ExecutionFailureCode
 
 class MyFailureCode(ExecutionFailureCode):
     EXTERNAL_SERVICE_UNAVAILABLE = "external_service_unavailable"
@@ -40,7 +40,7 @@ class MyFailureCode(ExecutionFailureCode):
 Validators inspect the agent's response after each `execute()` call. They return a `ValidatorResponse` that tells the run loop whether to succeed, retry, or stop.
 
 ```python
-from enthusiast_common.agentic_execution import (
+from suvereo_common.agentic_execution import (
     BaseExecutionValidator,
     ExecutionInputType,
     ToolScratchpad,
@@ -70,12 +70,12 @@ Set `retry_needed=False` when retrying is pointless — for example, when an ext
 Subclass `BaseAgenticExecutionDefinition` and implement `execute()`. This is the single-attempt logic the run loop calls repeatedly until validators pass or retries are exhausted.
 
 ```python
-from enthusiast_common.agentic_execution import (
+from suvereo_common.agentic_execution import (
     BaseAgenticExecutionDefinition,
     IsValidJsonValidator,
     StopExecutionValidator,
 )
-from enthusiast_common.agentic_execution.protocol import ExecutionConversationInterface
+from suvereo_common.agentic_execution.protocol import ExecutionConversationInterface
 
 from .inputs import MyExecutionInput
 from .validators import MyOutputValidator
@@ -108,8 +108,8 @@ class MyAgenticExecutionDefinition(BaseAgenticExecutionDefinition):
 Execution runs benefit from a stripped-down system prompt that removes conversational scaffolding and mandates structured output. Implement this in your `BaseAgentConfigProvider`:
 
 ```python
-from enthusiast_common.agents.config import BaseAgentConfigProvider, ConfigType
-from enthusiast_common.config import AgentConfigWithDefaults
+from suvereo_common.agents.config import BaseAgentConfigProvider, ConfigType
+from suvereo_common.config import AgentConfigWithDefaults
 
 from .prompts import CONVERSATION_PROMPT, EXECUTION_PROMPT
 

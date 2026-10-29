@@ -3,8 +3,8 @@ from contextvars import ContextVar
 from pathlib import Path
 from typing import ClassVar, Iterator, Optional
 
-from enthusiast_common.evaluation.trace import TraceRecorder
-from enthusiast_common.integrations import BaseIntegration, BaseIntegrationPluginResolver
+from suvereo_common.evaluation.trace import TraceRecorder
+from suvereo_common.integrations import BaseIntegration, BaseIntegrationPluginResolver
 
 
 class EvalRunContext:

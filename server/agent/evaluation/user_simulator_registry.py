@@ -1,8 +1,8 @@
 from django.utils.module_loading import import_string
-from enthusiast_common.evaluation.base_model_client import BaseModelClient
-from enthusiast_common.evaluation.errors import EvalSuiteError
-from enthusiast_common.evaluation.suite import ConversationEvalCase
-from enthusiast_common.evaluation.users import BaseUserSimulator, ScriptedUser, SimulatedUser
+from suvereo_common.evaluation.base_model_client import BaseModelClient
+from suvereo_common.evaluation.errors import EvalSuiteError
+from suvereo_common.evaluation.suite import ConversationEvalCase
+from suvereo_common.evaluation.users import BaseUserSimulator, ScriptedUser, SimulatedUser
 
 
 class UserSimulatorRegistry:

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-export const OAUTH_CHANNEL = "enthusiast-oauth";
+export const OAUTH_CHANNEL = "suvereo-oauth";
 
 export function OAuthCompletePage() {
   useEffect(() => {

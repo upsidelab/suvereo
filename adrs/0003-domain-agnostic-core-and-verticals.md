@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-Enthusiast was originally deeply coupled to the e-commerce domain. The database models and migrations were defined directly in the server codebase, and the e-commerce interfaces lived in `enthusiast-common`.
+Enthusiast was originally deeply coupled to the e-commerce domain. The database models and migrations were defined directly in the server codebase, and the e-commerce interfaces lived in `suvereo-common`.
 
 Any other use of Enthusiast had to be forced into the e-commerce schema, and the coupling discouraged other domains from being introduced at all.
 
@@ -28,7 +28,7 @@ The e-commerce domain became the first vertical.
 
 ## Consequences
 
-- A domain with any data shape can be built into Enthusiast, without fitting it into someone else's schema.
-- Core and `enthusiast-common` must not contain domain entities or domain-specific interfaces. Domain code belongs in a vertical.
+- A domain with any data shape can be built into Suvereo, without fitting it into someone else's schema.
+- Core and `suvereo-common` must not contain domain entities or domain-specific interfaces. Domain code belongs in a vertical.
 - Agents and tools that depend on domain entities are tied to the vertical that defines them. They are not usable on a core-only set-up.
 - A set-up is composed of core, an optional vertical, and the plugins on top of them (see [ADR-0001](0001-plugin-architecture.md)). Core remains valid with no vertical configured.

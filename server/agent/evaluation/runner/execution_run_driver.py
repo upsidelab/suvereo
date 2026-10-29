@@ -1,6 +1,6 @@
-from enthusiast_common.evaluation.base_model_client import BaseModelClient
-from enthusiast_common.evaluation.suite import AgenticExecutionEvalCase, EvalCase
-from enthusiast_common.evaluation.trace import TraceRecorder
+from suvereo_common.evaluation.base_model_client import BaseModelClient
+from suvereo_common.evaluation.suite import AgenticExecutionEvalCase, EvalCase
+from suvereo_common.evaluation.trace import TraceRecorder
 
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
 from agent.agentic_execution.runner import AgenticExecutionRunner

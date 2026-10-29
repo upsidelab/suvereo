@@ -1,7 +1,7 @@
 from typing import Type
 
 from django.conf import settings
-from enthusiast_common.agentic_execution import BaseAgenticExecutionDefinition
+from suvereo_common.agentic_execution import BaseAgenticExecutionDefinition
 from utils.base_registry import BaseRegistry
 
 

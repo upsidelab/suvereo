@@ -10,9 +10,9 @@ from typing import Iterator
 
 from django.db import connection
 from django.test import override_settings
-from enthusiast_common.evaluation.errors import EvalSuiteError
-from enthusiast_common.evaluation.loaded_suite import LoadedSuite
-from enthusiast_common.evaluation.suite import EvalCase, ModelTarget, PromptVariant
+from suvereo_common.evaluation.errors import EvalSuiteError
+from suvereo_common.evaluation.loaded_suite import LoadedSuite
+from suvereo_common.evaluation.suite import EvalCase, ModelTarget, PromptVariant
 
 from agent.evaluation.eval_user import EvalUser
 from agent.evaluation.integrations import MockIntegrationFactory

@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock
 
 import pytest
-from enthusiast_common.evaluation.trace import TraceRecorder
+from suvereo_common.evaluation.trace import TraceRecorder
 
 from agent.evaluation.integrations import EvalIntegrationPluginResolver
 from agent.evaluation.run_context import EvalRunContext

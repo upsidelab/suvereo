@@ -1,4 +1,4 @@
-from enthusiast_common.agentic_execution import AttemptObserver, ExecutionConversationInterface, ExecutionResult
+from suvereo_common.agentic_execution import AttemptObserver, ExecutionConversationInterface, ExecutionResult
 
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
 

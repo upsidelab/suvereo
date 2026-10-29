@@ -1,4 +1,4 @@
-from enthusiast_common.evaluation.suite import PassThreshold, SuiteKind
+from suvereo_common.evaluation.suite import PassThreshold, SuiteKind
 
 from agent.evaluation.aggregation.metric_aggregate import DEFAULT_AGGREGATE_NAMES
 

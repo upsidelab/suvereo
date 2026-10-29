@@ -14,7 +14,7 @@ text{font-family:Helvetica,Arial,sans-serif;fill:#1f2a3c}
 <path d="M400 30 A100.0 10 0 0 0 600 30" fill="none" stroke="#1f2a3c" stroke-width="2"/>
 <text x="500.0" y="60.0" text-anchor="middle" class="nt">Redis</text>
 <rect x="20" y="165" width="960" height="470" rx="14" fill="#f4f6fb" stroke="#c3cad9" stroke-width="2"/>
-<text x="36" y="191" text-anchor="start" class="ct">AgentCore server</text>
+<text x="36" y="191" text-anchor="start" class="ct">Suvereo server</text>
 <rect x="75" y="215" width="220" height="64" rx="10" fill="#ffffff" stroke="#1f2a3c" stroke-width="2"/>
 <text x="185.0" y="244.0" text-anchor="middle" class="nt">API service</text>
 <text x="185.0" y="262.0" text-anchor="middle" class="ns">REST API and WebSocket</text>

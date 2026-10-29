@@ -1,6 +1,6 @@
 # Installation
 
-The quickest way to start using Enthusiast is with the provided Docker Compose setup. This will get you a working instance in just a few minutes.
+The quickest way to start using Suvereo is with the provided Docker Compose setup. This will get you a working instance in just a few minutes.
 
 ## Setting Up Using Docker Compose
 

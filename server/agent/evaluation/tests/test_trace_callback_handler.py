@@ -1,10 +1,10 @@
-from enthusiast_common.evaluation.trace import TraceRecorder
 from langchain_core.documents import Document
 from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
 from langchain_core.messages import AIMessage
 from langchain_core.retrievers import BaseRetriever
 from langchain_core.runnables import RunnableLambda
 from langchain_core.tools import tool
+from suvereo_common.evaluation.trace import TraceRecorder
 
 from agent.evaluation.run_context import EvalRunContext
 from agent.evaluation.trace_callback_handler import TraceCallbackHandler

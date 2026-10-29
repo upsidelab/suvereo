@@ -1,8 +1,9 @@
 from django.db import IntegrityError, transaction
 
 from account.models import User
+from account.services import ServiceAccountNameService
 
-EMAIL = "evaluation@enthusiast.internal"
+NAME = "evaluation"
 
 
 class EvalUser:
@@ -10,11 +11,16 @@ class EvalUser:
     or be seen."""
 
     @staticmethod
+    def email() -> str:
+        return ServiceAccountNameService().generate_service_account_email(NAME)
+
+    @staticmethod
     def get() -> User:
-        if user := User.all_objects.filter(email=EMAIL).first():
+        email = EvalUser.email()
+        if user := User.all_objects.filter(email=email).first():
             return user
         try:
             with transaction.atomic():
-                return User.objects.create_service_account(EMAIL, is_active=False, is_internal=True)
+                return User.objects.create_service_account(email, is_active=False, is_internal=True)
         except IntegrityError:
-            return User.all_objects.get(email=EMAIL)
+            return User.all_objects.get(email=email)

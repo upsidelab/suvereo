@@ -1,7 +1,7 @@
 from typing import Any, Optional
 
-from enthusiast_common.integrations import BaseIntegrationPluginResolver
-from enthusiast_common.integrations.base import IntegrationT
+from suvereo_common.integrations import BaseIntegrationPluginResolver
+from suvereo_common.integrations.base import IntegrationT
 
 from agent.evaluation.run_context import EvalRunContext
 

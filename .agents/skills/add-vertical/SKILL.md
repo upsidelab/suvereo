@@ -1,6 +1,6 @@
 ---
 name: add-vertical
-description: Scaffold a new Enthusiast vertical — a Django app with domain entities (models, migrations), retrievers, builder/injector and integration managers — and register it in settings. Use when asked to add, create or build a new vertical or domain.
+description: Scaffold a new Suvereo vertical — a Django app with domain entities (models, migrations), retrievers, builder/injector and integration managers — and register it in settings. Use when asked to add, create or build a new vertical or domain.
 ---
 
 # Add a vertical
@@ -13,7 +13,7 @@ There are two ways to ship it; core prescribes neither:
 Sections marked *(standalone package only)* are skipped for in-codebase verticals. Everything else applies to both.
 
 Where to look in this repo:
-- Contracts: `plugins/enthusiast-common/` (`entities`, `indexing`, `retrievers`, `injectors`, `builder`, `integrations`) — read its `AGENTS.md`.
+- Contracts: `plugins/suvereo-common/` (`entities`, `indexing`, `retrievers`, `injectors`, `builder`, `integrations`) — read its `AGENTS.md`.
 - How core loads a vertical: `server/catalog/entities/registry.py` (entities), `server/catalog/integrations/registry/manager.py` (integration managers), `INSTALLED_VERTICALS` handling in `server/pecl/settings.py`.
 
 ## 1. Settle the design first
@@ -53,7 +53,7 @@ The Django app has the same contents in both cases:
 
 ### Packaging *(standalone package only)*
 
-`pyproject.toml` (Poetry): depends on `django`, `pgvector` (for vector search) and `enthusiast-common`. Take version ranges from `plugins/enthusiast-common/pyproject.toml` and `server/pyproject.toml`.
+`pyproject.toml` (Poetry): depends on `django`, `pgvector` (for vector search) and `suvereo-common`. Take version ranges from `plugins/suvereo-common/pyproject.toml` and `server/pyproject.toml`.
 
 ### App config
 
@@ -73,7 +73,7 @@ class <Domain>VerticalConfig(AppConfig):
 
 ```python
 from django.db import models
-from enthusiast_common.entities import DomainEntity, EntityField
+from suvereo_common.entities import DomainEntity, EntityField
 
 
 class <Entity>(DomainEntity, models.Model):
@@ -106,21 +106,21 @@ Vector-searchable entities get a chunk model, subclassing `BaseEmbeddingChunk` (
 
 ```python
 from django.db import models
-from enthusiast_common.indexing import BaseEmbeddingChunk
+from suvereo_common.indexing import BaseEmbeddingChunk
 
 
 class <Entity>Chunk(BaseEmbeddingChunk):
     <entity> = models.ForeignKey("<domain>_vertical.<Entity>", on_delete=models.CASCADE, related_name="chunks")
 ```
 
-Reference other apps' models by string (`"catalog.DataSet"`); never import server code. A vertical depends on `enthusiast-common`, not on the server. Re-export models in `models/__init__.py`.
+Reference other apps' models by string (`"catalog.DataSet"`); never import server code. A vertical depends on `suvereo-common`, not on the server. Re-export models in `models/__init__.py`.
 
 ## 4. Retrievers, injector, builder (only if tools need them)
 
 Retriever (vector search): declare what is searchable, the base class does the rest.
 
 ```python
-from enthusiast_common.retrievers import BaseVectorStoreRetriever
+from suvereo_common.retrievers import BaseVectorStoreRetriever
 
 from <domain>_vertical.models import <Entity>Chunk
 
@@ -135,7 +135,7 @@ class <Entity>Retriever(BaseVectorStoreRetriever[<Entity>Chunk]):
 Injector: extend the framework `Injector` with the retrievers.
 
 ```python
-from enthusiast_common.injectors import Injector
+from suvereo_common.injectors import Injector
 
 
 class <Domain>Injector(Injector):
@@ -148,7 +148,7 @@ class <Domain>Injector(Injector):
         return self._<entity>_retriever
 ```
 
-Builder: subclass `AgentBuilder` and override `_build_injector()`. Mirror the default `AgentBuilder._build_injector` in `plugins/enthusiast-common/enthusiast_common/builder/default.py` and add your retrievers; `self._data_set_id`, `self._embeddings_registry` and `self._config.similarity_searcher()` are available when building them.
+Builder: subclass `AgentBuilder` and override `_build_injector()`. Mirror the default `AgentBuilder._build_injector` in `plugins/suvereo-common/suvereo_common/builder/default.py` and add your retrievers; `self._data_set_id`, `self._embeddings_registry` and `self._config.similarity_searcher()` are available when building them.
 
 ```python
 class <Domain>AgentBuilder(AgentBuilder[AgentConfig]):
@@ -160,13 +160,13 @@ Agents then set `BUILDER_CLASS = <Domain>AgentBuilder` on the agent class (see t
 
 ## 5. Integration managers (only if data is synced in)
 
-An integration category is a manager class subclassing `BaseSourceIntegrationManager` (`enthusiast_common.integrations`). Source integration plugins point at it through `INTEGRATION_MANAGER`; the server resolves the concrete manager registered in `CATALOG_INTEGRATION_MANAGERS` that is a subclass of that class.
+An integration category is a manager class subclassing `BaseSourceIntegrationManager` (`suvereo_common.integrations`). Source integration plugins point at it through `INTEGRATION_MANAGER`; the server resolves the concrete manager registered in `CATALOG_INTEGRATION_MANAGERS` that is a subclass of that class.
 
 ```python
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 
-from enthusiast_common.integrations import BaseIntegration, BaseSourceIntegrationManager
+from suvereo_common.integrations import BaseIntegration, BaseSourceIntegrationManager
 
 
 class Base<Entity>SourceManager(BaseSourceIntegrationManager, ABC):

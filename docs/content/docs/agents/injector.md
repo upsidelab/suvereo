@@ -2,7 +2,7 @@
 
 The injector is the container that gives an [agent](/docs/concepts#agent) and its [tools](/docs/concepts#tool) access to the resources they work with. The agent receives it when it is built, and tools receive it through their constructor.
 
-AgentCore defines no [domain](/docs/concepts#domain) data, so the injector it provides carries only the resources every agent needs. A [vertical](/docs/concepts#vertical) can extend it with the resources of its domain, such as retrievers that search the vertical's [entities](/docs/concepts#entity).
+Suvereo defines no [domain](/docs/concepts#domain) data, so the injector it provides carries only the resources every agent needs. A [vertical](/docs/concepts#vertical) can extend it with the resources of its domain, such as retrievers that search the vertical's [entities](/docs/concepts#entity).
 
 ## Base Injector
 

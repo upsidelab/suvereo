@@ -1,6 +1,6 @@
 from importlib import import_module
 
-from enthusiast_common.services.file import BaseFileParser, BaseFileService, NotSupportedFileTypeException
+from suvereo_common.services.file import BaseFileParser, BaseFileService, NotSupportedFileTypeException
 
 from pecl import settings
 

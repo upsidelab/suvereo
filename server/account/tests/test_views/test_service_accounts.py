@@ -7,6 +7,7 @@ from rest_framework.test import APIClient
 
 from account.authorization import PERMISSIONS
 from account.models import User
+from account.services import ServiceAccountNameService
 from account.tests.helpers import grant
 
 pytestmark = pytest.mark.django_db
@@ -315,7 +316,8 @@ class TestOnlyAdminsManageAdminServiceAccounts:
         )
 
         assert create.status_code == status.HTTP_201_CREATED
-        assert User.objects.get(email="new-admin-bot@enthusiast.internal").is_superuser is True
+        email = ServiceAccountNameService().generate_service_account_email("new-admin-bot")
+        assert User.objects.get(email=email).is_superuser is True
         assert revoke.status_code == status.HTTP_200_OK
         admin_service_account.refresh_from_db()
         assert admin_service_account.is_superuser is False

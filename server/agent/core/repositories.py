@@ -2,7 +2,7 @@ from typing import Any, Optional, Type, TypeVar
 
 from django.db import models
 from django.db.models import QuerySet
-from enthusiast_common.repositories import (
+from suvereo_common.repositories import (
     BaseAgentRepository,
     BaseConversationRepository,
     BaseDataSetRepository,
@@ -10,7 +10,7 @@ from enthusiast_common.repositories import (
     BaseRepository,
     BaseUserRepository,
 )
-from enthusiast_common.structures import LLMFile
+from suvereo_common.structures import LLMFile
 
 from account.authorization import PERMISSIONS, datasets_with_permission
 from account.models import User

@@ -1,7 +1,7 @@
-from enthusiast_common.integrations import BaseIntegration, BaseOAuthIntegration
-from enthusiast_common.oauth import OAuthAuthorizationRequest, OAuthClientCredentials, OAuthPendingAuthorization
-from enthusiast_common.utils import RequiredFieldsModel
 from pydantic import Field
+from suvereo_common.integrations import BaseIntegration, BaseOAuthIntegration
+from suvereo_common.oauth import OAuthAuthorizationRequest, OAuthClientCredentials, OAuthPendingAuthorization
+from suvereo_common.utils import RequiredFieldsModel
 
 
 class MockConfigArgs(RequiredFieldsModel):

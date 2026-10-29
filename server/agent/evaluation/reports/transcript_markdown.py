@@ -1,4 +1,4 @@
-from enthusiast_common.evaluation.trace import ExecutionTrace, Turn
+from suvereo_common.evaluation.trace import ExecutionTrace, Turn
 
 from .markdown_text import MarkdownText
 

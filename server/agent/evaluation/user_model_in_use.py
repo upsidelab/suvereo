@@ -1,5 +1,5 @@
-from enthusiast_common.evaluation.loaded_suite import LoadedSuite
-from enthusiast_common.evaluation.suite import ConversationEvalCase, ModelTarget
+from suvereo_common.evaluation.loaded_suite import LoadedSuite
+from suvereo_common.evaluation.suite import ConversationEvalCase, ModelTarget
 
 
 def has_simulated_users(loaded: LoadedSuite) -> bool:

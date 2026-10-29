@@ -1,5 +1,5 @@
-from enthusiast_common.evaluation.trace import LLMCall, ToolCall, Turn
-from enthusiast_common.evaluation.users import BaseUserSimulator, StopReason, UserMessage
+from suvereo_common.evaluation.trace import LLMCall, ToolCall, Turn
+from suvereo_common.evaluation.users import BaseUserSimulator, StopReason, UserMessage
 
 from agent.evaluation.integrations import EvalIntegrationPluginResolver
 from agent.evaluation.run_context import EvalRunContext

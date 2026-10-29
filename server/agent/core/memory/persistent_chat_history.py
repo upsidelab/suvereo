@@ -1,8 +1,8 @@
 from typing import Any, Dict, Optional
 
-from enthusiast_common.repositories import BaseConversationRepository
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.messages import AIMessage, BaseMessage, ToolMessage, messages_from_dict
+from suvereo_common.repositories import BaseConversationRepository
 
 from agent.models import Message
 

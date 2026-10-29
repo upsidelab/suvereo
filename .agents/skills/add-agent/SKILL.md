@@ -1,28 +1,28 @@
 ---
 name: add-agent
-description: Scaffold a new Enthusiast agent (tool-calling agent package, tools, prompt, optional agentic execution) and register it in settings. Use when asked to add, create or build a new agent.
+description: Scaffold a new Suvereo agent (tool-calling agent package, tools, prompt, optional agentic execution) and register it in settings. Use when asked to add, create or build a new agent.
 ---
 
 # Add an agent
 
-An agent is a Python package that the server discovers through `AVAILABLE_AGENTS` in `server/pecl/settings_override.py`. It depends on `enthusiast-common` and `enthusiast-agent-tool-calling`, never on the server.
+An agent is a Python package that the server discovers through `AVAILABLE_AGENTS` in `server/pecl/settings_override.py`. It depends on `suvereo-common` and `suvereo-agent-tool-calling`, never on the server.
 
 There are two ways to ship it:
-- **Standalone plugin** — its own installable package (own `pyproject.toml`, `src/` layout). Recommended for agents maintained by the Enthusiast team.
+- **Standalone plugin** — its own installable package (own `pyproject.toml`, `src/` layout). Recommended for agents maintained by the Suvereo team.
 - **In the codebase** — a plain package living directly in a codebase that is already importable by the server (e.g. a vertical's own code). No packaging, no install step.
 
 Sections marked *(standalone plugin only)* are skipped for in-codebase agents. Everything else applies to both.
 
 Where to look in this repo:
-- Contracts: `plugins/enthusiast-common/` (`BaseAgent`, tools, config models, agentic execution) — read its `AGENTS.md`.
-- Base agent to subclass: `BaseToolCallingAgent` (`plugins/enthusiast-agent-tool-calling/`) (also the reference for the package layout and `pyproject.toml`).
+- Contracts: `plugins/suvereo-common/` (`BaseAgent`, tools, config models, agentic execution) — read its `AGENTS.md`.
+- Base agent to subclass: `BaseToolCallingAgent` (`plugins/suvereo-agent-tool-calling/`) (also the reference for the package layout and `pyproject.toml`).
 - Registry that loads agents: `server/agent/core/registries/agents/agent_registry.py`.
 
 ## 1. Settle the design first
 
 Ask only what the code cannot tell you:
 - Agent name and purpose (drives `AGENT_KEY`, `NAME`, the prompt).
-- Which tools it needs. Reuse existing tools (e.g. from `plugins/enthusiast-agent-tools`, or a vertical's tools) before writing new ones.
+- Which tools it needs. Reuse existing tools (e.g. from `plugins/suvereo-agent-tools`, or a vertical's tools) before writing new ones.
 - Does it need a vertical's retrievers (e.g. `injector.<entity>_retriever`)? If yes it needs the vertical's builder as `BUILDER_CLASS`; if no, leave `BUILDER_CLASS` unset so the framework's default `AgentBuilder` is used.
 - Conversation only, or also an agentic execution (autonomous, API-triggered batch run)?
 - Does it accept file uploads (`FILE_UPLOAD = True` adds the default file tools)?
@@ -43,22 +43,22 @@ The agent package has the same contents in both cases:
 ```
 
 - **In the codebase:** `<package>` is a directory inside the target codebase, named `<name>_agent` (or following that codebase's naming). The dotted path used for registration is `<its import path>.<Name>Agent`. Stop here; do not add the packaging files below.
-- **Standalone plugin:** wrap it with the packaging files and use `src/enthusiast_agent_<name>/` as `<package>`:
+- **Standalone plugin:** wrap it with the packaging files and use `src/suvereo_agent_<name>/` as `<package>` (an agent that belongs to a vertical follows that vertical's plugin naming instead):
 
 ```
-enthusiast-agent-<name>/
+suvereo-agent-<name>/
   pyproject.toml
   README.md
-  src/enthusiast_agent_<name>/   # the package above
+  src/suvereo_agent_<name>/   # the package above
 ```
 
 ### Packaging *(standalone plugin only)*
 
-`pyproject.toml`: Poetry with a `src` layout, modelled on `plugins/enthusiast-agent-tool-calling/pyproject.toml`. Dependencies: `enthusiast-common`, `enthusiast-agent-tool-calling`, `langchain`, plus the vertical package if you use its builder or retrievers, and `enthusiast-agent-tools` if you reuse its shared tools (`FileListTool`, `FileRetrievalTool`, `StopExecutionTool`). Take version ranges from that file and from the current `enthusiast-common` version, not from memory.
+`pyproject.toml`: Poetry with a `src` layout, modelled on `plugins/suvereo-agent-tool-calling/pyproject.toml`. Dependencies: `suvereo-common`, `suvereo-agent-tool-calling`, `langchain`, plus the vertical package if you use its builder or retrievers, and `suvereo-agent-tools` if you reuse its shared tools (`FileListTool`, `FileRetrievalTool`, `StopExecutionTool`). Take version ranges from that file and from the current `suvereo-common` version, not from memory.
 
 ```toml
 [tool.poetry]
-packages = [{include = "enthusiast_agent_<name>", from = "src"}]
+packages = [{include = "suvereo_agent_<name>", from = "src"}]
 ```
 
 ## 3. Agent class (`agent.py`)
@@ -66,21 +66,21 @@ packages = [{include = "enthusiast_agent_<name>", from = "src"}]
 Subclass `BaseToolCallingAgent` and only declare data:
 
 ```python
-from enthusiast_agent_tool_calling import BaseToolCallingAgent
-from enthusiast_common.config.base import LLMToolConfig
+from suvereo_agent_tool_calling import BaseToolCallingAgent
+from suvereo_common.config.base import LLMToolConfig
 
 from .tools import <Thing>Tool
 
 
 class <Name>Agent(BaseToolCallingAgent):
-    AGENT_KEY = "enthusiast-agent-<name>"
+    AGENT_KEY = "suvereo-agent-<name>"
     NAME = "<Human Name>"
     TOOLS = [LLMToolConfig(tool_class=<Thing>Tool)]
     FILE_UPLOAD = False
 ```
 
-- `AGENT_KEY` is stored on agents in the database: unique, and never changed after release.
-- Tool config types come from `enthusiast_common.config`: `FunctionToolConfig`, `LLMToolConfig` (the tool gets an LLM), `AgentToolConfig`, `FileToolConfig`.
+- `AGENT_KEY` is stored on agents in the database: unique (by convention the plugin's distribution name, e.g. `suvereo-agent-<name>`), and never changed after release.
+- Tool config types come from `suvereo_common.config`: `FunctionToolConfig`, `LLMToolConfig` (the tool gets an LLM), `AgentToolConfig`, `FileToolConfig`.
 
 ## 4. Configuration (class variables on the agent)
 
@@ -103,11 +103,11 @@ A different prompt or extra tools for agentic execution go on the execution defi
 
 ## 5. Tools (`tools/`)
 
-Subclass one of the base tools from `enthusiast_common.tools`, matching what the tool needs injected:
+Subclass one of the base tools from `suvereo_common.tools`, matching what the tool needs injected:
 
 | Base class | Constructor receives | Config type | Description |
 | --- | --- | --- | --- |
-| `BaseFunctionTool` | nothing | `FunctionToolConfig` | The simplest tool, needing no connection to Enthusiast internals (those are provided via the injector). |
+| `BaseFunctionTool` | nothing | `FunctionToolConfig` | The simplest tool, needing no connection to Suvereo internals (those are provided via the injector). |
 | `BaseLLMTool` | `data_set_id`, `llm`, `injector` | `LLMToolConfig` | A tool with access to the LLM and the injector. |
 | `BaseFileTool` | `data_set_id`, `conversation_id`, `llm`, `injector`, `llm_registry` | `FileToolConfig` | Like an LLM tool, but dedicated to accessing uploaded files only. |
 | `BaseAgentTool` | `agent` | `AgentToolConfig` | A tool which is itself an agent. |
@@ -115,7 +115,7 @@ Subclass one of the base tools from `enthusiast_common.tools`, matching what the
 Only `BaseLLMTool` and `BaseFileTool` have `self._injector`. A metaclass checks the required class attributes at import time: `NAME`, `DESCRIPTION`, `ARGS_SCHEMA`, `RETURN_DIRECT`.
 
 ```python
-from enthusiast_common.tools import BaseLLMTool
+from suvereo_common.tools import BaseLLMTool
 from pydantic import BaseModel, Field
 
 
@@ -145,14 +145,14 @@ The system prompt is formatted with `str.format`, so `{name}` placeholders are r
 The variables available to the prompt come from one of two places:
 
 - the fields of the agent's `PROMPT_INPUT` model: they are injected automatically, each as `{field_name}`, with the values saved per agent;
-- the agent's `_get_system_prompt_variables` method: override it to rename variables or add computed ones, and call `super()` to keep the `PROMPT_INPUT` fields (see `plugins/enthusiast-common/enthusiast_common/agents/base.py`).
+- the agent's `_get_system_prompt_variables` method: override it to rename variables or add computed ones, and call `super()` to keep the `PROMPT_INPUT` fields (see `plugins/suvereo-common/suvereo_common/agents/base.py`).
 
 ## 7. Agentic execution (optional)
 
 Add `execution_input.py` and `execution_definition.py`:
 
 ```python
-from enthusiast_common.agentic_execution import (
+from suvereo_common.agentic_execution import (
     BaseAgenticExecutionDefinition,
     ExecutionConversationInterface,
     ExecutionInputType,
@@ -167,7 +167,7 @@ class <Name>AgenticExecutionInput(ExecutionInputType):
 
 class <Name>AgenticExecutionDefinition(BaseAgenticExecutionDefinition):
     EXECUTION_KEY = "<name>"
-    AGENT_KEY = "enthusiast-agent-<name>"
+    AGENT_KEY = "suvereo-agent-<name>"
     NAME = "<Human Name>"
     INPUT_TYPE = <Name>AgenticExecutionInput
     VALIDATORS = [StopExecutionValidator, IsValidJsonValidator]
@@ -178,12 +178,12 @@ class <Name>AgenticExecutionDefinition(BaseAgenticExecutionDefinition):
         return conversation.ask(input_data.additional_instructions or "<default task>")
 ```
 
-`AGENT_KEY` must equal the agent's. Export the definition from `__init__.py` and register it in `AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS`. Contracts: `plugins/enthusiast-common/enthusiast_common/agentic_execution/`.
+`AGENT_KEY` must equal the agent's. Export the definition from `__init__.py` and register it in `AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS`. Contracts: `plugins/suvereo-common/suvereo_common/agentic_execution/`.
 
 ## 8. Register
 
 In `server/pecl/settings_override.py` add the dotted path of the agent class to `AVAILABLE_AGENTS`:
-- standalone plugin: `"enthusiast_agent_<name>.<Name>Agent"`;
+- standalone plugin: `"suvereo_agent_<name>.<Name>Agent"`;
 - in the codebase: `"<import path of the package>.<Name>Agent"`.
 
 *(standalone plugin only)* Install the package into the server's environment (`pip install -e <dir>` or a path dependency). In-codebase agents need no install.
@@ -194,5 +194,5 @@ The agent then becomes selectable for data sets in the UI.
 
 - Test non-trivial tool logic next to the package (`tests/`, or the host codebase's own test location), mocking the LLM and the injector. Registry behaviour is already covered in `server/agent/tests/`.
 - Run `ruff check` and `ruff format` on the new code.
-- No docstrings or comments on implementations (see "Code conventions" in `server/AGENTS.md`); docstrings belong to `enthusiast-common` contracts.
+- No docstrings or comments on implementations (see "Code conventions" in `server/AGENTS.md`); docstrings belong to `suvereo-common` contracts.
 - If the change adds a top-level directory (a standalone plugin does), update the relevant `AGENTS.md`.

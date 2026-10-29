@@ -1,10 +1,10 @@
 import hashlib
 import re
 
-from enthusiast_common.evaluation.loaded_suite import LoadedSuite
-from enthusiast_common.evaluation.metrics import BaseMetric, MetricRegistry
-from enthusiast_common.evaluation.metrics.auto import GoalReached, Turns
-from enthusiast_common.evaluation.suite import EvalCase, MetricConfig, PassThreshold, ReportName, SuiteKind
+from suvereo_common.evaluation.loaded_suite import LoadedSuite
+from suvereo_common.evaluation.metrics import BaseMetric, MetricRegistry
+from suvereo_common.evaluation.metrics.auto import GoalReached, Turns
+from suvereo_common.evaluation.suite import EvalCase, MetricConfig, PassThreshold, ReportName, SuiteKind
 
 from agent.evaluation.aggregation import PASS_RATE, RATES, CandidateMetrics, MetricAggregator
 from agent.evaluation.resolved_kind import resolved_kind

@@ -1,9 +1,9 @@
 from unittest.mock import patch
 
 import pytest
-from enthusiast_common.evaluation.loaded_suite import LoadedSuite
-from enthusiast_common.evaluation.suite import ConversationEvalCase, EvalSuite
 from model_bakery import baker
+from suvereo_common.evaluation.loaded_suite import LoadedSuite
+from suvereo_common.evaluation.suite import ConversationEvalCase, EvalSuite
 
 from agent.conversation.manager import ConversationManager
 from agent.evaluation.eval_user import EvalUser

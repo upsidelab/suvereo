@@ -74,7 +74,7 @@ agent: {type: my-agent}
 models: [{provider: OpenAI, model: gpt-4o-mini}]
 budget_usd: 0.10
 integrations:
-  - class: enthusiast_ecommerce_common.evaluation.ECommerceMockIntegration
+  - class: enthusiast_vertical_common.evaluation.ECommerceMockIntegration
     config: {data: {catalog: catalog.yaml}}
 metrics:
   - {type: tool_called, name: one_order, params: {name: place_order}, pass_threshold: {equals: 1}}
@@ -100,7 +100,7 @@ description: The shop rejects the order; the run must fail cleanly
 tags: [error-path]
 files: [po-out-of-stock.pdf]
 integrations:
-  - class: enthusiast_ecommerce_common.evaluation.ECommerceMockIntegration
+  - class: enthusiast_vertical_common.evaluation.ECommerceMockIntegration
     config: {behaviour: {create_order_with_items: {raises: {error: ECommerceConnectorError, message: "Out of stock"}}}}
 expected:
   failure_code: validation_failed
@@ -131,6 +131,6 @@ Code metrics check what the agent produced; a judge reads the trace and grades h
 
 ## 7. Add a mock
 
-Anything your agent reaches outside Agent Core goes through an integration, and a suite replaces each one with a mock. [Mocks](./mocks) covers the three ways to build one, from a few lines of YAML to a mock integration your vertical ships.
+Anything your agent reaches outside Suvereo goes through an integration, and a suite replaces each one with a mock. [Mocks](./mocks) covers the three ways to build one, from a few lines of YAML to a mock integration your vertical ships.
 
 For every option, field and metric, see the [Reference](./reference).

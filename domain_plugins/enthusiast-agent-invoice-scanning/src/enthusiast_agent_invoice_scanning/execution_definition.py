@@ -1,10 +1,10 @@
-from enthusiast_common.agentic_execution import (
+from suvereo_common.agentic_execution import (
     BaseAgenticExecutionDefinition,
     ExecutionConversationInterface,
     IsValidJsonValidator,
     StopExecutionValidator,
 )
-from enthusiast_common.config import LLMToolConfig
+from suvereo_common.config import LLMToolConfig
 
 from .execution_input import InvoiceScanningAgenticExecutionInput
 from .execution_prompt import INVOICE_SCANNING_EXECUTION_SYSTEM_PROMPT

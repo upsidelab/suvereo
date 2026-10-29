@@ -1,7 +1,7 @@
-from enthusiast_common.evaluation.loaded_suite import LoadedSuite
-from enthusiast_common.evaluation.metrics import MetricError, MetricRegistry
-from enthusiast_common.evaluation.metrics.llm import JudgePromptParams
-from enthusiast_common.evaluation.suite import ModelTarget
+from suvereo_common.evaluation.loaded_suite import LoadedSuite
+from suvereo_common.evaluation.metrics import MetricError, MetricRegistry
+from suvereo_common.evaluation.metrics.llm import JudgePromptParams
+from suvereo_common.evaluation.suite import ModelTarget
 
 from agent.evaluation.user_model_in_use import has_user_goals
 

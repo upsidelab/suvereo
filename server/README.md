@@ -1,6 +1,6 @@
-# Enthusiast Server
+# Suvereo Server
 
-This directory contains the server and the worker of Enthusiast. You can use it in API-only mode, or set up together with the [frontend](../frontend).
+This directory contains the server and the worker of Suvereo. You can use it in API-only mode, or set up together with the [frontend](../frontend).
 
 ## Getting started
 

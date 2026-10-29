@@ -1,8 +1,8 @@
 import json
 import subprocess
 
-from enthusiast_common.evaluation.suite import AgenticExecutionEvalCase
-from enthusiast_common.evaluation.trace import ExecutionTrace, ToolCall
+from suvereo_common.evaluation.suite import AgenticExecutionEvalCase
+from suvereo_common.evaluation.trace import ExecutionTrace, ToolCall
 
 from agent.evaluation.reports import ExitCode, GitState, ReportMdWriter, SuiteReport, SuiteVerdict, SummaryJsonWriter
 from agent.evaluation.runner import ThresholdResult

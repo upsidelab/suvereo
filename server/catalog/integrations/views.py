@@ -1,10 +1,10 @@
 from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
-from enthusiast_common.integrations import BaseOAuthIntegration
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from suvereo_common.integrations import BaseOAuthIntegration
 
 from account.authorization import PERMISSIONS, any_permission_on_any_dataset_required, enforce_dataset_scoped_permission
 from catalog.integrations.registry import IntegrationPluginRegistry

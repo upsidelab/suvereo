@@ -2,7 +2,7 @@ from typing import Any
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from enthusiast_common.callbacks import ConversationCallbackHandler
+from suvereo_common.callbacks import ConversationCallbackHandler
 
 
 class BaseWebSocketHandler(ConversationCallbackHandler):

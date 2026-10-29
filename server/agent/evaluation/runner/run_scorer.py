@@ -1,9 +1,9 @@
 import logging
 from pathlib import Path
 
-from enthusiast_common.evaluation.metrics import BaseMetric, MetricContext, MetricError, MetricRegistry, MetricResult
-from enthusiast_common.evaluation.metrics.auto import auto_metrics_for
-from enthusiast_common.evaluation.suite import MetricConfig, PassThreshold, SuiteKind
+from suvereo_common.evaluation.metrics import BaseMetric, MetricContext, MetricError, MetricRegistry, MetricResult
+from suvereo_common.evaluation.metrics.auto import auto_metrics_for
+from suvereo_common.evaluation.suite import MetricConfig, PassThreshold, SuiteKind
 
 from .run_result import ThresholdResult
 

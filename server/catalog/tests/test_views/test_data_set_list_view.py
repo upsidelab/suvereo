@@ -4,10 +4,10 @@ import pytest
 from django.contrib.auth.models import Permission
 from django.test import override_settings
 from django.urls import reverse
-from enthusiast_common.utils import RequiredFieldsModel
 from model_bakery import baker
 from pydantic import Field
 from rest_framework import status
+from suvereo_common.utils import RequiredFieldsModel
 
 from account.authorization import PERMISSIONS
 from account.models import DatasetGroupRoleAssignment, DatasetRole, DatasetUserRoleAssignment, UserGroup

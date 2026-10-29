@@ -1,4 +1,4 @@
-from enthusiast_common.integrations import BaseIntegration
+from suvereo_common.integrations import BaseIntegration
 
 from catalog.integrations.registry import IntegrationManagerRegistry
 from catalog.models import Integration

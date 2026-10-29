@@ -1,7 +1,7 @@
 import json
 
 import pytest
-from enthusiast_common.evaluation.errors import EvalSuiteError
+from suvereo_common.evaluation.errors import EvalSuiteError
 
 from agent.evaluation.reports import ReportMdWriter, RunHistory, SummaryFile, SummaryJsonWriter
 from agent.evaluation.reports.case_outcome import CaseOutcome

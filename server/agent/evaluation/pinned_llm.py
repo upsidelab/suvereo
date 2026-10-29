@@ -1,7 +1,7 @@
 from typing import Any, ClassVar
 
-from enthusiast_common.llm import BaseLLM
-from enthusiast_common.registry.llm import LanguageModelProvider
+from suvereo_common.llm import BaseLLM
+from suvereo_common.registry.llm import LanguageModelProvider
 
 
 class PinnedLLM(BaseLLM):

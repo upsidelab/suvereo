@@ -306,7 +306,7 @@ Quote a mode with a colon in YAML (`"numeric:0.01"`) when it is a flow value; on
 Subclass `BaseMetric` anywhere importable and set `type` to its dotted path. Declare `NAME`, `VALUE_TYPE` (`number`, `bool` or `label`) and, for params, a Pydantic model as `PARAMS`; `measure` gets the run and returns a `MetricResult`.
 
 ```python
-from enthusiast_common.evaluation.metrics import BaseMetric, MetricContext, MetricResult
+from suvereo_common.evaluation.metrics import BaseMetric, MetricContext, MetricResult
 from pydantic import BaseModel, ConfigDict
 
 
@@ -342,4 +342,4 @@ class TotalQuantity(BaseMetric):
 - **`MetricResult`** takes the `value`, `details` that `report.md` lists under a missed threshold, and `components`, numbers that get their own `results.csv` columns; `binary_components=True` shows them as success or failure.
 - **No value:** return `value=None` with a `reason` when the case gives nothing to measure. An exception is caught and recorded as the metric's `error`; the other metrics still run.
 - **Params** are validated when the suite loads, so `validateeval` reports a typo before any run. A relative path in params resolves against the suite directory through the validation context key `base_dir`.
-- **Matching:** `ValueMatcher`, `ListScorer` and `DottedPath` from `enthusiast_common.evaluation.metrics.matching` give your metric the match modes and list scoring the built-ins use.
+- **Matching:** `ValueMatcher`, `ListScorer` and `DottedPath` from `suvereo_common.evaluation.metrics.matching` give your metric the match modes and list scoring the built-ins use.

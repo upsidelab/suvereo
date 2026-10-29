@@ -1,7 +1,7 @@
 # Integrate LangSmith
 
 [LangSmith](https://www.langchain.com/langsmith) is a developer platform that helps teams manage LLM-powered application lifecycle. 
-It comes out of the box with LangChain, which Enthusiast uses internally. 
+It comes out of the box with LangChain, which Suvereo uses internally. 
 
 To enable LangSmith integration, add the following environment variables when running the worker process:
 

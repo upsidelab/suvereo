@@ -67,7 +67,7 @@ export default async function Integration(props: IntegrationProps) {
       {props.registerLanguageModelModule && <MDXRemote compiledSource={await compileMdx(buildRegisterListInstructionMd("CATALOG_LANGUAGE_MODEL_PROVIDERS", props.registerLanguageModelModule))}/>}
       {props.registerEmbeddingsModule && <MDXRemote compiledSource={await compileMdx(buildRegisterListInstructionMd("CATALOG_EMBEDDING_PROVIDERS", props.registerEmbeddingsModule))}/>}
       <P>Then, restart your server for the newly installed plugin to become available.</P>
-      <P>Finally, sign in to Enthusiast's Admin UI, go to the Integrations tab and configure the required credentials.</P>
+      <P>Finally, sign in to Suvereo's Admin UI, go to the Integrations tab and configure the required credentials.</P>
     </>
   )
 }

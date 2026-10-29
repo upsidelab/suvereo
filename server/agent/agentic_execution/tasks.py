@@ -1,5 +1,5 @@
 from celery import Task, shared_task
-from enthusiast_common.agentic_execution import ExecutionFailureCode
+from suvereo_common.agentic_execution import ExecutionFailureCode
 
 from agent.agentic_execution.conversation import ExecutionConversation
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry

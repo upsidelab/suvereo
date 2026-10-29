@@ -37,7 +37,7 @@ min_pass_rate: 0.8                     # each candidate must pass 80% of its run
 reports: [report, results, comparison, cases]
 
 integrations:                          # mocks for every system the agent reaches
-  - class: enthusiast_ecommerce_common.evaluation.ECommerceMockIntegration
+  - class: enthusiast_vertical_common.evaluation.ECommerceMockIntegration
     config: {data: {catalog: data/products.yaml}}
 
 metrics:                               # what each run is measured on
@@ -179,7 +179,7 @@ description: The shop rejects the order; the run must fail cleanly
 tags: [error-path]
 files: [po-out-of-stock.pdf]
 integrations:                          # same class as in the suite, so this changes that mock
-  - class: enthusiast_ecommerce_common.evaluation.ECommerceMockIntegration
+  - class: enthusiast_vertical_common.evaluation.ECommerceMockIntegration
     config:
       behaviour:
         create_order_with_items:       # this method now raises; others behave as in the suite

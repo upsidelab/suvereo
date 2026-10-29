@@ -1,4 +1,4 @@
-from enthusiast_common.evaluation.metrics import MetricResult
+from suvereo_common.evaluation.metrics import MetricResult
 
 from .markdown_text import MarkdownText
 

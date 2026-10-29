@@ -18,7 +18,7 @@ An agentic execution is an autonomous, API-triggered run of an agent.
 - **Runs to a definite outcome.** It carries the agent to the task's success or failure and produces a structured result, or a failure code with an explanation. It does not end half-finished.
 - **Asynchronous.** The API triggers a run and retrieves its result. A run is tracked through `pending`, `in_progress`, and `finished` or `failed`, and executes in the background (Celery).
 - **Defined separately from the agent.** An execution definition is a class of its own, bound to an agent type through `AGENT_KEY` and selected by `execution_key`. One agent plugin can offer several definitions. A definition declares its input type, its validators and the retry budget.
-- **Contracts in `enthusiast-common`.** Definitions subclass `BaseAgenticExecutionDefinition` and are registered in `AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS` (see [ADR-0001](0001-plugin-architecture.md)).
+- **Contracts in `suvereo-common`.** Definitions subclass `BaseAgenticExecutionDefinition` and are registered in `AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS` (see [ADR-0001](0001-plugin-architecture.md)).
 
 The server runs a definition on top of a regular `Conversation` record, so it reuses the agent-building machinery. The agent is driven by the definition rather than by a person.
 

@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 import yaml
-from enthusiast_common.evaluation.errors import EvalSuiteError
+from suvereo_common.evaluation.errors import EvalSuiteError
 
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
 from agent.core.registries.agents.agent_registry import AgentNotFoundError, AgentRegistry
@@ -244,8 +244,11 @@ class TestSuiteLoader:
             _load(tmp_path, **changes)
 
     def test_a_provider_that_is_not_installed_is_named_with_the_installed_ones(self, tmp_path):
-        with pytest.raises(EvalSuiteError) as error:
-            _load(tmp_path, models=[{"provider": "Anthropic", "model": "claude-sonnet-4-6"}])
+        only_openai = ["suvereo_model_openai.OpenAILanguageModelProvider"]
+
+        with patch.object(LanguageModelRegistry, "_get_plugin_paths", return_value=only_openai):
+            with pytest.raises(EvalSuiteError) as error:
+                _load(tmp_path, models=[{"provider": "Anthropic", "model": "claude-sonnet-4-6"}])
 
         assert str(error.value) == (
             "Language model provider 'Anthropic' is not installed. Installed: OpenAI. "
@@ -253,7 +256,7 @@ class TestSuiteLoader:
         )
 
     def test_a_registered_provider_that_cannot_be_imported_says_to_install_it(self, tmp_path):
-        missing = ["enthusiast_model_missing.MissingLanguageModelProvider"]
+        missing = ["suvereo_model_missing.MissingLanguageModelProvider"]
 
         with patch.object(LanguageModelRegistry, "_get_plugin_paths", return_value=missing):
             with pytest.raises(EvalSuiteError, match="A provider in CATALOG_LANGUAGE_MODEL_PROVIDERS can't be loaded"):

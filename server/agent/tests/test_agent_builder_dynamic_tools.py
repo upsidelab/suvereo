@@ -2,11 +2,11 @@ import asyncio
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from enthusiast_common.agents import BaseAgent
-from enthusiast_common.builder import AgentBuilder
-from enthusiast_common.integrations import BaseToolProvidingIntegration
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel
+from suvereo_common.agents import BaseAgent
+from suvereo_common.builder import AgentBuilder
+from suvereo_common.integrations import BaseToolProvidingIntegration
 
 
 class ToolArgs(BaseModel):
@@ -130,7 +130,7 @@ class TestAgentBuilderBuildDynamicTools:
 
         assert tool_names(tools) == ["still_works"]
 
-    @patch("enthusiast_common.builder.default.DYNAMIC_TOOL_FETCH_TIMEOUT_SECONDS", 0.01)
+    @patch("suvereo_common.builder.default.DYNAMIC_TOOL_FETCH_TIMEOUT_SECONDS", 0.01)
     def test_an_integration_that_answers_too_slowly_is_skipped(self):
         builder = self._builder_returning(
             [

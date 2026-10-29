@@ -1,14 +1,14 @@
-from enthusiast_common.agentic_execution import (
+from enthusiast_vertical_tools.tools.upsert_product_details_tool import (
+    UpsertMemoryEntry,
+    UpsertProductDetailsTool,
+)
+from suvereo_common.agentic_execution import (
     BaseExecutionValidator,
     ValidatorFailureResponse,
     ValidatorResponse,
     ValidatorSuccessResponse,
 )
-from enthusiast_common.agentic_execution.memory import ToolScratchpad
-from enthusiast_ecommerce_agent_tools.tools.upsert_product_details_tool import (
-    UpsertMemoryEntry,
-    UpsertProductDetailsTool,
-)
+from suvereo_common.agentic_execution.memory import ToolScratchpad
 
 from enthusiast_agent_catalog_enrichment.execution_input import CatalogEnrichmentAgenticExecutionInput
 

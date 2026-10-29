@@ -48,25 +48,6 @@ export type DataSet = {
   permissions: string[];
 }
 
-export type Product = {
-  id: number;
-  name: string;
-  sku: string;
-  slug: string;
-  description: string;
-  categories: string;
-  properties: string;
-  price: number;
-}
-
-export type Document = {
-  id: number;
-  url: string;
-  title: string;
-  content: string;
-  isIndexed: boolean;
-}
-
 export type Account = {
   email: string;
   isAdmin: boolean;

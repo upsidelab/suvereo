@@ -2,9 +2,9 @@ import time
 from typing import Any
 from uuid import UUID
 
-from enthusiast_common.evaluation.trace import LLMCall, ToolCall, TraceRecorder
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.outputs import LLMResult
+from suvereo_common.evaluation.trace import LLMCall, ToolCall, TraceRecorder
 
 from agent.evaluation.run_context import EvalRunContext
 

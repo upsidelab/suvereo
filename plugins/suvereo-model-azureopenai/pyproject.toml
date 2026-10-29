@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "suvereo-model-azureopenai"
+version = "1.4.0"
+description = "A plugin for Suvereo that provides an OpenAI connector."
+authors = ["Damian Sowiński <damian.sowinski@upsidelab.io>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+langchain-core = "^1.2"
+python = "^3.10"
+suvereo-common = ">=1.7.0,<2"
+openai = "^1.86.0"
+langchain-openai = "^1.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

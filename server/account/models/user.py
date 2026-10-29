@@ -48,7 +48,7 @@ class User(AbstractUser):
     groups = None
     is_service_account = models.BooleanField(default=False)
     is_internal = models.BooleanField(
-        default=False, db_comment="Used by Agent Core itself, e.g. evaluation runs; hidden and cannot sign in."
+        default=False, db_comment="Used by Suvereo itself, e.g. evaluation runs; hidden and cannot sign in."
     )
 
     objects = UserManager()

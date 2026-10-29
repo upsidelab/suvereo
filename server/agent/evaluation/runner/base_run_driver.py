@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 
-from enthusiast_common.evaluation.base_model_client import BaseModelClient
-from enthusiast_common.evaluation.suite import EvalCase
-from enthusiast_common.evaluation.trace import TraceRecorder
+from suvereo_common.evaluation.base_model_client import BaseModelClient
+from suvereo_common.evaluation.suite import EvalCase
+from suvereo_common.evaluation.trace import TraceRecorder
 
 from agent.core.agents.config_overrides import AgentConfigOverrides
 from agent.models import Conversation

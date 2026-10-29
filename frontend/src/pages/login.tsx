@@ -9,9 +9,9 @@ export function LoginPage() {
         <div className="relative hidden h-full flex-col bg-muted p-10 text-white dark:border-r lg:flex">
           <div className="absolute inset-0 bg-zinc-900" />
           <div className="relative z-20 flex items-center text-lg font-medium">
-            <img src={logoUrl} srcSet={logoSvgUrl} alt="Enthusiast" className="w-10 h-10" />
+            <img src={logoUrl} srcSet={logoSvgUrl} alt="Suvereo" className="w-10 h-10" />
             <p className="ml-4 text-2xl">
-              enthusiast.
+              suvereo.
             </p>
           </div>
         </div>

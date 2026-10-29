@@ -2,9 +2,9 @@ import re
 from pathlib import Path
 
 import yaml
-from enthusiast_common.evaluation.suite import ModelPricing
-from enthusiast_common.evaluation.trace import ExecutionTrace, LLMCall
 from pydantic import BaseModel
+from suvereo_common.evaluation.suite import ModelPricing
+from suvereo_common.evaluation.trace import ExecutionTrace, LLMCall
 
 DEFAULT_TABLE = Path(__file__).with_name("pricing.yaml")
 TOKENS_PER_MILLION = 1_000_000

@@ -5,7 +5,7 @@ import { PageMain } from "@/components/util/page-main.tsx";
 export function NewDataSet() {
   return (
     <PageMain>
-      <PageHeading title="Create Data Set" description="Organize your products and documents with data sets." />
+      <PageHeading title="Create Data Set" description="Organize your content with data sets." />
       <CreateDataSetForm/>
     </PageMain>
   )

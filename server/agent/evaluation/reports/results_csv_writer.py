@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Any, Literal, NamedTuple
 
-from enthusiast_common.evaluation.suite import SuiteKind
+from suvereo_common.evaluation.suite import SuiteKind
 
 from agent.evaluation.runner import RunResult
 
