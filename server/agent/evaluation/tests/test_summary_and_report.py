@@ -1,7 +1,7 @@
 import json
 import subprocess
 
-from enthusiast_common.evaluation.suite import EvalCase
+from enthusiast_common.evaluation.suite import AgenticExecutionEvalCase
 from enthusiast_common.evaluation.trace import ExecutionTrace, ToolCall
 
 from agent.evaluation.reports import ExitCode, GitState, ReportMdWriter, SuiteReport, SuiteVerdict, SummaryJsonWriter
@@ -118,8 +118,8 @@ class TestReportMdWriter:
 
     def test_each_failed_run_shows_the_threshold_its_case_was_checked_against(self, tmp_path):
         cases = [
-            EvalCase(id="ada"),
-            EvalCase(
+            AgenticExecutionEvalCase(id="ada"),
+            AgenticExecutionEvalCase(
                 id="bob",
                 metrics=[
                     {"type": "mock_called", "name": "orders", "params": {"method": "m"}, "pass_threshold": {"min": 3}}

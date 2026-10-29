@@ -204,7 +204,7 @@ po-skus,SKUs only,basic,po-skus.pdf,"[[""KTL-ELC"",2],[""SUG-CUB"",10]]",ORD-1
 po-photo,A phone photo,basic;image,po-photo.jpg,"[[""MUG-RED"",6]]",ORD-1
 ```
 
-- `id`, `description`, `tags` and `files` are columns; separate several tags or files with `;`.
+- `id`, `description`, `tags` and `files` are columns; separate several tags or files with `;`, or write them as a JSON list.
 - `input.<field>` and `expected.<dotted.path>` columns build those mappings; a number in the path indexes a list, so `create_order_with_items.0.items` is the first call's items.
 - A cell starting with `[`, `{` or `"` is read as JSON; anything else stays text.
 - Any other column reaches custom metrics as `case.extra`.

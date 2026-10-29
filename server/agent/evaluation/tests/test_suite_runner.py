@@ -5,7 +5,7 @@ from django.conf import settings
 from enthusiast_common.evaluation.errors import EvalSuiteError
 from enthusiast_common.evaluation.loaded_suite import LoadedSuite
 from enthusiast_common.evaluation.metrics import MetricResult
-from enthusiast_common.evaluation.suite import EvalCase, EvalSuite
+from enthusiast_common.evaluation.suite import AgenticExecutionEvalCase, EvalSuite
 from enthusiast_common.evaluation.trace import ExecutionTrace
 from model_bakery import baker
 
@@ -19,7 +19,10 @@ from agent.services import AgentPreconfigurationService
 from .greeter import GreeterMockIntegration, GreetingExecution
 
 GREETER = f"{GreeterMockIntegration.__module__}.GreeterMockIntegration"
-CASES = [EvalCase(id="ada", input={"name": "Ada"}), EvalCase(id="bob", input={"name": "Bob"})]
+CASES = [
+    AgenticExecutionEvalCase(id="ada", input={"name": "Ada"}),
+    AgenticExecutionEvalCase(id="bob", input={"name": "Bob"}),
+]
 
 
 @pytest.fixture(autouse=True)
@@ -141,7 +144,7 @@ class TestSuiteRunner:
 
     def test_a_sandbox_that_cannot_be_set_up_errors_only_its_own_cases(self, tmp_path):
         override = {"class": GREETER, "config": {"data": {"greeting": "Hi"}}}
-        cases = [*CASES, EvalCase(id="cy", input={"name": "Cy"}, integrations=[override])]
+        cases = [*CASES, AgenticExecutionEvalCase(id="cy", input={"name": "Cy"}, integrations=[override])]
         create = EvalSandbox.create
 
         def create_unless_overridden(suite_name, agent_type, agent_config, integrations):
@@ -162,7 +165,7 @@ class TestSuiteRunner:
 
     def test_a_case_overriding_integration_data_gets_its_own_sandbox(self, tmp_path):
         override = {"class": GREETER, "config": {"data": {"greeting": "Hi"}}}
-        cases = [*CASES, EvalCase(id="cy", input={"name": "Cy"}, integrations=[override])]
+        cases = [*CASES, AgenticExecutionEvalCase(id="cy", input={"name": "Cy"}, integrations=[override])]
 
         with patch.object(EvalSandbox, "create", wraps=EvalSandbox.create) as create:
             result = SuiteRunner(_loaded(tmp_path, None, cases=cases)).run()

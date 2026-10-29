@@ -3,7 +3,7 @@ import pickle
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 
-from enthusiast_common.evaluation.trace import Attempt, ExecutionTrace, LLMCall, MockCall, ToolCall, TraceRecorder
+from enthusiast_common.evaluation.trace import Attempt, ExecutionTrace, LLMCall, MockCall, ToolCall, TraceRecorder, Turn
 
 
 def _llm(run_id, parent=None, tokens=(10, 5)):
@@ -62,6 +62,24 @@ class TestExecutionTrace:
         assert trace.had_tool_error()
         assert trace.had_validator_failure("MISSING_SKU")
         assert not trace.had_validator_failure("OTHER")
+
+    def test_calls_are_found_by_the_turn_that_made_them(self):
+        trace = ExecutionTrace()
+        for run_id in ("r1", "r2"):
+            trace.record_llm_call(_llm(run_id))
+        for run_id in ("t1", "t2"):
+            trace.record_tool_call(ToolCall(run_id=run_id, name="search"))
+        first = Turn(user_message="Hi", answer="Hello", llm_call_run_ids=["r1"])
+        second = Turn(
+            user_message="A kettle", answer="KTL-ELC", llm_call_run_ids=["r2"], tool_call_run_ids=["t1", "t2"]
+        )
+        trace.record_turn(first)
+        trace.record_turn(second)
+
+        assert trace.turns == [first, second]
+        assert [c.run_id for c in trace.llm_calls_in(second)] == ["r2"]
+        assert trace.tool_calls_in(first) == []
+        assert [c.run_id for c in trace.tool_calls_in(second)] == ["t1", "t2"]
 
     def test_an_empty_trace_reports_nothing_happened(self):
         trace = ExecutionTrace()

@@ -1,13 +1,16 @@
 from enthusiast_common.evaluation.loaded_suite import LoadedSuite
 from enthusiast_common.evaluation.metrics import MetricResult
-from enthusiast_common.evaluation.suite import EvalCase, EvalSuite
+from enthusiast_common.evaluation.suite import AgenticExecutionEvalCase, EvalSuite
 from enthusiast_common.evaluation.trace import ExecutionTrace
 
 from agent.evaluation.reports import SuiteReport
 from agent.evaluation.runner import RunResult, ThresholdResult
 from agent.evaluation.runner.suite_run_result import SuiteRunResult
 
-CASES = [EvalCase(id="ada", tags=["vip"], description="A regular order"), EvalCase(id="bob")]
+CASES = [
+    AgenticExecutionEvalCase(id="ada", tags=["vip"], description="A regular order"),
+    AgenticExecutionEvalCase(id="bob"),
+]
 
 
 def loaded_suite(tmp_path, cases=CASES, **changes) -> LoadedSuite:

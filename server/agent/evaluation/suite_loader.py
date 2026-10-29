@@ -7,7 +7,7 @@ from enthusiast_common.evaluation.metrics import MetricError, MetricRegistry
 from enthusiast_common.evaluation.metrics.auto import AUTO_METRICS
 from enthusiast_common.evaluation.metrics.llm import JudgePromptParams
 from enthusiast_common.evaluation.mocks.errors import MockError
-from enthusiast_common.evaluation.suite import EvalSuite
+from enthusiast_common.evaluation.suite import AgenticExecutionEvalCase, ConversationEvalCase, EvalSuite
 from enthusiast_common.evaluation.suite_reader import SuiteReader
 from pydantic import ValidationError
 
@@ -33,6 +33,7 @@ class SuiteLoader:
         loaded = SuiteReader().read(path)
         if selection is not None:
             loaded = selection.apply(loaded)
+        self._check_execution_suite(loaded)
         execution = self._resolve_execution(loaded.suite)
         self._check_sandbox_agent_type(loaded.suite)
         self._check_prompt_files(loaded)
@@ -55,6 +56,17 @@ class SuiteLoader:
                 f"Agent type '{agent_type}' has {len(definitions)} registered executions; set 'execution_key'."
             )
         return definitions[0]
+
+    @staticmethod
+    def _check_execution_suite(loaded: LoadedSuite) -> None:
+        """Only execution suites run so far; a conversation suite or case fails rather than running as an execution."""
+        if loaded.suite.kind == "conversation":
+            raise EvalSuiteError("Conversation suites can't be run yet; set 'kind: execution' or leave it out.")
+        for case in loaded.cases:
+            if isinstance(case, ConversationEvalCase):
+                raise EvalSuiteError(
+                    f"Case '{case.id}': conversation cases ('user_messages', 'simulated_user') can't be run yet."
+                )
 
     @staticmethod
     def _check_sandbox_agent_type(suite: EvalSuite) -> None:
@@ -160,6 +172,8 @@ class SuiteLoader:
     @staticmethod
     def _check_inputs(loaded: LoadedSuite, execution: type[BaseAgenticExecutionDefinition]) -> None:
         for case in loaded.cases:
+            if not isinstance(case, AgenticExecutionEvalCase):
+                raise EvalSuiteError(f"Case '{case.id}' is not an execution case; give it 'input'.")
             try:
                 execution.INPUT_TYPE(**case.input)
             except ValidationError as e:

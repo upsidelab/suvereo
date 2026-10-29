@@ -2,6 +2,7 @@ import json
 from collections import Counter
 from typing import Any, Literal
 
+from ...suite import AgenticExecutionEvalCase
 from ..metric_context import MetricContext
 
 Section = Literal["input", "outcome", "output", "expected", "trace_summary"]
@@ -22,11 +23,17 @@ class JudgeMaterial:
         renderers = {
             "output": lambda: cls._as_json(context.trace.output),
             "expected": lambda: cls._as_json(context.case.expected),
-            "input": lambda: cls._as_json({"input": context.case.input, "files": [f.name for f in context.case.files]}),
+            "input": lambda: cls._as_json(cls._input(context)),
             "outcome": lambda: cls._outcome(context),
             "trace_summary": lambda: cls._trace_summary(context),
         }
         return "\n\n".join(f"## {section}\n{renderers[section]()}" for section in sections)
+
+    @staticmethod
+    def _input(context: MetricContext) -> dict[str, Any]:
+        case = context.case
+        execution_input = case.input if isinstance(case, AgenticExecutionEvalCase) else {}
+        return {"input": execution_input, "files": [f.name for f in case.files]}
 
     @staticmethod
     def _as_json(value: Any) -> str:

@@ -1,12 +1,16 @@
 import pytest
 from enthusiast_common.evaluation.errors import EvalSuiteError
-from enthusiast_common.evaluation.suite import EvalCase
+from enthusiast_common.evaluation.suite import AgenticExecutionEvalCase
 
 from agent.evaluation.suite_selection import SuiteSelection
 
 from .suite_reports import loaded_suite
 
-CASES = [EvalCase(id="ada", tags=["vip"]), EvalCase(id="bob", tags=["bulk"]), EvalCase(id="cy")]
+CASES = [
+    AgenticExecutionEvalCase(id="ada", tags=["vip"]),
+    AgenticExecutionEvalCase(id="bob", tags=["bulk"]),
+    AgenticExecutionEvalCase(id="cy"),
+]
 VARIANTS = [{"name": "v2", "agent_config": {"x": 1}}, {"name": "v3", "agent_config": {"x": 2}}]
 
 

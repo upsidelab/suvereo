@@ -1,6 +1,16 @@
 import pytest
-from enthusiast_common.evaluation.suite import EvalCase, EvalSuite, IntegrationConfig, MetricConfig, PassThreshold
-from pydantic import ValidationError
+from enthusiast_common.evaluation.suite import (
+    AgenticExecutionEvalCase,
+    AnyEvalCase,
+    ConversationEvalCase,
+    EvalCase,
+    EvalSuite,
+    IntegrationConfig,
+    MetricConfig,
+    PassThreshold,
+    SimulatedUserConfig,
+)
+from pydantic import TypeAdapter, ValidationError
 
 MINIMAL = {
     "agent": {"id": 12},
@@ -67,7 +77,7 @@ class TestEvalSuite:
 
         assert suite.integrations[0].class_path.endswith("ECommerceMockIntegration")
         assert suite.models[1].display_label == "sonnet"
-        assert isinstance(suite.cases[2], EvalCase)
+        assert isinstance(suite.cases[2], AgenticExecutionEvalCase)
 
     def test_an_unknown_key_is_an_error_rather_than_ignored(self):
         with pytest.raises(ValidationError, match="repeat"):
@@ -84,6 +94,7 @@ class TestEvalSuite:
             {"agent": {"id": 1, "config": {"a": 1}}},
             {"variants": [{"name": "default", "system_prompt_file": "p.txt"}]},
             {"variants": [{"name": "empty"}]},
+            {"kind": "chat"},
         ],
     )
     def test_invalid_suites_are_rejected(self, changes):
@@ -161,6 +172,59 @@ class TestEvalSuite:
 
         assert [m.name for m in metrics] == ["line_items", "single_place_order", "retried", "stopped"]
         assert metrics[0].pass_threshold is None
+
+    @pytest.mark.parametrize("kind", ["execution", "conversation", None])
+    def test_kind_is_optional_and_left_for_the_loader_to_resolve(self, kind):
+        assert EvalSuite.model_validate(_suite(kind=kind)).kind == kind
+
+
+class TestEvalCase:
+    @pytest.mark.parametrize(
+        "case, case_class",
+        [
+            ({"input": {"name": "Ada"}}, AgenticExecutionEvalCase),
+            ({}, AgenticExecutionEvalCase),
+            ({"user_messages": ["Hi", "Under 50 EUR"]}, ConversationEvalCase),
+            ({"simulated_user": {"goal": "Find a kettle"}}, ConversationEvalCase),
+        ],
+    )
+    def test_a_case_is_read_as_the_class_its_fields_describe(self, case, case_class):
+        assert type(TypeAdapter(AnyEvalCase).validate_python({"id": "c", **case})) is case_class
+
+    @pytest.mark.parametrize(
+        "case, message",
+        [
+            ({"input": {"a": 1}, "user_messages": ["Hi"]}, "input\n  Extra inputs are not permitted"),
+            ({"input": {"a": 1}, "simulated_user": {"goal": "g"}}, "input\n  Extra inputs are not permitted"),
+            ({"user_messages": ["Hi"], "simulated_user": {"goal": "g"}}, "Set either 'user_messages'"),
+            ({"user_messages": []}, "Set either 'user_messages'"),
+        ],
+    )
+    def test_a_case_is_an_execution_or_a_conversation_never_both(self, case, message):
+        with pytest.raises(ValidationError, match=message):
+            TypeAdapter(AnyEvalCase).validate_python({"id": "c", **case})
+
+    @pytest.mark.parametrize("user_messages", [[""], ["Hi", "  "]])
+    def test_a_user_message_must_have_text(self, user_messages):
+        with pytest.raises(ValidationError, match="must have text"):
+            ConversationEvalCase(id="c", user_messages=user_messages)
+
+
+class TestSimulatedUserConfig:
+    def test_defaults(self):
+        user = SimulatedUserConfig(goal="Find a kettle")
+
+        assert (user.persona, user.max_turns, user.class_path, user.params) == ("", 10, None, {})
+
+    def test_a_custom_simulator_is_written_as_class_and_needs_no_goal(self):
+        user = SimulatedUserConfig.model_validate({"class": "my.Simulator", "params": {"mood": "angry"}})
+
+        assert user.class_path == "my.Simulator"
+
+    @pytest.mark.parametrize("user", [{}, {"persona": "terse"}, {"goal": "g", "max_turns": 0}])
+    def test_invalid_users_are_rejected(self, user):
+        with pytest.raises(ValidationError):
+            SimulatedUserConfig.model_validate(user)
 
 
 class TestPassThreshold:

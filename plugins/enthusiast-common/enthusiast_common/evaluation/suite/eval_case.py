@@ -9,12 +9,12 @@ from .metric_config import MetricConfig
 
 
 class EvalCase(EvalModel):
-    """One test case: what the agent gets, what is mocked, and what is expected."""
+    """What every test case has, whatever drives the agent: what is mocked, what is expected and how it is measured.
+    A suite's cases are AgenticExecutionEvalCase or ConversationEvalCase."""
 
     id: str = Field(min_length=1)
     description: str = ""
     tags: list[str] = []
-    input: dict[str, Any] = Field(default={}, description="Validated against the execution's INPUT_TYPE.")
     files: list[Path] = Field(default=[], description="Attached to the conversation; relative to the case file.")
     integrations: list[IntegrationConfig] = Field(default=[], description="Overrides of the suite's integrations.")
     expected: dict[str, Any] = Field(default={}, description="Free-form; metrics read the paths they need.")

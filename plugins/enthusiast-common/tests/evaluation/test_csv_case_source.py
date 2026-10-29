@@ -71,6 +71,22 @@ class TestCsvCaseSource:
 
         assert CsvCaseSource(path).load()[0].id == "c"
 
+    def test_reads_conversation_cases(self, tmp_path):
+        path = _csv(
+            tmp_path,
+            "id,user_messages,simulated_user.goal,simulated_user.max_turns\n"
+            "split,Hi;Under 50 EUR,,\n"
+            'json,"[""Hi; I need a kettle"", ""Under 50 EUR""]",,\n'
+            "simulated,,Find a kettle,6\n",
+        )
+
+        split, json, simulated = CsvCaseSource(path).load()
+
+        assert split.user_messages == ["Hi", "Under 50 EUR"]
+        assert json.user_messages == ["Hi; I need a kettle", "Under 50 EUR"]
+        assert (simulated.simulated_user.goal, simulated.simulated_user.max_turns) == ("Find a kettle", 6)
+        assert split.simulated_user is None
+
     @pytest.mark.parametrize(
         "text, row, column, message",
         [
@@ -85,6 +101,15 @@ class TestCsvCaseSource:
             ('id,expected.items\nc,"[1,"\n', 2, "expected.items", "does not parse"),
             ("id,difficulty\nc,{oops\n", 2, "difficulty", "does not parse"),
             ("id,expected.a, expected.a\nc,1,2\n", 1, "expected.a", "more than once"),
+            ("id,simulated_user.\nc,1\n", 1, "simulated_user.", "field name"),
+            ('id,user_messages\nc,"[""Hi"","\n', 2, "user_messages", "does not parse"),
+            ("id,simulated_user.persona\nc,terse\n", 2, None, "goal"),
+            (
+                "id,input.name,user_messages\nc,Ada,Hi\n",
+                2,
+                None,
+                "input: Extra inputs are not permitted \\(conversation case\\)",
+            ),
         ],
     )
     def test_errors_name_the_row_and_column(self, tmp_path, text, row, column, message):
