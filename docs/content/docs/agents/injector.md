@@ -53,6 +53,10 @@ class Injector(BaseInjector):
 Tools receive the injector through their constructor. A tool reads what it needs from it:
 
 ```python
+class EmptyInput(BaseModel):
+    pass
+
+
 class MessageCountTool(BaseLLMTool):
     NAME = "count_messages"
     DESCRIPTION = "Return the number of messages exchanged so far in the conversation."
@@ -83,6 +87,10 @@ class ArticlesInjector(Injector):
 Tools of agents built on this vertical can then use the retriever:
 
 ```python
+class SearchArticlesInput(BaseModel):
+    query: str = Field(description="What to look for in the articles")
+
+
 class SearchArticlesTool(BaseLLMTool):
     NAME = "search_articles"
     DESCRIPTION = "Find articles relevant to a question."

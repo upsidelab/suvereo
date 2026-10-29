@@ -8,7 +8,7 @@ On every turn, the agent sends the language model these messages, in this order:
 
 1. **The system prompt** of the agent, see [Prompts](/docs/agents/prompts). It is passed separately from the chat history.
 2. (optional) **A summary of the earlier conversation**, sent as a second system message. It is included only when the [memory compactor](#memory-compactor) is enabled and has produced a summary.
-3. **The most recent messages** of the chat history, trimmed to a budget of 3000 tokens.
+3. **The most recent messages** of the chat history, trimmed to the conversation history token limit, see [Context Window Builder](#context-window-builder).
 4. **The new message** from the person.
 
 ## Chat History
@@ -23,17 +23,17 @@ On every turn, the agent sends the language model these messages, in this order:
 
 `ContextWindowBuilder` assembles the messages for each turn. It is part of the `enthusiast-agent-tool-calling` plugin, and `BaseToolCallingAgent` uses it.
 
-- It keeps the most recent messages that fit the token budget, starting on a human message.
+- It keeps the most recent messages that fit the token limit, starting on a human message.
 - It counts tokens approximately.
 - When the compactor has a summary, it adds it at the start as a `SystemMessage`.
 
-The budget is `MAX_HISTORY_TOKENS`, set to 3000 in `base_tool_calling_agent.py`.
+The limit is the agent's `conversation_history_token_limit`. By default it is 10,000 tokens, the value of the `DEFAULT_CONVERSATION_HISTORY_TOKEN_LIMIT` instance setting, which can be set through an environment variable of the same name. An agent can use a different limit by setting `conversation_history_token_limit` in its configuration, see [Agent Configuration](/docs/agents/agent-config).
 
 ```python
 context_messages = ContextWindowBuilder(
     chat_history=self._injector.chat_history,
     memory_compactor=self._injector.memory_compactor,
-).build(max_tokens=MAX_HISTORY_TOKENS)
+).build(max_tokens=self._conversation_history_token_limit)
 ```
 
 ## Memory Compactor
