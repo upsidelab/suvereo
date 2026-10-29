@@ -1,6 +1,9 @@
 from pydantic import BaseModel, Field, model_validator
 
-from .stop_reason import StopReason
+from ..trace import StopReason
+
+#: The reasons a user simulator may stop for; the runner records the others.
+USER_STOP_REASONS = (StopReason.DONE, StopReason.GAVE_UP)
 
 
 class UserMessage(BaseModel):
@@ -13,6 +16,10 @@ class UserMessage(BaseModel):
     def _a_message_or_a_stop(self) -> "UserMessage":
         if (self.text is None) == (self.stop_reason is None):
             raise ValueError("Set exactly one of 'text' (a message to send) or 'stop_reason' (a stop).")
+        if self.stop_reason is not None and self.stop_reason not in USER_STOP_REASONS:
+            raise ValueError(
+                f"A user stops as '{StopReason.DONE}' or '{StopReason.GAVE_UP}', not '{self.stop_reason}'."
+            )
         return self
 
     @classmethod

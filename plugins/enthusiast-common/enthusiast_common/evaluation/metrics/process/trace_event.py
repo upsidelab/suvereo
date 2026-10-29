@@ -1,11 +1,14 @@
 from pydantic import BaseModel, ConfigDict, field_validator
 
 from ....agentic_execution import StopExecutionValidator
+from ...suite import SuiteKind
 from ..base_metric import BaseMetric
 from ..metric_context import MetricContext
 from ..metric_result import MetricResult
 
 EVENTS = ("retry", "tool_error", "validator_failed", "stop_execution")
+#: Events of the validator loop, which only executions have.
+EXECUTION_EVENTS = ("retry", "validator_failed", "stop_execution")
 
 
 class TraceEventParams(BaseModel):
@@ -28,6 +31,9 @@ class TraceEvent(BaseMetric):
     NAME = "trace_event"
     VALUE_TYPE = "bool"
     PARAMS = TraceEventParams
+
+    def supports(self, kind: SuiteKind) -> bool:
+        return kind == SuiteKind.EXECUTION or self.params.event.partition(":")[0] not in EXECUTION_EVENTS
 
     def measure(self, context: MetricContext) -> MetricResult:
         name, _, code = self.params.event.partition(":")

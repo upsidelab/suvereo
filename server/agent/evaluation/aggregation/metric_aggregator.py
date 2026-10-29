@@ -17,7 +17,8 @@ DERIVED_METRICS = (PASS_RATE, FIRST_ATTEMPT_PASS_RATE, FLAKY_RATE)
 
 
 class MetricAggregator:
-    """Aggregates runs per candidate: every metric and component, and the pass, first-attempt and flaky rates."""
+    """Aggregates runs per candidate: every metric and component, and the pass, first-attempt and flaky rates; the
+    first-attempt rate has no value for conversations, which have no attempts."""
 
     def __init__(self, value_types: dict[str, str], aggregates: dict[str, Aggregate] | None = None):
         self.value_types = value_types
@@ -75,7 +76,10 @@ class MetricAggregator:
         outcomes: dict[str, list[bool]] = {}
         for run in runs:
             outcomes.setdefault(run.case_id, []).append(run.passed)
-        first_attempt = [run.passed and (run.metrics[Attempts.NAME].value or 0) <= 1 for run in runs]
+        attempts = [run.metrics.get(Attempts.NAME) for run in runs]
+        first_attempt = [
+            None if result is None else run.passed and (result.value or 0) <= 1 for run, result in zip(runs, attempts)
+        ]
         return {
             PASS_RATE: MetricAggregate.from_values([run.passed for run in runs], "bool"),
             FIRST_ATTEMPT_PASS_RATE: MetricAggregate.from_values(first_attempt, "bool"),

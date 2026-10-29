@@ -5,11 +5,10 @@ import time
 from enthusiast_common.config import AgentCallbackHandlerConfig, CallbackHandlerConfig
 from enthusiast_common.evaluation.loaded_suite import LoadedSuite
 from enthusiast_common.evaluation.metrics import MetricContext, MetricResult
-from enthusiast_common.evaluation.suite import AgenticExecutionEvalCase, EvalCase, ModelTarget, PromptVariant
+from enthusiast_common.evaluation.suite import EvalCase, ModelTarget, PromptVariant, SuiteKind
 from enthusiast_common.evaluation.suite.prompt_variant import DEFAULT_VARIANT
 from enthusiast_common.evaluation.trace import ExecutionTrace, TraceRecorder
 
-from agent.agentic_execution.runner import AgenticExecutionRunner
 from agent.conversation.services.conversation_file_attach_service import ConversationFileAttachService
 from agent.core.agents.config_overrides import AgentConfigOverrides
 from agent.evaluation.integrations import EvalIntegrationPluginResolver, MockIntegrationFactory
@@ -17,19 +16,26 @@ from agent.evaluation.judge_client import EvalJudgeClient
 from agent.evaluation.judge_models_used_by_metrics import judge_models_used_by_metrics
 from agent.evaluation.pinned_llm import PinnedLLM
 from agent.evaluation.pricing_table import PricingTable, TraceCost
+from agent.evaluation.resolved_kind import resolved_kind
 from agent.evaluation.run_context import EvalRunContext
 from agent.evaluation.targets import BaseAgentTarget
 from agent.evaluation.trace_callback_handler import TraceCallbackHandler
 from agent.models import Conversation
 
-from .eval_execution_conversation import EvalExecutionConversation
+from .base_run_driver import BaseRunDriver
+from .conversation_run_driver import ConversationRunDriver
+from .execution_run_driver import ExecutionRunDriver
 from .run_result import RunResult
 from .run_scorer import RunScorer
 
 logger = logging.getLogger(__name__)
 
 JUDGE_COST = "judge_cost_usd"
-EXECUTION_SUCCEEDED = "execution_succeeded"
+#: The auto metric a run of each suite kind must pass, besides its required thresholds.
+OUTCOME_METRIC: dict[SuiteKind, str] = {
+    SuiteKind.EXECUTION: "execution_succeeded",
+    SuiteKind.CONVERSATION: "conversation_completed",
+}
 
 
 class CaseRunner:
@@ -49,8 +55,10 @@ class CaseRunner:
         self.loaded = loaded
         self.target = target
         self.pricing = pricing
+        self.kind = resolved_kind(loaded.suite)
         self._mocks = MockIntegrationFactory(loaded.base_dir)
-        self._scorer = RunScorer(loaded.base_dir)
+        self._scorer = RunScorer(loaded.base_dir, self.kind)
+        self._driver = self._driver_for(loaded)
         self._has_judge = bool(
             judge_models_used_by_metrics(loaded) if judge_models_in_use is None else judge_models_in_use
         )
@@ -77,7 +85,7 @@ class CaseRunner:
             model=model.display_label if model else "",
             variant=variant.name if variant else DEFAULT_VARIANT,
             repeat=repeat,
-            passed=metrics[EXECUTION_SUCCEEDED].value is True
+            passed=metrics[OUTCOME_METRIC[self.kind]].value is True
             and all(g.passed for g in thresholds.values() if g.required),
             metrics=metrics,
             thresholds=thresholds,
@@ -106,7 +114,7 @@ class CaseRunner:
         auto metrics, and the suite's metrics with no value and missed thresholds, so every run has the same metric
         names."""
         trace = ExecutionTrace(error=error)
-        metrics, thresholds = RunScorer(loaded.base_dir).scores_for_unfinished_run(
+        metrics, thresholds = RunScorer(loaded.base_dir, resolved_kind(loaded.suite)).scores_for_unfinished_run(
             loaded.suite.metrics_for(case), MetricContext(trace=trace, case=case), "the run did not complete"
         )
         metrics[JUDGE_COST] = MetricResult(value=0.0)
@@ -125,32 +133,27 @@ class CaseRunner:
         self, case: EvalCase, model: ModelTarget | None, variant: PromptVariant | None, recorder: TraceRecorder
     ) -> float | None:
         """Set up and run the case, recording any exception as the trace's error; returns the agent's run time."""
-        conversation, started = None, None
+        started = None
         try:
-            if not isinstance(case, AgenticExecutionEvalCase):
-                raise TypeError(f"Case '{case.id}' is not an execution case; this suite runs executions.")
             integrations = [self._mocks.build(config) for config in self.loaded.suite.integrations_for(case)]
             for integration in integrations:
                 integration.recorder = recorder
             context = EvalRunContext(recorder, integrations, self.target.real_resolver, self.loaded.base_dir)
-            conversation = EvalExecutionConversation(
-                self.target.new_conversation(), self._config_overrides(model, variant), recorder
-            )
-            self._attach_files(conversation.conversation, case)
+            overrides = self._config_overrides(model, variant)
+            conversation = self.target.new_conversation()
+            self._attach_files(conversation, case)
             with context.activate():
                 started = time.perf_counter()
-                result = AgenticExecutionRunner().run(
-                    self.loaded.suite.execution_key, case.input, conversation, conversation.record_attempt
-                )
-            recorder.trace.execution_result = result
-            recorder.trace.output = result.output if result.success else None
+                self._driver.run(case, conversation, overrides, recorder)
         except Exception as e:
             logger.warning("Evaluation case %s raised", case.id, exc_info=True)
             recorder.trace.error = f"{type(e).__name__}: {e}"
-        finally:
-            if conversation is not None:
-                conversation.copy_scratchpad_to_trace()
         return time.perf_counter() - started if started is not None else None
+
+    def _driver_for(self, loaded: LoadedSuite) -> BaseRunDriver:
+        if self.kind == SuiteKind.CONVERSATION:
+            return ConversationRunDriver()
+        return ExecutionRunDriver(loaded.suite.execution_key)
 
     def _attach_files(self, conversation: Conversation, case: EvalCase) -> None:
         service = ConversationFileAttachService()

@@ -1,3 +1,4 @@
+from ...suite import SuiteKind
 from ..base_metric import BaseMetric
 from ..metric_context import MetricContext
 from ..metric_result import MetricResult
@@ -10,6 +11,7 @@ class FailureCode(BaseMetric):
 
     NAME = "failure_code"
     VALUE_TYPE = "label"
+    KINDS = (SuiteKind.EXECUTION,)
 
     def measure(self, context: MetricContext) -> MetricResult:
         if context.trace.error is not None:

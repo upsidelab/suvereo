@@ -1,6 +1,5 @@
-from ..trace import Turn
+from ..trace import StopReason, Turn
 from .base_user_simulator import BaseUserSimulator
-from .stop_reason import StopReason
 from .user_message import UserMessage
 
 

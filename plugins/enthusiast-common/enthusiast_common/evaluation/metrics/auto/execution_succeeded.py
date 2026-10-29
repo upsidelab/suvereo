@@ -1,3 +1,4 @@
+from ...suite import SuiteKind
 from ..base_metric import BaseMetric
 from ..metric_context import MetricContext
 from ..metric_result import MetricResult
@@ -9,6 +10,7 @@ class ExecutionSucceeded(BaseMetric):
 
     NAME = "execution_succeeded"
     VALUE_TYPE = "bool"
+    KINDS = (SuiteKind.EXECUTION,)
 
     def measure(self, context: MetricContext) -> MetricResult:
         return MetricResult(value=RunOutcome.matches_expected_outcome(context))

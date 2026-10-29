@@ -81,6 +81,16 @@ class TestTraceEvent:
 
         assert TraceEvent({"event": "stop_execution"}).measure(context).value is True
 
+    @pytest.mark.parametrize(
+        "event, in_conversations",
+        [("tool_error", True), ("retry", False), ("validator_failed:MISSING_SKU", False), ("stop_execution", False)],
+    )
+    def test_only_tool_errors_can_be_checked_in_a_conversation(self, event, in_conversations):
+        metric = TraceEvent({"event": event})
+
+        assert metric.supports("execution")
+        assert metric.supports("conversation") is in_conversations
+
     @pytest.mark.parametrize("event", ["crashed", "retry:3"])
     def test_unknown_events_fail_when_the_suite_loads(self, event):
         with pytest.raises(MetricConfigError):

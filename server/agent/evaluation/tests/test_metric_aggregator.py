@@ -50,3 +50,14 @@ class TestMetricAggregator:
         assert x.metrics["pass_rate"].value == pytest.approx(2 / 3)
         assert x.metrics["first_attempt_pass_rate"].value == pytest.approx(1 / 3)
         assert x.metrics["flaky_rate"].value == 0.5
+
+    def test_conversations_have_no_first_attempt_pass_rate(self):
+        runs = [run("a", turns=2.0), run("b", passed=False, turns=3.0)]
+        for conversation in runs:
+            del conversation.metrics["attempts"]
+
+        [candidate] = MetricAggregator({"turns": "number"}).aggregate_per_candidate(runs)
+
+        assert candidate.metrics["pass_rate"].value == 0.5
+        assert candidate.metrics["first_attempt_pass_rate"].value is None
+        assert candidate.metrics["turns"].value == 2.5

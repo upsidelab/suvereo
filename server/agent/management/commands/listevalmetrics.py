@@ -1,4 +1,5 @@
 from django.core.management.base import BaseCommand
+from enthusiast_common.evaluation.metrics import BaseMetric
 from enthusiast_common.evaluation.metrics.auto import AUTO_METRICS
 from enthusiast_common.evaluation.metrics.builtins import BUILTIN_METRICS
 from pydantic import BaseModel
@@ -9,12 +10,21 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         for metric in BUILTIN_METRICS:
-            measured_always = " (measured on every run)" if metric in AUTO_METRICS else ""
-            self.stdout.write(self.style.MIGRATE_HEADING(f"{metric.NAME}: {metric.VALUE_TYPE}{measured_always}"))
+            heading = f"{metric.NAME}: {metric.VALUE_TYPE}{self._measured_on(metric)}"
+            self.stdout.write(self.style.MIGRATE_HEADING(heading))
             description = (metric.__doc__ or "").strip().splitlines()
             self.stdout.write(f"  {description[0] if description else ''}")
             for line in self._params_lines(metric.PARAMS):
                 self.stdout.write(f"    {line}")
+
+    @staticmethod
+    def _measured_on(metric: type[BaseMetric]) -> str:
+        """Which runs an auto metric is measured on with no configuration; empty for configured metrics."""
+        if metric not in AUTO_METRICS:
+            return ""
+        if len(metric.KINDS) > 1:
+            return " (measured on every run)"
+        return f" (measured on every {metric.KINDS[0]} run)"
 
     @staticmethod
     def _params_lines(params: type[BaseModel]) -> list[str]:

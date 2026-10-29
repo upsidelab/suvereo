@@ -1,7 +1,8 @@
 import pytest
-from enthusiast_common.evaluation.metrics import MetricConfigError
+from enthusiast_common.evaluation.metrics import MetricConfigError, MetricContext
 from enthusiast_common.evaluation.metrics.llm import LLMClassify, LLMJudge
-from enthusiast_common.evaluation.trace import ToolCall
+from enthusiast_common.evaluation.suite import ConversationEvalCase
+from enthusiast_common.evaluation.trace import ExecutionTrace, ToolCall, Turn
 
 from .contexts import mock_call, run
 from .scripted_judge import ScriptedJudge
@@ -10,6 +11,7 @@ CRITERIA = [
     {"name": "completeness", "description": "Every line item is ordered", "weight": 3},
     {"name": "no_invented_skus", "description": "No SKU absent from the document"},
 ]
+ANSWERED = [Turn(user_message="Hi", answer="Hello"), Turn(user_message="Bye", answer="Bye")]
 
 
 def _judged(judge, **trace_fields):
@@ -89,6 +91,51 @@ class TestLLMJudge:
             "## outcome\nrun: failed (validation_failed): No product matched\n"
             "mock calls: none; the agent called no mocked external system"
         )
+
+    @pytest.mark.parametrize(
+        "turns, error, stop_reason, ended",
+        [
+            (ANSWERED, None, "done", "conversation of 2 turn(s), every turn answered; the user finished"),
+            (ANSWERED, None, "gave_up", "conversation of 2 turn(s), every turn answered; the user gave up"),
+            (
+                ANSWERED,
+                None,
+                "max_turns",
+                "conversation of 2 turn(s), every turn answered; cut off at the case's turn limit",
+            ),
+            (
+                [Turn(user_message="Hi", error="RuntimeError: down")],
+                "RuntimeError: down",
+                "error",
+                "crashed after 1 turn(s): RuntimeError: down",
+            ),
+            ([], None, "done", "ended before the first turn"),
+        ],
+    )
+    def test_a_conversations_outcome_states_how_the_conversation_ended(self, turns, error, stop_reason, ended):
+        judge = ScriptedJudge('{"score": 1}')
+        trace = ExecutionTrace(turns=turns, error=error, stop_reason=stop_reason)
+        context = MetricContext(
+            trace=trace, case=ConversationEvalCase(id="c", user_messages=["Hi", "Bye"]), judge=judge
+        )
+
+        LLMJudge({"criteria": CRITERIA[:1], "include": ["outcome"]}).measure(context)
+
+        assert f"## outcome\nrun: {ended}\n" in judge.prompts[0]
+
+    def test_a_conversations_input_is_what_the_user_said_and_wanted(self):
+        judge = ScriptedJudge('{"score": 1}')
+        case = ConversationEvalCase(
+            id="c", simulated_user={"class": "my.Simulator", "goal": "Get a kettle", "persona": "terse"}
+        )
+        trace = ExecutionTrace(turns=[Turn(user_message="kettle?", answer="KTL-ELC")])
+        context = MetricContext(trace=trace, case=case, judge=judge)
+
+        LLMJudge({"criteria": CRITERIA[:1], "include": ["input"]}).measure(context)
+
+        assert '"user_messages": [\n    "kettle?"\n  ]' in judge.prompts[0]
+        assert '"goal": "Get a kettle"' in judge.prompts[0]
+        assert '"input"' not in judge.prompts[0]
 
     def test_the_outcome_counts_the_calls_to_each_mocked_method(self):
         judge = ScriptedJudge('{"score": 1}')

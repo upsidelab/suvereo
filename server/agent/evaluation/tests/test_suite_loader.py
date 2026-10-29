@@ -15,6 +15,7 @@ from .greeter import GreeterMockIntegration, GreetingExecution
 pytestmark = pytest.mark.django_db
 
 GREETER = f"{GreeterMockIntegration.__module__}.GreeterMockIntegration"
+CHATTER = "agent.evaluation.tests.chatter"
 
 
 @pytest.fixture(autouse=True)
@@ -51,13 +52,73 @@ class TestSuiteLoader:
     def test_resolves_the_agent_types_only_execution(self, tmp_path):
         loaded = _load(tmp_path)
 
-        assert loaded.suite.execution_key == "greeting"
+        assert (loaded.suite.kind, loaded.suite.execution_key) == ("execution", "greeting")
         assert [case.id for case in loaded.cases] == ["ada"]
+
+    def test_an_agent_type_without_an_execution_is_run_as_a_conversation(self, tmp_path):
+        with patch.object(AgenticExecutionDefinitionRegistry, "get_all", return_value=[]):
+            loaded = _load(tmp_path, cases=[{"id": "chat", "user_messages": ["Hi", "Bye"]}])
+
+        assert (loaded.suite.kind, loaded.suite.execution_key) == ("conversation", None)
+
+    def test_an_execution_key_makes_the_suite_an_execution_so_a_wrong_key_is_named(self, tmp_path):
+        with patch.object(AgenticExecutionDefinitionRegistry, "get_all", return_value=[]):
+            with pytest.raises(EvalSuiteError, match="has no execution 'greeting'"):
+                _load(tmp_path, execution_key="greeting")
+
+    def test_any_agent_can_be_run_as_a_conversation(self, tmp_path):
+        user = {"class": f"{CHATTER}.PoliteUser", "params": {"name": "Ada"}}
+
+        loaded = _load(
+            tmp_path,
+            kind="conversation",
+            cases=[{"id": "chat", "user_messages": ["Hi"]}, {"id": "u", "simulated_user": user}],
+        )
+
+        assert loaded.suite.kind == "conversation"
 
     @pytest.mark.parametrize(
         "changes, message",
         [
-            ({"agent": {"type": "unknown-agent"}}, "has 0 registered executions"),
+            ({"cases": [{"id": "chat"}]}, "Case 'chat' is an execution case"),
+            ({"cases": [{"id": "chat", "simulated_user": {"goal": "Say hi"}}]}, "'simulated_user' needs 'class'"),
+            (
+                {"cases": [{"id": "chat", "simulated_user": {"class": "no.such.Simulator"}}]},
+                "can't load the user simulator",
+            ),
+            (
+                {"cases": [{"id": "chat", "simulated_user": {"class": f"{CHATTER}.NotASimulator"}}]},
+                "is not a BaseUserSimulator",
+            ),
+            (
+                {"metrics": [{"type": "trace_event", "name": "retried", "params": {"event": "retry"}}]},
+                "Metric 'retried' \\(trace_event\\) can't measure a conversation suite",
+            ),
+        ],
+    )
+    def test_a_conversation_suite_fails_early_on_what_it_cannot_run(self, tmp_path, changes, message):
+        with pytest.raises(EvalSuiteError, match=message):
+            _load(tmp_path, kind="conversation", **{"cases": [{"id": "chat", "user_messages": ["Hi"]}], **changes})
+
+    def test_auto_metric_names_are_reserved_only_in_the_kind_that_measures_them(self, tmp_path):
+        metrics = [{"type": "mock_called", "name": "turns", "params": {"method": "greet"}}]
+
+        assert _load(tmp_path, metrics=metrics).suite.metrics[0].name == "turns"
+        with pytest.raises(EvalSuiteError, match="'turns' is reserved"):
+            _load(tmp_path, kind="conversation", metrics=metrics, cases=[{"id": "chat", "user_messages": ["Hi"]}])
+
+    def test_a_conversation_suite_can_check_tool_errors(self, tmp_path):
+        metrics = [{"type": "trace_event", "name": "tool_failed", "params": {"event": "tool_error"}}]
+
+        loaded = _load(tmp_path, kind="conversation", metrics=metrics, cases=[{"id": "chat", "user_messages": ["Hi"]}])
+
+        assert loaded.suite.metrics[0].name == "tool_failed"
+
+    @pytest.mark.parametrize(
+        "changes, message",
+        [
+            ({"agent": {"type": "unknown-agent"}, "kind": "execution"}, "has 0 registered executions"),
+            ({"agent": {"type": "unknown-agent"}}, "agent type 'unknown-agent' has no registered execution"),
             ({"agent": {"id": 999}}, "no agent with id 999"),
             ({"execution_key": "farewell"}, "no execution 'farewell'"),
             ({"models": [{"provider": "Nope", "model": "x"}]}, "Language model provider 'Nope' is not installed"),
@@ -124,9 +185,12 @@ class TestSuiteLoader:
                 {"metrics": [{"type": "mock_called", "params": {"method": "greet"}, "aggregate": "distribution"}]},
                 "only for label metrics",
             ),
-            ({"kind": "conversation"}, "Conversation suites can't be run yet"),
-            ({"cases": [{"id": "chat", "user_messages": ["Hi"]}]}, "Case 'chat': conversation cases"),
-            ({"cases": [{"id": "chat", "simulated_user": {"goal": "Say hi"}}]}, "Case 'chat': conversation cases"),
+            ({"kind": "conversation"}, "Case 'ada' is an execution case, but this is a conversation suite"),
+            (
+                {"cases": [{"id": "chat", "user_messages": ["Hi"]}]},
+                "Case 'chat': 'user_messages' and 'simulated_user' are for conversation suites",
+            ),
+            ({"kind": "conversation", "execution_key": "greeting"}, "'execution_key' is for execution suites"),
         ],
     )
     def test_fails_early_on_a_suite_the_host_cannot_run(self, tmp_path, changes, message):

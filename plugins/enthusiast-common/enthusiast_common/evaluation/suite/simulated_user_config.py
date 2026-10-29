@@ -10,7 +10,7 @@ class SimulatedUserConfig(EvalModel):
 
     goal: str = Field(default="", description="What the user wants out of the conversation.")
     persona: str = Field(default="", description="How the user talks, e.g. terse or vague.")
-    max_turns: int = Field(default=10, ge=1, description="The conversation ends after this many user messages.")
+    max_turns: int = Field(default=10, ge=1, description="The turn limit; a conversation cut off here fails the run.")
     class_path: str | None = Field(default=None, alias="class", description="Dotted path to a custom simulator.")
     params: dict[str, Any] = Field(default={}, description="Passed to a custom simulator.")
 

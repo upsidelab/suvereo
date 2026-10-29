@@ -4,10 +4,10 @@ from enthusiast_common.agentic_execution import BaseAgenticExecutionDefinition
 from enthusiast_common.evaluation.errors import EvalSuiteError
 from enthusiast_common.evaluation.loaded_suite import LoadedSuite
 from enthusiast_common.evaluation.metrics import MetricError, MetricRegistry
-from enthusiast_common.evaluation.metrics.auto import AUTO_METRICS
+from enthusiast_common.evaluation.metrics.auto import auto_metrics_for
 from enthusiast_common.evaluation.metrics.llm import JudgePromptParams
 from enthusiast_common.evaluation.mocks.errors import MockError
-from enthusiast_common.evaluation.suite import AgenticExecutionEvalCase, ConversationEvalCase, EvalSuite
+from enthusiast_common.evaluation.suite import AgenticExecutionEvalCase, ConversationEvalCase, EvalSuite, SuiteKind
 from enthusiast_common.evaluation.suite_reader import SuiteReader
 from pydantic import ValidationError
 
@@ -19,33 +19,56 @@ from agent.evaluation.integrations import MockIntegrationFactory
 from agent.evaluation.judge_models_used_by_metrics import judge_models_used_by_metrics
 from agent.evaluation.runner.case_runner import JUDGE_COST
 from agent.evaluation.suite_selection import SuiteSelection
+from agent.evaluation.user_simulator_registry import UserSimulatorRegistry
 from agent.models import Agent
 
-RESERVED_METRIC_NAMES = {metric.NAME for metric in AUTO_METRICS} | {JUDGE_COST} | set(DERIVED_METRICS)
+
+def reserved_metric_names(kind: SuiteKind) -> set[str]:
+    """Names a suite of this kind can't give its metrics: its auto metrics, the judge cost and the derived rates."""
+    return {metric.NAME for metric in auto_metrics_for(kind)} | {JUDGE_COST} | set(DERIVED_METRICS)
 
 
 class SuiteLoader:
     """Reads a suite and checks what needs the host, so a mistake fails before any tokens are spent."""
 
     def load(self, path: Path, selection: SuiteSelection | None = None) -> LoadedSuite:
-        """The suite, narrowed to the selection if given, with its execution key resolved; raises EvalSuiteError naming
-        the first problem found."""
+        """The suite, narrowed to the selection if given, with its kind and execution key resolved; raises
+        EvalSuiteError naming the first problem found."""
         loaded = SuiteReader().read(path)
         if selection is not None:
             loaded = selection.apply(loaded)
-        self._check_execution_suite(loaded)
-        execution = self._resolve_execution(loaded.suite)
+        agent_type = loaded.suite.agent.type or self._existing_agent_type(loaded.suite.agent.id)
+        kind = self._resolve_kind(loaded.suite, agent_type)
+        execution = self._resolve_execution(loaded.suite, agent_type) if kind == SuiteKind.EXECUTION else None
+        if execution is None and loaded.suite.execution_key:
+            raise EvalSuiteError("'execution_key' is for execution suites; this is a conversation suite.")
         self._check_sandbox_agent_type(loaded.suite)
         self._check_prompt_files(loaded)
-        self._check_metrics(loaded)
+        self._check_metrics(loaded, kind)
         self._check_models(loaded)
         self._check_integrations(loaded)
-        self._check_inputs(loaded, execution)
-        suite = loaded.suite.model_copy(update={"execution_key": execution.EXECUTION_KEY})
+        if execution is not None:
+            self._check_inputs(loaded, execution)
+        else:
+            self._check_conversation_cases(loaded, agent_type)
+        execution_key = execution.EXECUTION_KEY if execution is not None else None
+        suite = loaded.suite.model_copy(update={"kind": kind, "execution_key": execution_key})
         return loaded.model_copy(update={"suite": suite})
 
-    def _resolve_execution(self, suite: EvalSuite) -> type[BaseAgenticExecutionDefinition]:
-        agent_type = suite.agent.type or self._existing_agent_type(suite.agent.id)
+    @staticmethod
+    def _resolve_kind(suite: EvalSuite, agent_type: str) -> SuiteKind:
+        """The suite's kind; otherwise execution when it names an execution key or the agent type has an execution
+        definition, and conversation when neither."""
+        if suite.kind is not None:
+            return suite.kind
+        if suite.execution_key:
+            return SuiteKind.EXECUTION
+        if AgenticExecutionDefinitionRegistry().get_by_agent_type(agent_type):
+            return SuiteKind.EXECUTION
+        return SuiteKind.CONVERSATION
+
+    @staticmethod
+    def _resolve_execution(suite: EvalSuite, agent_type: str) -> type[BaseAgenticExecutionDefinition]:
         definitions = AgenticExecutionDefinitionRegistry().get_by_agent_type(agent_type)
         if suite.execution_key:
             definitions = [d for d in definitions if d.EXECUTION_KEY == suite.execution_key]
@@ -56,17 +79,6 @@ class SuiteLoader:
                 f"Agent type '{agent_type}' has {len(definitions)} registered executions; set 'execution_key'."
             )
         return definitions[0]
-
-    @staticmethod
-    def _check_execution_suite(loaded: LoadedSuite) -> None:
-        """Only execution suites run so far; a conversation suite or case fails rather than running as an execution."""
-        if loaded.suite.kind == "conversation":
-            raise EvalSuiteError("Conversation suites can't be run yet; set 'kind: execution' or leave it out.")
-        for case in loaded.cases:
-            if isinstance(case, ConversationEvalCase):
-                raise EvalSuiteError(
-                    f"Case '{case.id}': conversation cases ('user_messages', 'simulated_user') can't be run yet."
-                )
 
     @staticmethod
     def _check_sandbox_agent_type(suite: EvalSuite) -> None:
@@ -115,9 +127,10 @@ class SuiteLoader:
                 raise EvalSuiteError(f"Variant '{variant.name}': no prompt file {variant.system_prompt_file}.")
 
     @staticmethod
-    def _check_metrics(loaded: LoadedSuite) -> None:
-        """Every metric builds, has a usable name, a judge if it needs one, and an aggregate fitting its value type;
-        a case's override keeps its suite metric's value type and aggregate, as results are aggregated across cases."""
+    def _check_metrics(loaded: LoadedSuite, kind: SuiteKind) -> None:
+        """Every metric builds, can measure the suite's kind, has a usable name, a judge if it needs one, and an
+        aggregate fitting its value type; a case's override keeps its suite metric's value type and aggregate, as
+        results are aggregated across cases."""
         registry = MetricRegistry()
         first_seen: dict[str, tuple[str, str | None]] = {}
         for config in loaded.suite.metrics:
@@ -127,7 +140,7 @@ class SuiteLoader:
                 continue
         for case in loaded.cases:
             for config in loaded.suite.metrics_for(case):
-                if config.name in RESERVED_METRIC_NAMES:
+                if config.name in reserved_metric_names(kind):
                     raise EvalSuiteError(
                         f"Metric name '{config.name}' is reserved for a built-in figure; pick another."
                     )
@@ -139,6 +152,8 @@ class SuiteLoader:
                     metric = registry.build_metric(config, loaded.base_dir)
                 except MetricError as e:
                     raise EvalSuiteError(f"Case '{case.id}': {e}") from e
+                if not metric.supports(kind):
+                    raise EvalSuiteError(f"Metric '{config.name}' ({config.type}) can't measure a {kind} suite.")
                 params = metric.params
                 if isinstance(params, JudgePromptParams) and params.judge is None and loaded.suite.judge is None:
                     raise EvalSuiteError(
@@ -173,8 +188,32 @@ class SuiteLoader:
     def _check_inputs(loaded: LoadedSuite, execution: type[BaseAgenticExecutionDefinition]) -> None:
         for case in loaded.cases:
             if not isinstance(case, AgenticExecutionEvalCase):
-                raise EvalSuiteError(f"Case '{case.id}' is not an execution case; give it 'input'.")
+                raise EvalSuiteError(
+                    f"Case '{case.id}': 'user_messages' and 'simulated_user' are for conversation suites; set "
+                    "'kind: conversation'."
+                )
             try:
                 execution.INPUT_TYPE(**case.input)
             except ValidationError as e:
                 raise EvalSuiteError(f"Case '{case.id}': invalid input: {e}") from e
+
+    @staticmethod
+    def _check_conversation_cases(loaded: LoadedSuite, agent_type: str) -> None:
+        """Each case is a conversation case, with fixed user messages or a simulated user whose simulator can be
+        loaded; for now a simulated user needs a custom simulator ('class')."""
+        for case in loaded.cases:
+            if not isinstance(case, ConversationEvalCase):
+                raise EvalSuiteError(
+                    f"Case '{case.id}' is an execution case, but this is a conversation suite (agent type "
+                    f"'{agent_type}' has no registered execution, or the suite sets 'kind: conversation'); give it "
+                    "'user_messages' or 'simulated_user'."
+                )
+            if case.simulated_user is not None:
+                if case.simulated_user.class_path is None:
+                    raise EvalSuiteError(
+                        f"Case '{case.id}': 'simulated_user' needs 'class', a custom simulator, for now."
+                    )
+                try:
+                    UserSimulatorRegistry.simulator_class(case.simulated_user.class_path)
+                except EvalSuiteError as e:
+                    raise EvalSuiteError(f"Case '{case.id}': can't load the user simulator: {e}") from e

@@ -1,6 +1,9 @@
 from pathlib import Path
 from typing import Any, Literal, NamedTuple
 
+from enthusiast_common.evaluation.suite import SuiteKind
+
+from agent.evaluation.resolved_kind import resolved_kind
 from agent.evaluation.runner import RunResult
 
 from .base_report_writer import BaseReportWriter
@@ -8,7 +11,10 @@ from .csv_table import CsvTable
 from .judge_reasoning import REASONING, JudgeReasoning
 from .suite_report import SuiteReport
 
-OUTCOME_COLUMNS = ["execution_succeeded", "failure_code", "attempts", "first_attempt_success"]
+OUTCOME_COLUMNS = {
+    SuiteKind.EXECUTION: ["execution_succeeded", "failure_code", "attempts", "first_attempt_success"],
+    SuiteKind.CONVERSATION: ["conversation_completed", "conversation_end", "turns"],
+}
 PERFORMANCE_COLUMNS = [
     "duration_s",
     "cost_usd",
@@ -28,9 +34,10 @@ class ResultsCsvWriter(BaseReportWriter):
 
     def write(self, report: SuiteReport, run_dir: Path) -> list[Path]:
         metric_columns = self._metric_columns(report)
+        outcome_columns = OUTCOME_COLUMNS[resolved_kind(report.loaded.suite)]
         header = [
             *["run_id", "case_id", "tags", "candidate", "provider", "model", "variant", "repeat"],
-            *["passed", "error", *OUTCOME_COLUMNS, *PERFORMANCE_COLUMNS],
+            *["passed", "error", *outcome_columns, *PERFORMANCE_COLUMNS],
             *(column.header for column in metric_columns),
             *["failed_thresholds", "trace_file"],
         ]
@@ -42,7 +49,7 @@ class ResultsCsvWriter(BaseReportWriter):
                 *[
                     run.passed,
                     run.trace.error,
-                    *(self._metric_value(run, name) for name in [*OUTCOME_COLUMNS, *PERFORMANCE_COLUMNS]),
+                    *(self._metric_value(run, name) for name in [*outcome_columns, *PERFORMANCE_COLUMNS]),
                 ],
                 *(column.cell(run) for column in metric_columns),
                 *[

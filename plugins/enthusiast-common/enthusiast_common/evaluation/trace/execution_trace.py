@@ -6,6 +6,7 @@ from ...agentic_execution.result import ExecutionResult
 from .attempt import Attempt
 from .llm_call import LLMCall
 from .mock_call import MockCall
+from .stop_reason import StopReason
 from .tool_call import ToolCall
 from .turn import Turn
 
@@ -18,6 +19,7 @@ class ExecutionTrace(BaseModel):
     attempts: list[Attempt] = []
     mock_calls: list[MockCall] = []
     turns: list[Turn] = []
+    stop_reason: StopReason | None = None
     scratchpad: dict[str, Any] = {}
     output: dict[str, Any] | None = None
     execution_result: ExecutionResult | None = None

@@ -221,4 +221,6 @@ class TestEvalSchemaAndMetrics:
         _, stdout, _ = _run_command("listevalmetrics")
 
         assert "cost_usd: number (measured on every run)" in stdout
+        assert "attempts: number (measured on every execution run)" in stdout
+        assert "turns: number (measured on every conversation run)" in stdout
         assert "path (required)" in stdout
