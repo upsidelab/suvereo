@@ -40,13 +40,13 @@ simulated_user:
 ```yaml
 kind: conversation
 agent: {type: enthusiast-agent-product-search}
-user_model: {provider: OpenAI, model: gpt-4.1-nano}   # plays the simulated users
+user_model: {provider: OpenAI, model: gpt-5-mini}     # plays the simulated users
 judge: {provider: OpenAI, model: gpt-4o-mini}         # grades the conversations
 budget_usd: 0.50
 reports: [report, results, transcripts]
 
 integrations:
-  - class: enthusiast_ecommerce_common.evaluation.ECommerceMockIntegration
+  - class: enthusiast_vertical_common.evaluation.ECommerceMockIntegration
     config: {data: {catalog: data/products.yaml}}
 
 metrics:
@@ -58,7 +58,7 @@ metrics:
         - {name: grounded, description: "Mentions only products the tools returned"}
         - {name: clarifies, description: "Asks a question when the request is too broad"}
     pass_threshold: {min: 0.8}
-  - {name: searched, type: tool_called, params: {name: search_matching_products}}
+  - {name: searched, type: tool_called, params: {name: product_sql_search}}
 
 cases: cases
 ```
@@ -107,7 +107,7 @@ A simulated user and a judge both vary between runs. To keep a suite useful:
 For a user with rules rather than an LLM, subclass `BaseUserSimulator` and name it in `class`:
 
 ```python
-from enthusiast_common.evaluation.users import BaseUserSimulator, StopReason, UserMessage
+from suvereo_common.evaluation.users import BaseUserSimulator, StopReason, UserMessage
 
 
 class AnswersOnlyAboutBudget(BaseUserSimulator):
@@ -119,4 +119,4 @@ class AnswersOnlyAboutBudget(BaseUserSimulator):
         return UserMessage.say("I need a kettle" if not turns else "Under 50 EUR")
 ```
 
-`next_message` gets the turns so far, each with the user's message and the agent's answer, and returns the next message or a stop (`DONE` or `GAVE_UP`). The simulator holds the case as `self.case`, its `simulated_user` settings as `self.simulated_user`, and, when the suite sets `user_model`, that model as `self.llm`: `chat(messages, system)` sends a conversation of `ChatMessage`s (from `enthusiast_common.evaluation.chat_message`, each with a `role` of `user` or `assistant` and a `text`) after a system prompt and returns the model's reply, and `complete(prompt)` asks a single question.
+`next_message` gets the turns so far, each with the user's message and the agent's answer, and returns the next message or a stop (`DONE` or `GAVE_UP`). The simulator holds the case as `self.case`, its `simulated_user` settings as `self.simulated_user`, and, when the suite sets `user_model`, that model as `self.llm`: `chat(messages, system)` sends a conversation of `ChatMessage`s (from `suvereo_common.evaluation.chat_message`, each with a `role` of `user` or `assistant` and a `text`) after a system prompt and returns the model's reply, and `complete(prompt)` asks a single question.
