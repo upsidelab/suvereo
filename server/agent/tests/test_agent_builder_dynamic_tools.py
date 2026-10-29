@@ -41,6 +41,7 @@ class StubToolProvidingIntegration(BaseToolProvidingIntegration):
 class StubAgent(BaseAgent):
     NAME = "Stub"
     AGENT_KEY = "stub"
+    SYSTEM_PROMPT = "stub prompt"
 
     def get_answer(self, input_text: str) -> str:
         return ""

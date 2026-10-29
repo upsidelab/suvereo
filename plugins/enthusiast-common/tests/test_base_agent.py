@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock
 
+import pytest
 from enthusiast_common.agents import BaseAgent
 from enthusiast_common.utils import RequiredFieldsModel
 from pydantic import Field
@@ -13,6 +14,7 @@ class PromptInput(RequiredFieldsModel):
 class StubAgent(BaseAgent):
     AGENT_KEY = "stub"
     NAME = "Stub"
+    SYSTEM_PROMPT = "Stub prompt."
     AGENT_ARGS = None
     PROMPT_INPUT = PromptInput
 
@@ -80,3 +82,45 @@ class TestGetConfig:
             MEMORY_COMPACTOR_ENABLED = True
 
         assert CompactingAgent.get_config().memory_compactor_enabled is True
+
+
+class TestClassVariableValidation:
+    @pytest.mark.parametrize("variable", ["NAME", "AGENT_KEY", "SYSTEM_PROMPT"])
+    def test_required_variable_cannot_be_left_undefined(self, variable):
+        namespace = {"get_answer": lambda self, text: text, "aget_answer": lambda self, text: text}
+        namespace.update({"NAME": "Stub", "AGENT_KEY": "stub", "SYSTEM_PROMPT": "Prompt."})
+        del namespace[variable]
+
+        with pytest.raises(TypeError, match=variable):
+            type(BaseAgent)("IncompleteAgent", (BaseAgent,), namespace)
+
+    @pytest.mark.parametrize("variable", ["NAME", "AGENT_KEY", "SYSTEM_PROMPT"])
+    @pytest.mark.parametrize("value", [None, ""])
+    def test_required_variable_cannot_be_empty(self, variable, value):
+        with pytest.raises(TypeError, match=variable):
+            type(BaseAgent)("EmptyAgent", (StubAgent,), {variable: value})
+
+    def test_agent_args_and_prompt_input_may_be_none(self):
+        class NoSettingsAgent(StubAgent):
+            AGENT_ARGS = None
+            PROMPT_INPUT = None
+
+        assert NoSettingsAgent.AGENT_ARGS is None
+
+    def test_prompt_input_of_the_wrong_type_is_rejected(self):
+        with pytest.raises(TypeError, match="PROMPT_INPUT"):
+
+            class WrongPromptInputAgent(StubAgent):
+                PROMPT_INPUT = "text"
+
+    def test_tools_must_hold_tool_configs(self):
+        with pytest.raises(TypeError, match="TOOLS"):
+
+            class WrongToolsAgent(StubAgent):
+                TOOLS = ["not a tool config"]
+
+    def test_agent_with_unimplemented_methods_is_not_validated(self):
+        class PartialAgent(BaseAgent):
+            pass
+
+        assert PartialAgent.AGENT_ARGS is None

@@ -1,6 +1,7 @@
 import asyncio
 import inspect
 import json
+from abc import ABCMeta
 from typing import Any, Callable, Dict, List, TypeVar, Union, get_args, get_origin
 
 from pydantic import BaseModel, Json, model_validator
@@ -89,6 +90,40 @@ def validate_required_vars(cls, name: str, required_vars: dict[str, type]):
             f"but got '{type(value).__name__ if not isinstance(value, type) else value.__name__}'"
         )
     return cls
+
+
+class ExtraArgsClassBaseMeta(ABCMeta):
+    REQUIRED_VARS: dict[str, Any] = {}
+    OPTIONAL_VARS: dict[str, Any] = {}
+
+    def __new__(mcs, name, bases, namespace, **kwargs):
+        cls = super().__new__(mcs, name, bases, namespace, **kwargs)
+        if namespace.get("__abstract__", False) or inspect.isabstract(cls):
+            return cls
+        cls._check_required_vars(name)
+        cls._check_optional_vars(name)
+        return cls
+
+    def _check_required_vars(cls, name: str) -> None:
+        validate_required_vars(cls, name, cls.REQUIRED_VARS)
+        for var_name in cls.REQUIRED_VARS:
+            if not getattr(cls, var_name):
+                raise TypeError(f"Class '{name}' must define a non-empty class variable '{var_name}'")
+
+    def _check_optional_vars(cls, name: str) -> None:
+        defined_vars = {var_name: var_type for var_name, var_type in cls.OPTIONAL_VARS.items() if hasattr(cls, var_name)}
+        validate_required_vars(cls, name, defined_vars)
+        for var_name, expected_type in defined_vars.items():
+            value = getattr(cls, var_name)
+            if value is None or get_origin(expected_type) is not list:
+                continue
+            (item_type,) = get_args(expected_type)
+            for item in value:
+                if not isinstance(item, item_type):
+                    raise TypeError(
+                        f"Class variable '{var_name}' in '{name}' must hold '{item_type.__name__}' items, "
+                        f"but got '{type(item).__name__}'"
+                    )
 
 
 class RequiredFieldsMeta(ModelMetaclass):

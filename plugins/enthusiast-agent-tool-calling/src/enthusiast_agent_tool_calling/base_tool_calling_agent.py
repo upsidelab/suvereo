@@ -12,6 +12,8 @@ from enthusiast_agent_tool_calling.context_window_builder import ContextWindowBu
 
 
 class BaseToolCallingAgent(BaseAgent):
+    __abstract__ = True
+
     DEFAULT_FILE_TOOLS = [FileListTool, FileRetrievalTool]
 
     def __init_subclass__(cls, **kwargs):

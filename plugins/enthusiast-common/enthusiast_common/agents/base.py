@@ -1,5 +1,5 @@
 import logging
-from abc import ABC, ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Optional, Type
 
 from langchain_core.callbacks import BaseCallbackHandler
@@ -8,38 +8,17 @@ from langchain_core.tools import BaseTool
 from pydantic import BaseModel
 
 from ..injectors import BaseInjector
-from ..utils import RequiredFieldsModel, validate_required_vars
+from ..utils import RequiredFieldsModel
+from .meta import AgentExtraArgsClassBaseMeta
 
 if TYPE_CHECKING:
     from ..builder import BaseAgentBuilder
-    from ..config import AgentConfig
+    from ..config import AgentConfig, ToolConfig
 
 logger = logging.getLogger(__name__)
 
 
-class ExtraArgsClassBaseMeta(ABCMeta):
-    REQUIRED_VARS = {}
-
-    def __new__(mcs, name, bases, namespace, **kwargs):
-        cls = super().__new__(mcs, name, bases, namespace, **kwargs)
-        if not namespace.get("__abstract__", False):
-            return validate_required_vars(cls, name, cls.REQUIRED_VARS)
-        return cls
-
-
-class AgentExtraArgsClassBaseMeta(ExtraArgsClassBaseMeta):
-    REQUIRED_VARS = {
-        "AGENT_ARGS": RequiredFieldsModel,
-        "PROMPT_INPUT": RequiredFieldsModel,
-        "TOOLS": list[BaseModel],
-    }
-
-
-class ExtraArgsClassBase(metaclass=AgentExtraArgsClassBaseMeta):
-    __abstract__ = True
-
-
-class BaseAgent(ABC, ExtraArgsClassBase):
+class BaseAgent(ABC, metaclass=AgentExtraArgsClassBaseMeta):
     """Base class of every agent.
 
     Subclasses implement ``get_answer`` and declare these class variables:
@@ -54,6 +33,8 @@ class BaseAgent(ABC, ExtraArgsClassBase):
       per agent as well.
     - ``FILE_UPLOAD``: whether agents of this type accept uploaded files.
     - ``SYSTEM_PROMPT``: the system prompt template; the fields of ``PROMPT_INPUT`` fill its variables.
+      Required, like ``NAME`` and ``AGENT_KEY``: a concrete agent class that leaves any of them
+      undefined or empty fails at import time.
     - ``CONVERSATION_HISTORY_TOKEN_LIMIT``: how many tokens of conversation history the agent sends to the model.
       ``None`` keeps the host's default.
     - ``MEMORY_COMPACTOR_ENABLED``: whether the agent summarises old messages to stay within the history limit.
@@ -68,16 +49,16 @@ class BaseAgent(ABC, ExtraArgsClassBase):
     ``_get_system_prompt_variables`` to change which variables the system prompt receives.
     """
 
-    NAME = None
-    AGENT_KEY = None
-    AGENT_ARGS = None
-    PROMPT_INPUT = None
-    TOOLS = []
+    NAME: str
+    AGENT_KEY: str
+    AGENT_ARGS: Optional[Type[RequiredFieldsModel] | RequiredFieldsModel] = None
+    PROMPT_INPUT: Optional[Type[RequiredFieldsModel] | RequiredFieldsModel] = None
+    TOOLS: list["ToolConfig"] = []
 
-    FILE_UPLOAD = False
-    SYSTEM_PROMPT: Optional[str] = None
+    FILE_UPLOAD: bool = False
+    SYSTEM_PROMPT: str
     CONVERSATION_HISTORY_TOKEN_LIMIT: Optional[int] = None
-    MEMORY_COMPACTOR_ENABLED = False
+    MEMORY_COMPACTOR_ENABLED: bool = False
     BUILDER_CLASS: Optional[Type["BaseAgentBuilder"]] = None
 
     def __init__(
