@@ -15,7 +15,7 @@ Sections marked *(standalone plugin only)* are skipped for in-codebase agents. E
 
 Where to look in this repo:
 - Contracts: `plugins/enthusiast-common/` (`BaseAgent`, tools, config models, agentic execution) — read its `AGENTS.md`.
-- Base agent to subclass: `BaseAgentConfigProvider` (`plugins/enthusiast-agent-tool-calling/`) (also the reference for the package layout and `pyproject.toml`).
+- Base agent to subclass: `BaseToolCallingAgent` (`plugins/enthusiast-agent-tool-calling/`) (also the reference for the package layout and `pyproject.toml`).
 - Registry that loads agents: `server/agent/core/registries/agents/agent_registry.py`.
 
 ## 1. Settle the design first
