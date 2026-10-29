@@ -1,8 +1,8 @@
 from typing import Any
 
-from suvereo_common.integrations import BaseOAuthIntegration
 from pydantic import ValidationError as PydanticValidationError
 from rest_framework import serializers
+from suvereo_common.integrations import BaseOAuthIntegration
 
 from account.authorization import dataset_permission_codes
 from agent.core.registries.embeddings.embedding_provider_registry import EmbeddingProviderRegistry

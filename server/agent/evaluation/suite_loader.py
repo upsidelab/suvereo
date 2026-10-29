@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from pydantic import ValidationError
 from suvereo_common.agentic_execution import BaseAgenticExecutionDefinition
 from suvereo_common.evaluation.errors import EvalSuiteError
 from suvereo_common.evaluation.loaded_suite import LoadedSuite
@@ -9,7 +10,6 @@ from suvereo_common.evaluation.metrics.llm import JudgePromptParams
 from suvereo_common.evaluation.mocks.errors import MockError
 from suvereo_common.evaluation.suite import AgenticExecutionEvalCase, ConversationEvalCase, EvalSuite, SuiteKind
 from suvereo_common.evaluation.suite_reader import SuiteReader
-from pydantic import ValidationError
 
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
 from agent.core.registries.agents.agent_registry import AgentRegistry, AgentRegistryError

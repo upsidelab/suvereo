@@ -1,8 +1,8 @@
 import asyncio
 from unittest.mock import AsyncMock, patch
 
-from suvereo_integration_mcp.integration import MCPServerIntegration
 from fastmcp.client.transports import SSETransport, StreamableHttpTransport
+from suvereo_integration_mcp.integration import MCPServerIntegration
 
 
 class TestMCPServerIntegrationInstanceName:

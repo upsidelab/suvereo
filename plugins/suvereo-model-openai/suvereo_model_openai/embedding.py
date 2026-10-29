@@ -1,6 +1,6 @@
+from openai import OpenAI
 from suvereo_common.registry.embeddings import EmbeddingProvider
 from suvereo_common.utils import prioritize_items
-from openai import OpenAI
 
 PRIORITIZED_MODELS = ["text-embedding-3-large", "text-embedding-3-small"]
 

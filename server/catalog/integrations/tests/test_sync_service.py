@@ -1,8 +1,8 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from suvereo_common.integrations import BaseIntegration, BaseSourceIntegrationManager
 from model_bakery import baker
+from suvereo_common.integrations import BaseIntegration, BaseSourceIntegrationManager
 
 from catalog.integrations.registry import IntegrationManagerRegistry
 from catalog.integrations.sync_service import IntegrationSyncService

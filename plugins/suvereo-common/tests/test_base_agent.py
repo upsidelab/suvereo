@@ -1,9 +1,9 @@
 from unittest.mock import MagicMock
 
 import pytest
+from pydantic import Field
 from suvereo_common.agents import BaseAgent
 from suvereo_common.utils import RequiredFieldsModel
-from pydantic import Field
 
 
 class PromptInput(RequiredFieldsModel):

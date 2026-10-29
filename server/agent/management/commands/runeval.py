@@ -6,9 +6,9 @@ from pathlib import Path
 from typing import Iterator
 
 from django.core.management.base import BaseCommand
+from pydantic import TypeAdapter, ValidationError
 from suvereo_common.evaluation.errors import EvalSuiteError
 from suvereo_common.evaluation.suite import ReportName
-from pydantic import TypeAdapter, ValidationError
 
 from agent.evaluation.aggregation import PASS_RATE
 from agent.evaluation.reports import ExitCode, MarkdownText, RunHistory, SummaryFile, SummaryJsonWriter

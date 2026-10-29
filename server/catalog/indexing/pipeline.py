@@ -1,7 +1,7 @@
 from django.db import transaction
+from langchain_text_splitters import TokenTextSplitter
 from suvereo_common.indexing import BaseEntityIndexer, IndexableEntity
 from suvereo_common.registry import BaseEmbeddingProviderRegistry
-from langchain_text_splitters import TokenTextSplitter
 
 
 class EmbeddingIndexer(BaseEntityIndexer):

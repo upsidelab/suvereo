@@ -2,9 +2,9 @@ from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable
 from typing import Any, Optional, TypeVar
 
+from langchain_core.tools import BaseTool as LCBaseTool
 from suvereo_common.indexing import BaseEntityIndexer
 from suvereo_common.oauth import OAuthAuthorizationRequest, OAuthClientCredentials, OAuthPendingAuthorization
-from langchain_core.tools import BaseTool as LCBaseTool
 
 
 class BaseIntegrationManager(ABC):

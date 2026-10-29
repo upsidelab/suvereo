@@ -1,10 +1,10 @@
 import json
 
 import shopify
-from suvereo_common.utils import RequiredFieldsModel
 from enthusiast_vertical_common.interfaces import ProductSourcePlugin
 from enthusiast_vertical_common.structures import ProductDetails
 from pydantic import Field
+from suvereo_common.utils import RequiredFieldsModel
 
 
 class ShopifyConfig(RequiredFieldsModel):

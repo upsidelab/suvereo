@@ -1,5 +1,5 @@
-from suvereo_common.registry.embeddings import EmbeddingProvider
 from ollama import Client
+from suvereo_common.registry.embeddings import EmbeddingProvider
 
 
 class OllamaEmbeddingProvider(EmbeddingProvider):

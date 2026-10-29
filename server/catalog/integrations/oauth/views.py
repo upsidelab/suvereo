@@ -4,11 +4,11 @@ import logging
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404
-from suvereo_common.oauth import NoAuthorizationRequired
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from suvereo_common.oauth import NoAuthorizationRequired
 
 from account.authorization import PERMISSIONS, enforce_any_dataset_scoped_permission, enforce_dataset_scoped_permission
 from catalog.integrations.config_patch import merge_into_integration

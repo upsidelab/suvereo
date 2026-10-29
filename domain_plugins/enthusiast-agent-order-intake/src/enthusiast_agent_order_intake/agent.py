@@ -1,7 +1,7 @@
 from enthusiast_vertical.builder import EcommerceAgentBuilder
+from enthusiast_vertical_tools import ProductExamplesTool, ProductSQLSearchTool
 from suvereo_agent_tool_calling import BaseToolCallingAgent
 from suvereo_common.config.base import LLMToolConfig
-from enthusiast_vertical_tools import ProductExamplesTool, ProductSQLSearchTool
 
 from .prompt import ORDER_INTAKE_TOOL_CALLING_AGENT_PROMPT
 from .tools.place_order_tool import PlaceOrderTool

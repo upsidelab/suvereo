@@ -1,8 +1,8 @@
 import os
 
+from mistralai import Mistral
 from suvereo_common.registry.embeddings import EmbeddingProvider
 from suvereo_common.utils import prioritize_items
-from mistralai import Mistral
 
 PRIORITIZED_MODELS = ["mistral-embed"]
 

@@ -3,8 +3,8 @@ from collections import Counter
 from statistics import mean, pstdev
 from typing import Any
 
-from suvereo_common.evaluation.suite import Aggregate
 from pydantic import BaseModel
+from suvereo_common.evaluation.suite import Aggregate
 
 #: Aggregate names that read another figure: a bool's rate is its mean.
 NUMBER_AGGREGATES = {"rate": "mean"}

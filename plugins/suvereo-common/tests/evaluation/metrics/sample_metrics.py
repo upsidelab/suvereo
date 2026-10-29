@@ -1,5 +1,5 @@
-from suvereo_common.evaluation.metrics import BaseMetric, MetricResult
 from pydantic import BaseModel
+from suvereo_common.evaluation.metrics import BaseMetric, MetricResult
 
 
 class ThresholdParams(BaseModel):

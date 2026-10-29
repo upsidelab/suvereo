@@ -1,6 +1,6 @@
 import pytest
-from suvereo_common.evaluation.mocks import MockBehaviour
 from pydantic import BaseModel, ValidationError
+from suvereo_common.evaluation.mocks import MockBehaviour
 
 
 class Address(BaseModel):

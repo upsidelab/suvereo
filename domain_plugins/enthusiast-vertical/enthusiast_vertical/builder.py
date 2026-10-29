@@ -1,9 +1,9 @@
 from typing import Optional
 
-from suvereo_common.builder import AgentBuilder
-from suvereo_common.config import AgentConfig
 from enthusiast_vertical_common.connectors import ECommercePlatformConnector
 from enthusiast_vertical_common.interfaces import ECommerceIntegrationPlugin
+from suvereo_common.builder import AgentBuilder
+from suvereo_common.config import AgentConfig
 
 from enthusiast_vertical.injector import EcommerceInjector
 from enthusiast_vertical.retrievers import DocumentRetriever, ProductRetriever

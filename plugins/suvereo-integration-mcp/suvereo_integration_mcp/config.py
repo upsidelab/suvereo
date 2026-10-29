@@ -1,8 +1,8 @@
 import time
 from typing import Literal
 
-from suvereo_common.utils import RequiredFieldsModel
 from pydantic import Field
+from suvereo_common.utils import RequiredFieldsModel
 
 HIDDEN = {"hidden": True}
 

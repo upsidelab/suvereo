@@ -1,6 +1,6 @@
+from pydantic import BaseModel, Field
 from suvereo_common.agentic_execution import StopExecutionValidator
 from suvereo_common.tools.base import BaseLLMTool
-from pydantic import BaseModel, Field
 
 
 class StopExecutionInput(BaseModel):

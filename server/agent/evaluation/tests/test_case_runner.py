@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 import pytest
+from model_bakery import baker
 from suvereo_common.evaluation.loaded_suite import LoadedSuite
 from suvereo_common.evaluation.suite import (
     AgenticExecutionEvalCase,
@@ -9,7 +10,6 @@ from suvereo_common.evaluation.suite import (
     ModelTarget,
     PromptVariant,
 )
-from model_bakery import baker
 
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
 from agent.evaluation.eval_user import EvalUser

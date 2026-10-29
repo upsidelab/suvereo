@@ -1,9 +1,9 @@
 from typing import Any, Optional
 
-from suvereo_common.memory import BaseMemoryCompactor
-from suvereo_common.repositories import BaseConversationRepository
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
+from suvereo_common.memory import BaseMemoryCompactor
+from suvereo_common.repositories import BaseConversationRepository
 
 from agent.core.memory.persistent_chat_history import PersistentChatHistory
 

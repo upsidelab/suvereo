@@ -1,4 +1,5 @@
 import pytest
+from pydantic import TypeAdapter, ValidationError
 from suvereo_common.evaluation.suite import (
     AgenticExecutionEvalCase,
     AnyEvalCase,
@@ -10,7 +11,6 @@ from suvereo_common.evaluation.suite import (
     PassThreshold,
     SimulatedUserConfig,
 )
-from pydantic import TypeAdapter, ValidationError
 
 MINIMAL = {
     "agent": {"id": 12},

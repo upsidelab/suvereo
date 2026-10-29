@@ -1,8 +1,8 @@
 import pytest
-from suvereo_common.evaluation.mocks import MockConfigError
-from suvereo_common.evaluation.trace import TraceRecorder
 from enthusiast_vertical_common import ECommerceIntegrationPlugin
 from enthusiast_vertical_common.evaluation import DocumentMockIntegration, ECommerceMockIntegration
+from suvereo_common.evaluation.mocks import MockConfigError
+from suvereo_common.evaluation.trace import TraceRecorder
 
 
 def _configured(integration_class, base_dir=None, **config):

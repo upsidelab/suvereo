@@ -2,8 +2,8 @@ import io
 from unittest.mock import MagicMock, patch
 
 import pytest
-from suvereo_common.agentic_execution import BaseAgenticExecutionDefinition, ExecutionInputType, ExecutionResult
 from model_bakery import baker
+from suvereo_common.agentic_execution import BaseAgenticExecutionDefinition, ExecutionInputType, ExecutionResult
 
 from account.models import User
 from agent.agentic_execution.services import (

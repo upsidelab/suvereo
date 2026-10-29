@@ -1,7 +1,7 @@
 from typing import Any, Iterable, TypeVar
 
-from suvereo_common.retrievers import BaseSimilaritySearcher
 from pgvector.django import CosineDistance
+from suvereo_common.retrievers import BaseSimilaritySearcher
 
 T = TypeVar("T")
 

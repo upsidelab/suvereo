@@ -1,7 +1,7 @@
 from typing import Optional
 
-from suvereo_common.injectors import Injector
 from enthusiast_vertical_common.connectors import ECommercePlatformConnector
+from suvereo_common.injectors import Injector
 
 from enthusiast_vertical.retrievers import DocumentRetriever, ProductRetriever
 

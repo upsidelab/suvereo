@@ -5,6 +5,10 @@ from typing import Any
 from urllib.parse import urlparse
 
 import httpx
+from fastmcp import Client
+from fastmcp.client.transports import ClientTransport, SSETransport, StreamableHttpTransport
+from langchain.mcp import MCPAdapter
+from langchain_core.tools import BaseTool
 from suvereo_common.integrations import BaseOAuthIntegration, BaseToolProvidingIntegration
 from suvereo_common.oauth import (
     OAuthAuthorizationRequest,
@@ -17,10 +21,6 @@ from suvereo_common.oauth import (
     refresh_tokens,
     register_client,
 )
-from fastmcp import Client
-from fastmcp.client.transports import ClientTransport, SSETransport, StreamableHttpTransport
-from langchain.mcp import MCPAdapter
-from langchain_core.tools import BaseTool
 
 from .config import MCPServerConfigArgs
 from .oauth import discover

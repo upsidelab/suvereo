@@ -1,7 +1,7 @@
 import textwrap
 
-from suvereo_common.tools import BaseLLMTool
 from pydantic import BaseModel
+from suvereo_common.tools import BaseLLMTool
 
 
 class ProductExamplesToolSchema(BaseModel):

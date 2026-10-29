@@ -1,9 +1,9 @@
 from pathlib import Path
 
+from pydantic import BaseModel, Field
 from suvereo_common.evaluation.errors import EvalSuiteError
 from suvereo_common.evaluation.loaded_suite import LoadedSuite
 from suvereo_common.evaluation.suite import DEFAULT_VARIANT, ModelTarget, PromptVariant
-from pydantic import BaseModel, Field
 
 
 class SuiteSelection(BaseModel):

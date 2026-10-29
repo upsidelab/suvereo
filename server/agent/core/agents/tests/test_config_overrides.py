@@ -1,6 +1,8 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from langchain_core.callbacks import BaseCallbackHandler
+from pydantic import BaseModel
 from suvereo_common.agents import BaseAgent
 from suvereo_common.config import (
     AgentCallbackHandlerConfig,
@@ -11,8 +13,6 @@ from suvereo_common.config import (
 from suvereo_common.integrations import BaseIntegrationPluginResolver
 from suvereo_common.llm import BaseLLM
 from suvereo_common.tools import BaseLLMTool
-from langchain_core.callbacks import BaseCallbackHandler
-from pydantic import BaseModel
 
 from agent.core.agents.config_overrides import AgentConfigOverrides
 from agent.core.agents.default_config import merge_config

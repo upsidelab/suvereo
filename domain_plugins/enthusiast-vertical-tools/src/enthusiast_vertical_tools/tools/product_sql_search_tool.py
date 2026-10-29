@@ -1,8 +1,8 @@
 import json
 
-from suvereo_common.tools import BaseLLMTool
 from enthusiast_vertical_common.errors import RetrieverError
 from pydantic import BaseModel, Field
+from suvereo_common.tools import BaseLLMTool
 
 
 class ProductSearchInput(BaseModel):

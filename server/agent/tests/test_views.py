@@ -3,13 +3,13 @@ from unittest.mock import patch
 import pytest
 from django.contrib.auth.models import Permission
 from django.urls import reverse
-from suvereo_common.config import FunctionToolConfig
-from suvereo_common.tools import BaseFunctionTool
-from suvereo_common.utils import RequiredFieldsModel
 from model_bakery import baker
 from pydantic import Field
 from rest_framework import status
 from rest_framework.test import APIClient
+from suvereo_common.config import FunctionToolConfig
+from suvereo_common.tools import BaseFunctionTool
+from suvereo_common.utils import RequiredFieldsModel
 
 from account.authorization import PERMISSIONS
 from account.models import DatasetRole, DatasetUserRoleAssignment, User

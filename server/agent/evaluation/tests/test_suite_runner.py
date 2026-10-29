@@ -2,12 +2,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from django.conf import settings
+from model_bakery import baker
 from suvereo_common.evaluation.errors import EvalSuiteError
 from suvereo_common.evaluation.loaded_suite import LoadedSuite
 from suvereo_common.evaluation.metrics import MetricResult
 from suvereo_common.evaluation.suite import AgenticExecutionEvalCase, ConversationEvalCase, EvalSuite
 from suvereo_common.evaluation.trace import ExecutionTrace
-from model_bakery import baker
 
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
 from agent.core.registries.agents.agent_registry import AgentRegistry

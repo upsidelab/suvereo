@@ -1,8 +1,8 @@
 from pathlib import Path
 
+from pydantic import BaseModel, ConfigDict
 from suvereo_common.evaluation.loaded_suite import LoadedSuite
 from suvereo_common.evaluation.suite import ReportName
-from pydantic import BaseModel, ConfigDict
 
 from agent.evaluation.reports import (
     GitState,

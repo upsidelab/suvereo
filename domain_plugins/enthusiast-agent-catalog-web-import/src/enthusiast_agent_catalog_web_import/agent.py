@@ -1,9 +1,9 @@
 from enthusiast_vertical.builder import EcommerceAgentBuilder
+from enthusiast_vertical_tools import UpsertProductDetailsTool
+from pydantic import Field, Json
 from suvereo_agent_tool_calling import BaseToolCallingAgent
 from suvereo_common.config.base import LLMToolConfig
 from suvereo_common.utils import RequiredFieldsModel
-from enthusiast_vertical_tools import UpsertProductDetailsTool
-from pydantic import Field, Json
 
 from .prompt import CATALOG_WEB_IMPORT_CONVERSATION_PROMPT
 from .tools.scrape_product_tool import ScrapeProductTool

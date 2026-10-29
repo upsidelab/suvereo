@@ -2,11 +2,11 @@ import asyncio
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
+from langchain_core.tools import StructuredTool
+from pydantic import BaseModel
 from suvereo_common.agents import BaseAgent
 from suvereo_common.builder import AgentBuilder
 from suvereo_common.integrations import BaseToolProvidingIntegration
-from langchain_core.tools import StructuredTool
-from pydantic import BaseModel
 
 
 class ToolArgs(BaseModel):

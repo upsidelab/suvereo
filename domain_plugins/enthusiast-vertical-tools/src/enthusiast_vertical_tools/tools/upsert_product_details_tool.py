@@ -3,13 +3,13 @@ import logging
 from enum import StrEnum
 from typing import List, Optional
 
-from suvereo_common.injectors import BaseInjector
-from suvereo_common.tools import BaseLLMTool
 from enthusiast_vertical_common import ProductDetails
 from enthusiast_vertical_common.connectors import ECommercePlatformConnector
 from enthusiast_vertical_common.structures import ProductUpdateDetails
 from langchain_core.language_models import BaseLanguageModel
 from pydantic import BaseModel, Field
+from suvereo_common.injectors import BaseInjector
+from suvereo_common.tools import BaseLLMTool
 
 logger = logging.getLogger(__name__)
 

@@ -1,8 +1,8 @@
 from unittest.mock import MagicMock
 
+from langchain_core.callbacks import BaseCallbackHandler
 from suvereo_common.builder import AgentBuilder
 from suvereo_common.config.base import CallbackHandlerConfig
-from langchain_core.callbacks import BaseCallbackHandler
 
 
 class RecordingHandler(BaseCallbackHandler):

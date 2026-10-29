@@ -1,8 +1,8 @@
 import re
 from typing import Any
 
-from suvereo_common.evaluation.mocks import MockConfigError
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+from suvereo_common.evaluation.mocks import MockConfigError
 
 from ..structures import ProductDetails
 

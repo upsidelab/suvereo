@@ -1,8 +1,8 @@
 import pytest
-from suvereo_common.evaluation.mocks import MockConfigError
 from enthusiast_vertical_common import ECommercePlatformConnector, ProductDetails, ProductUpdateDetails
 from enthusiast_vertical_common.connectors.errors import ECommerceConnectorError
 from enthusiast_vertical_common.evaluation import ECommerceConnectorMock
+from suvereo_common.evaluation.mocks import MockConfigError
 
 CATALOG = [
     {"sku": "SKU-1", "name": "Red Mug", "price": 12.5, "stock": 3},

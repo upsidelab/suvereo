@@ -1,7 +1,7 @@
-from suvereo_common.registry.embeddings import EmbeddingProvider
-from suvereo_common.utils import prioritize_items
 from google import genai
 from google.genai.types import EmbedContentConfig
+from suvereo_common.registry.embeddings import EmbeddingProvider
+from suvereo_common.utils import prioritize_items
 
 PRIORITIZED_MODELS = ["models/embedding-001", "models/text-embedding-004"]
 

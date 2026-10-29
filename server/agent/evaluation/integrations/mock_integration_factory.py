@@ -1,11 +1,11 @@
 from pathlib import Path
 
 from django.utils.module_loading import import_string
+from pydantic import ValidationError
 from suvereo_common.evaluation.errors import EvalSuiteError
 from suvereo_common.evaluation.mocks import BaseMockIntegration
 from suvereo_common.evaluation.suite import IntegrationConfig
 from suvereo_common.integrations import BaseIntegration
-from pydantic import ValidationError
 
 
 class MockIntegrationFactory:

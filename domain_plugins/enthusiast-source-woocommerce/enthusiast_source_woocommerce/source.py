@@ -1,10 +1,10 @@
 import logging
 from urllib.parse import urlparse
 
-from suvereo_common.utils import RequiredFieldsModel
 from enthusiast_vertical_common.interfaces import ProductSourcePlugin
 from enthusiast_vertical_common.structures import ProductDetails
 from pydantic import Field
+from suvereo_common.utils import RequiredFieldsModel
 from woocommerce import API
 
 logger = logging.getLogger(__name__)

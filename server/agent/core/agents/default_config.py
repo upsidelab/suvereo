@@ -1,6 +1,7 @@
 from typing import Optional, Type
 
 from django.conf import settings
+from pydantic import BaseModel
 from suvereo_common.config import (
     AgentCallbackHandlerConfig,
     AgentConfig,
@@ -16,7 +17,6 @@ from suvereo_common.config import (
 from suvereo_common.injectors import Injector
 from suvereo_common.integrations import BaseIntegrationPluginResolver
 from suvereo_common.retrievers import BaseSimilaritySearcher
-from pydantic import BaseModel
 
 from agent.core.callbacks import ConversationWebSocketCallbackHandler
 from agent.core.memory import LLMMemoryCompactor, PersistentChatHistory

@@ -1,8 +1,8 @@
 from typing import Optional
 
-from suvereo_common.memory import BaseMemoryCompactor
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage, trim_messages
+from suvereo_common.memory import BaseMemoryCompactor
 
 
 class ContextWindowBuilder:
