@@ -19,6 +19,7 @@ from agent.evaluation.integrations import MockIntegrationFactory
 from agent.evaluation.judge_models_used_by_metrics import judge_models_used_by_metrics
 from agent.evaluation.pricing_table import PricingTable
 from agent.evaluation.targets import BaseAgentTarget, ExistingAgentTarget, SandboxAgentTarget
+from agent.evaluation.user_model_in_use import user_model_in_use
 
 from .case_runner import CaseRunner
 from .run_result import RunResult
@@ -39,6 +40,7 @@ class SuiteRunner:
         self.loaded = loaded
         self.options = options or SuiteRunOptions()
         self.judge_models_in_use = judge_models_used_by_metrics(loaded)
+        self.user_model_in_use = user_model_in_use(loaded)
         self.pricing = (pricing or PricingTable.load()).with_overrides(self._suite_price_overrides())
         self._lock = threading.Lock()
         self._spent = 0.0
@@ -171,7 +173,7 @@ class SuiteRunner:
                 yield
 
     def _check_budget_is_trackable(self) -> None:
-        targets = [*self.loaded.suite.models, *self.judge_models_in_use]
+        targets = [*self.loaded.suite.models, *self.judge_models_in_use, *self._user_models()]
         unpriced = sorted({t.model for t in targets if self.pricing.price_for(t.model) is None})
         if self.budget_usd is not None and unpriced:
             raise EvalSuiteError(
@@ -179,8 +181,11 @@ class SuiteRunner:
             )
 
     def _suite_price_overrides(self) -> dict:
-        targets = [*self.loaded.suite.models, *self.judge_models_in_use]
+        targets = [*self.loaded.suite.models, *self.judge_models_in_use, *self._user_models()]
         return {target.model: target.pricing for target in targets if target.pricing}
+
+    def _user_models(self) -> list[ModelTarget]:
+        return [self.user_model_in_use] if self.user_model_in_use else []
 
     def _warn_on_self_judging(self) -> None:
         for judge in self.judge_models_in_use:

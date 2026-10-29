@@ -9,7 +9,8 @@ from model_bakery import baker
 from agent.conversation.manager import ConversationManager
 from agent.evaluation.eval_user import EvalUser
 from agent.evaluation.integrations import EvalIntegrationPluginResolver
-from agent.evaluation.pricing_table import PricingTable
+from agent.evaluation.model_client import EvalModelClient
+from agent.evaluation.pricing_table import PricingTable, TraceCost
 from agent.evaluation.runner import CaseRunner
 from agent.evaluation.targets import ExistingAgentTarget
 from agent.models import Agent
@@ -36,9 +37,10 @@ def target():
         yield opened
 
 
-def _run(target, tmp_path, case: ConversationEvalCase):
+def _run(target, tmp_path, case: ConversationEvalCase, **suite_fields):
     suite = EvalSuite.model_validate(
         {
+            **suite_fields,
             "agent": {"id": target.agent.pk},
             "kind": "conversation",
             "integrations": [{"class": GREETER, "config": {"behaviour": {"greet": {"returns": "Hello {name}"}}}}],
@@ -143,3 +145,63 @@ class TestConversationRunDriver:
         assert result.trace.error == "RuntimeError: simulator broke"
         assert result.trace.stop_reason == "error"
         assert result.metrics["conversation_completed"].value is False
+
+
+class FakeModels:
+    """Stands in for the user model and the judge: the simulated user asks to greet Ada, then says it is done; the
+    judge says the goal was reached."""
+
+    def __init__(self):
+        self.user_systems: list[str] = []
+        self.user_conversations: list[list] = []
+        self.models_asked: set[str] = set()
+
+    def __call__(self, client, messages, system=None, model=None):
+        self.models_asked.add((model or client.target).model)
+        if "Decide from the transcript whether the" in messages[-1].text:
+            return '{"reached": true, "reasoning": "Ada was greeted"}'
+        self.user_systems.append(system)
+        self.user_conversations.append(messages)
+        if len(self.user_conversations) == 1:
+            return '{"message": "greet Ada", "stop": null}'
+        return '{"message": null, "stop": "done"}'
+
+
+class TestSimulatedUserConversation:
+    JUDGE = {"provider": "OpenAI", "model": "gpt-4o-mini"}
+    MODELS = {"judge": JUDGE, "user_model": {"provider": "OpenAI", "model": "gpt-4.1-nano"}}
+    USER = {"goal": "Get Ada greeted", "facts": {"name": "Ada"}}
+
+    def test_the_user_model_plays_the_user_and_the_judge_decides_the_goal(self, chat, target, tmp_path):
+        models = FakeModels()
+
+        with patch.object(EvalModelClient, "chat", autospec=True, side_effect=models):
+            result = _run(target, tmp_path, ConversationEvalCase(id="c", simulated_user=self.USER), **self.MODELS)
+
+        assert [t.user_message for t in result.trace.turns] == ["greet Ada"]
+        assert result.trace.stop_reason == "done"
+        assert "- name: Ada" in models.user_systems[0]
+        assert models.user_conversations[1][-1].text == "Hello Ada"
+        assert result.metrics["goal_reached"].value is True
+        assert result.metrics["user_cost_usd"].value == 0.0
+        assert result.passed
+        assert models.models_asked == {"gpt-4.1-nano", "gpt-4o-mini"}
+
+    def test_the_user_model_cost_is_its_own_figure_and_counts_toward_the_spend(self, chat, target, tmp_path):
+        def cost(client):
+            usd = 0.02 if client.target.model == self.JUDGE["model"] else 0.05
+            return TraceCost(usd=usd, priced_usd=usd)
+
+        with (
+            patch.object(EvalModelClient, "chat", autospec=True, side_effect=FakeModels()),
+            patch.object(EvalModelClient, "cost", autospec=True, side_effect=cost),
+        ):
+            result = _run(
+                target,
+                tmp_path,
+                ConversationEvalCase(id="c", simulated_user=self.USER),
+                **self.MODELS,
+            )
+
+        assert (result.metrics["user_cost_usd"].value, result.metrics["judge_cost_usd"].value) == (0.05, 0.02)
+        assert result.priced_spend_usd == pytest.approx(0.07)

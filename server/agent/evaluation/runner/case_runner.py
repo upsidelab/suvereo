@@ -12,14 +12,15 @@ from enthusiast_common.evaluation.trace import ExecutionTrace, TraceRecorder
 from agent.conversation.services.conversation_file_attach_service import ConversationFileAttachService
 from agent.core.agents.config_overrides import AgentConfigOverrides
 from agent.evaluation.integrations import EvalIntegrationPluginResolver, MockIntegrationFactory
-from agent.evaluation.judge_client import EvalJudgeClient
 from agent.evaluation.judge_models_used_by_metrics import judge_models_used_by_metrics
+from agent.evaluation.model_client import EvalModelClient
 from agent.evaluation.pinned_llm import PinnedLLM
 from agent.evaluation.pricing_table import PricingTable, TraceCost
 from agent.evaluation.resolved_kind import resolved_kind
 from agent.evaluation.run_context import EvalRunContext
 from agent.evaluation.targets import BaseAgentTarget
 from agent.evaluation.trace_callback_handler import TraceCallbackHandler
+from agent.evaluation.user_model_in_use import user_model_in_use
 from agent.models import Conversation
 
 from .base_run_driver import BaseRunDriver
@@ -31,6 +32,8 @@ from .run_scorer import RunScorer
 logger = logging.getLogger(__name__)
 
 JUDGE_COST = "judge_cost_usd"
+#: What simulated users cost a conversation run; apart from the agent's and the judge's.
+USER_COST = "user_cost_usd"
 #: The auto metric a run of each suite kind must pass, besides its required thresholds.
 OUTCOME_METRIC: dict[SuiteKind, str] = {
     SuiteKind.EXECUTION: "execution_succeeded",
@@ -42,7 +45,8 @@ class CaseRunner:
     """Runs one case against an opened target and scores it; each run gets its own conversation, mocks, trace and
     judge client, so one CaseRunner can be shared by parallel threads.
 
-    judge_models_in_use are the judge models the suite's LLM metrics ask (see judge_models_used_by_metrics); worked out here when not given.
+    judge_models_in_use are the judge models the suite asks, for its LLM metrics and goal_reached (see
+    judge_models_used_by_metrics); worked out here when not given.
     """
 
     def __init__(
@@ -59,6 +63,7 @@ class CaseRunner:
         self._mocks = MockIntegrationFactory(loaded.base_dir)
         self._scorer = RunScorer(loaded.base_dir, self.kind)
         self._driver = self._driver_for(loaded)
+        self._user_model = user_model_in_use(loaded)
         self._has_judge = bool(
             judge_models_used_by_metrics(loaded) if judge_models_in_use is None else judge_models_in_use
         )
@@ -69,10 +74,11 @@ class CaseRunner:
         """Run the case once and score it; an exception while setting up or running becomes the trace's error."""
         suite = self.loaded.suite
         recorder = TraceRecorder()
-        duration_s = self._run_agent(case, model, variant, recorder)
+        user_llm = EvalModelClient(self._user_model, self.pricing) if self._user_model else None
+        duration_s = self._run_agent(case, model, variant, recorder, user_llm)
 
         cost = self.pricing.trace_cost(recorder.trace)
-        judge = EvalJudgeClient(suite.judge, self.pricing) if self._has_judge else None
+        judge = EvalModelClient(suite.judge, self.pricing) if self._has_judge else None
         metrics, thresholds = self._scorer.score(
             suite.metrics_for(case),
             MetricContext(
@@ -85,8 +91,11 @@ class CaseRunner:
             ),
         )
         judge_cost = judge.cost() if judge else TraceCost(usd=0.0)
-        priced_spend = cost.priced_usd + judge_cost.priced_usd
+        user_cost = user_llm.cost() if user_llm else TraceCost(usd=0.0)
+        priced_spend = cost.priced_usd + judge_cost.priced_usd + user_cost.priced_usd
         metrics[JUDGE_COST] = MetricResult(value=judge_cost.usd)
+        if self.kind == SuiteKind.CONVERSATION:
+            metrics[USER_COST] = MetricResult(value=user_cost.usd)
         return RunResult(
             case_id=case.id,
             model=model.display_label if model else "",
@@ -102,6 +111,8 @@ class CaseRunner:
                     *cost.models_without_usage,
                     *judge_cost.unpriced_models,
                     *judge_cost.models_without_usage,
+                    *user_cost.unpriced_models,
+                    *user_cost.models_without_usage,
                 }
             ),
             priced_spend_usd=priced_spend,
@@ -125,6 +136,8 @@ class CaseRunner:
             loaded.suite.metrics_for(case), MetricContext(trace=trace, case=case, kind=kind), "the run did not complete"
         )
         metrics[JUDGE_COST] = MetricResult(value=0.0)
+        if kind == SuiteKind.CONVERSATION:
+            metrics[USER_COST] = MetricResult(value=0.0)
         return RunResult(
             case_id=case.id,
             model=model.display_label if model else "",
@@ -137,7 +150,12 @@ class CaseRunner:
         )
 
     def _run_agent(
-        self, case: EvalCase, model: ModelTarget | None, variant: PromptVariant | None, recorder: TraceRecorder
+        self,
+        case: EvalCase,
+        model: ModelTarget | None,
+        variant: PromptVariant | None,
+        recorder: TraceRecorder,
+        user_llm: EvalModelClient | None = None,
     ) -> float | None:
         """Set up and run the case, recording any exception as the trace's error; returns the agent's run time."""
         started = None
@@ -151,7 +169,7 @@ class CaseRunner:
             self._attach_files(conversation, case)
             with context.activate():
                 started = time.perf_counter()
-                self._driver.run(case, conversation, overrides, recorder)
+                self._driver.run(case, conversation, overrides, recorder, user_llm)
         except Exception as e:
             logger.warning("Evaluation case %s raised", case.id, exc_info=True)
             recorder.trace.error = f"{type(e).__name__}: {e}"

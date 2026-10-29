@@ -13,7 +13,7 @@ from .suite_report import SuiteReport
 
 OUTCOME_COLUMNS = {
     SuiteKind.EXECUTION: ["execution_succeeded", "failure_code", "attempts", "first_attempt_success"],
-    SuiteKind.CONVERSATION: ["conversation_completed", "conversation_end", "turns"],
+    SuiteKind.CONVERSATION: ["conversation_completed", "conversation_end", "goal_reached", "turns"],
 }
 PERFORMANCE_COLUMNS = [
     "duration_s",
@@ -24,6 +24,8 @@ PERFORMANCE_COLUMNS = [
     "llm_calls",
     "tool_calls",
 ]
+#: What simulated users cost, only in conversation suites.
+USER_COST_COLUMN = "user_cost_usd"
 
 
 class ResultsCsvWriter(BaseReportWriter):
@@ -34,10 +36,12 @@ class ResultsCsvWriter(BaseReportWriter):
 
     def write(self, report: SuiteReport, run_dir: Path) -> list[Path]:
         metric_columns = self._metric_columns(report)
-        outcome_columns = OUTCOME_COLUMNS[resolved_kind(report.loaded.suite)]
+        kind = resolved_kind(report.loaded.suite)
+        outcome_columns = OUTCOME_COLUMNS[kind]
+        performance_columns = [*PERFORMANCE_COLUMNS, *([USER_COST_COLUMN] if kind == SuiteKind.CONVERSATION else [])]
         header = [
             *["run_id", "case_id", "tags", "candidate", "provider", "model", "variant", "repeat"],
-            *["passed", "error", *outcome_columns, *PERFORMANCE_COLUMNS],
+            *["passed", "error", *outcome_columns, *performance_columns],
             *(column.header for column in metric_columns),
             *["failed_thresholds", "trace_file"],
         ]
@@ -49,7 +53,7 @@ class ResultsCsvWriter(BaseReportWriter):
                 *[
                     run.passed,
                     run.trace.error,
-                    *(self._metric_value(run, name) for name in [*outcome_columns, *PERFORMANCE_COLUMNS]),
+                    *(self._metric_value(run, name) for name in [*outcome_columns, *performance_columns]),
                 ],
                 *(column.cell(run) for column in metric_columns),
                 *[

@@ -9,6 +9,7 @@ from agent.core.registries.agents.agent_registry import AgentNotFoundError, Agen
 from agent.core.registries.language_models import LanguageModelRegistry
 from agent.evaluation.judge_models_used_by_metrics import judge_models_used_by_metrics
 from agent.evaluation.suite_loader import SuiteLoader
+from agent.evaluation.user_model_in_use import user_model_in_use
 
 from .greeter import GreeterMockIntegration, GreetingExecution
 
@@ -16,6 +17,8 @@ pytestmark = pytest.mark.django_db
 
 GREETER = f"{GreeterMockIntegration.__module__}.GreeterMockIntegration"
 CHATTER = "agent.evaluation.tests.chatter"
+JUDGE = {"provider": "OpenAI", "model": "gpt-4o-mini"}
+USER_MODEL = {"provider": "OpenAI", "model": "gpt-4.1-nano"}
 
 
 @pytest.fixture(autouse=True)
@@ -81,7 +84,17 @@ class TestSuiteLoader:
         "changes, message",
         [
             ({"cases": [{"id": "chat"}]}, "Case 'chat' is an execution case"),
-            ({"cases": [{"id": "chat", "simulated_user": {"goal": "Say hi"}}]}, "'simulated_user' needs 'class'"),
+            (
+                {"judge": JUDGE, "cases": [{"id": "chat", "simulated_user": {"goal": "Say hi"}}]},
+                "a simulated user needs a model; set 'user_model'",
+            ),
+            (
+                {
+                    "user_model": USER_MODEL,
+                    "cases": [{"id": "chat", "simulated_user": {"goal": "Say hi"}}],
+                },
+                "the judge decides whether the simulated user's goal was reached",
+            ),
             (
                 {"cases": [{"id": "chat", "simulated_user": {"class": "no.such.Simulator"}}]},
                 "can't load the user simulator",
@@ -100,11 +113,29 @@ class TestSuiteLoader:
         with pytest.raises(EvalSuiteError, match=message):
             _load(tmp_path, kind="conversation", **{"cases": [{"id": "chat", "user_messages": ["Hi"]}], **changes})
 
-    def test_auto_metric_names_are_reserved_only_in_the_kind_that_measures_them(self, tmp_path):
-        metrics = [{"type": "mock_called", "name": "turns", "params": {"method": "greet"}}]
+    def test_a_simulated_user_plays_with_the_user_model_and_the_judge_decides_its_goal(self, tmp_path):
+        user = {"goal": "Get a greeting", "facts": {"name": "Ada"}}
 
-        assert _load(tmp_path, metrics=metrics).suite.metrics[0].name == "turns"
-        with pytest.raises(EvalSuiteError, match="'turns' is reserved"):
+        loaded = _load(
+            tmp_path,
+            kind="conversation",
+            judge=JUDGE,
+            user_model=USER_MODEL,
+            cases=[{"id": "u", "simulated_user": user}],
+        )
+
+        assert loaded.cases[0].simulated_user.facts == {"name": "Ada"}
+        assert (user_model_in_use(loaded).model, judge_models_used_by_metrics(loaded)[0].model) == (
+            "gpt-4.1-nano",
+            "gpt-4o-mini",
+        )
+
+    @pytest.mark.parametrize("name", ["turns", "goal_reached", "user_cost_usd"])
+    def test_conversation_figures_are_reserved_only_in_conversation_suites(self, tmp_path, name):
+        metrics = [{"type": "mock_called", "name": name, "params": {"method": "greet"}}]
+
+        assert _load(tmp_path, metrics=metrics).suite.metrics[0].name == name
+        with pytest.raises(EvalSuiteError, match=f"'{name}' is reserved"):
             _load(tmp_path, kind="conversation", metrics=metrics, cases=[{"id": "chat", "user_messages": ["Hi"]}])
 
     def test_a_conversation_suite_can_check_tool_errors(self, tmp_path):

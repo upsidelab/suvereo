@@ -59,13 +59,19 @@ class TestResultsCsvWriter:
         conversation.metrics |= {
             "conversation_completed": MetricResult(value=False),
             "conversation_end": MetricResult(value="gave_up"),
+            "goal_reached": MetricResult(value=False),
             "turns": MetricResult(value=3.0),
         }
 
         [path] = ResultsCsvWriter().write(suite_report(tmp_path, [conversation], kind="conversation"), tmp_path)
 
         [ada] = _rows(path)
-        assert (ada["conversation_completed"], ada["conversation_end"], ada["turns"]) == ("false", "gave_up", "3.0")
+        assert (ada["conversation_completed"], ada["conversation_end"], ada["goal_reached"], ada["turns"]) == (
+            "false",
+            "gave_up",
+            "false",
+            "3.0",
+        )
         assert "attempts" not in ada and "execution_succeeded" not in ada
 
     def test_links_trace_files_only_when_traces_are_written(self, tmp_path):
@@ -129,6 +135,17 @@ class TestComparisonCsvWriter:
         assert [r["candidate"] for r in rows] == ["also/default", "pricey/default", "cheap/default"]
         assert (rows[2]["pass_rate"], rows[2]["orders__mean"], rows[2]["valid__rate"]) == ("0.5", "1.0", "0.5")
         assert (rows[0]["cost_mean_usd"], rows[0]["duration_p95_s"]) == ("0.02", "2.0")
+        assert "user_cost_total_usd" not in rows[0]
+
+    def test_a_conversation_suite_totals_what_its_simulated_users_cost(self, tmp_path):
+        runs = [run_result("ada"), run_result("bob")]
+        for run in runs:
+            run.metrics["user_cost_usd"] = MetricResult(value=0.03)
+
+        [path] = ComparisonCsvWriter().write(suite_report(tmp_path, runs, kind="conversation"), tmp_path)
+
+        [row] = _rows(path)
+        assert (row["judge_cost_total_usd"], row["user_cost_total_usd"]) == ("0.0", "0.06")
 
 
 class TestCasesCsvWriter:

@@ -2,20 +2,26 @@ from pathlib import Path
 from typing import Any
 
 from enthusiast_common.evaluation.metrics.auto import CostUsd, DurationSeconds
+from enthusiast_common.evaluation.suite import SuiteKind
 
 from agent.evaluation.aggregation import FIRST_ATTEMPT_PASS_RATE, FLAKY_RATE, PASS_RATE, CandidateMetrics
 from agent.evaluation.aggregation.metric_aggregate import DEFAULT_AGGREGATE_NAMES, MetricAggregate
-from agent.evaluation.runner.case_runner import JUDGE_COST
+from agent.evaluation.resolved_kind import resolved_kind
+from agent.evaluation.runner.case_runner import JUDGE_COST, USER_COST
 
 from .base_report_writer import BaseReportWriter
 from .csv_table import CsvTable
 from .suite_report import SuiteReport
 
+#: The comparison column totalling each cost apart from the agent's.
+COST_TOTALS = {JUDGE_COST: "judge_cost_total_usd", USER_COST: "user_cost_total_usd"}
+
 
 class ComparisonCsvWriter(BaseReportWriter):
     """comparison.csv: one row per candidate (model x prompt variant), by pass rate then mean cost, with its pass,
     first-attempt and flaky rates, each metric under its aggregate (<name>__mean, <name>__rate, <name>__distribution
-    as label counts such as yes:3;no:1), latency and cost."""
+    as label counts such as yes:3;no:1), latency and cost, with the judge's and, in conversations, the simulated users'
+    totalled apart."""
 
     NAME = "comparison"
 
@@ -24,10 +30,12 @@ class ComparisonCsvWriter(BaseReportWriter):
             name: self._aggregate_column_name(name, config.aggregate, report)
             for name, config in report.metric_configs.items()
         }
+        costs = [JUDGE_COST, *([USER_COST] if resolved_kind(report.loaded.suite) == SuiteKind.CONVERSATION else [])]
         header = [
             *["candidate", "provider", "model", "variant", "runs", PASS_RATE, FIRST_ATTEMPT_PASS_RATE, FLAKY_RATE],
             *metric_columns.values(),
-            *["duration_p50_s", "duration_p95_s", "cost_mean_usd", "cost_total_usd", "judge_cost_total_usd"],
+            *["duration_p50_s", "duration_p95_s", "cost_mean_usd", "cost_total_usd"],
+            *(COST_TOTALS[cost] for cost in costs),
         ]
         rows = [
             [
@@ -45,7 +53,7 @@ class ComparisonCsvWriter(BaseReportWriter):
                     self._aggregate_figure(candidate, CostUsd.NAME, "mean"),
                     self._aggregate_figure(candidate, CostUsd.NAME, "sum"),
                 ],
-                self._aggregate_figure(candidate, JUDGE_COST, "sum"),
+                *(self._aggregate_figure(candidate, cost, "sum") for cost in costs),
             ]
             for candidate in report.candidates
         ]

@@ -1,11 +1,11 @@
-import json
 from statistics import median
 from typing import ClassVar, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from ...base_model_client import BaseModelClient
+from ...json_reply import JsonReply
 from ...suite import SuiteKind
-from ..base_judge_client import BaseJudgeClient
 from ..base_metric import BaseMetric
 from ..metric_context import MetricContext
 from ..metric_result import MetricResult
@@ -105,7 +105,7 @@ class LLMJudge(BaseMetric):
         return MetricResult(value=value, components=scores, binary_components=binary, details={"reasoning": reasoning})
 
     def _ask_judge_for_score(
-        self, judge: BaseJudgeClient, criterion: Criterion, material: str
+        self, judge: BaseModelClient, criterion: Criterion, material: str
     ) -> tuple[float | None, str]:
         low, high, scale = self._score_range()
         prompt = (self.params.prompt or DEFAULT_PROMPT).format(
@@ -130,12 +130,4 @@ class LLMJudge(BaseMetric):
 
     @staticmethod
     def _parse_verdict(reply: str) -> dict:
-        decoder = json.JSONDecoder()
-        for start in (i for i, char in enumerate(reply) if char == "{"):
-            try:
-                value, _ = decoder.raw_decode(reply, start)
-            except json.JSONDecodeError:
-                continue
-            if isinstance(value, dict) and "score" in value:
-                return value
-        return {}
+        return next((value for value in JsonReply.objects(reply) if "score" in value), {})
