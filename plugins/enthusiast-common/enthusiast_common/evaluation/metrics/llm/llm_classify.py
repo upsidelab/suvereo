@@ -3,10 +3,11 @@ from typing import ClassVar
 
 from pydantic import Field
 
+from ...suite import SuiteKind
 from ..base_metric import BaseMetric
 from ..metric_context import MetricContext
 from ..metric_result import MetricResult
-from .judge_material import JudgeMaterial, Section
+from .judge_material import JudgeMaterial
 from .judge_prompt_params import JudgePromptParams
 
 DEFAULT_PROMPT = """Answer a question about an AI agent's work with exactly one of these labels: {labels}.
@@ -22,7 +23,6 @@ class LLMClassifyParams(JudgePromptParams):
 
     question: str
     labels: list[str] = Field(min_length=2)
-    include: list[Section] = ["outcome", "output"]
 
 
 class LLMClassify(BaseMetric):
@@ -37,13 +37,16 @@ class LLMClassify(BaseMetric):
     VALUE_TYPE = "label"
     PARAMS = LLMClassifyParams
 
+    def supports(self, kind: SuiteKind) -> bool:
+        return super().supports(kind) and self.params.fits(kind)
+
     def measure(self, context: MetricContext) -> MetricResult:
         if context.judge is None:
             return MetricResult(value=None, details={"reason": "no judge model is configured"})
         prompt = (self.params.prompt or DEFAULT_PROMPT).format(
             labels=", ".join(self.params.labels),
             question=self.params.question,
-            material=JudgeMaterial.build_prompt_text(context, self.params.include),
+            material=JudgeMaterial.build_prompt_text(context, self.params.include_for(context)),
         )
         reply = context.judge.complete(prompt, self.params.judge)
         label = self._label_from_reply(reply)

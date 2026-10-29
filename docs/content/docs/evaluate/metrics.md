@@ -228,7 +228,7 @@ Whether something happened during the run; bool. `event` is one of `retry`, `too
 
 ## Judged by a model
 
-These ask the suite's `judge` model, or the metric's own `judge`, about the run. `include` picks what it sees: `input`, `outcome`, `output`, `expected` and `trace_summary`. `prompt` or `prompt_file` replaces the built-in prompt; it must contain `{material}`, where the run details go. What the judge costs is reported as `judge_cost_usd`.
+These ask the suite's `judge` model, or the metric's own `judge`, about the run. `include` picks what it sees: `input`, `outcome`, `output`, `expected`, `trace_summary` and, in a conversation, `transcript`, each user message and answer with the tools called in each turn, a tool that raised marked `(raised)`. `prompt` or `prompt_file` replaces the built-in prompt; it must contain `{material}`, where the run details go. What the judge costs is reported as `judge_cost_usd`.
 
 ### `llm_judge`
 
@@ -252,7 +252,7 @@ Grades the run against criteria you write, 0–1. Each criterion is asked separa
 |---|---|---|---|
 | `criteria` | What to grade. Each has a `name` (its column in the reports), a `description` the judge reads, and an optional `weight` in the average. | a list, at least one | – |
 | `scale` | How the judge scores each criterion; see below. | `binary`, `"1-5"`, `{min, max}` | `binary` |
-| `include` | What the judge sees of the run. | `input`, `outcome`, `output`, `expected`, `trace_summary` | `outcome`, `output`, `expected` |
+| `include` | What the judge sees of the run. | `input`, `outcome`, `output`, `expected`, `trace_summary`, `transcript` | `outcome`, `output`, `expected`; in a conversation `outcome`, `transcript`, `expected` |
 | `samples` | How many times each criterion is asked; the median score is kept. | 1–9 | 1 |
 | `judge` | A model for this metric instead of the suite's `judge`. | `{provider, model}` | the suite's |
 | `prompt`, `prompt_file` | Your own prompt instead of the built-in one; it must contain `{material}`. | text, or a file next to the suite | built-in |
@@ -338,7 +338,7 @@ class TotalQuantity(BaseMetric):
   type: my_package.metrics.TotalQuantity # the dotted path of your class
 ```
 
-- **`context`** holds the `trace` (`output`, `tool_calls`, `mock_calls`, `llm_calls`, `attempts`, `error`, with helpers such as `tool_calls_named` and `mock_calls_to`), the `case` (`input`, `expected`, and `extra` for other CSV columns), `duration_s`, `cost_usd` and the `judge` client.
+- **`context`** holds the `trace` (`output`, `tool_calls`, `mock_calls`, `llm_calls`, `attempts`, `error`, and for a conversation its `turns` and `stop_reason`, with helpers such as `tool_calls_named`, `mock_calls_to` and `tool_calls_in(turn)`), the `case` (`expected` and `extra` for other CSV columns, plus `input` in an execution suite, or `user_messages` and `simulated_user` in a conversation suite), the suite's `kind` (`execution` or `conversation`), `duration_s`, `cost_usd` and the `judge` client.
 - **`MetricResult`** takes the `value`, `details` that `report.md` lists under a missed threshold, and `components`, numbers that get their own `results.csv` columns; `binary_components=True` shows them as success or failure.
 - **No value:** return `value=None` with a `reason` when the case gives nothing to measure. An exception is caught and recorded as the metric's `error`; the other metrics still run.
 - **Params** are validated when the suite loads, so `validateeval` reports a typo before any run. A relative path in params resolves against the suite directory through the validation context key `base_dir`.

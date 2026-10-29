@@ -14,6 +14,29 @@ CRITERIA = [
 ANSWERED = [Turn(user_message="Hi", answer="Hello"), Turn(user_message="Bye", answer="Bye")]
 
 
+def _chat(judge, expected=None):
+    """A two-turn conversation: the first turn searched the catalog after a failed price lookup and answered in
+    markdown, the second raised."""
+    trace = ExecutionTrace(
+        tool_calls=[
+            ToolCall(run_id="t1", name="price_lookup", error="Timeout"),
+            ToolCall(run_id="t2", name="product_search"),
+        ],
+        turns=[
+            Turn(
+                user_message="I need a kettle",
+                answer="## Kettles\n\nKTL-ELC, 39 EUR",
+                tool_call_run_ids=["t1", "t2"],
+            ),
+            Turn(user_message="Cheaper?", error="RuntimeError: model down"),
+        ],
+        stop_reason="error",
+        error="RuntimeError: model down",
+    )
+    case = ConversationEvalCase(id="c", user_messages=["I need a kettle", "Cheaper?"], expected=expected or {})
+    return MetricContext(trace=trace, case=case, kind="conversation", judge=judge)
+
+
 def _judged(judge, **trace_fields):
     context = run(output={"order_id": "ORD-1"}, expected={"output": {"order_id": "ORD-1"}}, **trace_fields)
     context.judge = judge
@@ -116,7 +139,10 @@ class TestLLMJudge:
         judge = ScriptedJudge('{"score": 1}')
         trace = ExecutionTrace(turns=turns, error=error, stop_reason=stop_reason)
         context = MetricContext(
-            trace=trace, case=ConversationEvalCase(id="c", user_messages=["Hi", "Bye"]), judge=judge
+            trace=trace,
+            case=ConversationEvalCase(id="c", user_messages=["Hi", "Bye"]),
+            kind="conversation",
+            judge=judge,
         )
 
         LLMJudge({"criteria": CRITERIA[:1], "include": ["outcome"]}).measure(context)
@@ -129,7 +155,7 @@ class TestLLMJudge:
             id="c", simulated_user={"class": "my.Simulator", "goal": "Get a kettle", "persona": "terse"}
         )
         trace = ExecutionTrace(turns=[Turn(user_message="kettle?", answer="KTL-ELC")])
-        context = MetricContext(trace=trace, case=case, judge=judge)
+        context = MetricContext(trace=trace, case=case, kind="conversation", judge=judge)
 
         LLMJudge({"criteria": CRITERIA[:1], "include": ["input"]}).measure(context)
 
@@ -154,6 +180,42 @@ class TestLLMJudge:
 
         prompt = judge.prompts[0]
         assert prompt.index("## outcome") < prompt.index("## output") < prompt.index("## expected")
+        assert "## transcript" not in prompt
+
+    def test_a_conversations_judge_sees_the_outcome_transcript_and_expected_by_default(self):
+        judge = ScriptedJudge('{"score": 1}')
+        expected = {"outcome": "The user gets a kettle under 50 EUR"}
+
+        LLMJudge({"criteria": CRITERIA[:1]}).measure(_chat(judge, expected))
+
+        prompt = judge.prompts[0]
+        assert prompt.index("## outcome") < prompt.index("## transcript") < prompt.index("## expected")
+        assert "## output" not in prompt
+        assert '"outcome": "The user gets a kettle under 50 EUR"' in prompt
+
+    def test_the_transcript_shows_each_turn_with_the_tools_called_in_it_and_indents_what_was_said(self):
+        judge = ScriptedJudge('{"score": 1}')
+
+        LLMJudge({"criteria": CRITERIA[:1], "include": ["transcript"]}).measure(_chat(judge))
+
+        assert judge.prompts[0].endswith(
+            "## transcript\n"
+            "turn 1\nuser:\n  I need a kettle\ntools called: price_lookup (raised), product_search\n"
+            "agent:\n  ## Kettles\n\n  KTL-ELC, 39 EUR\n\n"
+            "turn 2\nuser:\n  Cheaper?\nagent raised:\n  RuntimeError: model down"
+        )
+
+    @pytest.mark.parametrize(
+        "params, kind, supported",
+        [
+            ({}, "execution", True),
+            ({}, "conversation", True),
+            ({"include": ["outcome", "transcript"]}, "conversation", True),
+            ({"include": ["outcome", "transcript"]}, "execution", False),
+        ],
+    )
+    def test_a_transcript_can_only_be_shown_for_a_conversation(self, params, kind, supported):
+        assert LLMJudge({"criteria": CRITERIA[:1], **params}).supports(kind) is supported
 
     def test_a_custom_score_range_is_normalised(self):
         judge = ScriptedJudge('{"score": 7}')
@@ -209,6 +271,20 @@ class TestLLMClassify:
 
         assert result.value is None
         assert result.details["reply"] == reply
+
+    def test_a_conversation_is_classified_from_its_outcome_and_transcript_by_default(self):
+        judge = ScriptedJudge("no")
+
+        LLMClassify(self.PARAMS).measure(_chat(judge))
+
+        prompt = judge.prompts[0]
+        assert prompt.index("## outcome") < prompt.index("## transcript")
+        assert "## output" not in prompt
+
+    def test_a_transcript_can_only_be_shown_for_a_conversation(self):
+        classify = LLMClassify({**self.PARAMS, "include": ["transcript"]})
+
+        assert (classify.supports("conversation"), classify.supports("execution")) == (True, False)
 
     def test_a_custom_prompt_and_judge_model_are_used(self):
         params = {

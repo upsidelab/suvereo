@@ -92,7 +92,7 @@ class TestSuiteLoader:
             ),
             (
                 {"metrics": [{"type": "trace_event", "name": "retried", "params": {"event": "retry"}}]},
-                "Metric 'retried' \\(trace_event\\) can't measure a conversation suite",
+                "Metric 'retried' \\(trace_event\\) can't measure conversation suites",
             ),
         ],
     )
@@ -191,6 +191,21 @@ class TestSuiteLoader:
                 "Case 'chat': 'user_messages' and 'simulated_user' are for conversation suites",
             ),
             ({"kind": "conversation", "execution_key": "greeting"}, "'execution_key' is for execution suites"),
+            (
+                {
+                    "metrics": [
+                        {
+                            "type": "llm_judge",
+                            "name": "quality",
+                            "params": {
+                                "criteria": [{"name": "kind", "description": "Is kind"}],
+                                "include": ["transcript"],
+                            },
+                        }
+                    ]
+                },
+                "Metric 'quality' \\(llm_judge\\) can't measure execution suites",
+            ),
         ],
     )
     def test_fails_early_on_a_suite_the_host_cannot_run(self, tmp_path, changes, message):

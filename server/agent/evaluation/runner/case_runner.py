@@ -75,7 +75,14 @@ class CaseRunner:
         judge = EvalJudgeClient(suite.judge, self.pricing) if self._has_judge else None
         metrics, thresholds = self._scorer.score(
             suite.metrics_for(case),
-            MetricContext(trace=recorder.trace, case=case, duration_s=duration_s, cost_usd=cost.usd, judge=judge),
+            MetricContext(
+                trace=recorder.trace,
+                case=case,
+                kind=self.kind,
+                duration_s=duration_s,
+                cost_usd=cost.usd,
+                judge=judge,
+            ),
         )
         judge_cost = judge.cost() if judge else TraceCost(usd=0.0)
         priced_spend = cost.priced_usd + judge_cost.priced_usd
@@ -113,9 +120,9 @@ class CaseRunner:
         """A run that failed outside the agent, e.g. its sandbox could not be set up: the error in its trace, the
         auto metrics, and the suite's metrics with no value and missed thresholds, so every run has the same metric
         names."""
-        trace = ExecutionTrace(error=error)
-        metrics, thresholds = RunScorer(loaded.base_dir, resolved_kind(loaded.suite)).scores_for_unfinished_run(
-            loaded.suite.metrics_for(case), MetricContext(trace=trace, case=case), "the run did not complete"
+        trace, kind = ExecutionTrace(error=error), resolved_kind(loaded.suite)
+        metrics, thresholds = RunScorer(loaded.base_dir, kind).scores_for_unfinished_run(
+            loaded.suite.metrics_for(case), MetricContext(trace=trace, case=case, kind=kind), "the run did not complete"
         )
         metrics[JUDGE_COST] = MetricResult(value=0.0)
         return RunResult(
