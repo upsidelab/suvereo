@@ -15,12 +15,11 @@ from account.authorization import (
 )
 from agent.core.registries.embeddings import EmbeddingProviderRegistry
 from agent.core.registries.language_models import LanguageModelRegistry
-from agent.models import AgenticExecution, Message
-from agent.models.conversation import ConversationFile
 from agent.services import AgentPreconfigurationService
 
 from .models import DataSet
 from .serializers import DataSetCreateSerializer, DataSetSerializer
+from .services import DataSetDeletionService
 
 
 class DataSetListView(ListCreateAPIView):
@@ -106,14 +105,7 @@ class DataSetDetailView(RetrieveAPIView):
     )
     @global_permission_required(PERMISSIONS.DATA_SET.DELETE)
     def delete(self, request, *args, **kwargs):
-        instance = self.get_object()
-
-        with transaction.atomic():
-            Message.objects.filter(conversation__data_set=instance).delete()
-            ConversationFile.objects.filter(conversation__data_set=instance).delete()
-            AgenticExecution.objects.filter(conversation__data_set=instance).delete()
-            instance.conversation_set.all().delete()
-            instance.delete()
+        DataSetDeletionService.delete(self.get_object())
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 

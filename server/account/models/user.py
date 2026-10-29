@@ -4,6 +4,11 @@ from django.db import models
 
 
 class UserManager(BaseUserManager):
+    """Hides internal users, such as the evaluation runner's; use User.all_objects to include them."""
+
+    def get_queryset(self):
+        return super().get_queryset().filter(is_internal=False)
+
     def _create_user(self, email, password=None, **extra_fields):
         if not email:
             raise ValueError("The email field must be set")
@@ -42,8 +47,12 @@ class User(AbstractUser):
     # left empty, so it cannot silently answer a question it no longer knows anything about.
     groups = None
     is_service_account = models.BooleanField(default=False)
+    is_internal = models.BooleanField(
+        default=False, db_comment="Used by Agent Core itself, e.g. evaluation runs; hidden and cannot sign in."
+    )
 
     objects = UserManager()
+    all_objects = models.Manager()
 
     class Meta(AbstractUser.Meta):
         permissions = [

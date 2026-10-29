@@ -124,7 +124,7 @@ Each metric is explained with an example in [Metrics](./metrics).
 
 ### Pass thresholds
 
-`pass_threshold` takes `min`, `max`, `equals` and `in`, e.g. `pass_threshold: {min: 0.95}`. A bool metric without one needs `equals: true`. A run passes when it meets every `required` pass threshold; `required: false` reports a missed one as a warning. A metric with no value misses its threshold.
+`pass_threshold` takes one of `equals`, `in`, or `min` and/or `max`, e.g. `pass_threshold: {min: 0.95}`. A bool metric without one needs `equals: true`. A run passes when it meets every `required` pass threshold; `required: false` reports a missed one as a warning. A metric with no value misses its threshold.
 
 ### Aggregates
 

@@ -198,6 +198,15 @@ class TestDataSetListViewGet:
         assert response.status_code == status.HTTP_200_OK
         assert self._ids(response) == {d.id for d in datasets}
 
+    def test_temporary_datasets_are_hidden_even_from_admins(self, admin_api_client, url):
+        listed = baker.make(DataSet)
+        baker.make(DataSet, is_temporary=True)
+
+        response = admin_api_client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert self._ids(response) == {listed.id}
+
 
 class TestDataSetListViewGetPermissionsField:
     """Every row carries the requesting user's dataset-scoped codes on that data set.

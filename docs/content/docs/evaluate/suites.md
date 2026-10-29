@@ -77,6 +77,8 @@ The models to run the agent with, each `{provider, model}`. Every model is compa
 | `label` | Optional; the name in reports and for `--model`, instead of the model name. |
 | `pricing` | Optional; `{input_per_million, output_per_million, cached_input_per_million}` in USD, for a model the bundled price table lacks. |
 
+A provider is usable once its model plugin is installed and listed in `CATALOG_LANGUAGE_MODEL_PROVIDERS`; `validateeval` names the installed ones when a suite asks for another.
+
 Left empty, the DataSet's configured model runs. `--model gpt-4o-mini` runs one of them, and `--model OpenAI:gpt-4.1-nano` adds one without editing the suite.
 
 ### `variants`

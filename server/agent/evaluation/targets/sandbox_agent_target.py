@@ -16,10 +16,10 @@ logger = logging.getLogger(__name__)
 class SandboxAgentTarget(BaseAgentTarget):
     """Tests an agent type on a temporary copy, so evaluation never touches real data (suite `agent: {type: ...}`).
 
-    Opening creates an `__eval__` DataSet with a new agent of the type (default config plus the suite's
-    agent_config) and syncs the mock integrations' data into it, e.g. a mock shop's catalog. Only those mocks
-    answer; real integrations are never reached. Closing deletes the DataSet with everything the runs created,
-    or with keep_run_data renames it `__kept__` for inspection.
+    Opening creates a temporary DataSet, hidden from the API, with a new agent of the type (default config plus
+    the suite's agent_config) and syncs the mock integrations' data into it, e.g. a mock shop's catalog. Only those
+    mocks answer; real integrations are never reached. Closing deletes the DataSet with everything the runs
+    created, or with keep_run_data keeps it as a regular DataSet for inspection.
     """
 
     def __init__(

@@ -168,6 +168,11 @@ class TestPassThreshold:
         with pytest.raises(ValidationError):
             PassThreshold()
 
+    @pytest.mark.parametrize("threshold", [{"equals": 1, "min": 0}, {"in": [1], "max": 2}, {"equals": 1, "in": [1]}])
+    def test_a_threshold_takes_one_kind_of_condition(self, threshold):
+        with pytest.raises(ValidationError, match="exactly one of"):
+            PassThreshold.model_validate(threshold)
+
     def test_min_cannot_exceed_max(self):
         with pytest.raises(ValidationError):
             PassThreshold(min=1, max=0)
@@ -191,7 +196,7 @@ class TestPassThreshold:
             ({"in": [1]}, True, False),
         ],
     )
-    def test_passes_only_a_value_meeting_every_condition(self, threshold, value, passes):
+    def test_passes_only_a_value_meeting_the_condition(self, threshold, value, passes):
         assert PassThreshold.model_validate(threshold).passes(value) is passes
 
 

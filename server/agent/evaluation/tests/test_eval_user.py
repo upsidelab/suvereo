@@ -17,9 +17,16 @@ class TestEvalUser:
         assert user.is_service_account
         assert not user.is_active
         assert not user.has_usable_password()
+        assert user.is_internal
+
+    def test_is_hidden_from_normal_lookups(self):
+        user = EvalUser.get()
+
+        assert not User.objects.filter(pk=user.pk).exists()
+        assert User.all_objects.filter(pk=user.pk).exists()
 
     def test_an_account_created_concurrently_is_reused(self):
-        existing = User.objects.create_service_account(EMAIL, is_active=False)
+        existing = User.objects.create_service_account(EMAIL, is_active=False, is_internal=True)
 
         with patch.object(QuerySet, "first", return_value=None):
             assert EvalUser.get() == existing

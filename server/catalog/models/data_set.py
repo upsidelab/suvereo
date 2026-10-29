@@ -1,6 +1,13 @@
 from django.db import models
 
 
+class DataSetManager(models.Manager):
+    """Hides temporary DataSets, such as evaluation sandboxes; use DataSet.all_objects to include them."""
+
+    def get_queryset(self):
+        return super().get_queryset().filter(is_temporary=False)
+
+
 class DataSet(models.Model):
     name = models.CharField(max_length=30)
     language_model_provider = models.CharField(default="OpenAI")
@@ -10,6 +17,12 @@ class DataSet(models.Model):
     embedding_vector_dimensions = models.IntegerField(default=512)
     embedding_chunk_size = models.IntegerField(default=3000)
     embedding_chunk_overlap = models.IntegerField(default=150)
+    is_temporary = models.BooleanField(
+        default=False, db_comment="Created for a short-lived purpose, e.g. an evaluation run; hidden and deleted after."
+    )
+
+    objects = DataSetManager()
+    all_objects = models.Manager()
 
     class Meta:
         db_table_comment = (

@@ -55,6 +55,15 @@ class TestServiceAccountListView:
         assert response.status_code == status.HTTP_200_OK
         assert service_account.id in [result["id"] for result in response.data["results"]]
 
+    def test_internal_service_accounts_are_not_listed(self, admin_api_client, service_account, url):
+        internal = User.objects.create_service_account("internal@example.com", is_internal=True)
+
+        response = admin_api_client.get(url)
+
+        ids = [result["id"] for result in response.data["results"]]
+        assert service_account.id in ids
+        assert internal.id not in ids
+
     def test_view_serviceaccount_holder_cannot_create_one(self, api_client, user, url, payload):
         grant(user, PERMISSIONS.SERVICE_ACCOUNT.VIEW)
 
