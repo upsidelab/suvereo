@@ -1,8 +1,8 @@
 import pytest
+from pydantic import ValidationError
 from suvereo_common.evaluation.suite import ConversationEvalCase
 from suvereo_common.evaluation.trace import Turn
 from suvereo_common.evaluation.users import ScriptedUser, StopReason, UserMessage
-from pydantic import ValidationError
 
 
 class TestScriptedUser:

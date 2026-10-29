@@ -16,7 +16,7 @@ Django 5 + DRF + Celery + Channels. Run commands from `server/`.
 
 The codebase is modular and extensible. Core capabilities (LLM and embedding providers, integrations, agents) are opt-in plugins that the server discovers through registries and settings.
 
-`plugins/suvereo-common` is the source of truth for the interfaces. Both the server and every plugin depend on it. Anything meant to be an opt-in plugin defines its interface in `suvereo-common`, so the server knows the contract, and the plugins provide the implementations. This is the recommended structure for all Enthusiast plugins.
+`plugins/suvereo-common` is the source of truth for the interfaces. Both the server and every plugin depend on it. Anything meant to be an opt-in plugin defines its interface in `suvereo-common`, so the server knows the contract, and the plugins provide the implementations. This is the recommended structure for all Suvereo plugins.
 
 In practice:
 
