@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Optional
+from typing import Optional, Type
 
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.chat_history import BaseChatMessageHistory
@@ -10,6 +10,7 @@ from langchain_core.tools import BaseTool
 from ..agents import BaseAgent
 from ..callbacks import ConversationCallbackHandler
 from ..config.base import (
+    AgentConfig,
     AgentToolConfig,
     FileToolConfig,
     FunctionToolConfig,
@@ -149,7 +150,7 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
         llm: BaseLanguageModel,
         callback_handler: BaseCallbackHandler,
     ) -> BaseAgent:
-        return self._config.agent_class(
+        return self._agent_class(
             tools=tools,
             llm=llm,
             system_prompt=self._config.system_prompt,
@@ -253,8 +254,19 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
         # Sub-agents are built with the same builder class as their parent, so a
         # vertical builder propagates its injector (and its build costs) to
         # sub-agents — overriding whatever config.agent.injector declares.
-        agent = type(self)(config.agent, self.conversation_id, self.streaming).build()
+        agent = type(self)(
+            config.agent_class,
+            self._sub_agent_config(config.agent_class),
+            self.conversation_id,
+            self.streaming,
+        ).build()
         return config.tool_class(agent=agent)
+
+    def _sub_agent_config(self, agent_class: Type[BaseAgent]) -> AgentConfig:
+        """The sub-agent's own config laid over this agent's resolved one; fields it leaves unset are inherited."""
+        own = agent_class.get_config()
+        update = {name: value for name in AgentConfig.model_fields if (value := getattr(own, name, None)) is not None}
+        return self._config.model_copy(update=update)
 
     def _build_injector(self) -> BaseInjector:
         chat_history = self._build_chat_history()

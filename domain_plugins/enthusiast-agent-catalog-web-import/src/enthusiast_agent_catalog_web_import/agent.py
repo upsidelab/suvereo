@@ -1,9 +1,11 @@
+from ecommerce_vertical.builder import EcommerceAgentBuilder
 from enthusiast_agent_tool_calling import BaseToolCallingAgent
 from enthusiast_common.config.base import LLMToolConfig
 from enthusiast_common.utils import RequiredFieldsModel
 from enthusiast_ecommerce_agent_tools import UpsertProductDetailsTool
 from pydantic import Field, Json
 
+from .prompt import CATALOG_WEB_IMPORT_CONVERSATION_PROMPT
 from .tools.scrape_product_tool import ScrapeProductTool
 
 _CONFIRMATION_REQUIRED_INSTRUCTION = (
@@ -55,6 +57,8 @@ class CatalogWebImportAgent(BaseToolCallingAgent):
 
     AGENT_KEY = "enthusiast-agent-catalog-web-import"
     NAME = "Catalog Web Import"
+    SYSTEM_PROMPT = CATALOG_WEB_IMPORT_CONVERSATION_PROMPT
+    BUILDER_CLASS = EcommerceAgentBuilder
     PROMPT_INPUT = CatalogWebImportPromptInput
     FILE_UPLOAD = False
     TOOLS = [

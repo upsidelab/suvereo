@@ -41,6 +41,7 @@ class StubToolProvidingIntegration(BaseToolProvidingIntegration):
 class StubAgent(BaseAgent):
     NAME = "Stub"
     AGENT_KEY = "stub"
+    SYSTEM_PROMPT = "stub prompt"
 
     def get_answer(self, input_text: str) -> str:
         return ""
@@ -89,7 +90,7 @@ class TestAgentBuilderBuildDynamicTools:
     def _make_builder(self, resolver_cls):
         config = MagicMock()
         config.integration_plugin_resolver = resolver_cls
-        builder = AgentBuilder(config=config, conversation_id=1)
+        builder = AgentBuilder(agent_class=MagicMock(), config=config, conversation_id=1)
         builder._data_set_id = 42
         return builder
 

@@ -1,13 +1,16 @@
 import json
 import logging
 from abc import ABC, abstractmethod
-from typing import Callable, ClassVar, Optional, Protocol, Type
+from typing import TYPE_CHECKING, Callable, ClassVar, Optional, Protocol, Type
 
 from .errors import ExecutionFailureCode
 from .input import ExecutionInputType
 from .memory import ToolScratchpad
 from .result import ExecutionResult
 from .validators import BaseExecutionValidator, IsValidJsonValidator, ValidatorResponse
+
+if TYPE_CHECKING:
+    from ..config import ToolConfig
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +66,8 @@ class BaseAgenticExecutionDefinition(ABC):
             AGENT_KEY = "my-agent-plugin-key"
             NAME = "My Execution"
             INPUT_TYPE = MyExecutionInput
+            SYSTEM_PROMPT = MY_EXECUTION_PROMPT  # optional: replaces the agent's prompt for this execution
+            EXTRA_TOOLS = [LLMToolConfig(tool_class=StopExecutionTool)]  # optional: appended to the agent's tools
 
             def execute(self, input_data, conversation):
                 return conversation.ask("Do the thing.")
@@ -74,6 +79,8 @@ class BaseAgenticExecutionDefinition(ABC):
     DESCRIPTION: ClassVar[Optional[str]] = None
     INPUT_TYPE: ClassVar[Type[ExecutionInputType]] = ExecutionInputType
     VALIDATORS: ClassVar[list[Type[BaseExecutionValidator]]] = [IsValidJsonValidator]
+    SYSTEM_PROMPT: ClassVar[Optional[str]] = None
+    EXTRA_TOOLS: ClassVar[list["ToolConfig"]] = []
     MAX_RETRIES: ClassVar[int] = 3
     FAILURE_CODES: ClassVar[Type[ExecutionFailureCode]] = ExecutionFailureCode
     FAILURE_SUMMARY_PROMPT: ClassVar[str] = (

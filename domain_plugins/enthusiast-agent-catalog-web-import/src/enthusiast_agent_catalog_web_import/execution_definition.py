@@ -1,11 +1,14 @@
+from enthusiast_agent_tools import StopExecutionTool
 from enthusiast_common.agentic_execution import (
     BaseAgenticExecutionDefinition,
     ExecutionConversationInterface,
     IsValidJsonValidator,
     StopExecutionValidator,
 )
+from enthusiast_common.config import LLMToolConfig
 
 from .execution_input import CatalogWebImportExecutionInput
+from .execution_prompt import CATALOG_WEB_IMPORT_EXECUTION_PROMPT
 from .validators import AllUpsertsSucceededValidator, AllUrlsFetchSuccessfulValidator
 
 
@@ -25,6 +28,8 @@ class CatalogWebImportAgenticExecutionDefinition(BaseAgenticExecutionDefinition)
         AllUrlsFetchSuccessfulValidator,
         AllUpsertsSucceededValidator,
     ]
+    SYSTEM_PROMPT = CATALOG_WEB_IMPORT_EXECUTION_PROMPT
+    EXTRA_TOOLS = [LLMToolConfig(tool_class=StopExecutionTool)]
 
     def execute(
         self,

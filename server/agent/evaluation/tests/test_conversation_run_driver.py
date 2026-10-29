@@ -1,7 +1,6 @@
 from unittest.mock import patch
 
 import pytest
-from enthusiast_common.agents import ConfigType
 from enthusiast_common.evaluation.loaded_suite import LoadedSuite
 from enthusiast_common.evaluation.suite import ConversationEvalCase, EvalSuite
 from model_bakery import baker
@@ -77,7 +76,6 @@ class TestConversationRunDriver:
         (first, _, kwargs), (second, _, _) = chat.calls
         assert first.pk == second.pk
         assert first.is_temporary
-        assert kwargs["config_type"] == ConfigType.CONVERSATION
         assert kwargs["streaming"] is False
         assert kwargs["overrides"].integration_plugin_resolver is EvalIntegrationPluginResolver
 

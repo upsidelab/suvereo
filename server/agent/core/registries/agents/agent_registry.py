@@ -3,9 +3,8 @@ from typing import List, Optional, Type
 
 from django.conf import settings
 from enthusiast_common.agentic_execution.memory import ToolScratchpad
-from enthusiast_common.agents import BaseAgent, BaseAgentConfigProvider, ConfigType
+from enthusiast_common.agents import BaseAgent
 from enthusiast_common.builder import AgentBuilder
-from enthusiast_common.config import AgentConfig
 from utils.base_registry import BaseRegistry
 
 from agent.core.agents.config_overrides import AgentConfigOverrides
@@ -23,10 +22,6 @@ class AgentNotFoundError(AgentRegistryError):
 
 class AgentConfigError(AgentRegistryError):
     """Raised when agent configuration is missing or invalid."""
-
-
-class AgentImportError(AgentRegistryError):
-    """Raised when an agent module or class cannot be imported."""
 
 
 class BaseAgentRegistry(ABC, BaseRegistry[BaseAgent]):
@@ -51,12 +46,11 @@ class AgentRegistry(BaseAgentRegistry):
         self,
         conversation: Conversation,
         streaming: bool,
-        config_type: ConfigType = ConfigType.CONVERSATION,
         tool_scratchpad: Optional[ToolScratchpad] = None,
         overrides: Optional[AgentConfigOverrides] = None,
     ) -> BaseAgent:
         try:
-            builder = self._build_agent_builder(conversation, streaming, config_type, tool_scratchpad, overrides)
+            builder = self._build_agent_builder(conversation, streaming, tool_scratchpad, overrides)
             return builder.build()
         except Exception as e:
             raise AgentRegistryError(f"Failed to build agent for conversation {conversation.id}") from e
@@ -65,12 +59,11 @@ class AgentRegistry(BaseAgentRegistry):
         self,
         conversation: Conversation,
         streaming: bool,
-        config_type: ConfigType = ConfigType.CONVERSATION,
         tool_scratchpad: Optional[ToolScratchpad] = None,
         overrides: Optional[AgentConfigOverrides] = None,
     ) -> BaseAgent:
         try:
-            builder = self._build_agent_builder(conversation, streaming, config_type, tool_scratchpad, overrides)
+            builder = self._build_agent_builder(conversation, streaming, tool_scratchpad, overrides)
             return await builder.abuild()
         except Exception as e:
             raise AgentRegistryError(f"Failed to build agent for conversation {conversation.id}") from e
@@ -79,16 +72,16 @@ class AgentRegistry(BaseAgentRegistry):
         self,
         conversation: Conversation,
         streaming: bool,
-        config_type: ConfigType,
         tool_scratchpad: Optional[ToolScratchpad],
         overrides: Optional[AgentConfigOverrides] = None,
     ):
-        config_provider_cls = self._get_config_provider_class(agent_type=conversation.agent.agent_type)
-        builder_cls = config_provider_cls.BUILDER_CLASS or AgentBuilder
-        config = merge_config(partial=config_provider_cls().get_config(config_type=config_type))
+        agent_class = self.get_agent_class_by_type(conversation.agent.agent_type)
+        builder_cls = agent_class.BUILDER_CLASS or AgentBuilder
+        config = merge_config(partial=agent_class.get_config())
         if overrides:
             config = overrides.apply(config)
         return builder_cls(
+            agent_class=agent_class,
             config=config,
             conversation_id=conversation.id,
             streaming=streaming,
@@ -109,25 +102,3 @@ class AgentRegistry(BaseAgentRegistry):
     @staticmethod
     def _get_plugin_paths() -> List[str]:
         return settings.AVAILABLE_AGENTS
-
-    def _get_plugin_directory_paths_by_types(self) -> dict[str, str]:
-        return {
-            self._get_plugin_class_by_path(path).AGENT_KEY: path.rsplit(".", 1)[0]
-            for path in self._get_plugin_paths()
-        }
-
-    def _get_agent_directory_path(self, agent_type: str) -> str:
-        try:
-            return self._get_plugin_directory_paths_by_types()[agent_type]
-        except KeyError as e:
-            raise AgentNotFoundError(f"Agent with AGENT_KEY: '{agent_type}' is not defined in settings.AVAILABLE_AGENTS.") from e
-
-    def _get_config_provider_class(self, agent_type: str) -> Type[BaseAgentConfigProvider]:
-        agent_directory_path = self._get_agent_directory_path(agent_type)
-        try:
-            return self._get_class_by_path(agent_directory_path, BaseAgentConfigProvider, BaseRegistry.PathType.MODULE)
-        except (ModuleNotFoundError, ValueError):
-            raise AgentImportError(f"Cannot config module of a BaseAgentConfigProvider class for agent '{agent_type}'.")
-
-    def _get_config_by_name(self, agent_type: str, config_type: ConfigType = ConfigType.CONVERSATION) -> AgentConfig:
-        return self._get_config_provider_class(agent_type)().get_config(config_type=config_type)

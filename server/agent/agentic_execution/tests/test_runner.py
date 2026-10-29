@@ -2,7 +2,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from enthusiast_common.agentic_execution import BaseAgenticExecutionDefinition, ExecutionInputType
-from pydantic import ValidationError
+from enthusiast_common.config import LLMToolConfig
+from enthusiast_common.tools.base import BaseLLMTool
+from pydantic import BaseModel, ValidationError
 
 from agent.agentic_execution.conversation import ExecutionConversation
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
@@ -23,6 +25,20 @@ class EchoExecution(BaseAgenticExecutionDefinition):
 
     def execute(self, input_data, conversation):
         return conversation.ask(input_data.text)
+
+
+class StubToolInput(BaseModel):
+    pass
+
+
+class StubTool(BaseLLMTool):
+    NAME = "stub_tool"
+    DESCRIPTION = "A tool that does nothing."
+    ARGS_SCHEMA = StubToolInput
+    RETURN_DIRECT = False
+
+    def run(self):
+        return "done"
 
 
 @pytest.fixture
@@ -53,15 +69,40 @@ class TestExecutionConversation:
         overrides = AgentConfigOverrides(system_prompt="variant")
 
         with patch("agent.agentic_execution.conversation.ConversationManager.get_answer") as get_answer:
-            ExecutionConversation(MagicMock(), overrides).ask("hello")
+            ExecutionConversation(MagicMock(), EchoExecution, overrides).ask("hello")
 
-        assert get_answer.call_args.kwargs["overrides"] is overrides
+        assert get_answer.call_args.kwargs["overrides"].system_prompt == "variant"
 
-    def test_ask_without_overrides_builds_the_agent_as_configured(self):
+    def test_ask_without_settings_builds_the_agent_as_configured(self):
         with patch("agent.agentic_execution.conversation.ConversationManager.get_answer") as get_answer:
-            ExecutionConversation(MagicMock()).ask("hello")
+            ExecutionConversation(MagicMock(), EchoExecution).ask("hello")
 
-        assert get_answer.call_args.kwargs["overrides"] is None
+        assert get_answer.call_args.kwargs["overrides"] == AgentConfigOverrides()
+
+    def test_ask_builds_the_agent_with_the_definitions_prompt_and_extra_tools(self):
+        stub_tool = LLMToolConfig(tool_class=StubTool)
+
+        class PromptedExecution(EchoExecution):
+            SYSTEM_PROMPT = "execution prompt"
+            EXTRA_TOOLS = [stub_tool]
+
+        with patch("agent.agentic_execution.conversation.ConversationManager.get_answer") as get_answer:
+            ExecutionConversation(MagicMock(), PromptedExecution).ask("hello")
+
+        overrides = get_answer.call_args.kwargs["overrides"]
+        assert overrides.system_prompt == "execution prompt"
+        assert overrides.extra_tools == [stub_tool]
+
+    def test_given_overrides_win_over_the_definition(self):
+        class PromptedExecution(EchoExecution):
+            SYSTEM_PROMPT = "execution prompt"
+
+        with patch("agent.agentic_execution.conversation.ConversationManager.get_answer") as get_answer:
+            ExecutionConversation(
+                MagicMock(), PromptedExecution, AgentConfigOverrides(system_prompt="variant")
+            ).ask("hello")
+
+        assert get_answer.call_args.kwargs["overrides"].system_prompt == "variant"
 
     def test_the_attempt_observer_hears_each_attempt_and_its_errors_never_fail_the_run(self, registered):
         conversation = MagicMock()

@@ -156,7 +156,7 @@ class <Domain>AgentBuilder(AgentBuilder[AgentConfig]):
         ...
 ```
 
-Agents then set `BUILDER_CLASS = <Domain>AgentBuilder` in their config provider (see the `add-agent` skill), and tools read `self._injector.<entity>_retriever`.
+Agents then set `BUILDER_CLASS = <Domain>AgentBuilder` on the agent class (see the `add-agent` skill), and tools read `self._injector.<entity>_retriever`.
 
 ## 5. Integration managers (only if data is synced in)
 

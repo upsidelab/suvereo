@@ -1,3 +1,4 @@
+from enthusiast_common.agentic_execution import BaseAgenticExecutionDefinition
 from enthusiast_common.agentic_execution.validators import ValidatorResponse
 from enthusiast_common.evaluation.trace import Attempt, TraceRecorder
 
@@ -9,8 +10,14 @@ from agent.models import Conversation
 class EvalExecutionConversation(ExecutionConversation):
     """An execution conversation that records each validated attempt, and what tools left on the scratchpad, into a trace."""
 
-    def __init__(self, conversation: Conversation, overrides: AgentConfigOverrides, recorder: TraceRecorder):
-        super().__init__(conversation, overrides)
+    def __init__(
+        self,
+        conversation: Conversation,
+        definition: type[BaseAgenticExecutionDefinition],
+        overrides: AgentConfigOverrides,
+        recorder: TraceRecorder,
+    ):
+        super().__init__(conversation, definition, overrides)
         self._recorder = recorder
 
     @property

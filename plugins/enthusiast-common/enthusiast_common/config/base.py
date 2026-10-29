@@ -87,7 +87,10 @@ class FileToolConfig(ArbitraryTypeBaseModel):
 
 class AgentToolConfig(ArbitraryTypeBaseModel):
     tool_class: Type[BaseAgentTool]
-    agent: AgentConfig
+    agent_class: Type[BaseAgent]
+
+
+ToolConfig = FunctionToolConfig | LLMToolConfig | AgentToolConfig | FileToolConfig
 
 
 class AgentCallbackHandlerConfig(ArbitraryTypeBaseModel):
@@ -106,14 +109,13 @@ class MemoryConfig(ArbitraryTypeBaseModel):
 
 
 class AgentConfig(ArbitraryTypeBaseModel, Generic[InjectorT]):
-    agent_class: Type[BaseAgent]
     llm: LLMConfig
     repositories: RepositoriesConfig
     injector: Type[InjectorT]
     registry: RegistryConfig
     system_prompt: str
     memory: MemoryConfig
-    tools: Optional[list[FunctionToolConfig | LLMToolConfig | AgentToolConfig | FileToolConfig]] = None
+    tools: Optional[list[ToolConfig]] = None
     agent_callback_handler: Optional[AgentCallbackHandlerConfig] = None
     conversation_history_token_limit: int = Field(gt=0)
     memory_compactor_enabled: bool = False
