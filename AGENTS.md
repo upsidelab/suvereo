@@ -1,6 +1,6 @@
-# Enthusiast
+# Suvereo
 
-Enthusiast is an open-source AI framework built to make onboarding LLM agents into a system easy. It provides RAG, workflow orchestration and integrations with external systems.
+Suvereo is an open-source AI framework built to make onboarding LLM agents into a system easy. It provides RAG, workflow orchestration and integrations with external systems.
 
 The core is domain-agnostic and defines no domain entities of its own. It runs standalone, where you can still define your own agents and integrations. A domain vertical can be installed on top to supply domain entities (e.g. products and documents) along with agents and integrations for that domain.
 

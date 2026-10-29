@@ -17,15 +17,15 @@ During the execution run, the plugin creates a `Conversation` internally to driv
 - Support **pluggable validators** that the execution consults to decide whether to continue.
 - Persist execution history with timing, status, result, and a human-readable summary.
 - Expose the above through a REST API and a frontend history/launch view.
-- Follow the existing plugin architecture — concrete execution logic lives in agent plugins, shared interfaces live in `enthusiast-common`, and the server discovers available agentic execution definitions via `settings.AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS`.
+- Follow the existing plugin architecture — concrete execution logic lives in agent plugins, shared interfaces live in `suvereo-common`, and the server discovers available agentic execution definitions via `settings.AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS`.
 
 ## 2. Architecture
 
-The diagram below shows the full system with the catalog enrichment plugin as a **concrete example**. The `enthusiast-common` layer defines the abstract interfaces only — any agent plugin can provide its own `BaseAgenticExecutionDefinition` subclass and `ExecutionInputType` following the same pattern.
+The diagram below shows the full system with the catalog enrichment plugin as a **concrete example**. The `suvereo-common` layer defines the abstract interfaces only — any agent plugin can provide its own `BaseAgenticExecutionDefinition` subclass and `ExecutionInputType` following the same pattern.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│  plugins/enthusiast-common                                             │
+│  plugins/suvereo-common                                             │
 │    BaseAgenticExecutionDefinition (ABC)                                │
 │    BaseExecutionValidator (ABC)                                        │
 │    ExecutionResult (dataclass)                                         │
@@ -64,13 +64,13 @@ The pattern mirrors how agents are handled:
 
 ---
 
-## 3. enthusiast-common — New module: `enthusiast_common/agentic_execution/`
+## 3. suvereo-common — New module: `suvereo_common/agentic_execution/`
 
 ### `ExecutionStatus`
 Enum: `PENDING`, `IN_PROGRESS`, `FINISHED`, `FAILED`.
 
 ### `ExecutionFailureCode`
-`StrEnum` that defines standardised failure codes stored on `AgenticExecution.failure_code`. Defined in `enthusiast_common/agentic_execution/errors.py` and attached to `BaseAgenticExecutionDefinition` via `FAILURE_CODES`. The two base codes are:
+`StrEnum` that defines standardised failure codes stored on `AgenticExecution.failure_code`. Defined in `suvereo_common/agentic_execution/errors.py` and attached to `BaseAgenticExecutionDefinition` via `FAILURE_CODES`. The two base codes are:
 
 | Code | Set by | Meaning |
 |------|--------|---------|
@@ -82,7 +82,7 @@ Enum: `PENDING`, `IN_PROGRESS`, `FINISHED`, `FAILED`.
 Plugins extend this enum to add domain-specific codes and point `FAILURE_CODES` at the subclass::
 
 ```python
-from enthusiast_common.agentic_execution import ExecutionFailureCode
+from suvereo_common.agentic_execution import ExecutionFailureCode
 
 class CatalogEnrichmentFailureCode(ExecutionFailureCode):
     TOO_MANY_UPSERT_FAILURES = "too_many_upsert_failures"
@@ -138,7 +138,7 @@ The run loop processes the first failing `ValidatorResponse` it encounters:
 - `validation_successful=False, retry_needed=True` → `feedback` is sent back to the LLM and the attempt is retried (up to `MAX_RETRIES` times).
 - `validation_successful=False, retry_needed=False` → the loop stops immediately without retrying; `failure_code` is set to `VALIDATION_FAILED` and `feedback` is used as the `failure_summary`.
 
-Two concrete validators are provided in `enthusiast-common` out of the box:
+Two concrete validators are provided in `suvereo-common` out of the box:
 
 **`IsValidJsonValidator`** — attempts `json.loads(response)`; if it raises, returns `validation_successful=False`, `retry_needed=True`, feedback `"The response is not valid JSON. Please return the same data as a valid JSON object."`.
 
@@ -150,7 +150,7 @@ Plugins can define their own validators (e.g. schema-specific checks, business r
 
 Agent plugins may need a different system prompt for agentic execution runs than the one used in interactive conversations — one that drops conversational scaffolding and focuses the LLM entirely on the batch task at hand.
 
-This is handled through the **agent config provider** interface, which lives in `enthusiast_common/agents/config.py` and is separate from `agentic_execution/`.
+This is handled through the **agent config provider** interface, which lives in `suvereo_common/agents/config.py` and is separate from `agentic_execution/`.
 
 **`ConfigType`** is a `StrEnum` with two members:
 

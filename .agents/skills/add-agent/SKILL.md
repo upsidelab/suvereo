@@ -1,6 +1,6 @@
 ---
 name: add-agent
-description: Scaffold a new Enthusiast agent (tool-calling agent package, tools, prompt, optional agentic execution) and register it in settings. Use when asked to add, create or build a new agent.
+description: Scaffold a new Suvereo agent (tool-calling agent package, tools, prompt, optional agentic execution) and register it in settings. Use when asked to add, create or build a new agent.
 ---
 
 # Add an agent
@@ -8,7 +8,7 @@ description: Scaffold a new Enthusiast agent (tool-calling agent package, tools,
 An agent is a Python package that the server discovers through `AVAILABLE_AGENTS` in `server/pecl/settings_override.py`. It depends on `suvereo-common` and `suvereo-agent-tool-calling`, never on the server.
 
 There are two ways to ship it:
-- **Standalone plugin** — its own installable package (own `pyproject.toml`, `src/` layout). Recommended for agents maintained by the Enthusiast team.
+- **Standalone plugin** — its own installable package (own `pyproject.toml`, `src/` layout). Recommended for agents maintained by the Suvereo team.
 - **In the codebase** — a plain package living directly in a codebase that is already importable by the server (e.g. a vertical's own code). No packaging, no install step.
 
 Sections marked *(standalone plugin only)* are skipped for in-codebase agents. Everything else applies to both.
@@ -107,7 +107,7 @@ Subclass one of the base tools from `suvereo_common.tools`, matching what the to
 
 | Base class | Constructor receives | Config type | Description |
 | --- | --- | --- | --- |
-| `BaseFunctionTool` | nothing | `FunctionToolConfig` | The simplest tool, needing no connection to Enthusiast internals (those are provided via the injector). |
+| `BaseFunctionTool` | nothing | `FunctionToolConfig` | The simplest tool, needing no connection to Suvereo internals (those are provided via the injector). |
 | `BaseLLMTool` | `data_set_id`, `llm`, `injector` | `LLMToolConfig` | A tool with access to the LLM and the injector. |
 | `BaseFileTool` | `data_set_id`, `conversation_id`, `llm`, `injector`, `llm_registry` | `FileToolConfig` | Like an LLM tool, but dedicated to accessing uploaded files only. |
 | `BaseAgentTool` | `agent` | `AgentToolConfig` | A tool which is itself an agent. |
