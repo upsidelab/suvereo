@@ -43,13 +43,13 @@ The agent package has the same contents in both cases:
 ```
 
 - **In the codebase:** `<package>` is a directory inside the target codebase, named `<name>_agent` (or following that codebase's naming). The dotted path used for registration is `<its import path>.<Name>Agent`. Stop here; do not add the packaging files below.
-- **Standalone plugin:** wrap it with the packaging files and use `src/enthusiast_agent_<name>/` as `<package>`:
+- **Standalone plugin:** wrap it with the packaging files and use `src/suvereo_agent_<name>/` as `<package>` (an agent that belongs to a vertical follows that vertical's plugin naming instead):
 
 ```
-enthusiast-agent-<name>/
+suvereo-agent-<name>/
   pyproject.toml
   README.md
-  src/enthusiast_agent_<name>/   # the package above
+  src/suvereo_agent_<name>/   # the package above
 ```
 
 ### Packaging *(standalone plugin only)*
@@ -58,7 +58,7 @@ enthusiast-agent-<name>/
 
 ```toml
 [tool.poetry]
-packages = [{include = "enthusiast_agent_<name>", from = "src"}]
+packages = [{include = "suvereo_agent_<name>", from = "src"}]
 ```
 
 ## 3. Agent class (`agent.py`)
@@ -73,13 +73,13 @@ from .tools import <Thing>Tool
 
 
 class <Name>Agent(BaseToolCallingAgent):
-    AGENT_KEY = "enthusiast-agent-<name>"
+    AGENT_KEY = "suvereo-agent-<name>"
     NAME = "<Human Name>"
     TOOLS = [LLMToolConfig(tool_class=<Thing>Tool)]
     FILE_UPLOAD = False
 ```
 
-- `AGENT_KEY` is stored on agents in the database: unique, and never changed after release.
+- `AGENT_KEY` is stored on agents in the database: unique (by convention the plugin's distribution name, e.g. `suvereo-agent-<name>`), and never changed after release.
 - Tool config types come from `suvereo_common.config`: `FunctionToolConfig`, `LLMToolConfig` (the tool gets an LLM), `AgentToolConfig`, `FileToolConfig`.
 
 ## 4. Configuration (class variables on the agent)
@@ -167,7 +167,7 @@ class <Name>AgenticExecutionInput(ExecutionInputType):
 
 class <Name>AgenticExecutionDefinition(BaseAgenticExecutionDefinition):
     EXECUTION_KEY = "<name>"
-    AGENT_KEY = "enthusiast-agent-<name>"
+    AGENT_KEY = "suvereo-agent-<name>"
     NAME = "<Human Name>"
     INPUT_TYPE = <Name>AgenticExecutionInput
     VALIDATORS = [StopExecutionValidator, IsValidJsonValidator]
@@ -183,7 +183,7 @@ class <Name>AgenticExecutionDefinition(BaseAgenticExecutionDefinition):
 ## 8. Register
 
 In `server/pecl/settings_override.py` add the dotted path of the agent class to `AVAILABLE_AGENTS`:
-- standalone plugin: `"enthusiast_agent_<name>.<Name>Agent"`;
+- standalone plugin: `"suvereo_agent_<name>.<Name>Agent"`;
 - in the codebase: `"<import path of the package>.<Name>Agent"`.
 
 *(standalone plugin only)* Install the package into the server's environment (`pip install -e <dir>` or a path dependency). In-codebase agents need no install.
