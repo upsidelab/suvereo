@@ -8,7 +8,7 @@
 #
 # Example — Enthusiast (an eCommerce vertical) would set:
 #
-#     INSTALLED_VERTICALS = ["ecommerce_vertical"]
+#     INSTALLED_VERTICALS = ["enthusiast_vertical"]
 #     AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS = [
 #         "enthusiast_agent_catalog_enrichment.CatalogEnrichmentAgenticExecutionDefinition",
 #     ]
@@ -17,13 +17,13 @@
 #         "enthusiast_source_medusa.MedusaIntegration",
 #     ]
 #     CATALOG_INTEGRATION_MANAGERS = [
-#         "ecommerce_vertical.sync.ProductSourceManager",
-#         "ecommerce_vertical.sync.DocumentSourceManager",
-#         "ecommerce_vertical.sync.ECommerceIntegrationManager",
+#         "enthusiast_vertical.sync.ProductSourceManager",
+#         "enthusiast_vertical.sync.DocumentSourceManager",
+#         "enthusiast_vertical.sync.ECommerceIntegrationManager",
 #     ]
 #     CATALOG_ENTITY_PLUGINS = [
-#         "ecommerce_vertical.models.Product",
-#         "ecommerce_vertical.models.Document",
+#         "enthusiast_vertical.models.Product",
+#         "enthusiast_vertical.models.Document",
 #     ]
 
 INSTALLED_VERTICALS = []
