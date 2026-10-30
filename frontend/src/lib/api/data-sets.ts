@@ -50,6 +50,12 @@ export class DataSetsApiClient extends BaseApiClient {
 
     while (url) {
       const response: Response = await this.authenticatedFetch(url);
+      if (!response.ok) {
+        throw new ApiError(`Failed to list data sets: ${response.statusText}`, {
+          data: await response.json().catch(() => ({})),
+          status: response.status,
+        });
+      }
       const data: { results: DataSet[]; next: string | null } = await response.json();
       results.push(...data.results);
       url = data.next;

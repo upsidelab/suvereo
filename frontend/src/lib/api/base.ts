@@ -16,7 +16,15 @@ export abstract class BaseApiClient {
 
     // A concurrent request may have refreshed the token while this one was in flight.
     const refreshed = this.authenticationProvider.accessToken !== sentAccessToken || await this.tryRefresh();
-    return refreshed ? fetch(input, this.prepareAndAuthenticateRequest(init)) : response;
+    if (!refreshed) {
+      return response;
+    }
+
+    const retriedResponse = await fetch(input, this.prepareAndAuthenticateRequest(init));
+    if (retriedResponse.status === 401) {
+      this.authenticationProvider.invalidateSession();
+    }
+    return retriedResponse;
   }
 
   private prepareAndAuthenticateRequest(init: RequestInit): RequestInit {
