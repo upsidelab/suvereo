@@ -1,6 +1,6 @@
 # Agentic Executions
 
-The Agentic Executions section gives you visibility into all autonomous agent jobs triggered for your data set — their status, results, and the internal conversation log produced during each run.
+The Agentic Executions section gives you visibility into the [agentic executions](/docs/concepts#agentic-execution) of your data set: their status, results, and the internal conversation log produced during each run. For how executions are defined and triggered from code, see the [reference](/docs/agents/agentic-execution) and the [API guide](/docs/integrate/agentic-execution-via-api).
 
 ## History Dashboard
 
