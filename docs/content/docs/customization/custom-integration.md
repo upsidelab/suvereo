@@ -141,8 +141,9 @@ and is logged; the rest are unaffected. Tool names have to be unique, so a tool 
 one of the agent's own tools, or by a server connected ahead of it - is dropped with a warning rather than
 silently shadowing the original.
 
-No agent configuration is needed. Once a server is connected, the data set's agents pick up its tools on their next
-conversation turn, as long as they can answer asynchronously - which every agent built on `BaseToolCallingAgent` can.
+Agents opt in with **Integration tools** in their settings. Once a server is connected, those agents pick up its tools
+on their next conversation turn, as long as they can answer asynchronously - which every agent built on
+`BaseToolCallingAgent` can.
 Data sets with no MCP server connected are untouched: Suvereo checks for connected servers before doing any of the
 extra work, so nothing changes for them.
 
@@ -156,8 +157,8 @@ Your integration class must define the same static fields as any other integrati
 - `get_tools(self)` - An async method returning the LangChain tools this integration currently makes available.
 
 Set `ALLOWS_MULTIPLE_INSTANCES = True` if a data set should be allowed to hold more than one instance of your type.
-Suvereo discovers tool providers generically, so agents pick up your tools alongside any connected MCP servers
-without knowing your integration exists.
+Suvereo discovers tool providers generically, so agents with **Integration tools** turned on pick up your tools
+alongside any connected MCP servers, without knowing your integration exists.
 
 ### Example Implementation
 

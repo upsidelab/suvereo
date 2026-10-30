@@ -28,7 +28,7 @@ When a [conversation](/docs/concepts#conversation) or an [agentic execution](/do
 6. Create the callback handler and the agent instance.
 7. Apply the agent's stored settings, which are entered in the UI, to the agent and its tools.
 
-When an agent is built for a conversation with `abuild()`, the tools provided by [integrations](/docs/concepts#integration) connected to the data set, such as MCP servers, are attached as well.
+When an agent has `integration_tools` turned on (**Integration tools** in its settings) and its data set has an [integration](/docs/concepts#integration) that provides tools, such as an MCP server, the agent is built with `abuild()`, which also attaches those tools.
 
 ## Where a vertical fits
 

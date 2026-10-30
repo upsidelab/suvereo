@@ -8,9 +8,11 @@ from suvereo_common.evaluation.loaded_suite import LoadedSuite
 from suvereo_common.evaluation.metrics import MetricResult
 from suvereo_common.evaluation.suite import AgenticExecutionEvalCase, ConversationEvalCase, EvalSuite
 from suvereo_common.evaluation.trace import ExecutionTrace
+from suvereo_common.integrations import BaseToolProvidingIntegration
 
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
 from agent.core.registries.agents.agent_registry import AgentRegistry
+from agent.evaluation.integrations import MockIntegrationFactory
 from agent.evaluation.runner import CaseRunner, RunResult, SuiteRunner, SuiteRunOptions
 from agent.evaluation.sandbox import EvalSandbox
 from agent.models import Agent
@@ -176,6 +178,17 @@ class TestSuiteRunner:
         assert by_case["cy"].metrics["failure_code"].value == "RUNTIME_ERROR"
         assert by_case["cy"].metrics["mock_called"].value is None
         assert by_case["cy"].thresholds["mock_called"].passed is False
+
+    @pytest.mark.parametrize(("integration_tools", "warned"), [(False, True), (True, False)])
+    def test_warns_when_an_existing_agent_with_integration_tools_off_gets_tool_mocks(
+        self, tmp_path, caplog, integration_tools, warned
+    ):
+        loaded = _loaded(tmp_path, baker.make(Agent, config={}, integration_tools=integration_tools))
+
+        with patch.object(MockIntegrationFactory, "resolve_class", return_value=BaseToolProvidingIntegration):
+            SuiteRunner(loaded)._warn_on_integration_tools_off()
+
+        assert ("Integration tools turned off" in caplog.text) is warned
 
     def test_a_case_overriding_integration_data_gets_its_own_sandbox(self, tmp_path):
         override = {"class": GREETER, "config": {"data": {"greeting": "Hi"}}}

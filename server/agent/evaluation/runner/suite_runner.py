@@ -13,6 +13,7 @@ from django.test import override_settings
 from suvereo_common.evaluation.errors import EvalSuiteError
 from suvereo_common.evaluation.loaded_suite import LoadedSuite
 from suvereo_common.evaluation.suite import EvalCase, ModelTarget, PromptVariant
+from suvereo_common.integrations import BaseToolProvidingIntegration
 
 from agent.evaluation.eval_user import EvalUser
 from agent.evaluation.integrations import MockIntegrationFactory
@@ -20,6 +21,7 @@ from agent.evaluation.judge_models_used_by_metrics import judge_models_used_by_m
 from agent.evaluation.pricing_table import PricingTable
 from agent.evaluation.targets import BaseAgentTarget, ExistingAgentTarget, SandboxAgentTarget
 from agent.evaluation.user_model_in_use import user_model_in_use
+from agent.models import Agent
 
 from .case_runner import CaseRunner
 from .run_result import RunResult
@@ -60,6 +62,7 @@ class SuiteRunner:
         self._check_budget_is_trackable()
         self._spent, self._stopped_reason = 0.0, None
         self._warn_on_self_judging()
+        self._warn_on_integration_tools_off()
         started_at = datetime.now()
         results: list[RunResult] = []
         with self._run_files_media_root():
@@ -186,6 +189,22 @@ class SuiteRunner:
 
     def _user_models(self) -> list[ModelTarget]:
         return [self.user_model_in_use] if self.user_model_in_use else []
+
+    def _warn_on_integration_tools_off(self) -> None:
+        suite = self.loaded.suite
+        if suite.agent.is_sandbox or Agent.objects.filter(pk=suite.agent.id, integration_tools=True).exists():
+            return
+        factory = MockIntegrationFactory(self.loaded.base_dir)
+        configs = {c.key: c for case in self.loaded.cases for c in suite.integrations_for(case)}
+        keys = sorted(
+            k for k, c in configs.items() if issubclass(factory.resolve_class(c), BaseToolProvidingIntegration)
+        )
+        if keys:
+            logger.warning(
+                "Agent %s has Integration tools turned off, so the tools of %s are never attached.",
+                suite.agent.id,
+                ", ".join(keys),
+            )
 
     def _warn_on_self_judging(self) -> None:
         for judge in self.judge_models_in_use:

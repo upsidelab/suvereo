@@ -44,6 +44,7 @@ class EvalSandbox:
                 config=config,
                 dataset=data_set,
                 file_upload=True,
+                integration_tools=True,
             )
         sandbox = cls(data_set, agent)
         try:

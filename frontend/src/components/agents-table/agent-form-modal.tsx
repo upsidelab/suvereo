@@ -6,6 +6,7 @@ import { useAgentForm } from "./hooks/use-agent-form";
 import { AgentConfigurationForm } from "./agent-configuration-form";
 import {AgentChoice} from "@/lib/api/agents.ts";
 import {Textarea} from "@/components/ui/textarea.tsx";
+import { Switch } from "@/components/ui/switch";
 import { FormModal } from "@/components/ui/form-modal";
 import { useEffect } from "react";
 
@@ -38,6 +39,8 @@ export function AgentFormModal({
     type,
     setType,
     agentTypeName,
+    integrationTools,
+    setIntegrationTools,
     config,
     setConfig,
     agentConfigSections,
@@ -138,6 +141,21 @@ export function AgentFormModal({
         {fieldErrors.description && (
           <p className="text-xs text-destructive">{fieldErrors.description}</p>
         )}
+      </div>
+
+      <div className="flex flex-row items-center justify-between rounded-lg border p-4">
+        <div className="space-y-0.5">
+          <Label htmlFor="agent-integration-tools">Integration tools</Label>
+          <p className="text-[0.8rem] text-muted-foreground">
+            Let this agent use the tools of the data set's integrations, such as MCP servers.
+          </p>
+        </div>
+        <Switch
+          id="agent-integration-tools"
+          checked={integrationTools}
+          onCheckedChange={setIntegrationTools}
+          disabled={readOnly}
+        />
       </div>
 
       {type && (

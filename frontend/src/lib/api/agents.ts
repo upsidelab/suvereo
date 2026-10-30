@@ -47,7 +47,7 @@ export class AgentsApiClient extends BaseApiClient {
         return await response.json() as AgentDetails;
     }
 
-    async createAgent(data: { name: string; agent_type: string; dataset: number; config: AgentConfig }): Promise<AgentDetails> {
+    async createAgent(data: { name: string; agent_type: string; dataset: number; config: AgentConfig; integration_tools: boolean }): Promise<AgentDetails> {
         const response = await this.authenticatedFetch(`${this.apiBase}/api/agents`, {
             method: 'POST',
             body: JSON.stringify(data),
@@ -62,7 +62,7 @@ export class AgentsApiClient extends BaseApiClient {
         return await response.json() as AgentDetails;
     }
 
-    async updateAgent(agentId: number, data: { name: string; agent_type: string; dataset: number; config: AgentConfig }): Promise<AgentDetails> {
+    async updateAgent(agentId: number, data: { name: string; agent_type: string; dataset: number; config: AgentConfig; integration_tools: boolean }): Promise<AgentDetails> {
         const response = await this.authenticatedFetch(`${this.apiBase}/api/agents/${agentId}`, {
             method: 'PUT',
             body: JSON.stringify(data),

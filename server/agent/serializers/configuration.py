@@ -74,6 +74,7 @@ class AgentSerializer(ParentDataContextSerializerMixin, serializers.ModelSeriali
             "created_at",
             "updated_at",
             "file_upload",
+            "integration_tools",
         ]
         read_only_fields = ["id", "created_at", "updated_at", "file_upload"]
 

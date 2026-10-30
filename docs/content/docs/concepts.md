@@ -36,7 +36,7 @@ Integrations serve two purposes:
 - **Bringing content in.** A source integration syncs content from an external system. The content is stored as [entities](#entity) and indexed for search.
 - **Letting agents act.** An integration can give agents tools for working in the external system.
 
-Suvereo includes a ready-made integration for MCP servers. An MCP server is an external server that exposes tools through the Model Context Protocol. Once it is connected to a data set by signing in with OAuth, its tools are available to the data set's agents.
+Suvereo includes a ready-made integration for MCP servers. An MCP server is an external server that exposes tools through the Model Context Protocol. Once it is connected to a data set by signing in with OAuth, its tools are available to the data set's agents that have **Integration tools** turned on in their settings.
 
 ## Domain
 
