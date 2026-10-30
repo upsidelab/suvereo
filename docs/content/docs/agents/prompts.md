@@ -4,7 +4,7 @@ The system prompt defines an [agent's](/docs/concepts#agent) role and behavior: 
 
 ## Configuration
 
-The agent system prompt is a plain string passed through `AgentConfig.system_prompt`, see [Agent Configuration](/docs/agents/agent-config):
+The agent system prompt is a plain string declared as the `SYSTEM_PROMPT` class variable of the agent, which is required. The framework passes it on as `AgentConfig.system_prompt`, see [Agent Configuration](/docs/agents/agent-config):
 
 ```python
 # prompt.py (conventional location)
@@ -14,16 +14,15 @@ Answer from the articles you find with search_articles.
 ```
 
 ```python
-# config.py
-
-class ArticlesConfigProvider(BaseAgentConfigProvider):
-    def get_config(self, config_type: ConfigType = ConfigType.CONVERSATION) -> AgentConfigWithDefaults:
-        return AgentConfigWithDefaults(
-            system_prompt=ARTICLES_SYSTEM_PROMPT,
-            agent_class=ArticlesAgent,
-            tools=ArticlesAgent.TOOLS,
-        )
+# agent.py
+class ArticlesAgent(BaseToolCallingAgent):
+    NAME = "Articles"
+    AGENT_KEY = "articles-agent"
+    SYSTEM_PROMPT = ARTICLES_SYSTEM_PROMPT
+    TOOLS = [LLMToolConfig(tool_class=SearchArticlesTool)]
 ```
+
+An [agentic execution](/docs/concepts#agentic-execution) can use a different prompt by declaring its own `SYSTEM_PROMPT` on its definition, see [Agentic Execution](/docs/agents/agentic-execution#execution-configuration).
 
 ## Template Variables
 

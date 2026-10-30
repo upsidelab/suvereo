@@ -4,7 +4,7 @@ This page describes the parts an [agent](/docs/concepts#agent) is made of and ho
 
 ## Overview
 
-When a [conversation](/docs/concepts#conversation) or an [agentic execution](/docs/concepts#agentic-execution) needs an agent, a builder assembles it from the agent's configuration. The configuration names the agent class, the system prompt and the [tools](/docs/concepts#tool), together with the classes used for the injector, repositories, registries and memory. The default builder creates all of them and hands them to the agent.
+When a [conversation](/docs/concepts#conversation) or an [agentic execution](/docs/concepts#agentic-execution) needs an agent, a builder assembles it from the agent's configuration. The agent class declares its own settings, such as its system prompt and [tools](/docs/concepts#tool), and the framework adds defaults for the rest: the classes used for the injector, repositories, registries and memory. The default builder creates all of these parts and hands them to the agent.
 
 | Part | What it is | Page |
 |---|---|---|

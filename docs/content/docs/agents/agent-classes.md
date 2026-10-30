@@ -16,7 +16,7 @@ Every agent consists of:
 
 ### Class variables
 
-A metaclass checks that every non-abstract agent class defines `AGENT_ARGS`, `PROMPT_INPUT` and `TOOLS`.
+A metaclass checks that every non-abstract agent class defines `NAME`, `AGENT_KEY` and `SYSTEM_PROMPT`. `AGENT_ARGS`, `PROMPT_INPUT` and `TOOLS` are optional.
 
 | Variable | Type | Purpose |
 |---|---|---|
@@ -25,6 +25,10 @@ A metaclass checks that every non-abstract agent class defines `AGENT_ARGS`, `PR
 | `AGENT_ARGS` | `RequiredFieldsModel` | Per-agent settings that change how the agent behaves. The fields become a form section in the UI. The agent decides how to use them |
 | `PROMPT_INPUT` | `RequiredFieldsModel` | Per-agent settings used as variables of the system prompt. Each field is available in the prompt as `{field_name}` |
 | `TOOLS` | `list` of tool configs | Tools of the agent. The settings of each tool are stored per agent as well, see [Tools](/docs/agents/tools) |
+| `SYSTEM_PROMPT` | `str` | The system prompt template. The fields of `PROMPT_INPUT` fill its variables, see [Prompts](/docs/agents/prompts) |
+| `CONVERSATION_HISTORY_TOKEN_LIMIT` | `int` or `None` | How many tokens of conversation history the agent sends to the model. `None` keeps the default, see [Memory](/docs/agents/memory) |
+| `MEMORY_COMPACTOR_ENABLED` | `bool` | Whether the agent summarises old messages. Defaults to `False` |
+| `BUILDER_CLASS` | builder class or `None` | The builder that assembles the agent. `None` selects the default builder, see [Builder](/docs/agents/builder) |
 | `FILE_UPLOAD` | `bool` | Whether people can attach files in a conversation. Defaults to `False`. `BaseToolCallingAgent` adds the file tools to `TOOLS` when it is `True` |
 
 `AGENT_ARGS` and `PROMPT_INPUT` are both entered in the UI and stored per agent. The intended use differs: `AGENT_ARGS` is for settings that change how the agent behaves, and `PROMPT_INPUT` is for values that go into the system prompt. The framework only stores the values; the agent decides what to do with them.
@@ -40,14 +44,14 @@ class AgentConfiguration(RequiredFieldsModel):
 class PromptInputSchema(RequiredFieldsModel):
     output_format: str = Field(title="Output Format", description="Expected response format")
 
-# Attached to agent via AgentConfig
-SYSTEM_PROMPT = """
+EXAMPLE_PROMPT = """
 You answer questions about articles. Format every answer as {output_format}.
 """
 
 class ExampleAgent(BaseToolCallingAgent):
     AGENT_KEY = "example-agent"
     NAME = "Example"
+    SYSTEM_PROMPT = EXAMPLE_PROMPT
     AGENT_ARGS = AgentConfiguration
     PROMPT_INPUT = PromptInputSchema
     TOOLS = [LLMToolConfig(tool_class=ExampleTool)]
@@ -61,7 +65,7 @@ class ExampleAgent(BaseToolCallingAgent):
         return answer or self.AGENT_ARGS.fallback_answer
 ```
 
-`SYSTEM_PROMPT` is passed to the agent through `AgentConfig.system_prompt`, see [Prompts](/docs/agents/prompts). The `{output_format}` placeholder is filled from the `output_format` field of `PROMPT_INPUT`. The agent reads `fallback_answer` from `AGENT_ARGS` and returns it when the model produces an empty answer.
+`SYSTEM_PROMPT` is turned into the agent's configuration by `BaseAgent.get_config()`, see [Agent Configuration](/docs/agents/agent-config) and [Prompts](/docs/agents/prompts). The `{output_format}` placeholder is filled from the `output_format` field of `PROMPT_INPUT`. The agent reads `fallback_answer` from `AGENT_ARGS` and returns it when the model produces an empty answer.
 
 By default the `PROMPT_INPUT` fields are passed to the system prompt by name, and an agent class can change which values are passed and how, see [Template Variables](/docs/agents/prompts#template-variables).
 
