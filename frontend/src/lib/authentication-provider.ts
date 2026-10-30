@@ -18,6 +18,7 @@ export interface AuthenticationProvider {
   login(tokens: TokenPair): void;
   logout(): void;
   refreshAccessToken(): Promise<void>;
+  invalidateSession(): void;
   onSessionEnded(handler: (reason: SessionEndReason) => void): void;
 }
 
@@ -67,6 +68,12 @@ class TokenAuthenticationProvider implements AuthenticationProvider {
       this.pendingRefresh = null;
     });
     return this.pendingRefresh;
+  }
+
+  invalidateSession(): void {
+    if (this.isAuthenticated()) {
+      this.expireSession();
+    }
   }
 
   onSessionEnded(handler: (reason: SessionEndReason) => void): void {
