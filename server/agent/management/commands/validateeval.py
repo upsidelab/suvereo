@@ -10,7 +10,10 @@ from agent.evaluation.suite_loader import SuiteLoader
 
 
 class Command(BaseCommand):
-    help = "Checks an agent evaluation suite without running it or spending tokens; exits 2 when it is invalid."
+    help = (
+        "Checks an agent evaluation suite, its budget included, without running it or spending tokens; exits 2 when "
+        "it is invalid."
+    )
 
     def add_arguments(self, parser):
         parser.add_argument("suite", type=Path, help="path to suite.yaml")
@@ -18,10 +21,12 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         try:
             loaded = SuiteLoader().load(options["suite"])
+            runner = SuiteRunner(loaded)
+            runner.check_budget_is_trackable()
         except EvalSuiteError as e:
             self.stderr.write(str(e))
             sys.exit(ExitCode.INVALID_SUITE)
-        runs = SuiteRunner(loaded).planned_run_count
+        runs = runner.planned_run_count
         self.stdout.write(
             self.style.SUCCESS(f"Suite '{loaded.suite.name}' is valid: ")
             + f"{len(loaded.cases)} case(s), {runs} planned run(s)."

@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 import pytest
 from django.core.management import call_command
+from suvereo_common.evaluation.errors import EvalSuiteError
 
 from agent.evaluation.reports import ExitCode, SuiteVerdict
 from agent.evaluation.suite_evaluation import SuiteEvaluation, SuiteEvaluationOutcome
@@ -172,6 +173,18 @@ class TestRunEval:
         assert code == ExitCode.INVALID_SUITE
         assert "cannot read the suite" in stderr
 
+    def test_a_suite_error_found_while_running_exits_as_an_invalid_suite(self, tmp_path, suite_file):
+        error = EvalSuiteError("A budget is set but gpt-x has no price; add 'pricing' to the model in the suite.")
+
+        with (
+            patch.object(SuiteLoader, "load", return_value=loaded_suite(tmp_path)),
+            patch.object(SuiteEvaluation, "run", side_effect=error),
+        ):
+            code, _, stderr = _run_command("runeval", str(suite_file))
+
+        assert code == ExitCode.INVALID_SUITE
+        assert stderr.strip() == str(error)
+
     def test_an_error_while_running_exits_with_4(self, tmp_path, suite_file):
         with (
             patch.object(SuiteLoader, "load", return_value=loaded_suite(tmp_path)),
@@ -195,6 +208,15 @@ class TestRunEval:
 
 
 class TestValidateEval:
+    def test_a_budget_with_an_unpriced_model_is_invalid(self, tmp_path, suite_file):
+        loaded = loaded_suite(tmp_path, models=[{"provider": "OpenAI", "model": "made-up"}], budget_usd=1.0)
+
+        with patch.object(SuiteLoader, "load", return_value=loaded):
+            code, _, stderr = _run_command("validateeval", str(suite_file))
+
+        assert code == ExitCode.INVALID_SUITE
+        assert "made-up has no price" in stderr
+
     def test_reports_the_planned_runs_of_a_valid_suite(self, tmp_path, suite_file):
         loaded = loaded_suite(tmp_path, variants=[{"name": "v2", "agent_config": {"x": 1}}], repeats=3)
 

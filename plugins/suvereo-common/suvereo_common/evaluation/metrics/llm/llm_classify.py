@@ -11,7 +11,7 @@ from .judge_material import JudgeMaterial
 from .judge_prompt_params import JudgePromptParams
 
 DEFAULT_PROMPT = """Answer a question about an AI agent's work with exactly one of these labels: {labels}.
-Reply with the label only.
+Reply with the label only. In a conversation, the agent's work is its own messages, not the user's.
 
 Question: {question}
 
@@ -41,8 +41,8 @@ class LLMClassify(BaseMetric):
         return super().supports(kind) and self.params.fits(kind)
 
     def measure(self, context: MetricContext) -> MetricResult:
-        if context.judge is None:
-            return MetricResult(value=None, details={"reason": "no judge model is configured"})
+        if reason := context.unjudged_reason():
+            return MetricResult(value=None, details={"reason": reason})
         prompt = (self.params.prompt or DEFAULT_PROMPT).format(
             labels=", ".join(self.params.labels),
             question=self.params.question,

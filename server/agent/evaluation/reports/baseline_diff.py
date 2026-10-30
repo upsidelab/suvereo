@@ -24,7 +24,8 @@ class ValueChange(BaseModel):
 
 
 class CandidateChange(BaseModel):
-    """How one candidate's pass rate and metrics moved; before is None for a candidate the baseline didn't run."""
+    """How one candidate's pass rate and metrics moved; before is None for a candidate the baseline didn't run, or ran
+    on other cases (e.g. this run is --rerun-failed), as figures over different cases don't compare."""
 
     candidate: str
     pass_rate: ValueChange
@@ -56,7 +57,14 @@ class BaselineDiff(BaseModel):
     ) -> "BaselineDiff":
         before_candidates = {c.candidate: c for c in baseline.candidates}
         before_statuses = {(c.case_id, c.candidate): c.status for c in baseline.cases}
-        changes = [cls._candidate_change(c, before_candidates.get(c.candidate), metrics) for c in candidates]
+        changes = [
+            cls._candidate_change(
+                c,
+                before_candidates.get(c.candidate) if cls._same_cases(c.candidate, outcomes, baseline) else None,
+                metrics,
+            )
+            for c in candidates
+        ]
         case_changes = [
             CaseChange(case_id=o.case_id, candidate=o.candidate, before=before, after=o.status)
             for o in outcomes
@@ -69,6 +77,12 @@ class BaselineDiff(BaseModel):
             regressed=[c for c in case_changes if STATUS_RANK[c.after] < STATUS_RANK[c.before]],
             improved=[c for c in case_changes if STATUS_RANK[c.after] > STATUS_RANK[c.before]],
         )
+
+    @staticmethod
+    def _same_cases(candidate: str, outcomes: list[CaseOutcome], baseline: SummaryFile) -> bool:
+        """Whether this run and the baseline ran the candidate on the same cases."""
+        now = {o.case_id for o in outcomes if o.candidate == candidate}
+        return now == {c.case_id for c in baseline.cases if c.candidate == candidate}
 
     @staticmethod
     def _candidate_change(

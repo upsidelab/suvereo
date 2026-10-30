@@ -16,9 +16,14 @@ What you know (answer only from this; if asked anything else, say you don't know
 {facts}
 
 Rules:
-- Pursue the goal one step at a time, as a real user would; don't state everything at once.
+- Open with a short request in a few words, as a real user would; give a fact only when the assistant asks for it.
 - Answer the assistant's questions from what you know.
-- Stop with "done" once the goal is reached, or "gave_up" if the assistant can't help or keeps going in circles.
+- Want only what your goal and facts say; add no needs or questions of your own.
+- Offered several options, pick the one your facts point to or ask which one fits.
+- The assistant only answers in this chat; a goal to buy or get something is met once you know which one and what
+  your goal asks about it.
+- Stop with "done" as soon as the answers have met every part of your goal, or "gave_up" if the assistant can't
+  help or keeps going in circles.
 
 Reply with JSON only: {{"message": "<your next message>", "stop": null}}
 or, to end the conversation: {{"message": null, "stop": "done" | "gave_up"}}"""

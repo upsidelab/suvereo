@@ -81,7 +81,7 @@ A conversation run passes when the user finished the conversation (`conversation
 
 `duration_s`, `cost_usd`, the token counts, `llm_calls` and `tool_calls` are measured as in any suite. `goal_reached` is reported only; give it a `pass_threshold` to make it decide the run.
 
-Most checks of how the agent behaved come from the judge. Its criteria read the whole dialogue: the default `include` in a conversation is `outcome`, `transcript` and `expected`, where `transcript` holds each user message and answer with the tools called in its turn. A case's `expected` can be free text for the judge, as in `kettle-fixed` above.
+Most checks of how the agent behaved come from the judge. Its criteria read the whole dialogue: the default `include` in a conversation is `outcome`, `transcript` and `expected`, where `transcript` holds each user message and answer with what each tool called in that turn returned. A case's `expected` can be free text for the judge, as in `kettle-fixed` above.
 
 Tool and mock metrics (`tool_called`, `tool_order`, `mock_called`, `mock_calls`, `trace_event: tool_error`) count calls over the whole conversation. The output metrics (`json_subset`, `field_match`, `list_match`) read the last answer as `output.answer`, plus its fields when it is a JSON object.
 

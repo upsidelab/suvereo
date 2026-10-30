@@ -17,6 +17,7 @@ from agent.evaluation.integrations import EvalIntegrationPluginResolver
 from agent.evaluation.model_client import EvalModelClient
 from agent.evaluation.pinned_llm import PinnedLLM
 from agent.evaluation.pricing_table import PricingTable, TraceCost
+from agent.evaluation.repositories import EVAL_REPOSITORIES
 from agent.evaluation.runner import CaseRunner, EvalExecutionConversation
 from agent.evaluation.targets import ExistingAgentTarget
 from agent.models import Agent
@@ -120,7 +121,7 @@ class TestCaseRunner:
 
         assert not result.passed
         assert result.metrics["conversation_completed"].value is False
-        assert result.metrics["goal_reached"].details == {"reasoning": "the conversation never started"}
+        assert result.metrics["goal_reached"].details == {"reasoning": "the agent never answered"}
         assert result.metrics["user_cost_usd"].value == 0.0
         assert "attempts" not in result.metrics
 
@@ -204,4 +205,5 @@ class TestCaseRunner:
         assert overrides.system_prompt == "Be brief."
         assert overrides.agent_config_patch == {"prompt_input": {"tone": "dry"}}
         assert overrides.integration_plugin_resolver is EvalIntegrationPluginResolver
+        assert overrides.repositories is EVAL_REPOSITORIES
         assert (result.model, result.variant, result.repeat) == ("4o", "v2", 2)
