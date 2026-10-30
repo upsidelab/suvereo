@@ -5,7 +5,7 @@
 | Command | What it does |
 |---|---|
 | `./manage.py runeval <suite.yaml>` | Runs the suite and writes its reports. |
-| `./manage.py validateeval <suite.yaml>` | Checks the suite, its cases, mocks and metrics, that every model has a price when a budget is set, and prints the planned run count. Free. |
+| `./manage.py validateeval <suite.yaml>` | Checks the suite, its cases, mocks and metrics, and prints the planned run count. Free. |
 | `./manage.py evalschema` | Prints the JSON Schema of `suite.yaml`, for editor completion. |
 | `./manage.py listevalmetrics` | Lists the built-in metrics with their value types and params. |
 
@@ -19,7 +19,7 @@
 | `--case ID`, `--tag T` | Runs these cases, or the cases with this tag. Repeatable. |
 | `--rerun-failed S` | Runs the cases that failed in a `summary.json`, a run directory or `latest`. |
 | `--repeats N` | Runs per case, model and variant. |
-| `--baseline S` | Adds a diff against an earlier run (`summary.json`, a run directory or `latest`). When the two runs cover different cases, e.g. with `--rerun-failed`, the diff compares each case's status. |
+| `--baseline S` | Adds a diff against an earlier run (`summary.json`, a run directory or `latest`). |
 | `--budget USD` | Stops starting runs once this much is spent; overrides `budget_usd`. |
 | `--parallel N` | Runs this many at once (default 1). |
 | `--reports a,b` | Writes these reports; overrides `reports`. |
@@ -35,7 +35,7 @@
 |---|---|
 | `0` | Every candidate reached `min_pass_rate`, or the suite sets none. |
 | `1` | At least one candidate is below `min_pass_rate`. |
-| `2` | The suite or an option is invalid, e.g. a budget with a model that has no price. |
+| `2` | The suite or an option is invalid. |
 | `3` | The run stopped early, at the budget or at a call it had no price for; it is marked partial. |
 | `4` | The run crashed. |
 
@@ -123,7 +123,7 @@ A conversation suite measures `conversation_completed`, `conversation_end`, `tur
 
 - **Match modes** (`mode`, `modes`, `fields`): `exact`, `ci`, `numeric[:tolerance]`, `fuzzy[:threshold]`, `regex`. `coerce: true` compares `"2"` and `2` as equal. `skip_failed: true` leaves out mock calls that raised, so a call the agent fixed and retried scores once.
 - **`key` and `fields`** pair list items by one field and check the others, e.g. `key: 0, fields: {1: numeric}` for `[sku, quantity]` pairs. List scores report precision and recall as components and the missing, extra and mismatched items as details.
-- **`include`** chooses what the judge sees: `input` (the case input and file names), `outcome` (how the run ended and the calls to each mock, so a missing order is stated), `output`, `expected` (the case's answer key), `trace_summary` (tool calls, mock calls, attempts) and, in a conversation, `transcript` (each user message and answer, with what each tool called in that turn returned). The default is `outcome`, `output`, `expected` for `llm_judge` and `outcome`, `output` for `llm_classify`; in a conversation, `transcript` takes the place of `output`. `llm_judge` scores each criterion separately, reports each as a component (shown as success or failure with `scale: binary`) and keeps the judge's reasoning per criterion, which `report.md`, `results.csv` (`<metric>.reasoning`), `metrics.csv` and `runs/*.json` show.
+- **`include`** chooses what the judge sees: `input` (the case input and file names), `outcome` (how the run ended and the calls to each mock, so a missing order is stated), `output`, `expected` (the case's answer key), `trace_summary` (tool calls, mock calls, attempts) and, in a conversation, `transcript` (each user message and answer, with the tools called in each turn). The default is `outcome`, `output`, `expected` for `llm_judge` and `outcome`, `output` for `llm_classify`; in a conversation, `transcript` takes the place of `output`. `llm_judge` scores each criterion separately, reports each as a component (shown as success or failure with `scale: binary`) and keeps the judge's reasoning per criterion, which `report.md`, `results.csv` (`<metric>.reasoning`), `metrics.csv` and `runs/*.json` show.
 - **Custom metrics:** set `type` to the dotted path of a `BaseMetric` subclass, see [Add your own metric](./metrics#add-your-own-metric).
 
 Each metric is explained with an example in [Metrics](./metrics).

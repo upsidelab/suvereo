@@ -57,7 +57,7 @@ class SuiteRunner:
 
     def run(self) -> SuiteRunResult:
         """Run every planned run; raises EvalSuiteError when a budget is set but a model under test has no price."""
-        self.check_budget_is_trackable()
+        self._check_budget_is_trackable()
         self._spent, self._stopped_reason = 0.0, None
         self._warn_on_self_judging()
         started_at = datetime.now()
@@ -172,7 +172,7 @@ class SuiteRunner:
             with override_settings(MEDIA_ROOT=media_root):
                 yield
 
-    def check_budget_is_trackable(self) -> None:
+    def _check_budget_is_trackable(self) -> None:
         targets = [*self.loaded.suite.models, *self.judge_models_in_use, *self._user_models()]
         unpriced = sorted({t.model for t in targets if self.pricing.price_for(t.model) is None})
         if self.budget_usd is not None and unpriced:

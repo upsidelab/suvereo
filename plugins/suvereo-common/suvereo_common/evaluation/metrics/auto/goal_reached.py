@@ -6,8 +6,7 @@ from ..metric_context import MetricContext
 from ..metric_result import MetricResult
 
 PROMPT = """A simulated user chatted with an AI assistant to reach a goal. Decide from the transcript whether the
-goal was reached, whatever the user said at the end. Go only by the turns shown, and name in your reasoning the turn
-that reached it.
+goal was reached, whatever the user said at the end.
 
 Goal: {goal}
 
@@ -28,8 +27,8 @@ class GoalReached(BaseMetric):
         case = context.case
         if not isinstance(case, ConversationEvalCase) or case.simulated_user is None or not case.simulated_user.goal:
             return MetricResult(value=None, details={"reason": "the case has no simulated user goal"})
-        if not context.answered:
-            return MetricResult(value=False, details={"reasoning": "the agent never answered"})
+        if not context.trace.turns:
+            return MetricResult(value=False, details={"reasoning": "the conversation never started"})
         if context.judge is None:
             return MetricResult(value=None, details={"reason": "no judge model is configured"})
         material = JudgeMaterial.build_prompt_text(context, ["transcript"])

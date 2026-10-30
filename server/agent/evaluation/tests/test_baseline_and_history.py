@@ -74,15 +74,6 @@ class TestBaselineDiff:
         assert report.baseline_diff.candidates[0].pass_rate.before is None
         assert report.baseline_diff.regressed == report.baseline_diff.improved == []
 
-    def test_a_run_of_some_of_the_baselines_cases_compares_only_their_statuses(self, tmp_path):
-        baseline = _baseline(tmp_path, [run_result("ada"), run_result("bob", passed=False)])
-
-        report = suite_report(tmp_path, [run_result("bob")], baseline=baseline)
-
-        [change] = report.baseline_diff.candidates
-        assert (change.pass_rate.before, change.pass_rate.after, change.pass_rate.delta) == (None, 1.0, None)
-        assert [(c.case_id, c.before, c.after) for c in report.baseline_diff.improved] == [("bob", "fail", "pass")]
-
     def test_is_written_to_summary_json_and_report_md(self, tmp_path):
         baseline = _baseline(tmp_path, [run_result("ada")])
         report = suite_report(tmp_path, [run_result("ada", passed=False)], baseline=baseline)

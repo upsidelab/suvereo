@@ -230,7 +230,7 @@ Whether something happened during the run; bool. `event` is one of `retry`, `too
 
 ## Judged by a model
 
-These ask the suite's `judge` model, or the metric's own `judge`, about the run. `include` picks what it sees: `input`, `outcome`, `output`, `expected`, `trace_summary` and, in a conversation, `transcript`, each user message and answer with what each tool called in that turn returned, or the error it raised. In a conversation the judge grades the agent's messages. `prompt` or `prompt_file` replaces the built-in prompt; it must contain `{material}`, where the run details go. A run that raised before the agent answered gets no value and no judge call. What the judge costs is reported as `judge_cost_usd`.
+These ask the suite's `judge` model, or the metric's own `judge`, about the run. `include` picks what it sees: `input`, `outcome`, `output`, `expected`, `trace_summary` and, in a conversation, `transcript`, each user message and answer with the tools called in each turn, a tool that raised marked `(raised)`. `prompt` or `prompt_file` replaces the built-in prompt; it must contain `{material}`, where the run details go. What the judge costs is reported as `judge_cost_usd`.
 
 ### `llm_judge`
 

@@ -79,9 +79,6 @@ class Command(BaseCommand):
         try:
             with self._logs_to_stderr() if options["format"] == "json" else nullcontext():
                 outcome = evaluation.run()
-        except EvalSuiteError as e:
-            self.stderr.write(str(e))
-            sys.exit(ExitCode.INVALID_SUITE)
         except Exception as e:
             logger.exception("The evaluation failed")
             self.stderr.write(f"The evaluation failed: {type(e).__name__}: {e}")

@@ -13,8 +13,7 @@ from .judge_material import JudgeMaterial, Section
 from .judge_prompt_params import JudgePromptParams
 
 SCALES = {"binary": (0, 1, "0 (not met) or 1 (met)"), "1-5": (1, 5, "from 1 (not met at all) to 5 (fully met)")}
-DEFAULT_PROMPT = """You are grading an AI agent's work against one criterion. In a conversation, grade the agent's
-messages; the user's messages are only what it was asked.
+DEFAULT_PROMPT = """You are grading an AI agent's work against one criterion.
 
 Criterion: {name}: {description}
 
@@ -83,8 +82,8 @@ class LLMJudge(BaseMetric):
         return super().supports(kind) and self.params.fits(kind)
 
     def measure(self, context: MetricContext) -> MetricResult:
-        if reason := context.unjudged_reason():
-            return MetricResult(value=None, details={"reason": reason})
+        if context.judge is None:
+            return MetricResult(value=None, details={"reason": "no judge model is configured"})
         material = JudgeMaterial.build_prompt_text(context, self.params.include_for(context))
         scores, reasoning, unreadable = {}, {}, []
         for criterion in self.params.criteria:
