@@ -21,7 +21,9 @@ class SQLValidator:
         try:
             expression = sqlglot.parse_one(sql_query)
         except SqlglotError as e:
-            raise RetrieverSQLPermissionError(f"Could not parse the SQL query because of the following error {e}.")
+            raise RetrieverSQLPermissionError(
+                f"Could not parse the SQL query because of the following error {e}."
+            ) from e
 
         if not isinstance(expression, sqlglot.exp.Select):
             raise RetrieverSQLPermissionError("Only SELECT queries are allowed.")

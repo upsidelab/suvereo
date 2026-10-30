@@ -1,5 +1,6 @@
-import django
 from django.core import serializers
+from django.core.exceptions import FieldDoesNotExist
+from django.db import DataError, ProgrammingError, transaction
 from django.forms import model_to_dict
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.prompts import PromptTemplate
@@ -81,9 +82,10 @@ class ProductRetriever:
         sanitized_query = self._sql_validator.add_data_set_id_condition_and_raise_if_not_allowed(sql_query)
         cleaned_query = sanitized_query.replace("%", "%%")
         try:
-            return list(Product.objects.raw(cleaned_query))
-        except django.db.utils.ProgrammingError as e:
-            raise RetrieverSQLExecutionError(e)
+            with transaction.atomic():
+                return list(Product.objects.raw(cleaned_query))
+        except (ProgrammingError, DataError, FieldDoesNotExist) as e:
+            raise RetrieverSQLExecutionError(e) from e
 
     def get_sample_products(self, num_sample_products: int | None = None) -> list[Product]:
         limit = num_sample_products or self.max_sample_products
