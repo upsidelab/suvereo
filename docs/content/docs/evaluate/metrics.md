@@ -38,6 +38,8 @@ A metric that cannot measure a run, such as a case with no expected value for it
 | `input_tokens`, `output_tokens` | number | Tokens over every LLM call |
 | `llm_calls`, `tool_calls` | number | LLM calls and tool calls the run made |
 
+A conversation suite measures `conversation_completed`, `conversation_end`, `turns`, `goal_reached` and `user_cost_usd` in place of the first four; see [Conversations](./conversations#what-a-run-measures).
+
 Give one a `pass_threshold` by adding it to `metrics` under its own name, e.g. `{type: cost_usd, pass_threshold: {max: 0.01}}`.
 
 ## What the agent produced
