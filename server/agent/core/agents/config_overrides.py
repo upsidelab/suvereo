@@ -1,6 +1,12 @@
 from typing import Any
 
-from suvereo_common.config import AgentCallbackHandlerConfig, AgentConfig, CallbackHandlerConfig, ToolConfig
+from suvereo_common.config import (
+    AgentCallbackHandlerConfig,
+    AgentConfig,
+    CallbackHandlerConfig,
+    RepositoriesConfig,
+    ToolConfig,
+)
 from suvereo_common.config.base import ArbitraryTypeBaseModel
 from suvereo_common.integrations import BaseIntegrationPluginResolver
 from suvereo_common.llm import BaseLLM
@@ -14,6 +20,7 @@ class AgentConfigOverrides(ArbitraryTypeBaseModel):
     llm_callbacks: list[CallbackHandlerConfig] | None = None
     agent_callback_handler: AgentCallbackHandlerConfig | None = None
     integration_plugin_resolver: type[BaseIntegrationPluginResolver] | None = None
+    repositories: RepositoriesConfig | None = None
     system_prompt: str | None = None
     extra_tools: list[ToolConfig] | None = None
     agent_config_patch: dict[str, Any] | None = None
@@ -39,6 +46,8 @@ class AgentConfigOverrides(ArbitraryTypeBaseModel):
             update["agent_callback_handler"] = self.agent_callback_handler
         if self.integration_plugin_resolver is not None:
             update["integration_plugin_resolver"] = self.integration_plugin_resolver
+        if self.repositories is not None:
+            update["repositories"] = self.repositories
         if self.system_prompt is not None:
             update["system_prompt"] = self.system_prompt
         if self.extra_tools:

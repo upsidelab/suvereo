@@ -17,6 +17,7 @@ from suvereo_common.tools import BaseLLMTool
 from agent.core.agents.config_overrides import AgentConfigOverrides
 from agent.core.agents.default_config import merge_config
 from agent.core.registries.agents.agent_registry import AgentRegistry
+from agent.core.repositories import DjangoAgentRepository
 
 
 class StubAgent(BaseAgent):
@@ -55,6 +56,10 @@ class PinnedLLM(BaseLLM):
 class StubResolver(BaseIntegrationPluginResolver):
     def resolve(self, data_set_id, plugin_base):
         return None
+
+
+class StubAgentRepository(DjangoAgentRepository):
+    pass
 
 
 @pytest.fixture
@@ -98,6 +103,14 @@ class TestAgentConfigOverrides:
         applied = AgentConfigOverrides(integration_plugin_resolver=StubResolver).apply(config)
 
         assert applied.integration_plugin_resolver is StubResolver
+
+    def test_apply_replaces_the_repositories(self, config):
+        repositories = config.repositories.model_copy(update={"agent": StubAgentRepository})
+
+        applied = AgentConfigOverrides(repositories=repositories).apply(config)
+
+        assert applied.repositories.agent is StubAgentRepository
+        assert config.repositories.agent is not StubAgentRepository
 
     def test_apply_replaces_the_system_prompt(self, config):
         assert AgentConfigOverrides(system_prompt="variant prompt").apply(config).system_prompt == "variant prompt"

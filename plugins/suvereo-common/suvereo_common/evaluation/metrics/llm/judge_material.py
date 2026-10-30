@@ -11,6 +11,8 @@ Section = Literal["input", "outcome", "output", "expected", "trace_summary", "tr
 #: Sections only a conversation has.
 CONVERSATION_SECTIONS: set[Section] = {"transcript"}
 MAX_SUMMARY_VALUE = 1000
+#: Long enough for a tool's full result, so the judge can check the answer is grounded in it.
+MAX_TRANSCRIPT_TOOL_OUTPUT = 4000
 CONVERSATION_ENDINGS = {
     StopReason.DONE: "the user finished",
     StopReason.GAVE_UP: "the user gave up",
@@ -29,7 +31,8 @@ class JudgeMaterial:
         goal and persona), outcome states how the run ended and which mocked systems it called (so "nothing was
         ordered" is stated, not left to be noticed), output and expected are JSON, trace_summary lists the tool calls,
         mock calls and validator attempts, and transcript is a conversation's messages in order, each indented under its
-        speaker so an answer's own markdown can't pass for a heading, with the tools the agent called in each turn.
+        speaker so an answer's own markdown can't pass for a heading, with what each tool the agent called in a turn
+        returned.
         """
         renderers = {
             "transcript": lambda: cls._transcript(context),
@@ -90,14 +93,19 @@ class JudgeMaterial:
         ending = CONVERSATION_ENDINGS.get(trace.stop_reason, "ended")
         return f"conversation of {len(trace.turns)} turn(s), every turn answered; {ending}"
 
-    @staticmethod
-    def _transcript(context: MetricContext) -> str:
+    @classmethod
+    def _transcript(cls, context: MetricContext) -> str:
         trace, blocks = context.trace, []
         for number, turn in enumerate(trace.turns, start=1):
             lines = [f"turn {number}", f"user:\n{indent(turn.user_message, '  ')}"]
-            tools = [f"{call.name} (raised)" if call.error else call.name for call in trace.tool_calls_in(turn)]
-            if tools:
-                lines.append(f"tools called: {', '.join(tools)}")
+            for call in trace.tool_calls_in(turn):
+                output = call.output or "(nothing)"
+                result = (
+                    f"raised {cls._truncated(call.error)}"
+                    if call.error
+                    else cls._truncated(output, MAX_TRANSCRIPT_TOOL_OUTPUT)
+                )
+                lines.append(f"tool {call.name} returned:\n{indent(result, '  ')}")
             if turn.answer is not None:
                 lines.append(f"agent:\n{indent(turn.answer, '  ')}")
             else:
@@ -122,6 +130,6 @@ class JudgeMaterial:
         return "\n".join(lines) or "(nothing happened)"
 
     @staticmethod
-    def _truncated(value: Any) -> str:
+    def _truncated(value: Any, limit: int = MAX_SUMMARY_VALUE) -> str:
         text = json.dumps(value, default=str, ensure_ascii=False) if not isinstance(value, str) else value
-        return text if len(text) <= MAX_SUMMARY_VALUE else text[:MAX_SUMMARY_VALUE] + "…"
+        return text if len(text) <= limit else text[:limit] + "…"
