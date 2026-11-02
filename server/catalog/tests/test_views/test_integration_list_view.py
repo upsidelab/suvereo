@@ -9,7 +9,11 @@ from rest_framework import status
 from catalog.integrations.registry import IntegrationPluginRegistry
 from catalog.models import Integration
 from catalog.serializers import IntegrationSerializer
-from catalog.tests.integration_mocks import MockMultiInstanceIntegration, MockSingleInstanceIntegration
+from catalog.tests.integration_mocks import (
+    MockDefaultInstanceIntegration,
+    MockMultiInstanceIntegration,
+    MockSingleInstanceIntegration,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -80,6 +84,19 @@ class TestIntegrationListViewPost:
 
         assert response.status_code == status.HTTP_201_CREATED
         assert Integration.objects.filter(dataset=data_set, type="mock_multi").count() == 2
+
+    @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
+    @patch("catalog.integrations.views.sync_integration_task.delay")
+    def test_post_second_integration_of_type_without_opt_out_succeeds(
+        self, mock_sync, mock_get_plugin_class, admin_api_client, url, data_set
+    ):
+        mock_get_plugin_class.return_value = MockDefaultInstanceIntegration
+        admin_api_client.post(url, {"type": "mock_default", "config": {}}, format="json")
+
+        response = admin_api_client.post(url, {"type": "mock_default", "config": {}}, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert Integration.objects.filter(dataset=data_set, type="mock_default").count() == 2
 
     @patch.object(IntegrationPluginRegistry, "get_plugin_class_by_type")
     def test_post_does_not_report_an_unrelated_integrity_error_as_a_duplicate(

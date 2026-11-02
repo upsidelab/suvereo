@@ -27,13 +27,13 @@ class BaseIntegration(ABC):
     """A connection to one external system, declared by a vertical.
 
     The framework stores the integration's configuration and instantiates the
-    plugin with that config before use. A DataSet holds at most one integration
-    of a given ``TYPE``, unless the type opts into ``ALLOWS_MULTIPLE_INSTANCES``.
+    plugin with that config before use. A DataSet may hold several integrations
+    of a given ``TYPE``, unless the type opts out through ``ALLOWS_MULTIPLE_INSTANCES``.
     A vertical may add further capabilities in its own subclass; the base only
     covers configuration and how an instance presents itself.
     """
 
-    #: Stable identifier for this integration type. Unique per DataSet unless ALLOWS_MULTIPLE_INSTANCES is True.
+    #: Stable identifier for this integration type. Unique per DataSet when ALLOWS_MULTIPLE_INSTANCES is False.
     TYPE: str
     #: Human-readable name shown in the UI.
     NAME: str
@@ -43,9 +43,10 @@ class BaseIntegration(ABC):
     INTEGRATION_MANAGER: type[BaseIntegrationManager] | None = None
     #: Pydantic model class describing the configuration fields. Set to None when no config is required.
     CONFIGURATION_ARGS = None
-    #: When True, a DataSet may hold more than one integration of this TYPE. Defaults to False so
-    #: every existing plugin stays capped at one; a type opts in by overriding this.
-    ALLOWS_MULTIPLE_INSTANCES: bool = False
+    #: When True, a DataSet may hold more than one integration of this TYPE, e.g. two stores of the
+    #: same platform with different hosts. A type that only makes sense once per DataSet opts out by
+    #: setting this to False.
+    ALLOWS_MULTIPLE_INSTANCES: bool = True
 
     @classmethod
     def is_syncable(cls) -> bool:
