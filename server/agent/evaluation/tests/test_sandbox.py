@@ -21,7 +21,7 @@ DEFAULT_CONFIG = {
     "agent_args": {},
     "prompt_input": {"tone": "casual", "language": "en"},
     "prompt_extension": {},
-    "tools": [],
+    "tools": {},
 }
 
 

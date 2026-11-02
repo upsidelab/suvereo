@@ -33,7 +33,7 @@ def _registered():
     with (
         patch.object(AgenticExecutionDefinitionRegistry, "get_by_key", return_value=GreetingExecution),
         patch.object(AgentRegistry, "get_agent_class_by_type", return_value=MagicMock()),
-        patch.object(AgentPreconfigurationService, "default_agent_configuration", return_value={"tools": []}),
+        patch.object(AgentPreconfigurationService, "default_agent_configuration", return_value={"tools": {}}),
     ):
         yield
 

@@ -13,7 +13,7 @@ Registering an agent took a config provider class next to the agent, found by th
 ## Decision
 
 - **The agent is the unit of configuration.** `BaseAgent` declares `SYSTEM_PROMPT`, `TOOLS`, `BUILDER_CLASS`, `CONVERSATION_HISTORY_TOKEN_LIMIT` and `MEMORY_COMPACTOR_ENABLED` as class variables. The framework's `BaseAgent.get_config()` turns them into an `AgentConfig`. An agent whose configuration the variables cannot express overrides `get_config()`. There is no config provider class.
-- **The execution definition owns execution-mode settings.** `BaseAgenticExecutionDefinition` declares an optional `SYSTEM_PROMPT` and `EXTRA_TOOLS`, applied on top of the agent's configuration through `AgentConfigOverrides` (see [ADR-0002](0002-agentic-execution.md)). Each execution of an agent can differ, and the agent has a single configuration.
+- **The execution definition owns execution-mode settings.** `BaseAgenticExecutionDefinition` declares an optional `SYSTEM_PROMPT` and `TOOLS` (see [ADR-0008](0008-tool-configuration-keyed-by-tool-name.md)), applied on top of the agent's configuration through `AgentConfigOverrides` (see [ADR-0002](0002-agentic-execution.md)). Each execution of an agent can differ, and the agent has a single configuration.
 - **`agent_class` is not part of `AgentConfig`.** The builder receives it as a separate constructor argument, so a config cannot name another class than the one it was built for.
 
 ## Consequences

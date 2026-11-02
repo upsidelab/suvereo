@@ -74,7 +74,7 @@ def _tool_providing_integration(dataset) -> Integration:
 def _payload(dataset, integrations) -> dict:
     return {
         "name": "Support",
-        "config": {"agent_args": {}, "prompt_input": {}, "tools": []},
+        "config": {"agent_args": {}, "prompt_input": {}, "tools": {}},
         "dataset": dataset.id,
         "agent_type": "dummy_agent",
         "tool_providing_integrations": [integration.id for integration in integrations],

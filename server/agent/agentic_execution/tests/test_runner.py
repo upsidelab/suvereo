@@ -79,19 +79,19 @@ class TestExecutionConversation:
 
         assert get_answer.call_args.kwargs["overrides"] == AgentConfigOverrides()
 
-    def test_ask_builds_the_agent_with_the_definitions_prompt_and_extra_tools(self):
+    def test_ask_builds_the_agent_with_the_definitions_prompt_and_tools(self):
         stub_tool = LLMToolConfig(tool_class=StubTool)
 
         class PromptedExecution(EchoExecution):
             SYSTEM_PROMPT = "execution prompt"
-            EXTRA_TOOLS = [stub_tool]
+            TOOLS = [stub_tool]
 
         with patch("agent.agentic_execution.conversation.ConversationManager.get_answer") as get_answer:
             ExecutionConversation(MagicMock(), PromptedExecution).ask("hello")
 
         overrides = get_answer.call_args.kwargs["overrides"]
         assert overrides.system_prompt == "execution prompt"
-        assert overrides.extra_tools == [stub_tool]
+        assert overrides.tools == [stub_tool]
 
     def test_given_overrides_win_over_the_definition(self):
         class PromptedExecution(EchoExecution):

@@ -3,10 +3,11 @@ from rest_framework.exceptions import APIException
 from utils.functions import get_model_descriptor_from_class_field
 from utils.serializers import ExtraArgDetailSerializer, ParentDataContextSerializerMixin
 
+from agent.core.agents.configurable_tools import ConfigurableTools
 from agent.core.agents.selectable_tool_providing_integrations import SelectableToolProvidingIntegrations
 from agent.core.registries.agents.agent_registry import AgentRegistry
 from agent.models import Agent
-from agent.serializers.customs.fields import PydanticModelField, PydanticModelToolListField
+from agent.serializers.customs.fields import PydanticModelField, PydanticModelToolMapField
 from catalog.models import DataSet, Integration
 from catalog.serializers import IntegrationSerializer
 
@@ -27,11 +28,14 @@ def agent_type_config_schema(agent_class) -> dict:
     return {
         "agent_args": get_model_descriptor_from_class_field(agent_class, "AGENT_ARGS"),
         "prompt_input": get_model_descriptor_from_class_field(agent_class, "PROMPT_INPUT"),
-        "tools": [
-            get_model_descriptor_from_class_field(tool_config.tool_class, "CONFIGURATION_ARGS")
-            for tool_config in getattr(agent_class, "TOOLS", None) or []
-        ],
+        "tools": ConfigurableTools.schema(agent_class),
     }
+
+
+class ToolConfigSchemaSerializer(serializers.Serializer):
+    title = serializers.CharField()
+    used_by = serializers.ListField(child=serializers.CharField())
+    fields = serializers.DictField(child=ExtraArgDetailSerializer(), allow_empty=True)
 
 
 class AgentChoiceSerializer(serializers.Serializer):
@@ -39,7 +43,7 @@ class AgentChoiceSerializer(serializers.Serializer):
     name = serializers.CharField()
     agent_args = serializers.DictField(child=ExtraArgDetailSerializer(), allow_empty=True)
     prompt_input = serializers.DictField(child=ExtraArgDetailSerializer(), allow_empty=True)
-    tools = serializers.ListField(child=serializers.DictField(child=ExtraArgDetailSerializer()), allow_empty=True)
+    tools = serializers.DictField(child=ToolConfigSchemaSerializer(), allow_empty=True)
 
 
 class AvailableAgentsResponseSerializer(serializers.Serializer):
@@ -51,7 +55,7 @@ class AgentConfigSerializer(ParentDataContextSerializerMixin, serializers.Serial
 
     agent_args = PydanticModelField(agent_field_name="AGENT_ARGS")
     prompt_input = PydanticModelField(agent_field_name="PROMPT_INPUT")
-    tools = PydanticModelToolListField(agent_field_name="TOOLS", tool_field_name="CONFIGURATION_ARGS")
+    tools = PydanticModelToolMapField()
 
 
 class AgentSerializer(ParentDataContextSerializerMixin, serializers.ModelSerializer):

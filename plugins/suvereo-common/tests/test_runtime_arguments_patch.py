@@ -30,14 +30,14 @@ def _builder(stored: dict, patch: dict | None) -> AgentBuilder:
 
 class TestAgentRuntimeArguments:
     def test_stored_arguments_are_used_as_they_are_without_a_patch(self):
-        stored = {"prompt_input": {"tone": "casual"}, "tools": []}
+        stored = {"prompt_input": {"tone": "casual"}, "tools": {}}
 
         assert _builder(stored, None)._agent_runtime_arguments() == stored
 
     def test_the_patch_is_merged_over_the_stored_arguments(self):
-        stored = {"prompt_input": {"tone": "casual", "language": "en"}, "tools": []}
+        stored = {"prompt_input": {"tone": "casual", "language": "en"}, "tools": {}}
 
         arguments = _builder(stored, {"prompt_input": {"tone": "formal"}})._agent_runtime_arguments()
 
-        assert arguments == {"prompt_input": {"tone": "formal", "language": "en"}, "tools": []}
+        assert arguments == {"prompt_input": {"tone": "formal", "language": "en"}, "tools": {}}
         assert stored["prompt_input"]["tone"] == "casual"

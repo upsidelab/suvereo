@@ -20,7 +20,7 @@ class ExecutionConversation(ExecutionConversationInterface):
     ) -> None:
         self._conversation = conversation
         self._overrides = (overrides or AgentConfigOverrides()).with_fallback(
-            AgentConfigOverrides(system_prompt=definition.SYSTEM_PROMPT, extra_tools=definition.EXTRA_TOOLS or None)
+            AgentConfigOverrides(system_prompt=definition.SYSTEM_PROMPT, tools=definition.TOOLS)
         )
         self._tool_scratchpad = ToolScratchpad()
 

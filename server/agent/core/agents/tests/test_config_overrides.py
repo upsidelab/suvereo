@@ -115,11 +115,16 @@ class TestAgentConfigOverrides:
     def test_apply_replaces_the_system_prompt(self, config):
         assert AgentConfigOverrides(system_prompt="variant prompt").apply(config).system_prompt == "variant prompt"
 
-    def test_apply_appends_extra_tools_after_the_configured_ones(self, config):
-        first, extra = LLMToolConfig(tool_class=StubTool), LLMToolConfig(tool_class=ExtraTool)
+    def test_apply_replaces_the_tools(self, config):
+        first, other = LLMToolConfig(tool_class=StubTool), LLMToolConfig(tool_class=ExtraTool)
         configured = config.model_copy(update={"tools": [first]})
 
-        assert AgentConfigOverrides(extra_tools=[extra]).apply(configured).tools == [first, extra]
+        assert AgentConfigOverrides(tools=[other]).apply(configured).tools == [other]
+
+    def test_apply_can_replace_the_tools_with_none_at_all(self, config):
+        configured = config.model_copy(update={"tools": [LLMToolConfig(tool_class=StubTool)]})
+
+        assert AgentConfigOverrides(tools=[]).apply(configured).tools == []
 
     def test_with_fallback_fills_only_the_unset_fields(self):
         overrides = AgentConfigOverrides(system_prompt="variant").with_fallback(

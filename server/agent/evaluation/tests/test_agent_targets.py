@@ -70,7 +70,7 @@ class TestSandboxAgentTarget:
     def _agent_type(self):
         with (
             patch.object(AgentRegistry, "get_agent_class_by_type", return_value=MagicMock()),
-            patch.object(AgentPreconfigurationService, "default_agent_configuration", return_value={"tools": []}),
+            patch.object(AgentPreconfigurationService, "default_agent_configuration", return_value={"tools": {}}),
         ):
             yield
 

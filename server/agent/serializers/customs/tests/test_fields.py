@@ -8,7 +8,7 @@ from rest_framework.exceptions import APIException, ValidationError
 from suvereo_common.config import FunctionToolConfig
 from suvereo_common.tools import BaseFunctionTool
 
-from agent.serializers.customs.fields import PydanticModelField, PydanticModelToolListField
+from agent.serializers.customs.fields import PydanticModelField, PydanticModelToolMapField
 
 
 class DummySchema(BaseModel):
@@ -21,7 +21,13 @@ class BadSchema(BaseModel):
 
 
 class DummyTool(BaseFunctionTool):
-    CONFIGURATION = DummySchema
+    NAME = "dummy"
+    CONFIGURATION_ARGS = DummySchema
+
+
+class PlainTool(BaseFunctionTool):
+    NAME = "plain"
+    CONFIGURATION_ARGS = None
 
 
 def get_model_serializer(
@@ -34,9 +40,9 @@ def get_model_serializer(
     return FieldTestSerializer(data=data, context={"agent_type": "dummy_agent"})
 
 
-def get_list_model_serializer(agent_field_name: str, tool_field_name: str, data: Any):
+def get_map_model_serializer(data: Any):
     class FieldTestSerializer(serializers.Serializer):
-        config = PydanticModelToolListField(agent_field_name=agent_field_name, tool_field_name=tool_field_name)
+        config = PydanticModelToolMapField()
 
     return FieldTestSerializer(data=data, context={"agent_type": "dummy_agent"})
 
@@ -95,59 +101,55 @@ def test_pydantic_model_field_import_error(mock_import, mock_settings, available
     assert "Error loading agent" in str(e.value)
 
 
-@patch("agent.core.registries.agents.agent_registry.settings")
-@patch("agent.serializers.customs.fields.AgentRegistry.get_agent_class_by_type")
-def test_pydantic_model_tool_list_field_valid(mock_import, mock_settings, available_agents):
-    mock_settings.AVAILABLE_AGENTS = available_agents
-    mock_import.return_value = type(
-        "Agent", (), {"TOOLS": [FunctionToolConfig(tool_class=DummyTool), FunctionToolConfig(tool_class=DummyTool)]}
-    )
-    input_data = {"config": [{"value_1": "Alice", "value_2": 25}, {"value_1": "Bob", "value_2": 30}]}
-    serializer = get_list_model_serializer(agent_field_name="TOOLS", tool_field_name="CONFIGURATION", data=input_data)
+class TestPydanticModelToolMapField:
+    @pytest.fixture(autouse=True)
+    def agent_class(self):
+        agent_class = type(
+            "Agent",
+            (),
+            {
+                "AGENT_KEY": "dummy_agent",
+                "TOOLS": [FunctionToolConfig(tool_class=PlainTool), FunctionToolConfig(tool_class=DummyTool)],
+            },
+        )
+        with patch("agent.serializers.customs.fields.AgentRegistry.get_agent_class_by_type", return_value=agent_class):
+            yield
 
-    serializer.is_valid(raise_exception=True)
+    def test_settings_are_validated_and_stored_by_tool_name(self):
+        serializer = get_map_model_serializer({"config": {"dummy": {"value_1": "Alice", "value_2": 25}}})
 
-    assert serializer.data == input_data
-
-
-@patch("agent.core.registries.agents.agent_registry.settings")
-@patch("agent.serializers.customs.fields.AgentRegistry.get_agent_class_by_type")
-def test_pydantic_model_tool_list_field_invalid_configs_number(mock_import, mock_settings, available_agents):
-    mock_settings.AVAILABLE_AGENTS = available_agents
-    mock_import.return_value = type("Agent", (), {"TOOLS": [DummyTool]})
-    input_data = {"config": []}
-    serializer = get_list_model_serializer(agent_field_name="TOOLS", tool_field_name="CONFIGURATION", data=input_data)
-
-    with pytest.raises(ValidationError) as e:
         serializer.is_valid(raise_exception=True)
-    assert "Mismatch between number of tools and provided configs." in str(e.value)
 
+        assert serializer.validated_data["config"] == {"dummy": {"value_1": "Alice", "value_2": 25}}
 
-@patch("agent.core.registries.agents.agent_registry.settings")
-@patch("agent.serializers.customs.fields.AgentRegistry.get_agent_class_by_type")
-def test_pydantic_model_tool_list_field_invalid_config_type(mock_import, mock_settings, available_agents):
-    mock_settings.AVAILABLE_AGENTS = available_agents
-    mock_import.return_value = type("Agent", (), {"TOOLS": [DummyTool]})
-    input_data = {"config": {}}
-    serializer = get_list_model_serializer(agent_field_name="TOOLS", tool_field_name="CONFIGURATION", data=input_data)
+    def test_errors_are_keyed_by_tool_name(self):
+        serializer = get_map_model_serializer({"config": {"dummy": {"value_1": "Missing number"}}})
 
-    with pytest.raises(ValidationError) as e:
-        serializer.is_valid(raise_exception=True)
-    assert "Expected a list of tool configurations." in str(e.value)
+        assert not serializer.is_valid()
+        assert list(serializer.errors["config"]["dummy"]) == ["value_2"]
 
+    def test_a_configurable_tool_left_out_is_validated_as_empty(self):
+        serializer = get_map_model_serializer({"config": {}})
 
-@patch("agent.core.registries.agents.agent_registry.settings")
-@patch("agent.serializers.customs.fields.AgentRegistry.get_agent_class_by_type")
-def test_pydantic_model_tool_list_field_invalid_data(mock_import, mock_settings, agent_context, available_agents):
-    mock_settings.AVAILABLE_AGENTS = available_agents
-    mock_import.return_value = type(
-        "Agent", (), {"TOOLS": [FunctionToolConfig(tool_class=DummyTool), FunctionToolConfig(tool_class=DummyTool)]}
-    )
-    input_data = {"config": [{"value_1": "Missing age"}, {"value_2": 28}]}
-    serializer = get_list_model_serializer(agent_field_name="TOOLS", tool_field_name="CONFIGURATION", data=input_data)
+        assert not serializer.is_valid()
+        assert set(serializer.errors["config"]["dummy"]) == {"value_1", "value_2"}
 
-    serializer.is_valid()
+    @pytest.mark.parametrize("name", ["plain", "missing"])
+    def test_a_tool_that_is_not_configurable_on_the_agent_is_rejected(self, name):
+        serializer = get_map_model_serializer({"config": {"dummy": {"value_1": "a", "value_2": 1}, name: {}}})
 
-    assert len(serializer.errors["config"]) == 2
-    assert "value_2" in serializer.errors["config"][0].keys()
-    assert "value_1" in serializer.errors["config"][1].keys()
+        assert not serializer.is_valid()
+        assert f"non-configurable tools: {name}" in str(serializer.errors["config"])
+
+    @pytest.mark.parametrize("settings", [None, "proxy", ["a"]])
+    def test_settings_that_are_not_an_object_are_an_error_of_that_tool(self, settings):
+        serializer = get_map_model_serializer({"config": {"dummy": settings}})
+
+        assert not serializer.is_valid()
+        assert serializer.errors["config"]["dummy"] == ["Expected the tool's settings as an object."]
+
+    def test_a_list_is_rejected(self):
+        serializer = get_map_model_serializer({"config": [{"value_1": "a", "value_2": 1}]})
+
+        assert not serializer.is_valid()
+        assert "keyed by tool name" in str(serializer.errors["config"])

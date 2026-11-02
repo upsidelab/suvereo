@@ -1,8 +1,9 @@
 from unittest.mock import MagicMock
 
 import pytest
-from pydantic import Field
+from pydantic import BaseModel, Field
 from suvereo_common.agents import BaseAgent
+from suvereo_common.tools import BaseFunctionTool
 from suvereo_common.utils import RequiredFieldsModel
 
 
@@ -30,9 +31,38 @@ class RenamingAgent(StubAgent):
         return {**super()._get_system_prompt_variables(), "language": self.PROMPT_INPUT.target_language}
 
 
-def build(agent_class: type[BaseAgent], system_prompt: str, prompt_input=None) -> BaseAgent:
+class ProxyConfig(RequiredFieldsModel):
+    proxy: str = Field(title="Proxy", description="Proxy URL", default="")
+
+
+class ProxiedTool(BaseFunctionTool):
+    NAME = "proxied"
+    DESCRIPTION = "Uses a proxy"
+    ARGS_SCHEMA = BaseModel
+    RETURN_DIRECT = False
+    CONFIGURATION_ARGS = ProxyConfig
+
+    def run(self):
+        return ""
+
+
+class TokenConfig(RequiredFieldsModel):
+    token: str = Field(title="Token", description="API token")
+
+
+class TokenTool(ProxiedTool):
+    NAME = "token_tool"
+    CONFIGURATION_ARGS = TokenConfig
+
+
+class PlainTool(ProxiedTool):
+    NAME = "plain"
+    CONFIGURATION_ARGS = None
+
+
+def build(agent_class: type[BaseAgent], system_prompt: str, prompt_input=None, tools=None) -> BaseAgent:
     agent = agent_class(
-        tools=[], llm=MagicMock(), system_prompt=system_prompt, conversation_id=1, injector=MagicMock(),
+        tools=tools or [], llm=MagicMock(), system_prompt=system_prompt, conversation_id=1, injector=MagicMock(),
         conversation_history_token_limit=10_000
     )
     if prompt_input is not None:
@@ -55,6 +85,38 @@ class TestSystemPrompt:
         agent = build(RenamingAgent, "{tone_of_voice}, {language}", PromptInput(target_language="Polish"))
 
         assert agent._get_system_prompt() == "friendly, Polish"
+
+
+class TestSetRuntimeArguments:
+    def test_each_tool_gets_the_settings_stored_under_its_name_whatever_its_position(self):
+        agent = build(StubAgent, "Prompt.", tools=[PlainTool(), ProxiedTool()])
+
+        agent.set_runtime_arguments({"prompt_input": {}, "tools": {"proxied": {"proxy": "http://proxy:8080"}}})
+
+        assert agent._tools[1].CONFIGURATION_ARGS == ProxyConfig(proxy="http://proxy:8080")
+        assert agent._tools[0].CONFIGURATION_ARGS is None
+
+    def test_a_tool_with_no_stored_settings_gets_its_defaults(self):
+        agent = build(StubAgent, "Prompt.", tools=[ProxiedTool()])
+
+        agent.set_runtime_arguments({"prompt_input": {}, "tools": {}})
+
+        assert agent._tools[0].CONFIGURATION_ARGS == ProxyConfig()
+
+
+    def test_tool_settings_still_stored_as_a_list_fall_back_to_defaults(self):
+        agent = build(StubAgent, "Prompt.", tools=[ProxiedTool()])
+
+        agent.set_runtime_arguments({"prompt_input": {}, "tools": [{"proxy": "http://proxy:8080"}]})
+
+        assert agent._tools[0].CONFIGURATION_ARGS == ProxyConfig()
+
+
+    def test_a_tool_missing_a_required_setting_names_the_tool(self):
+        agent = build(StubAgent, "Prompt.", tools=[TokenTool()])
+
+        with pytest.raises(ValueError, match="'token_tool' has missing or invalid settings"):
+            agent.set_runtime_arguments({"prompt_input": {}, "tools": {}})
 
 
 class TestGetConfig:
