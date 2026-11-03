@@ -34,7 +34,7 @@ export default async function Page() {
       </Cards>
       <H2>Build a Custom Integration</H2>
       <P>These ready-made integrations cover common use cases. If you need to connect a system that isn’t listed here, Suvereo allows you to build custom integrations tailored to your stack.</P>
-      <Cards.Card className="x:my-4" title="Learn How to Build a Custom Integration" href="/docs/customization/custom-integration" arrow />
+      <Cards.Card className="x:my-4" title="Learn How to Build a Custom Integration" href="/docs/customization/integrations" arrow />
     </Wrapper>
   )
 }
