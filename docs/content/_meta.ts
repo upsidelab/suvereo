@@ -7,7 +7,7 @@ export default {
     type: "page",
   },
   integrations: {
-    title: "Integrations",
+    title: "Plugins",
     type: "page",
     theme: {
       sidebar: false,
