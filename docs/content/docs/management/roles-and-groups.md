@@ -25,7 +25,7 @@ A user who holds no role on a data set does not see it.
 
 ## Service accounts
 
-A service account is an identity for programmatic API access, authorized through roles in the same way as a user. Roles are granted to it from the same places as for users. Creating accounts and their API tokens is described in [Managing API Keys](/docs/integrate/manage-api-keys).
+A service account is an identity for programmatic API access, authorized through roles in the same way as a user. Roles are granted to it from the same places as for users. Creating accounts and their API tokens is described in [Managing API Keys](/docs/connect/manage-api-keys).
 
 ## Groups
 

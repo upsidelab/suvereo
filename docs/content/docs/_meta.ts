@@ -4,7 +4,7 @@ const mapping = {
   customization: "",
   agents: "",
   management: "",
-  integrate: "",
+  connect: "",
   observe: "",
   evaluate: "",
   concepts: "",

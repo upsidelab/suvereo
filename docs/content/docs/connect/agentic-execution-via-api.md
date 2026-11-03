@@ -224,6 +224,6 @@ Supports `agent_id`, `status` (`pending`, `in_progress`, `finished`, `failed`), 
 
 ## Authentication and Authorization
 
-All endpoints require authentication, see [Connecting to the API](/docs/integrate/connect-to-api).
+All endpoints require authentication, see [Connecting to the API](/docs/connect/connect-to-api).
 
 Access to agentic executions depends on the permissions of the account, which are set through roles, see [Roles and Groups](/docs/management/roles-and-groups#permissions).

@@ -1,6 +1,6 @@
 # Management
 
-Suvereo is managed through its web UI and through its API. The API offers the same operations to other systems, see [Connecting to the API](/docs/integrate/connect-to-api).
+Suvereo is managed through its web UI and through its API. The API offers the same operations to other systems, see [Connecting to the API](/docs/connect/connect-to-api).
 
 Both use the same permissions system. Every action is guarded by a permission, which a person or a service account receives through [roles](/docs/management/roles-and-groups). Whether a section or a button is available in the UI, and whether a request is accepted by the API, depends on the permissions the signed-in account holds. [Admins](/docs/management/users#admins) hold all permissions.
 
