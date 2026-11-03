@@ -21,4 +21,3 @@ An agent stored its tools' settings as a list, `config.tools`, applied to its bu
 - Renaming a tool's `NAME` needs a data migration of its stored settings.
 - An agent and its executions use one `NAME` for one tool settings schema; a startup check reports a conflict.
 - Installing an execution that adds a configurable tool leaves saved agents without its settings; the agent list marks them corrupted until their form is saved.
-- Agent plugins outside this repository that set `EXTRA_TOOLS` must move to `TOOLS`; `BaseAgenticExecutionDefinition` raises `TypeError` at import for a definition that still sets it.

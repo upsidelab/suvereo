@@ -142,9 +142,9 @@ class TestToolSettingsConflictsCheck:
     def test_an_execution_that_cannot_be_loaded_is_a_warning(self):
         with patch(
             "agent.agentic_execution.checks.AgenticExecutionDefinitionRegistry.get_all",
-            side_effect=TypeError("LegacyExecution sets EXTRA_TOOLS"),
+            side_effect=TypeError("BrokenExecution cannot be loaded"),
         ):
             [warning] = check_tool_settings_conflicts(None)
 
         assert warning.id == "agent.W001"
-        assert "EXTRA_TOOLS" in warning.msg
+        assert "BrokenExecution cannot be loaded" in warning.msg

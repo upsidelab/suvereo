@@ -91,14 +91,6 @@ class BaseAgenticExecutionDefinition(ABC):
         "Please provide a brief (max 100 words), impersonal, plain-language summary of what went wrong."
     )
 
-    def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(**kwargs)
-        if "EXTRA_TOOLS" in vars(cls):
-            raise TypeError(
-                f"{cls.__name__} sets EXTRA_TOOLS, which was replaced by TOOLS; "
-                f"set TOOLS = [*<agent class>.TOOLS, ...] to keep the agent's tools."
-            )
-
     def run(
         self,
         input_data: ExecutionInputType,
