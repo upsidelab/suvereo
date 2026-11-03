@@ -9,7 +9,7 @@ export function DataSetList() {
   const canCreateDataSets = hasPermission(PERMISSIONS.DATA_SET.ADD);
   const canEditDataSets = hasPermission(PERMISSIONS.DATA_SET.CHANGE);
   const canAssignRoles = hasPermission(PERMISSIONS.DATA_SET_ROLE.ASSIGN);
-  const canViewSources = (dataSetId: number) => hasDataSetPermission(PERMISSIONS.INTEGRATION.VIEW, dataSetId);
+  const canViewIntegrations = (dataSetId: number) => hasDataSetPermission(PERMISSIONS.INTEGRATION.VIEW, dataSetId);
   const navigate = useNavigate();
 
   return (
@@ -38,10 +38,10 @@ export function DataSetList() {
                     navigate(`/data-sets/${item.id}/users`)
                   }} variant="secondary">Manage Access</Button>
                 }
-                {canViewSources(item.id!) &&
+                {canViewIntegrations(item.id!) &&
                   <Button onClick={() => {
                     navigate(`/data-sets/${item.id}/integrations`)
-                  }} variant="secondary">Sources</Button>
+                  }} variant="secondary">Integrations</Button>
                 }
                 <Button onClick={() => {
                   navigate(`/data-sets/${item.id}/edit`)

@@ -30,7 +30,7 @@ export function MainSidebar() {
   const { account, dataSetId, dataSets, isLoadingAgents, availableAgents, hasPermission, hasDataSetPermission } = useApplicationContext()!;
   const canViewAgents = hasDataSetPermission(PERMISSIONS.AGENT.VIEW);
   const canAddAgents = hasDataSetPermission(PERMISSIONS.AGENT.ADD);
-  const canViewSources = hasDataSetPermission(PERMISSIONS.INTEGRATION.VIEW);
+  const canViewIntegrations = hasDataSetPermission(PERMISSIONS.INTEGRATION.VIEW);
   const canUseExecutions = hasDataSetPermission(PERMISSIONS.AGENTIC_EXECUTION.CREATE)
     || hasDataSetPermission(PERMISSIONS.AGENTIC_EXECUTION.VIEW_ALL);
   const canConverse = hasDataSetPermission(PERMISSIONS.CONVERSATION.CONVERSE);
@@ -155,7 +155,7 @@ export function MainSidebar() {
       key: "agentic-executions",
       icon: <PlayIcon />
     }] : []),
-    ...(canViewSources ? [{
+    ...(canViewIntegrations ? [{
       title: "Integrations",
       link: `/data-sets/${dataSetId}/integrations`,
       key: "integrations",
