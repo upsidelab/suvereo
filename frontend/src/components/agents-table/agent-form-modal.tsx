@@ -6,7 +6,8 @@ import { useAgentForm } from "./hooks/use-agent-form";
 import { AgentConfigurationForm } from "./agent-configuration-form";
 import {AgentChoice} from "@/lib/api/agents.ts";
 import {Textarea} from "@/components/ui/textarea.tsx";
-import { Switch } from "@/components/ui/switch";
+import { ToolProvidingIntegrationsPicker } from "./tool-providing-integrations-picker";
+import { useToolProvidingIntegrationOptions } from "./hooks/use-tool-providing-integration-options";
 import { FormModal } from "@/components/ui/form-modal";
 import { useEffect } from "react";
 
@@ -39,8 +40,8 @@ export function AgentFormModal({
     type,
     setType,
     agentTypeName,
-    integrationTools,
-    setIntegrationTools,
+    toolProvidingIntegrations,
+    setToolProvidingIntegrations,
     config,
     setConfig,
     agentConfigSections,
@@ -52,6 +53,7 @@ export function AgentFormModal({
     handleSubmit,
     resetForm
   } = useAgentForm(agent, agentTypes, dataSetId, onSuccess, readOnly);
+  const { toolProvidingIntegrationOptions, loadingToolProvidingIntegrations, toolProvidingIntegrationsFailed } = useToolProvidingIntegrationOptions(dataSetId, open);
 
   // Reset form when modal closes
   useEffect(() => {
@@ -143,20 +145,15 @@ export function AgentFormModal({
         )}
       </div>
 
-      <div className="flex flex-row items-center justify-between rounded-lg border p-4">
-        <div className="space-y-0.5">
-          <Label htmlFor="agent-integration-tools">Integration tools</Label>
-          <p className="text-[0.8rem] text-muted-foreground">
-            Let this agent use the tools of the data set's integrations, such as MCP servers.
-          </p>
-        </div>
-        <Switch
-          id="agent-integration-tools"
-          checked={integrationTools}
-          onCheckedChange={setIntegrationTools}
-          disabled={readOnly}
-        />
-      </div>
+      <ToolProvidingIntegrationsPicker
+        options={toolProvidingIntegrationOptions}
+        loading={loadingToolProvidingIntegrations}
+        failed={toolProvidingIntegrationsFailed}
+        selected={toolProvidingIntegrations}
+        onChange={setToolProvidingIntegrations}
+        error={fieldErrors.tool_providing_integrations}
+        readOnly={readOnly}
+      />
 
       {type && (
         <AgentConfigurationForm

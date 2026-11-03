@@ -1,5 +1,5 @@
 import {BaseApiClient} from "@/lib/api/base.ts";
-import {Agent, AgentConfig, AgentDetails} from "@/lib/types.ts";
+import {Agent, AgentConfig, AgentDetails, ToolProvidingIntegrationOption} from "@/lib/types.ts";
 import {ApiError} from "@/lib/api-error.ts";
 
 export type AgentChoice = {
@@ -39,6 +39,19 @@ export class AgentsApiClient extends BaseApiClient {
 
         return await response.json() as Agent[];
     }
+    async getToolProvidingIntegrations(dataSetId: number): Promise<ToolProvidingIntegrationOption[]> {
+        const query = new URLSearchParams({ dataset: dataSetId.toString() });
+        const response = await this.authenticatedFetch(`${this.apiBase}/api/agents/tool-providing-integrations?${query.toString()}`);
+
+        if (!response.ok) {
+            throw new ApiError(`Failed to fetch tool-providing integrations: ${response.statusText}`, {
+                data: await response.json().catch(() => ({})),
+                status: response.status
+            });
+        }
+
+        return await response.json() as ToolProvidingIntegrationOption[];
+    }
     async getAgentById(agentId: number): Promise<AgentDetails> {
         const response = await this.authenticatedFetch(`${this.apiBase}/api/agents/${agentId}`);
         if (!response.ok) {
@@ -47,7 +60,7 @@ export class AgentsApiClient extends BaseApiClient {
         return await response.json() as AgentDetails;
     }
 
-    async createAgent(data: { name: string; agent_type: string; dataset: number; config: AgentConfig; integration_tools: boolean }): Promise<AgentDetails> {
+    async createAgent(data: { name: string; agent_type: string; dataset: number; config: AgentConfig; tool_providing_integrations: number[] }): Promise<AgentDetails> {
         const response = await this.authenticatedFetch(`${this.apiBase}/api/agents`, {
             method: 'POST',
             body: JSON.stringify(data),
@@ -62,7 +75,7 @@ export class AgentsApiClient extends BaseApiClient {
         return await response.json() as AgentDetails;
     }
 
-    async updateAgent(agentId: number, data: { name: string; agent_type: string; dataset: number; config: AgentConfig; integration_tools: boolean }): Promise<AgentDetails> {
+    async updateAgent(agentId: number, data: { name: string; agent_type: string; dataset: number; config: AgentConfig; tool_providing_integrations: number[] }): Promise<AgentDetails> {
         const response = await this.authenticatedFetch(`${this.apiBase}/api/agents/${agentId}`, {
             method: 'PUT',
             body: JSON.stringify(data),

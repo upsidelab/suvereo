@@ -196,4 +196,4 @@ Tools automatically integrate with the LangChain ecosystem through the `as_tool(
 
 ## Tools from integrations
 
-Integrations that provide tools, such as MCP server integrations, supply tools when an agent with **Integration tools** turned on is built for a conversation. They are attached next to the agent's own tools. If a name is already taken by one of the agent's tools, or by an integration that was resolved earlier, the later tool is dropped and a warning is logged. This means a connected server cannot replace a tool the agent defines.
+Integrations that provide tools, such as MCP server integrations, supply tools when an agent that selects them under **Tool sources** is built for a conversation. They are attached next to the agent's own tools. If a name is already taken by one of the agent's tools, or by an integration that was resolved earlier, the later tool is dropped and a warning is logged. This means a connected server cannot replace a tool the agent defines.

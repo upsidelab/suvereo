@@ -46,7 +46,6 @@ class TestEvalSandbox:
         assert sandbox.data_set.name.startswith("Eval order intake ") and len(sandbox.data_set.name) == 30
         assert sandbox.agent.dataset == sandbox.data_set
         assert sandbox.agent.config["prompt_input"] == {"tone": "formal", "language": "en"}
-        assert (sandbox.agent.file_upload, sandbox.agent.integration_tools) == (True, True)
 
     def test_syncs_each_integration_through_its_manager(self):
         manager = MagicMock()

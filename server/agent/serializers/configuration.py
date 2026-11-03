@@ -3,10 +3,12 @@ from rest_framework.exceptions import APIException
 from utils.functions import get_model_descriptor_from_class_field
 from utils.serializers import ExtraArgDetailSerializer, ParentDataContextSerializerMixin
 
+from agent.core.agents.selectable_tool_providing_integrations import SelectableToolProvidingIntegrations
 from agent.core.registries.agents.agent_registry import AgentRegistry
 from agent.models import Agent
 from agent.serializers.customs.fields import PydanticModelField, PydanticModelToolListField
-from catalog.models import DataSet
+from catalog.models import DataSet, Integration
+from catalog.serializers import IntegrationSerializer
 
 
 def agent_class_for(agent: Agent):
@@ -74,7 +76,7 @@ class AgentSerializer(ParentDataContextSerializerMixin, serializers.ModelSeriali
             "created_at",
             "updated_at",
             "file_upload",
-            "integration_tools",
+            "tool_providing_integrations",
         ]
         read_only_fields = ["id", "created_at", "updated_at", "file_upload"]
 
@@ -83,7 +85,19 @@ class AgentSerializer(ParentDataContextSerializerMixin, serializers.ModelSeriali
         fields = super().get_fields()
         if self.instance is not None:
             fields["dataset"] = serializers.PrimaryKeyRelatedField(read_only=True)
+        # Only the data set's tool-providing integrations can be selected; any other id reads like a missing one.
+        selectable = (
+            Integration.objects.filter(id__in=SelectableToolProvidingIntegrations.ids(self._data_set_id()))
+            if hasattr(self, "initial_data")
+            else Integration.objects.none()
+        )
+        fields["tool_providing_integrations"] = serializers.PrimaryKeyRelatedField(
+            many=True, queryset=selectable, required=False
+        )
         return fields
+
+    def _data_set_id(self) -> int | None:
+        return self.instance.dataset_id if self.instance is not None else self.context.get("data_set_id")
 
     def get_agent_type_name(self, agent) -> str:
         return agent_type_display_name(agent)
@@ -148,3 +162,15 @@ class AgentListSerializer(ParentDataContextSerializerMixin, serializers.ModelSer
 
     def get_agent_type_name(self, agent) -> str:
         return agent_type_display_name(agent)
+
+
+class ToolProvidingIntegrationOptionSerializer(IntegrationSerializer):
+    integration_type_name = None
+    syncable = None
+    needs_reconnect = None
+    configurable = None
+    config_schema = None
+
+    class Meta(IntegrationSerializer.Meta):
+        fields = ["id", "name"]
+        read_only_fields = ["id"]

@@ -86,9 +86,10 @@ class BaseIntegration(ABC):
 class BaseToolProvidingIntegration(BaseIntegration):
     """An integration that can also hand agents extra tools to call, on top of its stored config.
 
-    Discovered generically via ``resolve_all(data_set_id, BaseToolProvidingIntegration)`` — the
+    Discovered generically via ``resolve_all_for_agent(agent_id, BaseToolProvidingIntegration)`` — the
     framework never needs to know about a specific tool-providing integration type (e.g. MCP
-    servers); it only needs to know this capability exists.
+    servers); it only needs to know this capability exists. An agent gets the tools of the
+    integrations selected for it.
     """
 
     @abstractmethod
@@ -171,8 +172,12 @@ class BaseIntegrationPluginResolver(ABC):
         """Return a configured plugin instance of *plugin_base* for the data set, or None."""
 
     @abstractmethod
-    def resolve_all(self, data_set_id: Any, plugin_base: type[IntegrationT]) -> list[IntegrationT]:
-        """Return every configured plugin instance of *plugin_base* for the data set.
+    def ids_for_data_set(self, data_set_id: Any, plugin_base: type[IntegrationT]) -> list[Any]:
+        """Return the ids of the data set's integrations of *plugin_base*, e.g. the ones an agent can select."""
+
+    @abstractmethod
+    def resolve_all_for_agent(self, agent_id: Any, plugin_base: type[IntegrationT]) -> list[IntegrationT]:
+        """Return a plugin instance of *plugin_base* for every integration selected for the agent.
 
         Best-effort: an implementation skips records it cannot instantiate (an unknown type, or a
         stored config that no longer validates) rather than raising, so that one broken integration
@@ -180,8 +185,8 @@ class BaseIntegrationPluginResolver(ABC):
         """
 
     @abstractmethod
-    def has_any(self, data_set_id: Any, plugin_base: type[IntegrationT]) -> bool:
-        """Return whether the data set has at least one integration of *plugin_base*.
+    def has_any_for_agent(self, agent_id: Any, plugin_base: type[IntegrationT]) -> bool:
+        """Return whether at least one integration of *plugin_base* is selected for the agent.
 
         Answers the question without instantiating plugins or reading their stored config, so it
         stays cheap enough to call on every conversation turn.

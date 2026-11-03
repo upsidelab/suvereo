@@ -1,5 +1,5 @@
 from pydantic import Field
-from suvereo_common.integrations import BaseIntegration, BaseOAuthIntegration
+from suvereo_common.integrations import BaseIntegration, BaseOAuthIntegration, BaseToolProvidingIntegration
 from suvereo_common.oauth import OAuthAuthorizationRequest, OAuthClientCredentials, OAuthPendingAuthorization
 from suvereo_common.utils import RequiredFieldsModel
 
@@ -25,6 +25,16 @@ class MockMultiInstanceIntegration(BaseIntegration):
     def instance_name(self) -> str:
         """Label by config, the way a real multi-instance plugin distinguishes its instances."""
         return f"{self.NAME} ({self.CONFIGURATION_ARGS.marker})"
+
+
+class MockToolProvidingIntegration(BaseToolProvidingIntegration):
+    TYPE = "mock_tools"
+    NAME = "Mock Tools"
+    INTEGRATION_TYPE_NAME = "Mock category"
+    ALLOWS_MULTIPLE_INSTANCES = True
+
+    async def get_tools(self):
+        return []
 
 
 class MockOAuthIntegration(BaseOAuthIntegration):

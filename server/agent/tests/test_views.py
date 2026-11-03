@@ -280,10 +280,7 @@ class TestAgentView:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    @pytest.mark.parametrize(
-        ("extra_payload", "integration_tools"), [({}, False), ({"integration_tools": True}, True)]
-    )
-    def test_post_creates_agent(self, api_client, user, url, config, extra_payload, integration_tools):
+    def test_post_creates_agent(self, api_client, user, url, config):
         dataset = baker.make(DataSet)
         _grant_dataset_permission(user, dataset, PERMISSIONS.AGENT.ADD)
         config = {
@@ -308,7 +305,6 @@ class TestAgentView:
             "config": config,
             "dataset": dataset.id,
             "agent_type": "agent_1",
-            **extra_payload,
         }
 
         with patch("agent.serializers.customs.fields.AgentRegistry.get_plugin_classes", return_value=AGENT_CLASSES):
@@ -317,7 +313,6 @@ class TestAgentView:
             assert response.status_code == status.HTTP_201_CREATED
             created = Agent.objects.get(pk=response.data["id"])
             assert created.name == "name"
-            assert created.integration_tools is integration_tools
 
     def test_post_creates_agent_optional_fields_saved(self, api_client, user, url, config):
         dataset = baker.make(DataSet)
@@ -490,17 +485,14 @@ class TestAgentDetailsView:
             "config": updated_config,
             "dataset": dataset.id,
             "agent_type": "agent_1",
-            "integration_tools": True,
         }
         with patch("agent.serializers.customs.fields.AgentRegistry.get_plugin_classes", return_value=AGENT_CLASSES):
             response = api_client.put(url, payload, format="json")
 
             assert response.status_code == status.HTTP_200_OK
-            assert response.data["integration_tools"] is True
             agent_instance.refresh_from_db()
             assert agent_instance.name == "updated"
             assert agent_instance.config == updated_config
-            assert agent_instance.integration_tools is True
 
     def test_put_cannot_move_agent_to_another_dataset(self, api_client, user, agent_instance, url, config):
         _grant_dataset_permission(user, agent_instance.dataset, PERMISSIONS.AGENT.CHANGE)

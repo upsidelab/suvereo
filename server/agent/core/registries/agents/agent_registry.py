@@ -5,7 +5,6 @@ from django.conf import settings
 from suvereo_common.agentic_execution.memory import ToolScratchpad
 from suvereo_common.agents import BaseAgent
 from suvereo_common.builder import AgentBuilder
-from suvereo_common.utils import run_off_event_loop
 from utils.base_registry import BaseRegistry
 
 from agent.core.agents.config_overrides import AgentConfigOverrides
@@ -65,8 +64,6 @@ class AgentRegistry(BaseAgentRegistry):
     ) -> BaseAgent:
         try:
             builder = self._build_agent_builder(conversation, streaming, tool_scratchpad, overrides)
-            if not conversation.agent.integration_tools:
-                return await run_off_event_loop(builder.build)
             return await builder.abuild()
         except Exception as e:
             raise AgentRegistryError(f"Failed to build agent for conversation {conversation.id}") from e

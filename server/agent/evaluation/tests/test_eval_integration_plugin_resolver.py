@@ -20,29 +20,31 @@ class TestEvalIntegrationPluginResolver:
             resolver = EvalIntegrationPluginResolver()
 
             assert resolver.resolve(1, GreeterIntegrationPlugin) is mocks[-1]
-            assert resolver.resolve_all(1, GreeterIntegrationPlugin) == mocks
-            assert resolver.has_any(1, GreeterIntegrationPlugin)
+            assert resolver.resolve_all_for_agent(1, GreeterIntegrationPlugin) == mocks
+            assert resolver.has_any_for_agent(1, GreeterIntegrationPlugin)
 
     def test_real_integrations_are_refused_unless_the_run_allows_them(self, mocks):
         with EvalRunContext(TraceRecorder(), mocks).activate():
             resolver = EvalIntegrationPluginResolver()
 
             assert resolver.resolve(1, OtherIntegrationPlugin) is None
-            assert resolver.resolve_all(1, OtherIntegrationPlugin) == []
-            assert not resolver.has_any(1, OtherIntegrationPlugin)
+            assert resolver.resolve_all_for_agent(1, OtherIntegrationPlugin) == []
+            assert not resolver.has_any_for_agent(1, OtherIntegrationPlugin)
 
     def test_uncovered_interfaces_fall_back_to_the_real_resolver_when_allowed(self, mocks):
         real = MagicMock()
         real.return_value.resolve.return_value = "real"
-        real.return_value.resolve_all.return_value = ["real"]
-        real.return_value.has_any.return_value = True
+        real.return_value.resolve_all_for_agent.return_value = ["real"]
+        real.return_value.has_any_for_agent.return_value = True
+        real.return_value.ids_for_data_set.return_value = [7]
 
         with EvalRunContext(TraceRecorder(), mocks, real_resolver=real).activate():
             resolver = EvalIntegrationPluginResolver()
 
             assert resolver.resolve(1, OtherIntegrationPlugin) == "real"
-            assert resolver.resolve_all(1, OtherIntegrationPlugin) == ["real"]
-            assert resolver.has_any(1, OtherIntegrationPlugin)
+            assert resolver.resolve_all_for_agent(1, OtherIntegrationPlugin) == ["real"]
+            assert resolver.has_any_for_agent(1, OtherIntegrationPlugin)
+            assert resolver.ids_for_data_set(1, OtherIntegrationPlugin) == [7]
 
     def test_a_covered_interface_never_reaches_the_real_resolver(self, mocks):
         real = MagicMock()
@@ -51,12 +53,12 @@ class TestEvalIntegrationPluginResolver:
             resolver = EvalIntegrationPluginResolver()
 
             assert resolver.resolve(1, GreeterIntegrationPlugin) is mocks[-1]
-            assert resolver.resolve_all(1, GreeterIntegrationPlugin) == mocks
-            assert resolver.has_any(1, GreeterIntegrationPlugin)
+            assert resolver.resolve_all_for_agent(1, GreeterIntegrationPlugin) == mocks
+            assert resolver.has_any_for_agent(1, GreeterIntegrationPlugin)
 
         real.return_value.resolve.assert_not_called()
-        real.return_value.resolve_all.assert_not_called()
-        real.return_value.has_any.assert_not_called()
+        real.return_value.resolve_all_for_agent.assert_not_called()
+        real.return_value.has_any_for_agent.assert_not_called()
 
     def test_outside_a_run_nothing_resolves(self):
         assert EvalIntegrationPluginResolver().resolve(1, GreeterIntegrationPlugin) is None

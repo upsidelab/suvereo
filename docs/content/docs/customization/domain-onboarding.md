@@ -22,7 +22,7 @@ Three things in that picture depend on the domain: the data agents work on, the 
 Without a domain, each of the three has a generic form:
 
 - **Data** is empty. Suvereo defines no data of its own, so there is nothing domain-specific to expose to agents.
-- **Integration types** include a ready-to-use MCP server integration, which connects an MCP server to a data set and makes its [tools](/docs/concepts#tool) available to agents that turn on **Integration tools**. The generic integration type is a base for building your own domain-agnostic integrations, for example one that gives agents tools for an external service. Integrations that sync content in need [entities](/docs/concepts#entity) to store it in, so they are defined together with a vertical.
+- **Integration types** include a ready-to-use MCP server integration, which connects an MCP server to a data set and makes its [tools](/docs/concepts#tool) available to the agents that select it under **Tool sources**. The generic integration type is a base for building your own domain-agnostic integrations, for example one that gives agents tools for an external service. Integrations that sync content in need [entities](/docs/concepts#entity) to store it in, so they are defined together with a vertical.
 - **The default agent builder** gives agents what every agent can use: chat history, conversation memory, a scratchpad for tool results and the platform's repositories. It carries no domain data and no domain integrations.
 
 Agents built on this foundation, such as a general assistant, a research agent or a report generator, can work with these basics and with the tools of a connected MCP server.

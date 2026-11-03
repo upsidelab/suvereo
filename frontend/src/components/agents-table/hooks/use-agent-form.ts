@@ -34,7 +34,7 @@ export function useAgentForm(
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState("");
-  const [integrationTools, setIntegrationTools] = useState(false);
+  const [toolProvidingIntegrations, setToolProvidingIntegrations] = useState<number[]>([]);
   const [config, setConfig] = useState<Record<string, string | number | boolean>>({});
   const [agentConfigSections, setAgentConfigSections] = useState<ConfigSections>({});
   const [agentTypeName, setAgentTypeName] = useState("");
@@ -53,7 +53,7 @@ export function useAgentForm(
         setDescription(agentDetails.description || "");
         setType(agentDetails.agent_type);
         setAgentTypeName(agentDetails.agent_type_name);
-        setIntegrationTools(agentDetails.integration_tools);
+        setToolProvidingIntegrations(agentDetails.tool_providing_integrations);
 
         const flattenedConfig = flattenConfigForForm(agentDetails.config);
         setConfig(flattenedConfig);
@@ -80,7 +80,7 @@ export function useAgentForm(
         setName("");
         setDescription("");
         setType("");
-        setIntegrationTools(false);
+        setToolProvidingIntegrations([]);
         setConfig({});
         setAgentConfigSections({});
         setOpenSections({});
@@ -194,7 +194,7 @@ export function useAgentForm(
       agent_type: type,
       dataset: dataSetId,
       config: configObj,
-      integration_tools: integrationTools
+      tool_providing_integrations: toolProvidingIntegrations
     };
 
     if (agent) {
@@ -279,7 +279,7 @@ export function useAgentForm(
     setName("");
     setDescription("");
     setType("");
-    setIntegrationTools(false);
+    setToolProvidingIntegrations([]);
     setConfig({});
     setAgentConfigSections({});
     setOpenSections({});
@@ -296,8 +296,8 @@ export function useAgentForm(
     type,
     setType,
     agentTypeName,
-    integrationTools,
-    setIntegrationTools,
+    toolProvidingIntegrations,
+    setToolProvidingIntegrations,
     config,
     setConfig,
     agentConfigSections,

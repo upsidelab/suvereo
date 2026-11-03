@@ -31,8 +31,8 @@ class IntegrationPluginResolver(BaseIntegrationPluginResolver):
             return None
         return self._registry.build_instance(integration)
 
-    def resolve_all(self, data_set_id: Any, plugin_base: type[IntegrationT]) -> list[IntegrationT]:
-        """Return every configured plugin instance of *plugin_base* for the data set.
+    def resolve_all_for_agent(self, agent_id: Any, plugin_base: type[IntegrationT]) -> list[IntegrationT]:
+        """Return a plugin instance of *plugin_base* for every integration selected for the agent.
 
         A record whose stored config no longer validates against its plugin's ``CONFIGURATION_ARGS``
         is logged and skipped, so one mis-configured integration cannot take down the others. Callers
@@ -40,7 +40,7 @@ class IntegrationPluginResolver(BaseIntegrationPluginResolver):
         single missing integration should surface as an error.
         """
         instances = []
-        for integration in self._matching(data_set_id, plugin_base):
+        for integration in self._matching_for_agent(agent_id, plugin_base):
             try:
                 instances.append(self._registry.build_instance(integration))
             except (ValidationError, TypeError):
@@ -48,14 +48,17 @@ class IntegrationPluginResolver(BaseIntegrationPluginResolver):
                     "Skipping integration %s (type %s, dataset %s): stored config could not be loaded",
                     integration.id,
                     integration.type,
-                    data_set_id,
+                    integration.dataset_id,
                     exc_info=True,
                 )
         return instances
 
-    def has_any(self, data_set_id: Any, plugin_base: type[IntegrationT]) -> bool:
-        """Return whether the data set has at least one integration of *plugin_base*."""
-        return self._matching(data_set_id, plugin_base).exists()
+    def has_any_for_agent(self, agent_id: Any, plugin_base: type[IntegrationT]) -> bool:
+        """Return whether at least one integration of *plugin_base* is selected for the agent."""
+        return self._matching_for_agent(agent_id, plugin_base).exists()
+
+    def ids_for_data_set(self, data_set_id: Any, plugin_base: type[IntegrationT]) -> list[Any]:
+        return list(self._matching(data_set_id, plugin_base).values_list("id", flat=True))
 
     def _matching(self, data_set_id: Any, plugin_base: type[IntegrationT]) -> QuerySet[Integration]:
         """Integrations on the data set whose plugin class implements *plugin_base*.
@@ -64,5 +67,10 @@ class IntegrationPluginResolver(BaseIntegrationPluginResolver):
         database, so the caller is left with a single query. Records whose type has no registered
         plugin fall outside the filter and are excluded by construction.
         """
-        types = [cls.TYPE for cls in self._registry.get_plugin_classes() if issubclass(cls, plugin_base)]
-        return Integration.objects.filter(dataset_id=data_set_id, type__in=types)
+        return Integration.objects.filter(dataset_id=data_set_id, type__in=self._types(plugin_base))
+
+    def _matching_for_agent(self, agent_id: Any, plugin_base: type[IntegrationT]) -> QuerySet[Integration]:
+        return Integration.objects.filter(agents__id=agent_id, type__in=self._types(plugin_base))
+
+    def _types(self, plugin_base: type[IntegrationT]) -> list[str]:
+        return [cls.TYPE for cls in self._registry.get_plugin_classes() if issubclass(cls, plugin_base)]

@@ -17,6 +17,7 @@ from agent.evaluation.runner import CaseRunner, RunResult, SuiteRunner, SuiteRun
 from agent.evaluation.sandbox import EvalSandbox
 from agent.models import Agent
 from agent.services import AgentPreconfigurationService
+from catalog.integrations.resolver import IntegrationPluginResolver
 
 from .greeter import GreeterMockIntegration, GreetingExecution
 
@@ -179,16 +180,19 @@ class TestSuiteRunner:
         assert by_case["cy"].metrics["mock_called"].value is None
         assert by_case["cy"].thresholds["mock_called"].passed is False
 
-    @pytest.mark.parametrize(("integration_tools", "warned"), [(False, True), (True, False)])
-    def test_warns_when_an_existing_agent_with_integration_tools_off_gets_tool_mocks(
-        self, tmp_path, caplog, integration_tools, warned
+    @pytest.mark.parametrize(("selects_tool_integration", "warned"), [(False, True), (True, False)])
+    def test_warns_when_an_existing_agent_gets_tool_mocks_it_does_not_select(
+        self, tmp_path, caplog, selects_tool_integration, warned
     ):
-        loaded = _loaded(tmp_path, baker.make(Agent, config={}, integration_tools=integration_tools))
+        loaded = _loaded(tmp_path, baker.make(Agent, config={}))
 
-        with patch.object(MockIntegrationFactory, "resolve_class", return_value=BaseToolProvidingIntegration):
-            SuiteRunner(loaded)._warn_on_integration_tools_off()
+        with (
+            patch.object(MockIntegrationFactory, "resolve_class", return_value=BaseToolProvidingIntegration),
+            patch.object(IntegrationPluginResolver, "has_any_for_agent", return_value=selects_tool_integration),
+        ):
+            SuiteRunner(loaded)._warn_on_unselected_tool_mocks()
 
-        assert ("Integration tools turned off" in caplog.text) is warned
+        assert ("selects no tool-providing integrations" in caplog.text) is warned
 
     def test_a_case_overriding_integration_data_gets_its_own_sandbox(self, tmp_path):
         override = {"class": GREETER, "config": {"data": {"greeting": "Hi"}}}

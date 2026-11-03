@@ -241,39 +241,45 @@ class TestConversationManager:
         # Verify get_answer was not called
         mock_get_answer.assert_not_called()
 
-    @pytest.mark.parametrize(
-        ("integration_tools", "has_tool_integration", "uses_async_path"),
-        [(True, True, True), (True, False, False), (False, True, False)],
-    )
-    @patch.object(IntegrationPluginResolver, "has_any")
+    @patch.object(IntegrationPluginResolver, "has_any_for_agent", return_value=False)
     @patch.object(AgentRegistry, "get_conversation_agent")
-    @patch.object(AgentRegistry, "aget_conversation_agent", new_callable=AsyncMock)
-    def test_get_answer_uses_async_path_only_when_agent_opted_in_and_data_set_has_tool_integration(
-        self,
-        mock_aget_conversation_agent,
-        mock_get_conversation_agent,
-        mock_has_any,
-        integration_tools,
-        has_tool_integration,
-        uses_async_path,
+    @patch.object(AgentRegistry, "aget_conversation_agent")
+    def test_get_answer_uses_sync_path_when_agent_has_no_tool_providing_integration_selected(
+        self, mock_aget_conversation_agent, mock_get_conversation_agent, mock_has_any
     ):
-        mock_has_any.return_value = has_tool_integration
-        agent = baker.make(Agent, dataset=self.data_set, integration_tools=integration_tools)
+        """With no integration selected to fetch tools from, get_answer never touches the async path."""
         conversation = Conversation.objects.create(
-            user=self.user, data_set=self.data_set, started_at=datetime.now(), agent=agent
+            user=self.user, data_set=self.data_set, started_at=datetime.now(), agent=self.agent
         )
         mock_agent_instance = MagicMock()
         mock_agent_instance.get_answer.return_value = "sync answer"
-        mock_agent_instance.aget_answer = AsyncMock(return_value="async answer")
         mock_get_conversation_agent.return_value = mock_agent_instance
+
+        response = self.manager.get_answer(conversation, "hello", streaming=False)
+
+        assert response == "sync answer"
+        mock_get_conversation_agent.assert_called_once()
+        mock_aget_conversation_agent.assert_not_called()
+
+    @patch.object(IntegrationPluginResolver, "has_any_for_agent", return_value=True)
+    @patch.object(AgentRegistry, "get_conversation_agent")
+    @patch.object(AgentRegistry, "aget_conversation_agent", new_callable=AsyncMock)
+    def test_get_answer_uses_async_path_when_the_agent_has_a_tool_providing_integration_selected(
+        self, mock_aget_conversation_agent, mock_get_conversation_agent, mock_has_any
+    ):
+        """A tool-providing integration selected for the agent moves it onto the async path."""
+        conversation = Conversation.objects.create(
+            user=self.user, data_set=self.data_set, started_at=datetime.now(), agent=self.agent
+        )
+        mock_agent_instance = MagicMock()
+        mock_agent_instance.aget_answer = AsyncMock(return_value="async answer")
         mock_aget_conversation_agent.return_value = mock_agent_instance
 
         response = self.manager.get_answer(conversation, "hello", streaming=False)
 
-        assert response == ("async answer" if uses_async_path else "sync answer")
-        assert mock_aget_conversation_agent.await_count == int(uses_async_path)
-        assert mock_get_conversation_agent.call_count == int(not uses_async_path)
-        assert mock_has_any.call_count == int(integration_tools)
+        assert response == "async answer"
+        mock_aget_conversation_agent.assert_awaited_once()
+        mock_get_conversation_agent.assert_not_called()
 
     def test_record_error_creates_system_message(self):
         """Test that record_error creates a system error message."""

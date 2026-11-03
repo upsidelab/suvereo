@@ -54,6 +54,7 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
         self._default_llm = None
         self._embeddings_registry = None
         self._data_set_id = None
+        self._agent_id = None
         self._injector = None
 
     def build(self) -> BaseAgent:
@@ -61,6 +62,7 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
         model_registry = self._build_db_models_registry()
         self._build_and_set_repositories(model_registry)
         self._data_set_id = self._repositories.conversation.get_data_set_id(self.conversation_id)
+        self._agent_id = self._repositories.conversation.get_agent_id(self.conversation_id)
         self._llm_registry = self._build_llm_registry()
         self._embeddings_registry = self._build_embeddings_registry()
         self._llm = self._build_llm(self._config.llm)
@@ -73,12 +75,12 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
         return agent_instance
 
     async def abuild(self) -> BaseAgent:
-        """Async twin of build(): also attaches this dataset's tool-providing integrations' tools.
+        """Async twin of build(): also attaches the tools of the integrations selected for this agent.
 
         Runs the existing synchronous build() in a worker thread so ORM calls inside it don't hit
         a "sync call from an async context" guard — that guard only fires when a sync DB call
         happens on a thread that already has a running event loop, and a plain worker thread has
-        none. Callers reach for this only once they know the data set has tools worth fetching,
+        none. Callers reach for this only once they know the agent has tools worth fetching,
         so the fetch is unconditional here.
         """
         agent_instance = await run_off_event_loop(self.build)
@@ -86,7 +88,7 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
         return agent_instance
 
     async def _build_dynamic_tools(self) -> list[BaseTool]:
-        """Fetch tools from every tool-providing integration configured on this dataset.
+        """Fetch tools from every tool-providing integration selected for this agent.
 
         The fetches run concurrently and each is capped by its own timeout, because this sits on the
         critical path of a conversation turn: served sequentially, a handful of unresponsive servers
@@ -97,7 +99,7 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
         if resolver_cls is None:
             return []
         integrations = await run_off_event_loop(
-            resolver_cls().resolve_all, self._data_set_id, BaseToolProvidingIntegration
+            resolver_cls().resolve_all_for_agent, self._agent_id, BaseToolProvidingIntegration
         )
         if not integrations:
             return []
@@ -138,7 +140,7 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
 
     def _agent_runtime_arguments(self) -> dict:
         """The agent's stored runtime arguments, with the config's ``runtime_arguments_patch`` merged in."""
-        agent_configuration_id = self._repositories.conversation.get_agent_id(self.conversation_id)
+        agent_configuration_id = self._agent_id
         runtime_arguments = self._repositories.agent.get_agent_configuration_by_id(agent_configuration_id)
         if patch := self._config.runtime_arguments_patch:
             return deep_merge(runtime_arguments, patch)
