@@ -78,6 +78,9 @@ The builder is attached to an agent through its `BUILDER_CLASS` class variable:
 
 ```python
 class ArticlesAgent(BaseToolCallingAgent):
+    NAME = "Articles"
+    AGENT_KEY = "articles-agent"
+    SYSTEM_PROMPT = ARTICLES_SYSTEM_PROMPT
     BUILDER_CLASS = ArticlesAgentBuilder
 ```
 

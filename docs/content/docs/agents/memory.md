@@ -81,6 +81,9 @@ Then point the agent's configuration at it by overriding `get_config()`:
 
 ```python
 class ArticlesAgent(BaseToolCallingAgent):
+    NAME = "Articles"
+    AGENT_KEY = "articles-agent"
+    SYSTEM_PROMPT = ARTICLES_SYSTEM_PROMPT
     MEMORY_COMPACTOR_ENABLED = True
 
     @classmethod

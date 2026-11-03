@@ -52,7 +52,7 @@ class MyOutputValidator(BaseExecutionValidator):
         self,
         response: str,
         execution_input: ExecutionInputType,
-        tool_scratchpad: ToolScratchpad | None = None,
+        tool_scratchpad: ToolScratchpad,
     ) -> ValidatorResponse:
         if "expected_field" not in response:
             return ValidatorResponse(
@@ -60,7 +60,7 @@ class MyOutputValidator(BaseExecutionValidator):
                 retry_needed=True,
                 feedback="Response must include 'expected_field'. Please try again.",
             )
-        return ValidatorResponse(validation_successful=True)
+        return ValidatorResponse(validation_successful=True, retry_needed=False)
 ```
 
 Set `retry_needed=False` when retrying is pointless — for example, when an external system is unreachable. The run loop stops immediately and uses `feedback` as the failure summary shown to users.
@@ -72,10 +72,10 @@ Subclass `BaseAgenticExecutionDefinition` and implement `execute()`. This is the
 ```python
 from suvereo_common.agentic_execution import (
     BaseAgenticExecutionDefinition,
+    ExecutionConversationInterface,
     IsValidJsonValidator,
     StopExecutionValidator,
 )
-from suvereo_common.agentic_execution.protocol import ExecutionConversationInterface
 
 from .inputs import MyExecutionInput
 from .validators import MyOutputValidator
@@ -108,6 +108,10 @@ class MyAgenticExecutionDefinition(BaseAgenticExecutionDefinition):
 Execution runs benefit from a stripped-down system prompt that removes conversational scaffolding and mandates structured output. Declare it on the definition, together with any tools that only make sense for executions:
 
 ```python
+from suvereo_agent_tools import StopExecutionTool
+from suvereo_common.agentic_execution import BaseAgenticExecutionDefinition
+from suvereo_common.config import LLMToolConfig
+
 from .prompts import EXECUTION_PROMPT
 
 
@@ -155,5 +159,5 @@ def validate(self, response, execution_input, tool_scratchpad=None):
                 retry_needed=True,
                 feedback=f"The following items failed: {failed}. Please retry.",
             )
-    return ValidatorResponse(validation_successful=True)
+    return ValidatorResponse(validation_successful=True, retry_needed=False)
 ```
