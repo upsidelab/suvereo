@@ -1,0 +1,31 @@
+[project]
+name = "enthusiast-agent-order-intake"
+version = "1.4.0"
+description = "Order Intake Agent for Enthusiast"
+authors = [
+    {name = "Damian Sowiński",email = "damian.sowinski@upsidelab.io"}
+]
+readme = "README.md"
+requires-python = ">=3.10,<4"
+dependencies = [
+    "suvereo-common (>=1.7.0,<2.0.0)",
+    "langchain (>=1.2.0,<2.0.0)",
+    "suvereo-agent-tool-calling (>=1.2.0)",
+    "suvereo-agent-tools (>=1.0.0,<2.0.0)",
+    "enthusiast-vertical (>=1.0.0,<2.0.0)",
+    "enthusiast-vertical-tools (>=1.0.0,<2.0.0)",
+]
+
+[project.urls]
+Homepage = "https://upsidelab.io/tools/enthusiast"
+Documentation = "https://upsidelab.io/tools/enthusiast/agents/order-intake"
+Repository = "https://github.com/upsidelab/enthusiast.git"
+Issues = "https://github.com/upsidelab/enthusiast/issues"
+
+[tool.poetry]
+packages = [{include = "enthusiast_agent_order_intake", from = "src"}]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

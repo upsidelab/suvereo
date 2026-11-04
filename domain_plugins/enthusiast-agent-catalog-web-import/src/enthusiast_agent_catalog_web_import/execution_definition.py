@@ -1,0 +1,44 @@
+from suvereo_agent_tools import StopExecutionTool
+from suvereo_common.agentic_execution import (
+    BaseAgenticExecutionDefinition,
+    ExecutionConversationInterface,
+    IsValidJsonValidator,
+    StopExecutionValidator,
+)
+from suvereo_common.config import LLMToolConfig
+
+from .agent import CatalogWebImportAgent
+from .execution_input import CatalogWebImportExecutionInput
+from .execution_prompt import CATALOG_WEB_IMPORT_EXECUTION_PROMPT
+from .validators import AllUpsertsSucceededValidator, AllUrlsFetchSuccessfulValidator
+
+
+class CatalogWebImportAgenticExecutionDefinition(BaseAgenticExecutionDefinition):
+    """Agentic execution definition for the catalog web import agent.
+
+    Scrapes product data from the provided URLs and upserts it into the catalog.
+    """
+
+    EXECUTION_KEY = "catalog-web-import"
+    AGENT_KEY = "enthusiast-agent-catalog-web-import"
+    NAME = "Catalog Web Import"
+    INPUT_TYPE = CatalogWebImportExecutionInput
+    VALIDATORS = [
+        StopExecutionValidator,
+        IsValidJsonValidator,
+        AllUrlsFetchSuccessfulValidator,
+        AllUpsertsSucceededValidator,
+    ]
+    SYSTEM_PROMPT = CATALOG_WEB_IMPORT_EXECUTION_PROMPT
+    TOOLS = [*CatalogWebImportAgent.TOOLS, LLMToolConfig(tool_class=StopExecutionTool)]
+
+    def execute(
+        self,
+        input_data: CatalogWebImportExecutionInput,
+        conversation: ExecutionConversationInterface,
+    ) -> str:
+        urls_list = "\n".join(f"- {url}" for url in input_data.urls)
+        message = f"Scrape and upsert the following product pages:\n{urls_list}"
+        if input_data.additional_instructions:
+            message += f"\n\n{input_data.additional_instructions}"
+        return conversation.ask(message)

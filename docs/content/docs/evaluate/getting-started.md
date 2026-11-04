@@ -11,15 +11,15 @@ AVAILABLE_AGENTS = [..., "enthusiast_agent_order_intake.OrderIntakeAgent"]
 AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS = [..., "enthusiast_agent_order_intake.OrderIntakeAgenticExecutionDefinition"]
 ```
 
-The suites below ship with the order-intake agent in the [Enthusiast repository](https://github.com/upsidelab/enthusiast). The commands assume it is cloned next to this repository. The suites call OpenAI, so set `OPENAI_API_KEY`.
+The suites below call OpenAI, so set `OPENAI_API_KEY`.
 
 ## 1. Run the quickstart
 
 The quickstart suite ships with the order-intake agent: three purchase orders, a 10-product catalog and a mocked shop.
 
 ```shell
-./manage.py validateeval ../../enthusiast/plugins/enthusiast-agent-order-intake/evals/quickstart/suite.yaml
-./manage.py runeval ../../enthusiast/plugins/enthusiast-agent-order-intake/evals/quickstart/suite.yaml
+./manage.py validateeval ../domain_plugins/enthusiast-agent-order-intake/evals/quickstart/suite.yaml
+./manage.py runeval ../domain_plugins/enthusiast-agent-order-intake/evals/quickstart/suite.yaml
 ```
 
 `validateeval` is free: it checks the suite and prints how many runs it plans. `runeval` builds a throwaway DataSet, syncs the catalog into it, runs each case and removes the DataSet afterwards. It costs under a cent and stops at the suite's `budget_usd`.
@@ -46,7 +46,7 @@ The CSVs open directly in a spreadsheet. The exit code tells CI how the run went
 `evals/order_intake/` is the realistic baseline: PDF and photographed orders, two-page orders, and orders the agent must refuse, on gpt-4o-mini with two prompts.
 
 ```shell
-./manage.py runeval ../../enthusiast/plugins/enthusiast-agent-order-intake/evals/order_intake/suite.yaml --parallel 4
+./manage.py runeval ../domain_plugins/enthusiast-agent-order-intake/evals/order_intake/suite.yaml --parallel 4
 ```
 
 The comparison table puts `gpt-4o-mini/default` and `gpt-4o-mini/v2` side by side; compare another model with `--model gpt-4o-mini --model OpenAI:gpt-4.1-nano`. Narrow a run while you work:

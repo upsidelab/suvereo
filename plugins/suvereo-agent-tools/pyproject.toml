@@ -13,9 +13,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://upsidelab.io/tools/suvereo"
-Repository = "https://github.com/upsidelab/suvereo.git"
-Issues = "https://github.com/upsidelab/suvereo/issues"
+Homepage = "https://upsidelab.io/tools/enthusiast"
+Repository = "https://github.com/upsidelab/enthusiast.git"
+Issues = "https://github.com/upsidelab/enthusiast/issues"
 
 [tool.poetry]
 packages = [{include = "suvereo_agent_tools", from = "src"}]

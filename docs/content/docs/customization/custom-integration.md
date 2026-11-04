@@ -2,17 +2,117 @@
 
 Custom integrations let you connect Suvereo to systems that aren’t supported out of the box.
 
-## Types of Integrations
+## Types of Integrations.
 
-1. Language Model Integration - Connects agents to a language model provider.
-2. Tool Providing Integration - Hands agents extra tools to call at runtime, such as the tools exposed by an MCP server.
+1. E-Commerce Integration - Enables bidirectional communication between agents and an e-commerce system.
+2. Product Source Integration - Enables one-way fetching of product data from an e-commerce or PIM system.
+3. Document Source Integration - Enables one-way fetching of documents such as manuals, FAQs, or internal content.
+4. Language Model Integration - Connects agents to a language model provider.
+5. Tool Providing Integration - Hands agents extra tools to call at runtime, such as the tools exposed by an MCP server.
 
-A vertical adds its own integration types. Enthusiast, the e-commerce vertical, adds e-commerce, product source and
-document source integrations; see [its guide](https://upsidelab.io/tools/enthusiast/docs/customization/custom-integration).
+## Building an E-Commerce Integration
+
+An E-Commerce Integration enables bidirectional communication between Enthusiast AI Agents and an e-commerce platform.
+
+To build one, implement the [suvereo_common.interfaces.ECommerceIntegrationPlugin](https://github.com/upsidelab/enthusiast/blob/main/plugins/suvereo-common/suvereo_common/interfaces.py) interface.
+
+Your integration class must define two static fields:
+- `NAME` - The name shown to admins in the integrations list.
+- `CONFIGURATION_ARGS` - A subclass of [suvereo_common.utils.RequiredFieldsModel](https://github.com/upsidelab/enthusiast/blob/main/plugins/suvereo-common/suvereo_common/utils.py) defining the integration's configuration schema.
+
+Your class must also implement the following methods:
+- `build_connector(self)` - Returns an implementation of [suvereo_common.connector.ECommercePlatformConnector](https://github.com/upsidelab/enthusiast/blob/main/plugins/suvereo-common/suvereo_common/connectors/ecommerce_platform_connector.py). This connector is available to agents at runtime.
+- `build_product_source(self)` - Returns an implementation of [suvereo_common.interfaces.ProductSourcePlugin](https://github.com/upsidelab/enthusiast/blob/main/plugins/suvereo-common/suvereo_common/interfaces.py), used to build a local product index.
+
+### Example Implementation
+
+```python
+class UpCommerceIntegrationConfig(RequiredFieldsModel):
+    base_url: str = Field(description="Base URL for the API")
+    api_key: str = Field(description="API key for connecting to the E-Commerce platform")
+    
+class UpCommerceIntegration(ECommerceIntegrationPlugin):
+    NAME = "UpCommerce"
+    CONFIGURATION_ARGS = UpCommerceIntegrationConfig
+    
+    def build_connector(self) -> ECommercePlatformConnector:
+        return UpCommercePlatformConnector(base_url=self.CONFIGURATION_ARGS.base_url,
+                                           api_key=self.CONFIGURATION_ARGS.api_key)
+                                           
+   def build_product_source(self) -> ProductSourcePlugin:
+        return UpCommerceProductSource(base_url=self.CONFIGURATION_ARGS.base_url,
+                                       api_key=self.CONFIGURATION_ARGS.api_key)
+                                       
+class UpCommercePlatformConnector(ECommercePlatformConnector):
+    def create_empty_order(self, email: Optional[str] = None, address: Optional[Address] = None) -> str:
+        ...
+
+    def add_to_order(self, order_id: str, sku: str, quantity: int) -> bool:
+        ...
+
+    def create_order_with_items(self, items: list[tuple[str, int]], email: Optional[str] = None, address: Optional[Address] = None) -> str:
+        ...
+
+    def get_product_by_sku(self, sku: str) -> ProductDetails:
+        ...
+
+    def create_product(self, product_details: ProductDetails) -> str:
+        ...
+
+    def update_product(self, sku: str, product_details: ProductDetails) -> bool:
+        ...
+
+    def get_admin_url_for_order_id(self, order_id: str) -> str:
+        ...
+    
+class UpCommerceProductSource(ProductSourcePlugin):
+    def fetch(self) -> list[ProductDetails]:
+        return [ProductDetails( ... )]
+```
+
+## Building a Product Source Integration
+
+A Product Source enables one-way fetching of product data from an e-commerce or PIM system. 
+
+To build a product source, implement the [suvereo_common.interfaces.ProductSourcePlugin](https://github.com/upsidelab/enthusiast/blob/main/plugins/suvereo-common/suvereo_common/interfaces.py) interface.
+
+Your integration class must define the following static field:
+- `CONFIGURATION_ARGS` - A subclass of [suvereo_common.utils.RequiredFieldsModel](https://github.com/upsidelab/enthusiast/blob/main/plugins/suvereo-common/suvereo_common/utils.py) defining the integration's configuration schema.
+
+It should also implement the following method:
+- `fetch(self)` - Returns a list of [suvereo_common.structures.ProductDetails](https://github.com/upsidelab/enthusiast/blob/main/plugins/suvereo-common/suvereo_common/structures.py). These products will be indexed in Enthusiast.
+
+### Example Implementation
+
+```python
+class UpCommerceProductSource(ProductSourcePlugin):
+    def fetch(self) -> list[ProductDetails]:
+        return [ProductDetails( ... )]
+```
+
+## Building a Document Source Integration
+
+A Document Source enables one-way fetching of documents such as manuals, FAQs, or internal content.
+
+To build a document source, implement the [suvereo_common.interfaces.DocumentSourcePlugin](https://github.com/upsidelab/enthusiast/blob/main/plugins/suvereo-common/suvereo_common/interfaces.py) interface.
+
+Your integration class must define the following static field:
+- `CONFIGURATION_ARGS` - A subclass of [suvereo_common.utils.RequiredFieldsModel](https://github.com/upsidelab/enthusiast/blob/main/plugins/suvereo-common/suvereo_common/utils.py) defining the integration's configuration schema.
+
+It should also implement the following method:
+- `fetch(self)` - Returns a list of [suvereo_common.structures.DocumentDetails](https://github.com/upsidelab/enthusiast/blob/main/plugins/suvereo-common/suvereo_common/structures.py). These documents will be indexed in Enthusiast.
+
+### Example Implementation
+
+```python
+class UpCommerceDocumentSource(DocumentSourcePlugin):
+    def fetch(self) -> list[DocumentDetails]:
+        return [DocumentDetails( ... )]
+```
 
 ## Connecting an MCP Server
 
-Suvereo ships an MCP (Model Context Protocol) integration in the `suvereo-integration-mcp` package. Install it
+Enthusiast ships an MCP (Model Context Protocol) integration in the `suvereo-integration-mcp` package. Install it
 and add `suvereo_integration_mcp.MCPServerIntegration` to `CATALOG_INTEGRATION_PLUGINS` in your settings override.
 
 Each connected server is a regular integration configured on a data set, with four configuration fields:
@@ -50,7 +150,7 @@ so nothing changes for them.
 ## Building a Tool Providing Integration
 
 MCP is one way to hand agents extra tools, but it isn't the only one. To expose tools from any other system,
-implement [suvereo_common.integrations.BaseToolProvidingIntegration](https://github.com/upsidelab/suvereo/blob/main/plugins/suvereo-common/suvereo_common/integrations/base.py).
+implement [suvereo_common.integrations.BaseToolProvidingIntegration](https://github.com/upsidelab/enthusiast/blob/main/plugins/suvereo-common/suvereo_common/integrations/base.py).
 
 Your integration class must define the same static fields as any other integration (`TYPE`, `NAME`,
 `INTEGRATION_TYPE_NAME`, `CONFIGURATION_ARGS`), and implement one method:

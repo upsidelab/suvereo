@@ -1,5 +1,5 @@
 <div align="center">
-  <a href="https://upsidelab.io/tools/suvereo" />
+  <a href="https://upsidelab.io/tools/enthusiast" />
     <img src="https://github.com/user-attachments/assets/966204c3-ff69-47b2-a247-9f9cfa4e5b7d" height="150px" alt="Suvereo">
   </a>
 </div>
@@ -9,9 +9,9 @@
 <p align="center">Production Ready Agentic AI Framework.</p>
 <div align="center">
   <strong>
-    <a href="https://upsidelab.io/tools/suvereo">Website</a> |
-    <a href="https://upsidelab.io/tools/suvereo/docs/getting-started/installation">Installation Guide</a> |
-    <a href="https://upsidelab.io/tools/suvereo/docs">View Docs</a>
+    <a href="https://upsidelab.io/tools/enthusiast">Website</a> |
+    <a href="https://upsidelab.io/tools/enthusiast/docs/getting-started/installation">Installation Guide</a> |
+    <a href="https://upsidelab.io/tools/enthusiast/docs">View Docs</a>
   </strong>
 </div>
 
@@ -23,7 +23,7 @@ Suvereo helps you cut down time, cost and complexity when building AI-powered to
 
 ## Getting Started
 Get started with Suvereo by either:
-- Installing Suvereo with or without Docker (See the [installation guide](https://upsidelab.io/tools/suvereo/docs/getting-started/installation))
+- Installing Suvereo with or without Docker (See the [installation guide](https://upsidelab.io/tools/enthusiast/docs/getting-started/installation))
 - Booking a [live demo](https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ3NyFdPn_jqYqD24asveLkfrB1NTal0PWkLNHFTT4Fmp6sNW50-0or8WyIzBriF8IFdP1jXSPjQ) to see it in action
 
 ## Example use cases
@@ -50,14 +50,14 @@ The example use case is [Enthusiast](https://upsidelab.io/tools/enthusiast), the
 
 ## Try It Out
 
-Check our [Getting Started guide](https://upsidelab.io/tools/suvereo/docs/getting-started/installation) to set up your local instance and see Suvereo in action in under 5 minutes.
+Check our [Getting Started guide](https://upsidelab.io/tools/enthusiast/docs/getting-started/installation) to set up your local instance and see Suvereo in action in under 5 minutes.
 
 ## Pre-built Integrations
 
 Connect to your stack in minutes, with minimal configuration required.
 
-<a href="https://upsidelab.io/tools/suvereo/integrations"><img width="600" alt="Integrations" src="https://github.com/user-attachments/assets/84d1f4d1-51ac-4c6c-8412-a037f7ce4ecd" /></a>
+<a href="https://upsidelab.io/tools/enthusiast/integrations"><img width="600" alt="Integrations" src="https://github.com/user-attachments/assets/84d1f4d1-51ac-4c6c-8412-a037f7ce4ecd" /></a>
 
 ## License
 
-Suvereo is a fully open-source agentic AI framework that will always remain free under the [MIT License](https://github.com/upsidelab/suvereo/blob/main/LICENSE.md).
+Suvereo is a fully open-source agentic AI framework that will always remain free under the [MIT License](https://github.com/upsidelab/enthusiast/blob/main/LICENSE.md).
