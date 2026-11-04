@@ -1,8 +1,8 @@
 # Agent Configuration
 
-`AgentConfig` describes how an [agent](/docs/concepts#agent) is assembled: which class runs it, which prompt and tools it uses, and which classes provide its injector, repositories, registries and memory. The [builder](/docs/agents/builder) reads it when it creates the agent.
+`AgentConfig` describes how an [agent](/docs/concepts#agent) is assembled: which prompt and tools it uses, and which classes provide its injector, repositories, registries and memory. The [builder](/docs/agents/builder) reads it when it creates the agent.
 
-An agent implementation does not need to fill in the whole configuration. It can return an `AgentConfigWithDefaults` with only the fields that are specific to the agent, and the framework fills in the rest from its defaults.
+The agent class is the unit of configuration. It declares the settings that are specific to it as class variables, and the framework turns them into an `AgentConfig` and fills in the rest from its defaults.
 
 ## AgentConfig
 
@@ -10,7 +10,6 @@ An agent implementation does not need to fill in the whole configuration. It can
 
 ```python
 class AgentConfig(ArbitraryTypeBaseModel, Generic[InjectorT]):
-    agent_class: Type[BaseAgent]
     llm: LLMConfig
     repositories: RepositoriesConfig
     injector: Type[InjectorT]
@@ -27,7 +26,6 @@ class AgentConfig(ArbitraryTypeBaseModel, Generic[InjectorT]):
 
 | Field | Description |
 |---|---|
-| `agent_class` | The agent class to instantiate, for example a subclass of `BaseToolCallingAgent`. |
 | `llm` | `LLMConfig`: the language model class and optional callback handlers. |
 | `repositories` | `RepositoriesConfig`: the repository class for each entity the agent can read: `user`, `message`, `conversation`, `data_set` and `agent`. |
 | `injector` | The injector class, see [Injector](/docs/agents/injector). |
@@ -43,7 +41,7 @@ class AgentConfig(ArbitraryTypeBaseModel, Generic[InjectorT]):
 
 ## Defaults
 
-`AgentConfigWithDefaults` keeps `agent_class` and `system_prompt` required: they have no default, so every agent supplies its own. It makes `repositories`, `injector`, `registry`, `llm`, `memory` and `conversation_history_token_limit` optional, and the framework replaces every field left empty with the value from its default configuration, defined in `server/agent/core/agents/default_config.py`:
+`AgentConfigWithDefaults` keeps `system_prompt` required: it has no default, so every agent supplies its own. It makes `repositories`, `injector`, `registry`, `llm`, `memory` and `conversation_history_token_limit` optional, and the framework replaces every field left empty with the value from its default configuration, defined in `server/agent/core/agents/default_config.py`:
 
 | Field | Default |
 |---|---|
@@ -57,59 +55,47 @@ class AgentConfig(ArbitraryTypeBaseModel, Generic[InjectorT]):
 | `similarity_searcher` | `EmbeddingSimilaritySearcher` |
 | `integration_plugin_resolver` | `IntegrationPluginResolver` |
 
-An agent built on a [vertical](/docs/concepts#vertical) usually sets none of these except the agent class, prompt and tools. The vertical's builder, declared in the config provider, can take care of its own injector.
+An agent built on a [vertical](/docs/concepts#vertical) usually sets none of these except the prompt and tools. The vertical's builder, declared as `BUILDER_CLASS` on the agent, can take care of its own injector.
 
-## Configuration Provider
+## Declaring the configuration on the agent
 
-An agent implementation provides its configuration through a subclass of `BaseAgentConfigProvider` from `suvereo_common.agents`.
+An agent class declares its configuration as class variables:
 
-- It implements `get_config(config_type) -> AgentConfigWithDefaults`.
-- It can set `BUILDER_CLASS` to a builder class. Without it, the default `AgentBuilder` is used.
-- It must be importable from the same module as the agent class registered in `AVAILABLE_AGENTS`.
+| Variable | Required | Becomes |
+|---|---|---|
+| `SYSTEM_PROMPT` | Yes | `system_prompt`, see [Prompts](/docs/agents/prompts) |
+| `TOOLS` | No | `tools`, see [Tools](/docs/agents/tools) |
+| `CONVERSATION_HISTORY_TOKEN_LIMIT` | No | `conversation_history_token_limit`. `None` keeps the default above |
+| `MEMORY_COMPACTOR_ENABLED` | No | `memory_compactor_enabled`, `False` by default |
+| `BUILDER_CLASS` | No | Not part of `AgentConfig`: the builder that assembles the agent. Without it, the default `AgentBuilder` is used |
 
-The registry derives the module from `AVAILABLE_AGENTS`: it strips the class name from each path and scans the module for a `BaseAgentConfigProvider` subclass. With `AVAILABLE_AGENTS = ["articles_agent.ArticlesAgent"]`, it looks in `articles_agent`. File names and directory layout are not restricted, as long as the provider can be imported from that module, for example through `__init__.py`.
+`NAME` and `AGENT_KEY` are required as well, see [Agent Classes](/docs/agents/agent-classes#class-variables). A concrete agent class that leaves a required variable undefined or empty fails when it is imported.
 
 ```python
-# config.py
-class ArticlesConfigProvider(BaseAgentConfigProvider):
+class ArticlesAgent(BaseToolCallingAgent):
+    NAME = "Articles"
+    AGENT_KEY = "articles-agent"
+    SYSTEM_PROMPT = ARTICLES_SYSTEM_PROMPT
+    TOOLS = [LLMToolConfig(tool_class=SearchArticlesTool)]
     BUILDER_CLASS = ArticlesAgentBuilder
-
-    def get_config(self, config_type: ConfigType = ConfigType.CONVERSATION) -> AgentConfigWithDefaults:
-        return AgentConfigWithDefaults(
-            agent_class=ArticlesAgent,
-            system_prompt=ARTICLES_SYSTEM_PROMPT,
-            tools=ArticlesAgent.TOOLS,
-        )
+    MEMORY_COMPACTOR_ENABLED = True
 ```
 
-```python
-# __init__.py
-from .agent import ArticlesAgent
-from .config import ArticlesConfigProvider
+`BaseAgent.get_config()` reads these variables and returns an `AgentConfigWithDefaults`. An agent whose configuration the variables cannot express can override it:
 
-__all__ = ["ArticlesAgent", "ArticlesConfigProvider"]
+```python
+class ArticlesAgent(BaseToolCallingAgent):
+    @classmethod
+    def get_config(cls) -> AgentConfig:
+        config = super().get_config()
+        config.tools = [*cls.TOOLS, *tools_for_current_deployment()]
+        return config
 ```
 
-### Configuration per context
+## Registering the agent
 
-`get_config` receives a `config_type` that tells which kind of run needs the agent:
-
-- `ConfigType.CONVERSATION`: an interactive [conversation](/docs/concepts#conversation), the default
-- `ConfigType.AGENTIC_EXECUTION_DEFINITION`: an autonomous [agentic execution](/docs/concepts#agentic-execution)
-
-An agent that behaves differently in the two contexts returns a different configuration for each:
+An agent is registered by adding its dotted path to `AVAILABLE_AGENTS`; nothing else needs to be exported next to it:
 
 ```python
-def get_config(self, config_type: ConfigType = ConfigType.CONVERSATION) -> AgentConfigWithDefaults:
-    if config_type == ConfigType.AGENTIC_EXECUTION_DEFINITION:
-        return AgentConfigWithDefaults(
-            agent_class=ArticlesAgent,
-            system_prompt=ARTICLES_EXECUTION_PROMPT,
-            tools=ArticlesAgent.TOOLS + [LLMToolConfig(tool_class=StopExecutionTool)],
-        )
-    return AgentConfigWithDefaults(
-        agent_class=ArticlesAgent,
-        system_prompt=ARTICLES_SYSTEM_PROMPT,
-        tools=ArticlesAgent.TOOLS,
-    )
+AVAILABLE_AGENTS = ["articles_agent.ArticlesAgent"]
 ```

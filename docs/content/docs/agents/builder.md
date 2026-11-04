@@ -21,11 +21,11 @@ class BaseAgentBuilder(ABC, Generic[ConfigT]):
         """Build and return a fully wired agent for the conversation."""
 ```
 
-The config provider of an agent can point `BUILDER_CLASS` at any class that satisfies this contract.
+An agent can point its `BUILDER_CLASS` at any class that satisfies this contract.
 
 ## Default Agent Builder
 
-`AgentBuilder` is the default implementation. Every host-specific piece reaches it through the configuration, so it depends only on contracts from `suvereo-common`. Agents whose config provider declares no `BUILDER_CLASS` use it.
+`AgentBuilder` is the default implementation. Every host-specific piece reaches it through the configuration, so it depends only on contracts from `suvereo-common`. Agents that declare no `BUILDER_CLASS` use it.
 
 `build()` runs these steps:
 
@@ -74,10 +74,13 @@ class ArticlesAgentBuilder(AgentBuilder[AgentConfig]):
         )
 ```
 
-The builder is attached to an agent through its config provider:
+The builder is attached to an agent through its `BUILDER_CLASS` class variable:
 
 ```python
-class ArticlesConfigProvider(BaseAgentConfigProvider):
+class ArticlesAgent(BaseToolCallingAgent):
+    NAME = "Articles"
+    AGENT_KEY = "articles-agent"
+    SYSTEM_PROMPT = ARTICLES_SYSTEM_PROMPT
     BUILDER_CLASS = ArticlesAgentBuilder
 ```
 

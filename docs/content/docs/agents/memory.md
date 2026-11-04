@@ -27,7 +27,7 @@ On every turn, the agent sends the language model these messages, in this order:
 - It counts tokens approximately.
 - When the compactor has a summary, it adds it at the start as a `SystemMessage`.
 
-The limit is the agent's `conversation_history_token_limit`. By default it is 10,000 tokens, the value of the `DEFAULT_CONVERSATION_HISTORY_TOKEN_LIMIT` instance setting, which can be set through an environment variable of the same name. An agent can use a different limit by setting `conversation_history_token_limit` in its configuration, see [Agent Configuration](/docs/agents/agent-config).
+The limit is the agent's `conversation_history_token_limit`. By default it is 10,000 tokens, the value of the `DEFAULT_CONVERSATION_HISTORY_TOKEN_LIMIT` instance setting, which can be set through an environment variable of the same name. An agent can use a different limit by setting the `CONVERSATION_HISTORY_TOKEN_LIMIT` class variable, see [Agent Configuration](/docs/agents/agent-config).
 
 ```python
 context_messages = ContextWindowBuilder(
@@ -48,19 +48,17 @@ Summaries are incremental. A new one is built from the previous summary and the 
 
 ### Enabling the compactor
 
-The compactor is off by default. An agent turns it on with `memory_compactor_enabled` in the configuration returned by its config provider:
+The compactor is off by default. An agent turns it on with the `MEMORY_COMPACTOR_ENABLED` class variable:
 
 ```python
-def get_config(self, config_type: ConfigType = ConfigType.CONVERSATION) -> AgentConfigWithDefaults:
-    return AgentConfigWithDefaults(
-        agent_class=ArticlesAgent,
-        system_prompt=ARTICLES_SYSTEM_PROMPT,
-        tools=ArticlesAgent.TOOLS,
-        memory_compactor_enabled=True,
-    )
+class ArticlesAgent(BaseToolCallingAgent):
+    NAME = "Articles"
+    AGENT_KEY = "articles-agent"
+    SYSTEM_PROMPT = ARTICLES_SYSTEM_PROMPT
+    MEMORY_COMPACTOR_ENABLED = True
 ```
 
-The compactor class comes from `memory.compactor_class` in the configuration, which the default configuration (the Suvereo server's `DefaultAgentConfig`) sets to `LLMMemoryCompactor`. If `memory_compactor_enabled` is true and no compactor class is set, building the agent fails.
+The compactor class comes from `memory.compactor_class` in the configuration, which the default configuration (the Suvereo server's `DefaultAgentConfig`) sets to `LLMMemoryCompactor`. If the compactor is enabled and no compactor class is set, building the agent fails.
 
 ## Customization
 
@@ -79,17 +77,23 @@ class MyMemoryCompactor(BaseMemoryCompactor):
         ...
 ```
 
-Then point the configuration at it:
+Then point the agent's configuration at it by overriding `get_config()`:
 
 ```python
-AgentConfigWithDefaults(
-    ...
-    memory=MemoryConfig(
-        chat_history_class=PersistentChatHistory,
-        compactor_class=MyMemoryCompactor,
-    ),
-    memory_compactor_enabled=True,
-)
+class ArticlesAgent(BaseToolCallingAgent):
+    NAME = "Articles"
+    AGENT_KEY = "articles-agent"
+    SYSTEM_PROMPT = ARTICLES_SYSTEM_PROMPT
+    MEMORY_COMPACTOR_ENABLED = True
+
+    @classmethod
+    def get_config(cls) -> AgentConfig:
+        config = super().get_config()
+        config.memory = MemoryConfig(
+            chat_history_class=PersistentChatHistory,
+            compactor_class=MyMemoryCompactor,
+        )
+        return config
 ```
 
 Alternatively, the class can be set as the default compactor, by using it as `compactor_class` in the `memory` of the Suvereo server's `DefaultAgentConfig` (`server/agent/core/agents/default_config.py`). It is then used by every agent whose configuration leaves `memory` empty.

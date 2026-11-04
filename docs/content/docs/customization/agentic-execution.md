@@ -52,7 +52,7 @@ class MyOutputValidator(BaseExecutionValidator):
         self,
         response: str,
         execution_input: ExecutionInputType,
-        tool_scratchpad: ToolScratchpad | None = None,
+        tool_scratchpad: ToolScratchpad,
     ) -> ValidatorResponse:
         if "expected_field" not in response:
             return ValidatorResponse(
@@ -60,7 +60,7 @@ class MyOutputValidator(BaseExecutionValidator):
                 retry_needed=True,
                 feedback="Response must include 'expected_field'. Please try again.",
             )
-        return ValidatorResponse(validation_successful=True)
+        return ValidatorResponse(validation_successful=True, retry_needed=False)
 ```
 
 Set `retry_needed=False` when retrying is pointless — for example, when an external system is unreachable. The run loop stops immediately and uses `feedback` as the failure summary shown to users.
@@ -72,10 +72,10 @@ Subclass `BaseAgenticExecutionDefinition` and implement `execute()`. This is the
 ```python
 from suvereo_common.agentic_execution import (
     BaseAgenticExecutionDefinition,
+    ExecutionConversationInterface,
     IsValidJsonValidator,
     StopExecutionValidator,
 )
-from suvereo_common.agentic_execution.protocol import ExecutionConversationInterface
 
 from .inputs import MyExecutionInput
 from .validators import MyOutputValidator
@@ -103,28 +103,25 @@ class MyAgenticExecutionDefinition(BaseAgenticExecutionDefinition):
 
 `execute()` sends a message to the agent and returns its raw response string. The base `run()` method handles passing that response through `VALIDATORS`, sending feedback on failure, and retrying.
 
-### 5. Update the agent config provider
+### 5. Set the execution prompt and tools
 
-Execution runs benefit from a stripped-down system prompt that removes conversational scaffolding and mandates structured output. Implement this in your `BaseAgentConfigProvider`:
+Execution runs benefit from a stripped-down system prompt that removes conversational scaffolding and mandates structured output. Declare it on the definition, together with any tools that only make sense for executions:
 
 ```python
-from suvereo_common.agents.config import BaseAgentConfigProvider, ConfigType
-from suvereo_common.config import AgentConfigWithDefaults
+from suvereo_agent_tools import StopExecutionTool
+from suvereo_common.agentic_execution import BaseAgenticExecutionDefinition
+from suvereo_common.config import LLMToolConfig
 
-from .prompts import CONVERSATION_PROMPT, EXECUTION_PROMPT
+from .prompts import EXECUTION_PROMPT
 
 
-class MyAgentConfigProvider(BaseAgentConfigProvider):
-    def get_config(self, config_type: ConfigType = ConfigType.CONVERSATION) -> AgentConfigWithDefaults:
-        system_prompt = (
-            EXECUTION_PROMPT
-            if config_type == ConfigType.AGENTIC_EXECUTION_DEFINITION
-            else CONVERSATION_PROMPT
-        )
-        return AgentConfigWithDefaults(system_prompt=system_prompt)
+class MyAgenticExecutionDefinition(BaseAgenticExecutionDefinition):
+    ...
+    SYSTEM_PROMPT = EXECUTION_PROMPT
+    EXTRA_TOOLS = [LLMToolConfig(tool_class=StopExecutionTool)]
 ```
 
-Agents that don't need context-specific behaviour can ignore `config_type` and always return the same configuration.
+Both are applied on top of the agent's own configuration for this execution only: `SYSTEM_PROMPT` replaces the agent's prompt, and `EXTRA_TOOLS` are appended to its tools. A definition that sets no `SYSTEM_PROMPT` runs with the agent's conversation prompt. See [Execution configuration](/docs/agents/agentic-execution#execution-configuration).
 
 ### 6. Register the definition
 
@@ -162,5 +159,5 @@ def validate(self, response, execution_input, tool_scratchpad=None):
                 retry_needed=True,
                 feedback=f"The following items failed: {failed}. Please retry.",
             )
-    return ValidatorResponse(validation_successful=True)
+    return ValidatorResponse(validation_successful=True, retry_needed=False)
 ```

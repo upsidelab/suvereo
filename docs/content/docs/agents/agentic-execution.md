@@ -121,25 +121,14 @@ The base class provides a concrete `run()` that implements the validator retry l
 5. `retry_needed=True` with retries remaining → clears `tool_scratchpad`, sends feedback, retries
 6. Retries exhausted → asks the LLM for a failure summary and returns `max_retries_exceeded`
 
-## Agent Config Provider
+## Execution configuration
 
-### `ConfigType`
+An agent has a single configuration, declared on the agent class, see [Agent Configuration](/docs/agents/agent-config). Settings that differ for an execution are declared on the definition and applied on top of that configuration through `AgentConfigOverrides`.
 
-`StrEnum` controlling which system prompt an agent uses:
+#### `SYSTEM_PROMPT`
+- **Type**: `ClassVar[Optional[str]]`
+- **Description**: Replaces the agent's system prompt for this execution. Execution runs often benefit from a stripped-down prompt without conversational scaffolding that asks for structured output. When it is `None`, the execution runs with the agent's conversation prompt
 
-- **`ConfigType.CONVERSATION`**: Used during regular user-facing conversations
-- **`ConfigType.AGENTIC_EXECUTION_DEFINITION`**: Used during autonomous agentic execution runs
-
-### `BaseAgentConfigProvider`
-
-ABC exported from each agent plugin. The `AgentRegistry` calls `get_config(config_type)` to obtain the appropriate `AgentConfig` for the current context.
-
-```python
-class BaseAgentConfigProvider(ABC):
-    @abstractmethod
-    def get_config(self, config_type: ConfigType = ConfigType.CONVERSATION) -> AgentConfig:
-        ...
-```
-
-Plugins that need a different prompt for execution runs implement the branching in `get_config()`. Plugins that always use the same prompt can ignore `config_type`.
-
+#### `EXTRA_TOOLS`
+- **Type**: `ClassVar[list[ToolConfig]]`
+- **Description**: Tools appended to the agent's own tools for this execution, for example `StopExecutionTool`. Defaults to an empty list
