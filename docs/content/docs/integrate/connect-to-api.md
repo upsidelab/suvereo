@@ -1,20 +1,28 @@
 # Connect to Suvereo's API
 
-Once you have the API token for a service account, you can connect to Suvereo's API.
+Once you have the API token of a [service account](/docs/integrate/manage-api-keys), you can call Suvereo's API. Programmatic access, such as scripts and other systems, uses a service account. Requests made with a person's login use a different header, see [Signing In and Token Refresh](/docs/integrate/signing-in).
+
+Every request carries the token in the `Authorization` header:
+
+```
+Authorization: Token <API_TOKEN>
+```
+
+The service account can only do what its [roles](/docs/management/roles-and-groups) allow.
 
 ## Trying out the API Using Swagger UI
 
 ### Authorization
 
-1. In the main sidebar, click **API Documentation**. Swagger UI will open in a new tab.
-2. In Swagger UI, click Authorize in the top-right corner.
+1. In the main sidebar, click **Help** → **API Documentation**. Swagger UI opens in a new tab.
+2. In Swagger UI, click **Authorize** in the top-right corner.
 3. Enter `Token <API_TOKEN>` in the authorization field and click **Authorize**.
 
-You can now interact with the API. Let’s query some data.
+You can now interact with the API.
 
 ## Navigating the Endpoints
 
-The Swagger UI lists all available endpoints organized by functionality. You can test an endpoint directly from your browser using the **Try it out** feature.
+Swagger UI lists the endpoints organized by functionality. You can test an endpoint directly from your browser using the **Try it out** feature.
 
 ### Example: Retrieving Data Sets with GET /api/data_sets
 
@@ -25,33 +33,31 @@ The Swagger UI lists all available endpoints organized by functionality. You can
 
 ## Using `curl`
 
-To authenticate with Suvereo's API using `curl` from the terminal, include the API token in the header of each request:
+To authenticate with `curl`, include the API token in the header of each request. Replace `<API_TOKEN>` with your token and `<PATH>` with the endpoint path.
 
-- **GET and DELETE Request**:
+- **GET and DELETE requests:**
+
   ```bash
-  curl -X 'GET/DELETE' \
+  curl -X 'GET' \
     'http://localhost:8000/api/<PATH>' \
     -H 'accept: application/json' \
     -H 'Authorization: Token <API_TOKEN>'
-    ```
-  
-- **POST, PUT and PATCH Request**:
-    ```bash
-    curl -X 'POST/PUT/PATCH' \
-        'http://localhost:8000/api/<PATH>' \
-        -H 'accept: application/json' \
-        -H 'Content-Type: application/json' \
-        -H 'Authorization: Token <API_TOKEN>' \
-        -d '{
-        "key": "value"
-        }'
-    ```
+  ```
 
-> [!NOTE]
->
-> Replace `<API_TOKEN>` with your actual API token and `<PATH>>` with the specific API endpoint.
+- **POST, PUT and PATCH requests:**
 
-Example `curl` command:
+  ```bash
+  curl -X 'POST' \
+    'http://localhost:8000/api/<PATH>' \
+    -H 'accept: application/json' \
+    -H 'Content-Type: application/json' \
+    -H 'Authorization: Token <API_TOKEN>' \
+    -d '{
+      "key": "value"
+    }'
+  ```
+
+Example:
 
 ```bash
 curl -X 'GET' \
