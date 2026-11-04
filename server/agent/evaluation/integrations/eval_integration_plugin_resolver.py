@@ -16,18 +16,22 @@ class EvalIntegrationPluginResolver(BaseIntegrationPluginResolver):
         real = self._real()
         return real.resolve(data_set_id, plugin_base) if real else None
 
-    def resolve_all(self, data_set_id: Any, plugin_base: type[IntegrationT]) -> list[IntegrationT]:
+    def ids_for_data_set(self, data_set_id: Any, plugin_base: type[IntegrationT]) -> list[Any]:
+        real = self._real()
+        return real.ids_for_data_set(data_set_id, plugin_base) if real else []
+
+    def resolve_all_for_agent(self, agent_id: Any, plugin_base: type[IntegrationT]) -> list[IntegrationT]:
         mocks = self._mocks(plugin_base)
         if mocks:
             return mocks
         real = self._real()
-        return real.resolve_all(data_set_id, plugin_base) if real else []
+        return real.resolve_all_for_agent(agent_id, plugin_base) if real else []
 
-    def has_any(self, data_set_id: Any, plugin_base: type[IntegrationT]) -> bool:
+    def has_any_for_agent(self, agent_id: Any, plugin_base: type[IntegrationT]) -> bool:
         if self._mocks(plugin_base):
             return True
         real = self._real()
-        return bool(real and real.has_any(data_set_id, plugin_base))
+        return bool(real and real.has_any_for_agent(agent_id, plugin_base))
 
     @staticmethod
     def _mocks(plugin_base: type[IntegrationT]) -> list[IntegrationT]:

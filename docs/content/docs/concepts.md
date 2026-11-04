@@ -34,9 +34,9 @@ An integration is a configured connection to an external system on a data set.
 Integrations serve two purposes:
 
 - **Bringing content in.** A source integration syncs content from an external system. The content is stored as [entities](#entity) and indexed for search.
-- **Letting agents act.** An integration can give agents tools for working in the external system.
+- **Letting agents act.** A tool-providing integration gives agents tools for working in the external system. It syncs no content; each agent picks the ones it uses under **Tool sources**.
 
-Suvereo includes a ready-made integration for MCP servers. An MCP server is an external server that exposes tools through the Model Context Protocol. Once it is connected to a data set by signing in with OAuth, its tools are available to the data set's agents.
+Suvereo includes a ready-made integration for MCP servers. An MCP server is an external server that exposes tools through the Model Context Protocol. Once it is connected to a data set by signing in with OAuth, its tools are available to the data set's agents that select it under **Tool sources** in their settings.
 
 ## Domain
 

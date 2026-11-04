@@ -13,7 +13,9 @@ from django.test import override_settings
 from suvereo_common.evaluation.errors import EvalSuiteError
 from suvereo_common.evaluation.loaded_suite import LoadedSuite
 from suvereo_common.evaluation.suite import EvalCase, ModelTarget, PromptVariant
+from suvereo_common.integrations import BaseToolProvidingIntegration
 
+from agent.core.agents.default_config import get_default_config
 from agent.evaluation.eval_user import EvalUser
 from agent.evaluation.integrations import MockIntegrationFactory
 from agent.evaluation.judge_models_used_by_metrics import judge_models_used_by_metrics
@@ -60,6 +62,7 @@ class SuiteRunner:
         self.check_budget_is_trackable()
         self._spent, self._stopped_reason = 0.0, None
         self._warn_on_self_judging()
+        self._warn_on_unselected_tool_mocks()
         started_at = datetime.now()
         results: list[RunResult] = []
         with self._run_files_media_root():
@@ -186,6 +189,25 @@ class SuiteRunner:
 
     def _user_models(self) -> list[ModelTarget]:
         return [self.user_model_in_use] if self.user_model_in_use else []
+
+    def _warn_on_unselected_tool_mocks(self) -> None:
+        suite = self.loaded.suite
+        resolver_class = get_default_config().integration_plugin_resolver
+        if suite.agent.is_sandbox or (
+            resolver_class and resolver_class().has_any_for_agent(suite.agent.id, BaseToolProvidingIntegration)
+        ):
+            return
+        factory = MockIntegrationFactory(self.loaded.base_dir)
+        configs = {c.key: c for case in self.loaded.cases for c in suite.integrations_for(case)}
+        keys = sorted(
+            k for k, c in configs.items() if issubclass(factory.resolve_class(c), BaseToolProvidingIntegration)
+        )
+        if keys:
+            logger.warning(
+                "Agent %s selects no tool-providing integrations, so in production it never gets the tools of %s.",
+                suite.agent.id,
+                ", ".join(keys),
+            )
 
     def _warn_on_self_judging(self) -> None:
         for judge in self.judge_models_in_use:

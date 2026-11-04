@@ -230,11 +230,17 @@ export type ExecutionDefinition = {
   input_schema: Record<string, unknown>;
 };
 
+export type ToolProvidingIntegrationOption = {
+  id: number;
+  name: string;
+};
+
 export type AgentDetails = {
   id: number;
   name: string;
   description: string;
   file_upload: boolean;
+  tool_providing_integrations: number[];
   config: AgentConfig;
   config_schema: AgentConfig;
   dataset: number;

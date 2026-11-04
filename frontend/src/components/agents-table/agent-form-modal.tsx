@@ -6,6 +6,8 @@ import { useAgentForm } from "./hooks/use-agent-form";
 import { AgentConfigurationForm } from "./agent-configuration-form";
 import {AgentChoice} from "@/lib/api/agents.ts";
 import {Textarea} from "@/components/ui/textarea.tsx";
+import { ToolProvidingIntegrationsPicker } from "./tool-providing-integrations-picker";
+import { useToolProvidingIntegrationOptions } from "./hooks/use-tool-providing-integration-options";
 import { FormModal } from "@/components/ui/form-modal";
 import { useEffect } from "react";
 
@@ -38,6 +40,8 @@ export function AgentFormModal({
     type,
     setType,
     agentTypeName,
+    toolProvidingIntegrations,
+    setToolProvidingIntegrations,
     config,
     setConfig,
     agentConfigSections,
@@ -49,6 +53,7 @@ export function AgentFormModal({
     handleSubmit,
     resetForm
   } = useAgentForm(agent, agentTypes, dataSetId, onSuccess, readOnly);
+  const { toolProvidingIntegrationOptions, loadingToolProvidingIntegrations, toolProvidingIntegrationsFailed } = useToolProvidingIntegrationOptions(dataSetId, open);
 
   // Reset form when modal closes
   useEffect(() => {
@@ -139,6 +144,16 @@ export function AgentFormModal({
           <p className="text-xs text-destructive">{fieldErrors.description}</p>
         )}
       </div>
+
+      <ToolProvidingIntegrationsPicker
+        options={toolProvidingIntegrationOptions}
+        loading={loadingToolProvidingIntegrations}
+        failed={toolProvidingIntegrationsFailed}
+        selected={toolProvidingIntegrations}
+        onChange={setToolProvidingIntegrations}
+        error={fieldErrors.tool_providing_integrations}
+        readOnly={readOnly}
+      />
 
       {type && (
         <AgentConfigurationForm

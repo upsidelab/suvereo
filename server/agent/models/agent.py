@@ -24,6 +24,7 @@ class Agent(models.Model):
     agent_type = models.CharField(max_length=255, blank=False)
     config = models.JSONField()
     file_upload = models.BooleanField(default=False)
+    tool_providing_integrations = models.ManyToManyField("catalog.Integration", blank=True, related_name="agents")
 
     dataset = models.ForeignKey(DataSet, on_delete=models.CASCADE, related_name="agents")
 

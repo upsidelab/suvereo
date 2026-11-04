@@ -11,6 +11,7 @@ from account.authorization import (
     any_permission_on_any_dataset_required,
     enforce_dataset_scoped_permission,
 )
+from agent.core.agents.selectable_tool_providing_integrations import SelectableToolProvidingIntegrations
 from agent.core.registries.agents.agent_registry import AgentRegistry
 from agent.filters import AgentFilter
 from agent.models.agent import Agent
@@ -18,9 +19,10 @@ from agent.serializers.configuration import (
     AgentListSerializer,
     AgentSerializer,
     AvailableAgentsResponseSerializer,
+    ToolProvidingIntegrationOptionSerializer,
     agent_type_config_schema,
 )
-from catalog.models import DataSet
+from catalog.models import DataSet, Integration
 
 
 class AgentTypesView(APIView):
@@ -92,7 +94,7 @@ class AgentView(APIView):
             return Response({"dataset": ["Invalid data set."]}, status=status.HTTP_400_BAD_REQUEST)
         enforce_dataset_scoped_permission(self, PERMISSIONS.AGENT.ADD, dataset)
 
-        serializer = AgentSerializer(data=request.data)
+        serializer = AgentSerializer(data=request.data, context={"data_set_id": dataset.id})
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
         return Response(AgentSerializer(instance).data, status=status.HTTP_201_CREATED)
@@ -133,3 +135,30 @@ class AgentDetailsView(APIView):
 
         instance.set_deleted_at()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SelectableToolProvidingIntegrationsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_description="List the data set's tool-providing integrations, which an agent can select.",
+        manual_parameters=[
+            openapi.Parameter(
+                "dataset", openapi.IN_QUERY, description="ID of the dataset", type=openapi.TYPE_INTEGER, required=True
+            )
+        ],
+        responses={200: ToolProvidingIntegrationOptionSerializer(many=True)},
+    )
+    def get(self, request):
+        dataset_id = request.query_params.get("dataset", "")
+        if not dataset_id.isdigit():
+            return Response({"dataset": ["A data set id is required."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        dataset = get_object_or_404(DataSet, pk=int(dataset_id))
+        enforce_dataset_scoped_permission(self, PERMISSIONS.AGENT.VIEW, dataset)
+
+        ids = SelectableToolProvidingIntegrations.ids(dataset.id)
+        integrations = Integration.objects.filter(id__in=ids).order_by("id")
+        return Response(
+            ToolProvidingIntegrationOptionSerializer(integrations, many=True).data, status=status.HTTP_200_OK
+        )

@@ -92,11 +92,12 @@ class TestAgentBuilderBuildDynamicTools:
         config.integration_plugin_resolver = resolver_cls
         builder = AgentBuilder(agent_class=MagicMock(), config=config, conversation_id=1)
         builder._data_set_id = 42
+        builder._agent_id = 7
         return builder
 
     def _builder_returning(self, integrations):
         resolver_instance = MagicMock()
-        resolver_instance.resolve_all.return_value = integrations
+        resolver_instance.resolve_all_for_agent.return_value = integrations
         return self._make_builder(resolver_cls=MagicMock(return_value=resolver_instance))
 
     def test_returns_empty_list_when_no_resolver_configured(self):
@@ -105,6 +106,14 @@ class TestAgentBuilderBuildDynamicTools:
         tools = asyncio.run(builder._build_dynamic_tools())
 
         assert tools == []
+
+    def test_asks_for_the_integrations_selected_for_the_agent(self):
+        builder = self._builder_returning([])
+
+        asyncio.run(builder._build_dynamic_tools())
+
+        resolver = builder._config.integration_plugin_resolver.return_value
+        resolver.resolve_all_for_agent.assert_called_once_with(7, BaseToolProvidingIntegration)
 
     def test_merges_tools_from_every_reachable_integration(self):
         builder = self._builder_returning(

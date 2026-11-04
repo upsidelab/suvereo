@@ -50,11 +50,10 @@ class ConversationManager:
     def _should_answer_asynchronously(
         self, conversation: Conversation, overrides: Optional[AgentConfigOverrides] = None
     ) -> bool:
-        """Decide whether this turn needs the async path, which exists to await integration tools.
+        """Decide whether this turn needs the async path, which exists to await the tools of tool-providing integrations.
 
-        The data set has to have at least one tool-providing integration (e.g. an MCP server) whose
-        tools are worth fetching; a data set with nothing connected never pays for an event loop it
-        has no use for.
+        The agent has to have at least one tool-providing integration (e.g. an MCP server) selected
+        (`Agent.tool_providing_integrations`); any other turn never pays for an event loop it has no use for.
 
         The resolver comes from the default agent config rather than being imported directly, so a
         host that swaps its implementation is honoured here as well as in the agent builder; a run's
@@ -63,7 +62,7 @@ class ConversationManager:
         resolver_class = (overrides and overrides.integration_plugin_resolver) or get_default_config().integration_plugin_resolver
         if resolver_class is None:
             return False
-        return resolver_class().has_any(conversation.data_set_id, BaseToolProvidingIntegration)
+        return resolver_class().has_any_for_agent(conversation.agent_id, BaseToolProvidingIntegration)
 
     async def _get_answer_async(
         self,

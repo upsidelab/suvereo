@@ -34,6 +34,7 @@ export function useAgentForm(
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState("");
+  const [toolProvidingIntegrations, setToolProvidingIntegrations] = useState<number[]>([]);
   const [config, setConfig] = useState<Record<string, string | number | boolean>>({});
   const [agentConfigSections, setAgentConfigSections] = useState<ConfigSections>({});
   const [agentTypeName, setAgentTypeName] = useState("");
@@ -52,6 +53,7 @@ export function useAgentForm(
         setDescription(agentDetails.description || "");
         setType(agentDetails.agent_type);
         setAgentTypeName(agentDetails.agent_type_name);
+        setToolProvidingIntegrations(agentDetails.tool_providing_integrations);
 
         const flattenedConfig = flattenConfigForForm(agentDetails.config);
         setConfig(flattenedConfig);
@@ -78,6 +80,7 @@ export function useAgentForm(
         setName("");
         setDescription("");
         setType("");
+        setToolProvidingIntegrations([]);
         setConfig({});
         setAgentConfigSections({});
         setOpenSections({});
@@ -190,7 +193,8 @@ export function useAgentForm(
       description,
       agent_type: type,
       dataset: dataSetId,
-      config: configObj
+      config: configObj,
+      tool_providing_integrations: toolProvidingIntegrations
     };
 
     if (agent) {
@@ -275,6 +279,7 @@ export function useAgentForm(
     setName("");
     setDescription("");
     setType("");
+    setToolProvidingIntegrations([]);
     setConfig({});
     setAgentConfigSections({});
     setOpenSections({});
@@ -291,6 +296,8 @@ export function useAgentForm(
     type,
     setType,
     agentTypeName,
+    toolProvidingIntegrations,
+    setToolProvidingIntegrations,
     config,
     setConfig,
     agentConfigSections,

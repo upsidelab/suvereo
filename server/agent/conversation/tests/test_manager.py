@@ -241,13 +241,13 @@ class TestConversationManager:
         # Verify get_answer was not called
         mock_get_answer.assert_not_called()
 
-    @patch.object(IntegrationPluginResolver, "has_any", return_value=False)
+    @patch.object(IntegrationPluginResolver, "has_any_for_agent", return_value=False)
     @patch.object(AgentRegistry, "get_conversation_agent")
     @patch.object(AgentRegistry, "aget_conversation_agent")
-    def test_get_answer_uses_sync_path_when_data_set_has_no_tool_providing_integration(
+    def test_get_answer_uses_sync_path_when_agent_has_no_tool_providing_integration_selected(
         self, mock_aget_conversation_agent, mock_get_conversation_agent, mock_has_any
     ):
-        """With nothing connected to fetch tools from, get_answer never touches the async path."""
+        """With no integration selected to fetch tools from, get_answer never touches the async path."""
         conversation = Conversation.objects.create(
             user=self.user, data_set=self.data_set, started_at=datetime.now(), agent=self.agent
         )
@@ -261,13 +261,13 @@ class TestConversationManager:
         mock_get_conversation_agent.assert_called_once()
         mock_aget_conversation_agent.assert_not_called()
 
-    @patch.object(IntegrationPluginResolver, "has_any", return_value=True)
+    @patch.object(IntegrationPluginResolver, "has_any_for_agent", return_value=True)
     @patch.object(AgentRegistry, "get_conversation_agent")
     @patch.object(AgentRegistry, "aget_conversation_agent", new_callable=AsyncMock)
-    def test_get_answer_uses_async_path_when_tools_are_connected_and_agent_supports_it(
+    def test_get_answer_uses_async_path_when_the_agent_has_a_tool_providing_integration_selected(
         self, mock_aget_conversation_agent, mock_get_conversation_agent, mock_has_any
     ):
-        """A tool-providing integration on the data set moves an async-capable agent onto the async path."""
+        """A tool-providing integration selected for the agent moves it onto the async path."""
         conversation = Conversation.objects.create(
             user=self.user, data_set=self.data_set, started_at=datetime.now(), agent=self.agent
         )
