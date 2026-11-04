@@ -547,7 +547,7 @@ class FoodDataCentralClient:
 
 ### The integration
 
-`fetch()` walks TheMealDB letter by letter, maps its categories to the meal types and turns each meal into `RecipeDetails`:
+`fetch()` walks TheMealDB letter by letter, maps its categories to the meal types and turns each meal into `RecipeDetails`. It stops when it has returned `max_recipes` recipes, 50 by default:
 
 ```python
 # diet_vertical/sources/mealdb_recipe_source.py
@@ -572,7 +572,7 @@ REQUEST_TIMEOUT_SECONDS = 20
 # TheMealDB lists up to 20 ingredient fields per meal.
 MAX_INGREDIENTS_PER_MEAL = 20
 # The share of ingredients whose calories must be known. Below it, the recipe's total would be misleading.
-MIN_RESOLVED_INGREDIENTS_RATIO = 0.6
+MIN_RESOLVED_INGREDIENTS_RATIO = 0.75
 
 # Recipes in other TheMealDB categories (desserts, sauces) are skipped.
 MEAL_TYPES = {
@@ -601,6 +601,12 @@ class MealDbRecipeSourceConfig(RequiredFieldsModel):
         title="USDA API key",
         description="FoodData Central API key, free at https://fdc.nal.usda.gov/api-key-signup",
     )
+    max_recipes: int = Field(
+        default=50,
+        ge=1,
+        title="Maximum recipes",
+        description="The sync stops after this many recipes. Each ingredient needs a USDA request, so fewer is quicker.",
+    )
 
 
 class MealDbRecipeSource(RecipeSourcePlugin):
@@ -610,6 +616,7 @@ class MealDbRecipeSource(RecipeSourcePlugin):
 
     def fetch(self) -> Iterable[RecipeDetails]:
         usda = FoodDataCentralClient(self.CONFIGURATION_ARGS.usda_api_key)
+        fetched = 0
         for meal in self._meals(self.CONFIGURATION_ARGS.mealdb_api_key):
             meal_type = MEAL_TYPES.get(meal.get("strCategory"))
             if meal_type is None:
@@ -617,10 +624,14 @@ class MealDbRecipeSource(RecipeSourcePlugin):
             recipe = self._to_recipe(meal, meal_type, usda)
             if recipe is not None:
                 yield recipe
+                fetched += 1
+                if fetched >= self.CONFIGURATION_ARGS.max_recipes:
+                    return
 
     @staticmethod
     def _meals(api_key: str) -> Iterable[dict]:
-        # TheMealDB has no "list all meals" endpoint. Searching by first letter is the documented way to walk the catalogue.
+        # TheMealDB has no "list all meals" endpoint. Searching by first letter is the documented way to walk
+        # the catalogue.
         for letter in string.ascii_lowercase:
             response = requests.get(
                 MEALDB_SEARCH_URL.format(api_key=api_key), params={"f": letter}, timeout=REQUEST_TIMEOUT_SECONDS
@@ -664,7 +675,7 @@ class MealDbRecipeSource(RecipeSourcePlugin):
 ```
 
 - **Categories.** `MEAL_TYPES` maps TheMealDB categories to `MealType`. Desserts and other categories are not in the map, so they are skipped.
-- **Calories.** The calories of a recipe are the sum over its ingredients of `calories per 100 g × grams / 100`. A recipe is skipped when fewer than 60% of its ingredients could be resolved.
+- **Calories.** The calories of a recipe are the sum over its ingredients of `calories per 100 g × grams / 100`. A recipe is skipped when fewer than 75% of its ingredients could be resolved.
 - **Servings.** The number of servings is the total weight divided by a typical portion for the meal type, between 1 and `MAX_SERVINGS`. Calories per serving follow from it.
 
 These are choices of this integration, not of Suvereo. A source that gets servings and nutrition from its API would be much shorter.
@@ -689,7 +700,7 @@ CATALOG_INTEGRATION_PLUGINS = [
 ]
 ```
 
-Restart the server and the worker, then add a **Recipe source** in the UI and choose **TheMealDB recipes with USDA nutrition**. The form has the TheMealDB key, already filled with `1`, and asks for the USDA API key, which you can get at [fdc.nal.usda.gov/api-key-signup](https://fdc.nal.usda.gov/api-key-signup). Start the sync as before. It makes many requests, one per distinct ingredient, so it takes several minutes. The `requests` dependency is already declared in the package's `pyproject.toml`.
+Restart the server and the worker, then add a **Recipe source** in the UI and choose **TheMealDB recipes with USDA nutrition**. The form has the TheMealDB key, already filled with `1`, and the maximum number of recipes, already filled with `50`, and asks for the USDA API key, which you can get at [fdc.nal.usda.gov/api-key-signup](https://fdc.nal.usda.gov/api-key-signup). Start the sync as before. It makes a request for each distinct ingredient, so it takes a few minutes, and more if you raise the maximum. The `requests` dependency is already declared in the package's `pyproject.toml`.
 
 Several connections of one integration can exist on a data set by default. Set `ALLOWS_MULTIPLE_INSTANCES = False` on an integration that makes sense only once.
 
