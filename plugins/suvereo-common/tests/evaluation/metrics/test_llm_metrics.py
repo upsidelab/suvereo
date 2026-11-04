@@ -20,7 +20,7 @@ def _chat(judge, expected=None):
     trace = ExecutionTrace(
         tool_calls=[
             ToolCall(run_id="t1", name="price_lookup", error="Timeout"),
-            ToolCall(run_id="t2", name="product_search"),
+            ToolCall(run_id="t2", name="product_search", output='[{"sku": "KTL-ELC", "price": 39}]'),
         ],
         turns=[
             Turn(
@@ -127,10 +127,10 @@ class TestLLMJudge:
                 "conversation of 2 turn(s), every turn answered; cut off at the case's turn limit",
             ),
             (
-                [Turn(user_message="Hi", error="RuntimeError: down")],
+                [*ANSWERED, Turn(user_message="More", error="RuntimeError: down")],
                 "RuntimeError: down",
                 "error",
-                "crashed after 1 turn(s): RuntimeError: down",
+                "crashed after 3 turn(s): RuntimeError: down",
             ),
             ([], None, "done", "ended before the first turn"),
         ],
@@ -193,17 +193,51 @@ class TestLLMJudge:
         assert "## output" not in prompt
         assert '"outcome": "The user gets a kettle under 50 EUR"' in prompt
 
-    def test_the_transcript_shows_each_turn_with_the_tools_called_in_it_and_indents_what_was_said(self):
+    def test_the_transcript_shows_a_long_tool_result_in_full(self):
+        judge = ScriptedJudge('{"score": 1}')
+        products = "[" + ", ".join(f'{{"sku": "SKU-{n}"}}' for n in range(150)) + "]"
+        trace = ExecutionTrace(
+            tool_calls=[ToolCall(run_id="t1", name="product_search", output=products)],
+            turns=[Turn(user_message="Kettles?", answer="SKU-149", tool_call_run_ids=["t1"])],
+        )
+        context = MetricContext(
+            trace=trace, case=ConversationEvalCase(id="c", user_messages=["Kettles?"]), kind="conversation", judge=judge
+        )
+
+        LLMJudge({"criteria": CRITERIA[:1], "include": ["transcript"]}).measure(context)
+
+        assert len(products) > 1000
+        assert f"tool product_search returned:\n  {products}\n" in judge.prompts[0]
+
+    def test_the_transcript_shows_each_turn_with_what_its_tools_returned_and_indents_what_was_said(self):
         judge = ScriptedJudge('{"score": 1}')
 
         LLMJudge({"criteria": CRITERIA[:1], "include": ["transcript"]}).measure(_chat(judge))
 
         assert judge.prompts[0].endswith(
             "## transcript\n"
-            "turn 1\nuser:\n  I need a kettle\ntools called: price_lookup (raised), product_search\n"
+            "turn 1\nuser:\n  I need a kettle\n"
+            "tool price_lookup returned:\n  raised Timeout\n"
+            'tool product_search returned:\n  [{"sku": "KTL-ELC", "price": 39}]\n'
             "agent:\n  ## Kettles\n\n  KTL-ELC, 39 EUR\n\n"
             "turn 2\nuser:\n  Cheaper?\nagent raised:\n  RuntimeError: model down"
         )
+
+    @pytest.mark.parametrize("kind", ["execution", "conversation"])
+    def test_a_run_that_raised_before_answering_is_not_judged(self, kind):
+        judge = ScriptedJudge('{"score": 1}')
+        trace = ExecutionTrace(turns=[Turn(user_message="Hi", error="RuntimeError: down")], error="RuntimeError: down")
+        context = MetricContext(
+            trace=trace, case=ConversationEvalCase(id="c", user_messages=["Hi"]), kind=kind, judge=judge
+        )
+
+        result = LLMJudge({"criteria": CRITERIA[:1]}).measure(context)
+
+        assert (result.value, result.details["reason"]) == (
+            None,
+            "the run raised before it answered, so there is nothing to judge",
+        )
+        assert judge.prompts == []
 
     @pytest.mark.parametrize(
         "params, kind, supported",

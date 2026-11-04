@@ -1,7 +1,9 @@
+from typing import Any
+
 from django.db import transaction
 from langchain_text_splitters import TokenTextSplitter
 from suvereo_common.indexing import BaseEntityIndexer, IndexableEntity
-from suvereo_common.registry import BaseEmbeddingProviderRegistry
+from suvereo_common.registry import BaseEmbeddingProviderRegistry, EmbeddingProvider
 
 
 class EmbeddingIndexer(BaseEntityIndexer):
@@ -27,7 +29,7 @@ class EmbeddingIndexer(BaseEntityIndexer):
             chunk_size=data_set.embedding_chunk_size,
             chunk_overlap=data_set.embedding_chunk_overlap,
         )
-        provider = self._registry.provider_instance_for_dataset(data_set.id)
+        provider = self._provider(data_set)
 
         # Generate embeddings outside the transaction — API calls must not hold a DB lock.
         pieces = splitter.split_text(entity.get_indexable_content())
@@ -42,3 +44,8 @@ class EmbeddingIndexer(BaseEntityIndexer):
                 chunk = entity.chunks.create(content=piece)
                 chunk.set_embedding(embedding)
                 chunk.save()
+
+    def _provider(self, data_set: Any) -> EmbeddingProvider:
+        # Built from the DataSet itself: a lookup by id misses temporary ones, such as evaluation sandboxes.
+        provider_class = self._registry.provider_class_by_name(data_set.embedding_provider)
+        return provider_class(data_set.embedding_model, data_set.embedding_vector_dimensions)

@@ -16,6 +16,7 @@ from agent.evaluation.judge_models_used_by_metrics import judge_models_used_by_m
 from agent.evaluation.model_client import EvalModelClient
 from agent.evaluation.pinned_llm import PinnedLLM
 from agent.evaluation.pricing_table import PricingTable, TraceCost
+from agent.evaluation.repositories import EVAL_REPOSITORIES
 from agent.evaluation.resolved_kind import resolved_kind
 from agent.evaluation.run_context import EvalRunContext
 from agent.evaluation.targets import BaseAgentTarget
@@ -189,7 +190,8 @@ class CaseRunner:
 
     def _config_overrides(self, model: ModelTarget | None, variant: PromptVariant | None) -> AgentConfigOverrides:
         """This run's agent changes, never saved: the pinned model, the variant's prompt and config patch, trace
-        handlers, and the resolver that answers integration lookups from mocks."""
+        handlers, the resolver that answers integration lookups from mocks, and repositories that see the sandbox's
+        temporary rows."""
         system_prompt = None
         if variant and variant.system_prompt_file:
             system_prompt = (self.loaded.base_dir / variant.system_prompt_file).read_text(encoding="utf-8")
@@ -198,6 +200,7 @@ class CaseRunner:
             llm_callbacks=[CallbackHandlerConfig(handler_class=TraceCallbackHandler)],
             agent_callback_handler=AgentCallbackHandlerConfig(handler_class=TraceCallbackHandler),
             integration_plugin_resolver=EvalIntegrationPluginResolver,
+            repositories=EVAL_REPOSITORIES,
             system_prompt=system_prompt,
             agent_config_patch=variant.agent_config if variant else None,
         )

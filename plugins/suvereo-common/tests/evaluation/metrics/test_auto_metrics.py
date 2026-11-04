@@ -148,10 +148,11 @@ class TestGoalReached:
 
         assert (result.value, result.details["reason"]) == (None, reason)
 
-    def test_a_conversation_that_never_started_did_not_reach_its_goal(self):
+    @pytest.mark.parametrize("turns", [[], [Turn(user_message="Hi", error="RuntimeError: down")]])
+    def test_a_conversation_the_agent_never_answered_did_not_reach_its_goal(self, turns):
         judge = ScriptedJudge('{"reached": true}')
 
-        assert GoalReached().measure(_goal_context(judge, self.GOAL, turns=[])).value is False
+        assert GoalReached().measure(_goal_context(judge, self.GOAL, turns=turns)).value is False
         assert judge.prompts == []
 
     def test_an_unreadable_verdict_is_not_scored(self):

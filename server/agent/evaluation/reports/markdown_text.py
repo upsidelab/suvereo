@@ -29,9 +29,10 @@ class MarkdownText:
 
     @classmethod
     def change(cls, change: "ValueChange") -> str:
-        """A figure's move from a baseline run, e.g. '0.8 → 0.9 (+0.1)'; just the new value when it is new."""
+        """A figure's move from a baseline run, e.g. '0.8 → 0.9 (+0.1)'; just the new value when the baseline has none
+        to compare."""
         if change.before is None:
-            return f"{cls.cell(change.after)} (new)"
+            return f"{cls.cell(change.after)} (no baseline)"
         delta = f" ({change.delta:+.3g})" if change.delta else ""
         return f"{cls.cell(change.before)} → {cls.cell(change.after)}{delta}"
 
