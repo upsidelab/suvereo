@@ -21,7 +21,7 @@ MINIMAL = {
 FULL = {
     "name": "order-intake-ocr",
     "description": "OCR purchase orders into e-commerce orders",
-    "agent": {"type": "enthusiast-agent-order-intake", "config": {}},
+    "agent": {"type": "my-vertical-order-intake", "config": {}},
     "execution_key": "order-intake",
     "models": [
         {"provider": "OpenAI", "model": "gpt-4o"},
@@ -34,7 +34,7 @@ FULL = {
     "min_pass_rate": 0.8,
     "integrations": [
         {
-            "class": "enthusiast_vertical_common.evaluation.ECommerceMockIntegration",
+            "class": "my_vertical.evaluation.ShopMockIntegration",
             "config": {
                 "catalog": "data/products.yaml",
                 "behaviour": {"create_order_with_items": {"returns": "ORD-{n}"}},
@@ -75,7 +75,7 @@ class TestEvalSuite:
     def test_the_full_suite_is_valid(self):
         suite = EvalSuite.model_validate(FULL)
 
-        assert suite.integrations[0].class_path.endswith("ECommerceMockIntegration")
+        assert suite.integrations[0].class_path.endswith("ShopMockIntegration")
         assert suite.models[1].display_label == "sonnet"
         assert isinstance(suite.cases[2], AgenticExecutionEvalCase)
 

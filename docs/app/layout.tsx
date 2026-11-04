@@ -12,7 +12,7 @@ export const metadata = {
   // For more information on metadata API, see: https://nextjs.org/docs/app/building-your-application/optimizing/metadata
 }
 
-const navbar = <Navbar logo={<Logo/>} logoLink={false} align="left" projectLink="https://github.com/upsidelab/enthusiast/"/>
+const navbar = <Navbar logo={<Logo/>} logoLink={false} align="left" projectLink="https://github.com/upsidelab/suvereo/"/>
 const footer = (
   <Footer>
     © {new Date().getFullYear()}&nbsp;
@@ -36,7 +36,7 @@ export default async function RootLayout({ children }: any) {
     <Layout
       navbar={navbar}
       pageMap={await getPageMap("/")}
-      docsRepositoryBase="https://github.com/upsidelab/enthusiast/tree/main/docs"
+      docsRepositoryBase="https://github.com/upsidelab/suvereo/tree/main/docs"
       footer={footer}
       // ... Your additional layout options
     >

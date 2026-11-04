@@ -39,7 +39,7 @@ jobs:
           context: ./server
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: upsidelab/enthusiast-server:${{ inputs.tag }}${{ inputs.push_latest && ',upsidelab/enthusiast-server:latest' || '' }}
+          tags: upsidelab/suvereo-server:${{ inputs.tag }}${{ inputs.push_latest && ',upsidelab/suvereo-server:latest' || '' }}
 
       - name: Build and push frontend Docker image
         uses: docker/build-push-action@v5
@@ -48,5 +48,5 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            upsidelab/enthusiast-frontend:${{ inputs.tag }}${{ inputs.push_latest && ',upsidelab/enthusiast-frontend:latest' || '' }}
+            upsidelab/suvereo-frontend:${{ inputs.tag }}${{ inputs.push_latest && ',upsidelab/suvereo-frontend:latest' || '' }}
 
