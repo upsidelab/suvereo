@@ -13,6 +13,7 @@ from suvereo_common.utils import RequiredFieldsModel
 
 from account.authorization import PERMISSIONS
 from account.models import DatasetRole, DatasetUserRoleAssignment, User
+from agent.core.registries.agents.agent_registry import AgentNotFoundError
 from agent.models.agent import Agent
 from catalog.models import DataSet
 
@@ -59,7 +60,12 @@ class ToolArgs(RequiredFieldsModel):
 
 
 class DummyTool(BaseFunctionTool):
+    NAME = "dummy_tool"
     CONFIGURATION_ARGS = ToolArgs
+
+
+class OtherDummyTool(DummyTool):
+    NAME = "other_dummy_tool"
 
 
 class AgentArgs(RequiredFieldsModel):
@@ -75,7 +81,7 @@ class PromptInput(RequiredFieldsModel):
 class DummyAgentBase:
     AGENT_ARGS = AgentArgs
     PROMPT_INPUT = PromptInput
-    TOOLS = [FunctionToolConfig(tool_class=DummyTool), FunctionToolConfig(tool_class=DummyTool)]
+    TOOLS = [FunctionToolConfig(tool_class=DummyTool), FunctionToolConfig(tool_class=OtherDummyTool)]
     FILE_UPLOAD = False
 
 
@@ -106,10 +112,10 @@ def config():
             "required_test": "required_test",
             "optional_test": "optional_test",
         },
-        "tools": [
-            {"required_test": "required_test", "optional_test": "optional_test"},
-            {"required_test": "required_test", "optional_test": "optional_test"},
-        ],
+        "tools": {
+            "dummy_tool": {"required_test": "required_test", "optional_test": "optional_test"},
+            "other_dummy_tool": {"required_test": "required_test", "optional_test": "optional_test"},
+        },
     }
 
 
@@ -136,7 +142,8 @@ class TestAgentTypesView:
 
         assert response.status_code == status.HTTP_200_OK
 
-    def test_get_agent_types_returns_200(self, api_client, user):
+    def test_get_agent_types_returns_200(self, api_client, user, settings):
+        settings.AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS = []
         dataset = baker.make(DataSet)
         _grant_dataset_permission(user, dataset, PERMISSIONS.AGENT.ADD)
         url = reverse("agent-types")
@@ -149,7 +156,11 @@ class TestAgentTypesView:
             assert response.data["choices"][1]["key"] == "agent_2"
             assert len(response.data["choices"][0]["tools"]) == 2
             assert len(response.data["choices"][1]["tools"]) == 2
-            assert list(response.data["choices"][0]["tools"][0].keys()) == ["required_test", "optional_test"]
+            assert list(response.data["choices"][0]["tools"]) == ["dummy_tool", "other_dummy_tool"]
+            tool = response.data["choices"][0]["tools"]["dummy_tool"]
+            assert tool["title"] == "Dummy tool"
+            assert tool["used_by"] == ["Conversations"]
+            assert list(tool["fields"]) == ["required_test", "optional_test"]
 
 
 class TestAgentView:
@@ -160,6 +171,21 @@ class TestAgentView:
     @pytest.fixture
     def dataset_instance(self):
         return baker.make(DataSet)
+
+    @pytest.fixture(autouse=True)
+    def installed_agents(self):
+        agent_classes = {agent_class.AGENT_KEY: agent_class for agent_class in AGENT_CLASSES}
+
+        def get_agent_class_by_type(agent_type):
+            if agent_type not in agent_classes:
+                raise AgentNotFoundError(agent_type)
+            return agent_classes[agent_type]
+
+        with patch(
+            "agent.services.agent_verification_service.AgentRegistry.get_agent_class_by_type",
+            side_effect=get_agent_class_by_type,
+        ):
+            yield
 
     def test_get_outsider_gets_not_found(self, api_client, url, dataset_instance):
         response = api_client.get(f"{url}?dataset={dataset_instance.pk}")
@@ -201,10 +227,10 @@ class TestAgentView:
         assert response.status_code == status.HTTP_200_OK
         assert response.data == []
 
-    def test_get_multiple_agents(self, api_client, user, url, dataset_instance):
+    def test_get_multiple_agents(self, api_client, user, url, dataset_instance, config):
         _grant_dataset_permission(user, dataset_instance, PERMISSIONS.AGENT.VIEW)
-        config_1 = baker.make(Agent, name="cfg1", config={"a": 1}, dataset=dataset_instance)
-        config_2 = baker.make(Agent, name="cfg2", config={"b": 2}, dataset=dataset_instance)
+        config_1 = baker.make(Agent, name="cfg1", agent_type="agent_1", config=config, dataset=dataset_instance)
+        config_2 = baker.make(Agent, name="cfg2", agent_type="agent_2", config=config, dataset=dataset_instance)
 
         response = api_client.get(f"{url}?dataset={dataset_instance.pk}")
 
@@ -214,10 +240,10 @@ class TestAgentView:
         assert config_1.id in ids
         assert config_2.id in ids
 
-    def test_get_returns_ordered_by_created_at(self, api_client, user, url, dataset_instance):
+    def test_get_returns_ordered_by_created_at(self, api_client, user, url, dataset_instance, config):
         _grant_dataset_permission(user, dataset_instance, PERMISSIONS.AGENT.VIEW)
-        older = baker.make(Agent, name="older", dataset=dataset_instance)
-        newer = baker.make(Agent, name="newer", dataset=dataset_instance)
+        older = baker.make(Agent, name="older", agent_type="agent_1", config=config, dataset=dataset_instance)
+        newer = baker.make(Agent, name="newer", agent_type="agent_1", config=config, dataset=dataset_instance)
 
         response = api_client.get(f"{url}?dataset={dataset_instance.pk}")
 
@@ -225,24 +251,22 @@ class TestAgentView:
         assert response.data[0]["id"] == older.id
         assert response.data[1]["id"] == newer.id
 
-    def test_get_returns_corrupted_agents_to_admin(self, user, api_client, url, dataset_instance):
+    def test_get_returns_corrupted_agents_to_admin(self, user, api_client, url, dataset_instance, config):
         user.is_superuser = True
         user.save()
-        agent_1 = baker.make(Agent, dataset=dataset_instance)
-        agent_2 = baker.make(Agent, dataset=dataset_instance, corrupted=True)
+        agent_1 = baker.make(Agent, agent_type="agent_1", config=config, dataset=dataset_instance)
+        agent_2 = baker.make(Agent, agent_type="removed_agent", config=config, dataset=dataset_instance)
 
         response = api_client.get(f"{url}?dataset={dataset_instance.pk}")
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 2
-        ids = {item["id"] for item in response.data}
-        assert agent_1.id in ids
-        assert agent_2.id in ids
+        corrupted = {item["id"]: item["corrupted"] for item in response.data}
+        assert corrupted == {agent_1.id: False, agent_2.id: True}
 
-    def test_get_filter_out_corrupted_agents_to_user(self, api_client, user, url, dataset_instance):
+    def test_get_filter_out_corrupted_agents_to_user(self, api_client, user, url, dataset_instance, config):
         _grant_dataset_permission(user, dataset_instance, PERMISSIONS.AGENT.VIEW)
-        agent_1 = baker.make(Agent, dataset=dataset_instance)
-        agent_2 = baker.make(Agent, dataset=dataset_instance, corrupted=True)
+        agent_1 = baker.make(Agent, agent_type="agent_1", config=config, dataset=dataset_instance)
+        agent_2 = baker.make(Agent, agent_type="removed_agent", config=config, dataset=dataset_instance)
 
         response = api_client.get(f"{url}?dataset={dataset_instance.pk}")
 
@@ -251,6 +275,25 @@ class TestAgentView:
         ids = {item["id"] for item in response.data}
         assert agent_1.id in ids
         assert agent_2.id not in ids
+
+    def test_get_marks_an_agent_with_invalid_tool_settings_corrupted(
+        self, admin_api_client, url, dataset_instance, config
+    ):
+        del config["tools"]["dummy_tool"]["required_test"]
+        agent = baker.make(Agent, agent_type="agent_1", config=config, dataset=dataset_instance)
+
+        admin_api_client.get(f"{url}?dataset={dataset_instance.pk}")
+
+        agent.refresh_from_db()
+        assert agent.corrupted is True
+
+    def test_get_clears_the_flag_of_an_agent_that_is_valid_again(self, admin_api_client, url, dataset_instance, config):
+        agent = baker.make(Agent, agent_type="agent_1", config=config, dataset=dataset_instance, corrupted=True)
+
+        admin_api_client.get(f"{url}?dataset={dataset_instance.pk}")
+
+        agent.refresh_from_db()
+        assert agent.corrupted is False
 
     def test_dataset_not_found(self, api_client, url):
         response = api_client.get(f"{url}?dataset=9999")
@@ -290,14 +333,10 @@ class TestAgentView:
             "prompt_input": {
                 "required_test": "required_test",
             },
-            "tools": [
-                {
-                    "required_test": "required_test",
-                },
-                {
-                    "required_test": "required_test",
-                },
-            ],
+            "tools": {
+                "dummy_tool": {"required_test": "required_test"},
+                "other_dummy_tool": {"required_test": "required_test"},
+            },
         }
         payload = {
             "name": "name",
@@ -326,10 +365,10 @@ class TestAgentView:
                 "required_test": "required_test",
                 "optional_test": "optional_test",
             },
-            "tools": [
-                {"required_test": "required_test", "optional_test": "optional_test"},
-                {"required_test": "required_test", "optional_test": "optional_test"},
-            ],
+            "tools": {
+                "dummy_tool": {"required_test": "required_test", "optional_test": "optional_test"},
+                "other_dummy_tool": {"required_test": "required_test", "optional_test": "optional_test"},
+            },
         }
         payload = {
             "name": "name",
@@ -345,8 +384,8 @@ class TestAgentView:
             assert response.status_code == status.HTTP_201_CREATED
             created = Agent.objects.get(pk=response.data["id"])
             assert created.name == "name"
-            assert created.config["tools"][0].get("optional_test") == "optional_test"
-            assert created.config["tools"][1].get("optional_test") == "optional_test"
+            assert created.config["tools"]["dummy_tool"].get("optional_test") == "optional_test"
+            assert created.config["tools"]["other_dummy_tool"].get("optional_test") == "optional_test"
             assert created.config["agent_args"].get("optional_test") == "optional_test"
             assert created.config["prompt_input"].get("optional_test") == "optional_test"
 
@@ -360,7 +399,7 @@ class TestAgentView:
             "prompt_input": {
                 "required_test": "required_test",
             },
-            "tools": [{"required_test": "required_test"}, {"required_test": "required_test"}],
+            "tools": {"dummy_tool": {"required_test": "required_test"}},
         }
         payload = {
             "name": "name",
@@ -371,9 +410,11 @@ class TestAgentView:
         }
 
         class NoArgsDummyTool(BaseFunctionTool):
+            NAME = "no_args_dummy_tool"
             CONFIGURATION_ARGS = None
 
         class NoArgsDummyAgent:
+            AGENT_KEY = "no_args_dummy_agent"
             AGENT_ARGS = None
             PROMPT_INPUT = PromptInput
             TOOLS = [FunctionToolConfig(tool_class=NoArgsDummyTool), FunctionToolConfig(tool_class=DummyTool)]
@@ -388,8 +429,9 @@ class TestAgentView:
             created = Agent.objects.get(pk=response.data["id"])
             assert created.name == "name"
             assert created.config["agent_args"] == {}
-            assert created.config["tools"][0] == {}
-            assert created.config["tools"][1] == {"required_test": "required_test", "optional_test": "default"}
+            assert created.config["tools"] == {
+                "dummy_tool": {"required_test": "required_test", "optional_test": "default"}
+            }
 
 
 class TestAgentDetailsView:
@@ -474,10 +516,10 @@ class TestAgentDetailsView:
                 "required_test": "required_updated",
                 "optional_test": "optional_updated",
             },
-            "tools": [
-                {"required_test": "required_upated", "optional_test": "optional_updated"},
-                {"required_test": "required_updated", "optional_test": "optional_updated"},
-            ],
+            "tools": {
+                "dummy_tool": {"required_test": "required_upated", "optional_test": "optional_updated"},
+                "other_dummy_tool": {"required_test": "required_updated", "optional_test": "optional_updated"},
+            },
         }
         payload = {
             "name": "updated",
@@ -546,10 +588,10 @@ class TestAgentDetailsView:
                 "required_test": "required_updated",
                 "optional_test": "optional_updated",
             },
-            "tools": [
-                {"required_test": "required_upated", "optional_test": "optional_updated"},
-                {"required_test": "required_updated", "optional_test": "optional_updated"},
-            ],
+            "tools": {
+                "dummy_tool": {"required_test": "required_upated", "optional_test": "optional_updated"},
+                "other_dummy_tool": {"required_test": "required_updated", "optional_test": "optional_updated"},
+            },
         }
         payload = {
             "name": "updated",

@@ -22,6 +22,7 @@ from agent.serializers.configuration import (
     ToolProvidingIntegrationOptionSerializer,
     agent_type_config_schema,
 )
+from agent.services import AgentVerificationService
 from catalog.models import DataSet, Integration
 
 
@@ -68,18 +69,19 @@ class AgentView(APIView):
         responses={200: AgentListSerializer(many=True)},
     )
     def get(self, request):
-        if request.user.is_superuser:
-            queryset = Agent.objects.all().order_by("created_at")
-        else:
-            queryset = Agent.objects.filter(corrupted=False).order_by("created_at")
-        filterset = AgentFilter(request.GET, queryset=queryset)
+        filterset = AgentFilter(request.GET, queryset=Agent.objects.order_by("created_at"))
         if not filterset.is_valid():
             return Response(filterset.errors, status=status.HTTP_400_BAD_REQUEST)
 
         dataset = get_object_or_404(DataSet, pk=filterset.form.cleaned_data["dataset"])
         enforce_dataset_scoped_permission(self, PERMISSIONS.AGENT.VIEW, dataset)
 
-        serializer = AgentListSerializer(filterset.qs, many=True)
+        agents = list(filterset.qs)
+        AgentVerificationService().verify(agents)
+        if not request.user.is_superuser:
+            agents = [agent for agent in agents if not agent.corrupted]
+
+        serializer = AgentListSerializer(agents, many=True)
         return Response(serializer.data, status=200)
 
     @swagger_auto_schema(

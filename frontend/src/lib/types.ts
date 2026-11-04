@@ -189,10 +189,22 @@ export type ExtraArgDetail = {
   required?: boolean;
 };
 
+export type ToolConfigSchema = {
+  title: string;
+  used_by: string[];
+  fields: Record<string, ExtraArgDetail>;
+};
+
 export type AgentConfig = {
   agent_args?: Record<string, ExtraArgDetail>;
   prompt_input?: Record<string, ExtraArgDetail>;
-  tools?: Array<Record<string, ExtraArgDetail>>;
+  tools?: Record<string, Record<string, unknown>>;
+};
+
+export type AgentConfigSchema = {
+  agent_args?: Record<string, ExtraArgDetail>;
+  prompt_input?: Record<string, ExtraArgDetail>;
+  tools?: Record<string, ToolConfigSchema>;
 };
 
 export type ConversationFile = {
@@ -242,7 +254,7 @@ export type AgentDetails = {
   file_upload: boolean;
   tool_providing_integrations: number[];
   config: AgentConfig;
-  config_schema: AgentConfig;
+  config_schema: AgentConfigSchema;
   dataset: number;
   agent_type: string;
   agent_type_name: string;

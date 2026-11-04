@@ -22,7 +22,7 @@ class AgentConfigOverrides(ArbitraryTypeBaseModel):
     integration_plugin_resolver: type[BaseIntegrationPluginResolver] | None = None
     repositories: RepositoriesConfig | None = None
     system_prompt: str | None = None
-    extra_tools: list[ToolConfig] | None = None
+    tools: list[ToolConfig] | None = None
     agent_config_patch: dict[str, Any] | None = None
 
     def with_fallback(self, base: "AgentConfigOverrides") -> "AgentConfigOverrides":
@@ -50,8 +50,8 @@ class AgentConfigOverrides(ArbitraryTypeBaseModel):
             update["repositories"] = self.repositories
         if self.system_prompt is not None:
             update["system_prompt"] = self.system_prompt
-        if self.extra_tools:
-            update["tools"] = [*(config.tools or []), *self.extra_tools]
+        if self.tools is not None:
+            update["tools"] = self.tools
         if self.agent_config_patch:
             update["runtime_arguments_patch"] = deep_merge(
                 config.runtime_arguments_patch or {}, self.agent_config_patch

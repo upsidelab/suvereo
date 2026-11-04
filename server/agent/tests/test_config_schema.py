@@ -56,7 +56,7 @@ def agent():
         config={
             "agent_args": {"text_arg": "hello", "number_arg": 7},
             "prompt_input": {"prompt_arg": "prompt"},
-            "tools": [{"tool_setting": "on"}, {}],
+            "tools": {"dummy_tool": {"tool_setting": "on"}},
         },
     )
 
@@ -76,7 +76,14 @@ class TestAgentTypeConfigSchema:
 
         assert list(schema.keys()) == ["agent_args", "prompt_input", "tools"]
         assert list(schema["agent_args"].keys()) == ["text_arg", "number_arg"]
-        assert [list(tool.keys()) for tool in schema["tools"]] == [["tool_setting"], []]
+        assert list(schema["tools"]) == ["dummy_tool"]
+
+    def test_tools_are_keyed_by_name_with_a_title_and_their_fields(self):
+        tool = agent_type_config_schema(DummyAgent)["tools"]["dummy_tool"]
+
+        assert tool["title"] == "Dummy tool"
+        assert list(tool["fields"]) == ["tool_setting"]
+        assert tool["fields"]["tool_setting"]["title"] == "Tool setting"
 
     def test_descriptors_carry_the_title_description_type_and_required_flag(self):
         text_arg = agent_type_config_schema(DummyAgent)["agent_args"]["text_arg"]

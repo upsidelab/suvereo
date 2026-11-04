@@ -1,5 +1,5 @@
 import {BaseApiClient} from "@/lib/api/base.ts";
-import {Agent, AgentConfig, AgentDetails, ToolProvidingIntegrationOption} from "@/lib/types.ts";
+import {Agent, AgentConfig, AgentDetails, ToolConfigSchema, ToolProvidingIntegrationOption} from "@/lib/types.ts";
 import {ApiError} from "@/lib/api-error.ts";
 
 export type AgentChoice = {
@@ -7,7 +7,7 @@ export type AgentChoice = {
   name: string;
   agent_args: Record<string, string>;
   prompt_inputs: Record<string, string>;
-  tools: Record<string, string>[];
+  tools: Record<string, ToolConfigSchema>;
 };
 
 type AvailableAgentsResponse = {

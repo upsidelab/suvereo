@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, Optional, Type
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.tools import BaseTool
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from ..injectors import BaseInjector
 from ..utils import RequiredFieldsModel
@@ -30,7 +30,7 @@ class BaseAgent(ABC, metaclass=AgentExtraArgsClassBaseMeta):
     - ``PROMPT_INPUT``: a ``RequiredFieldsModel`` of per-agent settings, used as variables of the system prompt:
       each field is available in the prompt as ``{field_name}``. Stored like ``AGENT_ARGS``.
     - ``TOOLS``: the tool configs of the agent. The settings of each tool (``CONFIGURATION_ARGS``) are stored
-      per agent as well.
+      per agent as well, keyed by the tool's ``NAME``.
     - ``FILE_UPLOAD``: whether agents of this type accept uploaded files.
     - ``SYSTEM_PROMPT``: the system prompt template; the fields of ``PROMPT_INPUT`` fill its variables.
       Required, like ``NAME`` and ``AGENT_KEY``: a concrete agent class that leaves any of them
@@ -138,12 +138,20 @@ class BaseAgent(ABC, metaclass=AgentExtraArgsClassBaseMeta):
         return {}
 
     def set_runtime_arguments(self, runtime_arguments: Any) -> None:
-        tools_runtime_arguments = runtime_arguments.pop("tools")
+        tools_runtime_arguments = runtime_arguments.pop("tools", {})
+        if not isinstance(tools_runtime_arguments, dict):
+            logger.warning("Tool settings are stored as a list; tools use their defaults until the agent is saved")
+            tools_runtime_arguments = {}
         for key, value in runtime_arguments.items():
             class_field_key = key.upper()
             field = getattr(self, class_field_key)
             if field is None:
                 continue
             setattr(self, key.upper(), field(**value))
-        for index, tool_runtime_args in enumerate(tools_runtime_arguments):
-            self._tools[index].set_runtime_arguments(tool_runtime_args)
+        for tool in self._tools:
+            try:
+                tool.set_runtime_arguments(tools_runtime_arguments.get(tool.NAME, {}))
+            except ValidationError as e:
+                raise ValueError(
+                    f"Tool '{tool.NAME}' has missing or invalid settings; save the agent's configuration."
+                ) from e

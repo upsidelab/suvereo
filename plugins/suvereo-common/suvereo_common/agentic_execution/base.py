@@ -59,6 +59,9 @@ class BaseAgenticExecutionDefinition(ABC):
     Register the subclass in ``settings.AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS`` so the
     server can discover it.
 
+    ``TOOLS`` replaces the agent's tools for this execution; ``None`` keeps them. The settings of every tool an
+    execution runs are stored on its agent, keyed by tool ``NAME``.
+
     Minimal implementation::
 
         class MyExecution(BaseAgenticExecutionDefinition):
@@ -67,7 +70,7 @@ class BaseAgenticExecutionDefinition(ABC):
             NAME = "My Execution"
             INPUT_TYPE = MyExecutionInput
             SYSTEM_PROMPT = MY_EXECUTION_PROMPT  # optional: replaces the agent's prompt for this execution
-            EXTRA_TOOLS = [LLMToolConfig(tool_class=StopExecutionTool)]  # optional: appended to the agent's tools
+            TOOLS = [*MyAgent.TOOLS, LLMToolConfig(tool_class=StopExecutionTool)]  # optional: replaces the agent's tools
 
             def execute(self, input_data, conversation):
                 return conversation.ask("Do the thing.")
@@ -80,7 +83,7 @@ class BaseAgenticExecutionDefinition(ABC):
     INPUT_TYPE: ClassVar[Type[ExecutionInputType]] = ExecutionInputType
     VALIDATORS: ClassVar[list[Type[BaseExecutionValidator]]] = [IsValidJsonValidator]
     SYSTEM_PROMPT: ClassVar[Optional[str]] = None
-    EXTRA_TOOLS: ClassVar[list["ToolConfig"]] = []
+    TOOLS: ClassVar[Optional[list["ToolConfig"]]] = None
     MAX_RETRIES: ClassVar[int] = 3
     FAILURE_CODES: ClassVar[Type[ExecutionFailureCode]] = ExecutionFailureCode
     FAILURE_SUMMARY_PROMPT: ClassVar[str] = (

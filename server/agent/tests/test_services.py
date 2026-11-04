@@ -19,7 +19,12 @@ class ToolArgs(RequiredFieldsModel):
 
 
 class DummyTool(BaseFunctionTool):
+    NAME = "dummy_tool"
     CONFIGURATION_ARGS = ToolArgs
+
+
+class OtherDummyTool(DummyTool):
+    NAME = "other_dummy_tool"
 
 
 class AgentArgs(RequiredFieldsModel):
@@ -40,7 +45,7 @@ class MockAgentClass:
     NAME = "Dummy Agent"
     AGENT_ARGS = AgentArgs
     PROMPT_INPUT = PromptInput
-    TOOLS = [FunctionToolConfig(tool_class=DummyTool), FunctionToolConfig(tool_class=DummyTool)]
+    TOOLS = [FunctionToolConfig(tool_class=DummyTool), FunctionToolConfig(tool_class=OtherDummyTool)]
     FILE_UPLOAD = False
 
 
@@ -60,7 +65,7 @@ class MockAgentClassWithoutDefaults:
 EXPECTED_AGENT_CONFIG = {
     "agent_args": {"with_default": "default"},
     "prompt_input": {"with_default": "default"},
-    "tools": [{"with_default": "default"}, {"with_default": "default"}],
+    "tools": {"dummy_tool": {"with_default": "default"}, "other_dummy_tool": {"with_default": "default"}},
 }
 
 

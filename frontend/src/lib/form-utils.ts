@@ -2,6 +2,20 @@
  * Common form utilities for configuration handling
  */
 
+export function toFormValue(value: unknown): string | number | boolean | undefined {
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'object' && value !== null) {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return '{}';
+    }
+  }
+  return undefined;
+}
+
 export function flattenConfigForForm(
   config: unknown, 
   sectionMapping?: Record<string, string>
@@ -19,29 +33,15 @@ export function flattenConfigForForm(
       sectionData.forEach(obj => {
         if (obj && typeof obj === 'object') {
           Object.entries(obj).forEach(([key, value]) => {
-            if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-              flattenedConfig[`${frontendSection}_${key}`] = value;
-            } else if (typeof value === 'object' && value !== null) {
-              try {
-                flattenedConfig[`${frontendSection}_${key}`] = JSON.stringify(value);
-              } catch {
-                flattenedConfig[`${frontendSection}_${key}`] = '{}';
-              }
-            }
+            const formValue = toFormValue(value);
+            if (formValue !== undefined) flattenedConfig[`${frontendSection}_${key}`] = formValue;
           });
         }
       });
     } else if (sectionData && typeof sectionData === 'object') {
       Object.entries(sectionData).forEach(([key, value]) => {
-        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-          flattenedConfig[`${frontendSection}_${key}`] = value;
-        } else if (typeof value === 'object' && value !== null) {
-          try {
-            flattenedConfig[`${frontendSection}_${key}`] = JSON.stringify(value);
-          } catch {
-            flattenedConfig[`${frontendSection}_${key}`] = '{}';
-          }
-        }
+        const formValue = toFormValue(value);
+        if (formValue !== undefined) flattenedConfig[`${frontendSection}_${key}`] = formValue;
       });
     }
   });

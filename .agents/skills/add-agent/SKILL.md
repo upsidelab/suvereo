@@ -114,6 +114,8 @@ Subclass one of the base tools from `suvereo_common.tools`, matching what the to
 
 Only `BaseLLMTool` and `BaseFileTool` have `self._injector`. A metaclass checks the required class attributes at import time: `NAME`, `DESCRIPTION`, `ARGS_SCHEMA`, `RETURN_DIRECT`.
 
+A tool with settings sets `CONFIGURATION_ARGS` to a `RequiredFieldsModel` and reads `self.CONFIGURATION_ARGS.<field>`. The values are stored on the agent under the tool's `NAME` and edited in the agent's form. One `NAME` means one settings model across the agent and its executions: an execution may repeat the agent's tools, but two different tools with settings need different `NAME`s.
+
 ```python
 from suvereo_common.tools import BaseLLMTool
 from pydantic import BaseModel, Field
@@ -172,11 +174,13 @@ class <Name>AgenticExecutionDefinition(BaseAgenticExecutionDefinition):
     INPUT_TYPE = <Name>AgenticExecutionInput
     VALIDATORS = [StopExecutionValidator, IsValidJsonValidator]
     SYSTEM_PROMPT = <NAME>_EXECUTION_PROMPT  # optional
-    EXTRA_TOOLS = [LLMToolConfig(tool_class=StopExecutionTool)]  # optional
+    TOOLS = [*<Name>Agent.TOOLS, LLMToolConfig(tool_class=StopExecutionTool)]  # optional
 
     def execute(self, input_data: <Name>AgenticExecutionInput, conversation: ExecutionConversationInterface) -> str:
         return conversation.ask(input_data.additional_instructions or "<default task>")
 ```
+
+`TOOLS` replaces the agent's tools for this execution; leave it unset to run the agent's tools. Import the agent class (`from .agent import <Name>Agent`) to build on its list. A tool with settings that only the execution runs is still configured in the agent's form.
 
 `AGENT_KEY` must equal the agent's. Export the definition from `__init__.py` and register it in `AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS`. Contracts: `plugins/suvereo-common/suvereo_common/agentic_execution/`.
 

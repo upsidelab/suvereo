@@ -18,3 +18,4 @@ One short file per architectural decision, numbered in the order they were recor
 | [0005](0005-jwt-authentication.md) | JWT access and refresh tokens for users | Accepted |
 | [0006](0006-mcp-servers-as-tool-providing-integrations.md) | MCP servers as tool-providing integrations, connected with OAuth | Accepted |
 | [0007](0007-agent-self-configuration.md) | Agents declare their own configuration | Accepted |
+| [0008](0008-tool-configuration-keyed-by-tool-name.md) | Tool configuration keyed by tool name | Accepted |
