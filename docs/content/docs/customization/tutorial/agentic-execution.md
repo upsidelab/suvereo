@@ -2,7 +2,7 @@
 
 A conversation answers one person as they type. The last part of the tutorial adds the other mode of working: an [agentic execution](/docs/concepts#agentic-execution), which runs in the background, takes structured input and returns a structured result, with no one to answer questions on the way. The execution built here creates a meal plan for a user for a number of days, and checks the plan against the user's allergies and calorie target before it is accepted.
 
-The classes an execution is made of are described in [Agentic execution](/docs/agents/agentic-execution). This page builds one for the nutrition assistant from the [previous page](/docs/customization/tutorial/agent). It runs on the same agent, with its own prompt and one extra tool.
+The classes an execution is made of are described in [Agentic execution](/docs/agents/agentic-execution). This page builds one for the nutrition assistant from the [previous page](/docs/customization/tutorial/agent). It runs on the same agent, with its own prompt and a smaller set of tools.
 
 New files on this page:
 
@@ -58,7 +58,7 @@ Call stop_execution with a short reason only if search_recipes finds no safe rec
 
 - The prompt states the output format exactly, because the validators in the next step parse it.
 - The braces of the JSON example are doubled, since prompts are formatted with `str.format`.
-- `stop_execution` is a tool that ends the execution as failed with a reason. It gives the agent a way out when no plan is possible, instead of returning an invented one. The definition adds it in step 4.
+- `stop_execution` is a tool that ends the execution as failed with a reason. It gives the agent a way out when no plan is possible, instead of returning an invented one. The definition lists it among its tools in step 4.
 
 ## 3. The validators
 
@@ -345,6 +345,7 @@ from diet_vertical.models import UserProfile
 from diet_vertical.nutrition_agent.tools.serialization import profile_as_dict
 
 from .prompt import WEEKLY_MEAL_PLAN_EXECUTION_PROMPT
+from .tools import SearchRecipesTool
 from .validators import (
     AllDaysPlannedValidator,
     CalorieTargetValidator,
@@ -374,7 +375,7 @@ class WeeklyMealPlanExecutionDefinition(BaseAgenticExecutionDefinition):
         CalorieTargetValidator,
     ]
     SYSTEM_PROMPT = WEEKLY_MEAL_PLAN_EXECUTION_PROMPT
-    EXTRA_TOOLS = [LLMToolConfig(tool_class=StopExecutionTool)]
+    TOOLS = [LLMToolConfig(tool_class=SearchRecipesTool), LLMToolConfig(tool_class=StopExecutionTool)]
 
     def execute(self, input_data: WeeklyMealPlanInput, conversation: ExecutionConversationInterface) -> str:
         profile = UserProfile.objects.filter(user_id=input_data.user_id).first()
@@ -397,7 +398,7 @@ class WeeklyMealPlanExecutionDefinition(BaseAgenticExecutionDefinition):
 | `INPUT_TYPE` | The input model of step 1. |
 | `VALIDATORS` | Run in this order after every attempt. `StopExecutionValidator` ends the execution when the agent called `stop_execution`. The validators of step 3 follow, with the general checks first (JSON and shape), so that each later one can assume what the earlier ones established. |
 | `SYSTEM_PROMPT` | Replaces the agent's conversation prompt for this execution. |
-| `EXTRA_TOOLS` | Tools added to the agent's own, here the one that ends the execution. The agent keeps its own tools, among them `search_recipes`. |
+| `TOOLS` | The tools of the agent in this execution. A list replaces the agent's own, so it can be a smaller set. Here it is the recipe search and the tool that ends the execution. The profile tools are left out: they act on the user of the conversation, and the caller of an execution may not be the user the plan is made for, whose `user_id` is passed in the input. |
 
 `execute()` is where the vertical's data enters. The agent runs without a person, so the code loads the profile of the user from the input and puts it in the first message, rather than relying on the model to ask. `conversation.ask()` sends a message to the agent and returns its answer, and the base class passes that answer to the validators. When a validator rejects it, the base class sends the feedback to the model and the retry loop continues.
 
