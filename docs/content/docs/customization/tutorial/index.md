@@ -9,7 +9,7 @@ The example is a vertical for personalised nutrition, the **diet vertical**. It 
 - **Data.** Two [entities](/docs/concepts#entity): `Recipe`, which is searchable by meaning, and `UserProfile`, which holds a person's allergies, dietary preferences and daily calorie target.
 - **Integration types.** A recipe source and a user source: the kinds of external systems the vertical can import from.
 - **Integrations.** A sample of each, which bring recipes and users into a [data set](/docs/concepts#data-set), and one that connects a real recipe API.
-- **An agent.** A nutrition assistant that finds recipes for a user in a [conversation](/docs/concepts#conversation), using a tool that searches the recipes.
+- **An agent.** A nutrition assistant that finds recipes for a user in a [conversation](/docs/concepts#conversation), using tools that search the recipes and read and update the user's profile.
 - **An agentic execution.** A weekly meal plan that runs in the background, started through the API, and is checked against the user's allergies and calorie target before it is returned.
 
 ## Pages
@@ -18,9 +18,9 @@ Each page builds on the previous one and leaves the instance in a working state.
 
 | Page | Adds | Explained in |
 |---|---|---|
-| [The vertical](/docs/customization/tutorial/vertical) | Entities, the recipe retriever, the injector and builder, registration and migrations | [Verticals](/docs/customization/verticals) |
+| [The vertical](/docs/customization/tutorial/vertical) | Entities, the recipe retriever, the profile accessor, the injector and builder, registration and migrations | [Verticals](/docs/customization/verticals) |
 | [The integrations](/docs/customization/tutorial/integrations) | The recipe and user source types, their managers and two sample integrations | [Integrations](/docs/customization/integrations) |
-| [The agent](/docs/customization/tutorial/agent) | A tool that searches recipes, a prompt and the agent class | [Agents](/docs/agents/agent-architecture) |
+| [The agent](/docs/customization/tutorial/agent) | Tools that search recipes and read and update the user's profile, a prompt and the agent class | [Agents](/docs/agents/agent-architecture) |
 | [The agentic execution](/docs/customization/tutorial/agentic-execution) | An execution definition with its input, prompt and validator | [Agentic execution](/docs/agents/agentic-execution) |
 
 The tutorial shows the code and says what each part does. The linked pages describe the contracts behind it in full.
@@ -108,6 +108,6 @@ If the package imports, the setup is done: `poetry run python -c "import diet_ve
 The snippets are a reduced version of a complete diet vertical. Every part is present, but some pieces of a production vertical are left out so that each page stays focused on the structure:
 
 - Allergens are detected from a short list of keywords. A real vertical would use a more complete list or a food database.
-- The agent has one tool, for searching recipes. It can be extended with tools that read and update the user's profile.
+- The agent has three tools: reading and updating the user's profile, and searching recipes. A real assistant would have more, for example for logging what the user ate.
 
 Continue with [the vertical](/docs/customization/tutorial/vertical).

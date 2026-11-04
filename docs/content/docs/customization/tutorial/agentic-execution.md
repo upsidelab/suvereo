@@ -342,6 +342,7 @@ from suvereo_common.agentic_execution import (
 from suvereo_common.config import LLMToolConfig
 
 from diet_vertical.models import UserProfile
+from diet_vertical.nutrition_agent.tools.serialization import profile_as_dict
 
 from .prompt import WEEKLY_MEAL_PLAN_EXECUTION_PROMPT
 from .validators import (
@@ -366,7 +367,7 @@ class WeeklyMealPlanExecutionDefinition(BaseAgenticExecutionDefinition):
     INPUT_TYPE = WeeklyMealPlanInput
     VALIDATORS = [
         StopExecutionValidator,
-            MealPlanJsonValidator,
+        MealPlanJsonValidator,
         AllDaysPlannedValidator,
         RecipesExistValidator,
         NoAllergensValidator,
@@ -379,18 +380,10 @@ class WeeklyMealPlanExecutionDefinition(BaseAgenticExecutionDefinition):
         profile = UserProfile.objects.filter(user_id=input_data.user_id).first()
         if profile is None:
             return conversation.ask(
-                f"User {input_data.user_id} has no profile, so no plan can be made. "
-                "Call stop_execution with that reason."
+                f"User {input_data.user_id} has no profile, so no plan can be made. Call stop_execution with that reason."
             )
-        details = {
-            "allergies": profile.allergies,
-            "conditions": profile.conditions,
-            "dietary_preferences": profile.dietary_preferences,
-            "disliked_foods": profile.disliked_foods,
-            "target_calories": profile.target_calories,
-        }
         return conversation.ask(
-            f"Build a meal plan for {input_data.days} days for a user with this profile:\n{details}"
+            f"Build a meal plan for {input_data.days} days for a user with this profile:\n{profile_as_dict(profile)}"
         )
 ```
 
@@ -404,7 +397,7 @@ class WeeklyMealPlanExecutionDefinition(BaseAgenticExecutionDefinition):
 | `INPUT_TYPE` | The input model of step 1. |
 | `VALIDATORS` | Run in this order after every attempt. `StopExecutionValidator` ends the execution when the agent called `stop_execution`. The validators of step 3 follow, with the general checks first (JSON and shape), so that each later one can assume what the earlier ones established. |
 | `SYSTEM_PROMPT` | Replaces the agent's conversation prompt for this execution. |
-| `EXTRA_TOOLS` | Tools added to the agent's own, here the one that ends the execution. The agent keeps `search_recipes`. |
+| `EXTRA_TOOLS` | Tools added to the agent's own, here the one that ends the execution. The agent keeps its own tools, among them `search_recipes`. |
 
 `execute()` is where the vertical's data enters. The agent runs without a person, so the code loads the profile of the user from the input and puts it in the first message, rather than relying on the model to ask. `conversation.ask()` sends a message to the agent and returns its answer, and the base class passes that answer to the validators. When a validator rejects it, the base class sends the feedback to the model and the retry loop continues.
 

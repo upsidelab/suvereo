@@ -1,6 +1,6 @@
 # The Vertical
 
-This page gives the diet vertical its data, and the way agents search it. It covers the entities, the retriever, the injector and the builder, then registers the vertical and creates its tables. Each part is described in [Verticals](/docs/customization/verticals), and this page shows it for the diet domain.
+This page gives the diet vertical its data, and the way agents search it. It covers the entities, the retriever, the profile accessor, the injector and the builder, then registers the vertical and creates its tables. Each part is described in [Verticals](/docs/customization/verticals), and this page shows it for the diet domain.
 
 Everything on this page is in the `diet_vertical` package created in the [overview](/docs/customization/tutorial#create-the-package). The layout after this page:
 
@@ -17,6 +17,7 @@ diet_vertical/
 ├── retrievers/
 │   ├── __init__.py
 │   └── recipe.py
+├── profiles.py
 ├── injector.py
 ├── builder.py
 └── migrations/          # generated
@@ -119,7 +120,7 @@ What each part is for:
 - **`allergens` and `dietary_tags`** are lists computed when a recipe is imported. They let the retriever and the validator exclude recipes without asking a language model whether a dish is safe.
 - **`calories`** is per serving. The meal plan multiplies it by the number of servings.
 - **`EntityMeta`** is everything Suvereo needs to show the entity in the UI: a URL slug, the plural label of the sidebar entry and the columns of the table. No serializer, view or frontend code is needed.
-- **`get_indexable_content()`** returns the text that is embedded. Search finds recipes by the similarity of a query to this text, so it contains what a person would search by: the title, the kind of meal, the ingredients, the dietary tags and the instructions. The allergens are left out on purpose, because the retriever filters on them exactly.
+- **`get_indexable_content()`** returns the text that is embedded. Search finds recipes by the similarity of a query to this text, so it contains what a person would search by: the title, the kind of meal, the ingredients, the dietary tags and the instructions. The allergens are left out, because the retriever filters on them exactly.
 
 ## 3. Making the recipe searchable
 
@@ -241,25 +242,70 @@ __all__ = ["RecipeRetriever"]
 - `find_content_matching_query(query)` is the vector search that the base class provides. `find_recipes` narrows its result: it drops recipes of another kind of meal and recipes that contain an excluded allergen, and it collapses several chunks of one recipe into one result.
 - The filters run after the vector search, on the chunks that it returned, so a query that matches mostly excluded recipes returns fewer results. How many chunks the search returns is set when the builder creates the retriever, in the next step.
 
-## 6. The injector and the builder
+## 6. The profile accessor, the injector and the builder
 
-Tools reach the retriever through the [injector](/docs/agents/injector), and the [builder](/docs/agents/builder) creates the injector. The injector extends the default one with the retriever:
+Tools reach the vertical's code through the [injector](/docs/agents/injector), and the [builder](/docs/agents/builder) creates the injector. The injector holds two things here: the retriever, and an accessor for the profile of the user in the conversation.
+
+The accessor is bound to one user when it is created. It reads and updates that user's profile and nothing else, so a tool that uses it cannot reach another person's data, whatever the model asks for:
+
+```python
+# diet_vertical/profiles.py
+from typing import Any, Optional
+
+from diet_vertical.models import UserProfile
+
+UPDATABLE_FIELDS = (
+    "allergies",
+    "conditions",
+    "dietary_preferences",
+    "disliked_foods",
+    "target_calories",
+)
+
+
+class UserProfileAccessor:
+    def __init__(self, user_id: int, data_set_id: int):
+        self._user_id = user_id
+        self._data_set_id = data_set_id
+
+    def get(self) -> Optional[UserProfile]:
+        return UserProfile.objects.filter(user_id=self._user_id).first()
+
+    def update(self, changes: dict[str, Any]) -> UserProfile:
+        accepted = {field: value for field, value in changes.items() if field in UPDATABLE_FIELDS}
+        profile, _ = UserProfile.objects.update_or_create(
+            user_id=self._user_id,
+            defaults=accepted,
+            create_defaults={"dataset_id": self._data_set_id, **accepted},
+        )
+        return profile
+```
+
+`UPDATABLE_FIELDS` lists the fields that can be changed through the accessor. Anything else in `changes` is ignored. The first update creates the profile, in the data set of the conversation.
+
+The injector extends the default one:
 
 ```python
 # diet_vertical/injector.py
 from suvereo_common.injectors import Injector
 
+from diet_vertical.profiles import UserProfileAccessor
 from diet_vertical.retrievers import RecipeRetriever
 
 
 class DietInjector(Injector):
-    def __init__(self, *args, recipe_retriever: RecipeRetriever, **kwargs):
+    def __init__(self, *args, recipe_retriever: RecipeRetriever, user_profile: UserProfileAccessor, **kwargs):
         super().__init__(*args, **kwargs)
         self._recipe_retriever = recipe_retriever
+        self._user_profile = user_profile
 
     @property
     def recipe_retriever(self) -> RecipeRetriever:
         return self._recipe_retriever
+
+    @property
+    def user_profile(self) -> UserProfileAccessor:
+        return self._user_profile
 ```
 
 The builder creates it. The builder of the vertical subclasses `AgentBuilder` and overrides `_build_injector()`:
@@ -270,6 +316,7 @@ from suvereo_common.builder import AgentBuilder
 from suvereo_common.config import AgentConfig
 
 from diet_vertical.injector import DietInjector
+from diet_vertical.profiles import UserProfileAccessor
 from diet_vertical.retrievers import RecipeRetriever
 
 CHUNKS_SEARCHED = 100
@@ -278,25 +325,35 @@ CHUNKS_SEARCHED = 100
 class DietAgentBuilder(AgentBuilder[AgentConfig]):
     def _build_injector(self) -> DietInjector:
         chat_history = self._build_chat_history()
+        memory_compactor = self._build_memory_compactor(chat_history)
         return DietInjector(
-            recipe_retriever=RecipeRetriever(
-                data_set_id=self._data_set_id,
-                embeddings_registry=self._embeddings_registry,
-                searcher=self._config.similarity_searcher(),
-                max_objects=CHUNKS_SEARCHED,
-            ),
+            recipe_retriever=self._build_recipe_retriever(),
+            user_profile=self._build_user_profile_accessor(),
             repositories=self._repositories,
             chat_history=chat_history,
-            memory_compactor=self._build_memory_compactor(chat_history),
+            memory_compactor=memory_compactor,
             tool_scratchpad=self._tool_scratchpad,
         )
+
+    def _build_recipe_retriever(self) -> RecipeRetriever:
+        return RecipeRetriever(
+            data_set_id=self._data_set_id,
+            embeddings_registry=self._embeddings_registry,
+            searcher=self._config.similarity_searcher(),
+            max_objects=CHUNKS_SEARCHED,
+        )
+
+    def _build_user_profile_accessor(self) -> UserProfileAccessor:
+        conversation = self._repositories.conversation.get_by_id(self.conversation_id)
+        return UserProfileAccessor(user_id=conversation.user_id, data_set_id=self._data_set_id)
 ```
 
-By the time `_build_injector()` runs, the base builder has resolved the data set of the conversation and created the embedding registry, so the method only assembles what is specific to the domain:
+By the time `_build_injector()` runs, the base builder has resolved the data set of the conversation and created the embedding registry, so the builder only assembles what is specific to the domain. `_build_recipe_retriever()` passes:
 
 - `data_set_id` and `embeddings_registry` let the retriever embed the query with the embedding model of the data set.
 - `searcher` is the similarity searcher of the agent's configuration. Its default is the one the framework provides, which compares embeddings in the database.
 - `max_objects` is the number of chunks the search returns before the retriever filters them. A larger number gives the filters more to work with.
+- `_build_user_profile_accessor()` finds the user of the conversation, `conversation.user_id`, and binds the accessor to them. The conversation is identified by `self.conversation_id`, which the builder is created with.
 - The remaining arguments are what the default injector needs, and are passed on unchanged.
 
 The builder takes effect when an agent names it. The [agent page](/docs/customization/tutorial/agent) sets it with `BUILDER_CLASS`.

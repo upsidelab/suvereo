@@ -2,7 +2,7 @@
 
 The vertical can store recipes and profiles, but nothing fills the tables. This page adds the [integrations](/docs/concepts#integration) that do. It defines two integration types, a recipe source and a user source, the managers that store what they fetch, and a sample integration of each type. The concepts are covered in [Integrations](/docs/customization/integrations), and the part of a vertical that defines them in [Verticals](/docs/customization/verticals#4-integration-types).
 
-An integration type is split in two on purpose. The **type** states what a source of recipes must provide, and the **manager** turns what it provides into entities. Integrations only implement the type, so a new source of recipes, such as a food blog or a meal-kit service, is one new class and no change to the code that stores recipes.
+An integration type is split in two. The **type** states what a source of recipes must provide, and the **manager** turns what it provides into entities. Integrations only implement the type, so a new source of recipes, such as a food blog or a meal-kit service, is one new class and no change to the code that stores recipes.
 
 New files on this page:
 
@@ -63,7 +63,7 @@ Move the imports to the top of the file. `calories` is per serving.
 
 ### Allergens and dietary tags
 
-When a recipe is imported, the vertical computes its allergens and dietary tags from its ingredients, since these fields drive the retriever and the validator. This is domain code that Suvereo knows nothing about: a source could supply the labels itself, and the vertical could compute them any other way. In this tutorial a classifier does it with keyword lists, in `classification.py`. It is deliberately small:
+When a recipe is imported, the vertical computes its allergens and dietary tags from its ingredients, since these fields drive the retriever and the validator. This is domain code that Suvereo knows nothing about: a source could supply the labels itself, and the vertical could compute them any other way. In this tutorial a classifier does it with keyword lists, in `classification.py`. It is small:
 
 ```python
 # diet_vertical/classification.py
@@ -72,6 +72,7 @@ from dataclasses import dataclass
 
 from diet_vertical.structures import Allergen, DietaryTag
 
+# Heuristic keywords for matching ingredient names. The lists are short and can be extended.
 ALLERGEN_KEYWORDS: dict[Allergen, tuple[str, ...]] = {
     Allergen.GLUTEN: ("wheat", "flour", "bread", "pasta", "spaghetti", "noodle", "barley", "couscous", "tortilla"),
     Allergen.DAIRY: ("milk", "cheese", "butter", "cream", "yogurt", "parmesan", "mozzarella", "feta"),
@@ -79,12 +80,12 @@ ALLERGEN_KEYWORDS: dict[Allergen, tuple[str, ...]] = {
     Allergen.PEANUTS: ("peanut",),
     Allergen.TREE_NUTS: ("almond", "walnut", "cashew", "pecan", "hazelnut", "pistachio"),
     Allergen.SOY: ("soy", "tofu", "edamame", "miso"),
-    Allergen.FISH: ("fish", "salmon", "tuna", "cod", "anchovy", "trout"),
-    Allergen.SHELLFISH: ("prawn", "shrimp", "crab", "lobster", "mussel"),
+    Allergen.FISH: ("fish", "salmon", "tuna", "cod", "anchovy", "anchovies", "mackerel"),
+    Allergen.SHELLFISH: ("prawn", "shrimp", "crab", "lobster", "mussel", "clam", "oyster"),
     Allergen.SESAME: ("sesame", "tahini"),
 }
 
-MEAT_KEYWORDS = ("chicken", "beef", "pork", "lamb", "bacon", "ham", "sausage", "turkey")
+MEAT_KEYWORDS = ("chicken", "beef", "pork", "lamb", "bacon", "ham", "sausage", "turkey", "duck", "mince")
 
 
 @dataclass(frozen=True)
@@ -93,25 +94,32 @@ class Classification:
     dietary_tags: list[DietaryTag]
 
 
-def _pattern(keywords: tuple[str, ...]) -> re.Pattern:
-    alternatives = "|".join(re.escape(keyword) for keyword in keywords)
-    return re.compile(rf"\b(?:{alternatives})(?:e?s)?\b")
-
-
 class IngredientClassifier:
     def __init__(self) -> None:
-        self._allergens = {allergen: _pattern(keywords) for allergen, keywords in ALLERGEN_KEYWORDS.items()}
-        self._meat = _pattern(MEAT_KEYWORDS)
+        self._allergen_patterns = {
+            allergen: self._compile(keywords) for allergen, keywords in ALLERGEN_KEYWORDS.items()
+        }
+        self._meat_pattern = self._compile(MEAT_KEYWORDS)
 
-    def classify(self, ingredients: list[str]) -> Classification:
-        names = [name.lower() for name in ingredients]
-        allergens = [a for a, pattern in self._allergens.items() if any(pattern.search(n) for n in names)]
-        vegetarian = not any(self._meat.search(n) for n in names) and not {Allergen.FISH, Allergen.SHELLFISH} & set(
-            allergens
-        )
-        vegan = vegetarian and not {Allergen.DAIRY, Allergen.EGGS} & set(allergens)
-        tags = [tag for tag, applies in ((DietaryTag.VEGETARIAN, vegetarian), (DietaryTag.VEGAN, vegan)) if applies]
-        return Classification(allergens=allergens, dietary_tags=tags)
+    def classify(self, ingredient_names: list[str]) -> Classification:
+        names = [name.lower() for name in ingredient_names]
+        allergens = [
+            allergen
+            for allergen, pattern in self._allergen_patterns.items()
+            if any(pattern.search(name) for name in names)
+        ]
+        contains_meat = any(self._meat_pattern.search(name) for name in names)
+        vegetarian = not contains_meat and Allergen.FISH not in allergens and Allergen.SHELLFISH not in allergens
+        vegan = vegetarian and Allergen.DAIRY not in allergens and Allergen.EGGS not in allergens
+        dietary_tags = [
+            tag for tag, applies in ((DietaryTag.VEGETARIAN, vegetarian), (DietaryTag.VEGAN, vegan)) if applies
+        ]
+        return Classification(allergens=allergens, dietary_tags=dietary_tags)
+
+    @staticmethod
+    def _compile(keywords: tuple[str, ...]) -> re.Pattern:
+        alternatives = "|".join(re.escape(keyword) for keyword in keywords)
+        return re.compile(rf"\b(?:{alternatives})(?:e?s)?\b")
 ```
 
 The keywords are keyed by `Allergen`, and the classifier returns enum members. The sync stores them as plain strings. A keyword match is a heuristic. It can label a dish wrongly, as the check at the end of this page shows. A vertical whose output people rely on for their health would need a better source of this information.
@@ -422,34 +430,66 @@ QUANTITY_PATTERN = re.compile(r"^\s*(\d+\s+\d+/\d+|\d+/\d+|\d+(?:\.\d+)?)\s*([a-
 
 GRAMS_PER_UNIT: dict[str, float] = {
     "g": 1,
+    "gram": 1,
+    "grams": 1,
     "kg": 1000,
+    "kilo": 1000,
+    "mg": 0.001,
     "ml": 1,
     "l": 1000,
+    "litre": 1000,
+    "liter": 1000,
+    "cl": 10,
+    "dl": 100,
     "cup": 240,
     "cups": 240,
     "tbsp": 15,
+    "tbs": 15,
     "tblsp": 15,
+    "tablespoon": 15,
+    "tablespoons": 15,
     "tsp": 5,
+    "teaspoon": 5,
+    "teaspoons": 5,
     "oz": 28.35,
+    "ounce": 28.35,
+    "ounces": 28.35,
     "lb": 453.6,
-    "clove": 5,
-    "cloves": 5,
+    "lbs": 453.6,
+    "pound": 453.6,
+    "pounds": 453.6,
     "pinch": 0.4,
+    "dash": 0.6,
+    "handful": 30,
     "slice": 30,
     "slices": 30,
+    "clove": 5,
+    "cloves": 5,
+    "can": 400,
+    "cans": 400,
+    "tin": 400,
+    "tins": 400,
 }
 
-# A quantity without a known unit, such as "3 large", counts as a piece of this weight.
 DEFAULT_PIECE_GRAMS = 60.0
 
 
+def parse_quantity(text: str) -> Optional[float]:
+    try:
+        return float(sum(Fraction(part) for part in text.split()))
+    except (ValueError, ZeroDivisionError):
+        return None
+
+
 def measure_to_grams(measure: str) -> Optional[float]:
-    """Converts a measure such as "1 1/2 cups" to grams, or returns None when it has no quantity."""
     match = QUANTITY_PATTERN.match(measure)
     if match is None:
         return None
-    quantity = float(sum(Fraction(part) for part in match.group(1).split()))
-    return quantity * GRAMS_PER_UNIT.get(match.group(2).lower(), DEFAULT_PIECE_GRAMS)
+    quantity = parse_quantity(match.group(1))
+    if quantity is None:
+        return None
+    unit = match.group(2).lower()
+    return quantity * GRAMS_PER_UNIT.get(unit, DEFAULT_PIECE_GRAMS)
 ```
 
 A measure without a quantity, such as `to taste`, gives `None`, and the ingredient is left out of the calorie sum.
@@ -539,7 +579,10 @@ MEAL_TYPES = {
     "Breakfast": MealType.BREAKFAST,
     "Starter": MealType.SNACK,
     "Side": MealType.SNACK,
-    **{category: MealType.MAIN for category in ("Beef", "Chicken", "Lamb", "Pasta", "Pork", "Seafood", "Vegetarian")},
+    **{
+        category: MealType.MAIN
+        for category in ("Beef", "Chicken", "Goat", "Lamb", "Pasta", "Pork", "Seafood", "Vegan", "Vegetarian")
+    },
 }
 
 # TheMealDB does not state how many people a recipe serves, so it is estimated from the weight of the ingredients.
