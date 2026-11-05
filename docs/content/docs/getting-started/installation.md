@@ -1,38 +1,47 @@
 # Installation
 
-The quickest way to start using Suvereo is with the provided Docker Compose setup. This will get you a working instance in just a few minutes.
+The quickest way to run Suvereo is the [Suvereo starter](/docs/customization/using-the-suvereo-starter): a repository that starts the server and frontend with Docker Compose and gives you a place for your own code. A working instance takes a few minutes to set up.
 
-## Setting Up Using Docker Compose
+## Setting up with Docker Compose
 
-First, clone the starter repository:
+Clone the starter and create the configuration files from the samples:
 
 ```shell
-$ git clone https://github.com/upsidelab/enthusiast-starter
-$ cp config/env.sample config/env
+git clone https://github.com/upsidelab/suvereo-starter
+cd suvereo-starter
+cp server/config/sample.env server/config/.env
+cp frontend/config/sample.env frontend/config/.env
 ```
 
-The default configuration uses the OpenAI API for generating document embeddings and for the large language model. 
-Make sure that your OpenAI has access to gpt-4.1 it is default recommended model if not - at least gpt-4o to ensure proper functioning of the application.
-You need to provide your OpenAI API key via the OPENAI_API_KEY environment variable in the `config/env` file.
+The default configuration uses the OpenAI API for generating embeddings and for the language model. Set your key in `server/config/.env`:
 
-Next, run Docker Compose to start the environment:
-
-```bash
-$ docker compose build && docker compose up
+```
+OPENAI_API_KEY=...
 ```
 
-## Accessing the Admin Panel
+Then build and start the environment:
 
-Once the setup is complete, you can access the application UI at [http://localhost:10001](http://localhost:10001).
+```shell
+docker compose build && docker compose up
+```
 
-![Login using the default credentials](./img/installation-login.png)
+The starter comes with a diet advice [vertical](/docs/concepts#vertical) as a working example. It is not required: you can replace it with your own, as described on the [starter page](/docs/customization/using-the-suvereo-starter).
 
-Sign in using the default admin account:
+## Accessing the admin panel
+
+Once the containers are running, open the application at [http://localhost:10001](http://localhost:10001). The API is at [http://localhost:10000](http://localhost:10000).
+
+Sign in as the initial admin user. By default:
 
 **Email**: admin@example.com
 
 **Password**: changeme
 
-To customize the default email and password, set the ECL_ADMIN_EMAIL and ECL_ADMIN_PASSWORD environment variables when running Docker Compose for the first time.
+The admin user is created only on the first start, when the database has no users. To use other credentials, set `ECL_ADMIN_EMAIL` and `ECL_ADMIN_PASSWORD` in `server/config/.env` before that first start. Changing them later does not affect an existing database: change the password in the app, or reset the database with `docker compose down -v`. Replace the defaults for any instance that is not purely local.
 
-You can now [import test data](/docs/getting-started/import-test-data).
+Environment files are read when a container is created. After editing one, run `docker compose up -d --force-recreate`.
+
+## Next steps
+
+- Learn how [data sets, users and permissions](/docs/management) are managed.
+- Define your own domain with the [Suvereo starter](/docs/customization/using-the-suvereo-starter) and the [tutorial](/docs/customization/tutorial).
