@@ -9,7 +9,6 @@ else
         python manage.py migrate
 
         python manage.py ensuresuperuser --email=$ECL_ADMIN_EMAIL --password=$ECL_ADMIN_PASSWORD
-        python manage.py verifysources
         python manage.py seedroles
     fi
 

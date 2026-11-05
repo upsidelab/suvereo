@@ -10,7 +10,6 @@ else
 
         python manage.py ensuresuperuser --email=$ECL_ADMIN_EMAIL --password=$ECL_ADMIN_PASSWORD
         python manage.py seedroles
-        python manage.py verifysources
     fi
 
     exec daphne -b 0.0.0.0 -p ${PORT:-8000} pecl.asgi:application
