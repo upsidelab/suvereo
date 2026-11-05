@@ -12,6 +12,7 @@ import os
 from django.core.asgi import get_asgi_application
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pecl.settings")
+django_asgi_app = get_asgi_application()
 ENABLE_WEBSOCKETS = os.environ.get("ENABLE_WEBSOCKETS", "true").lower() == "true"
 
 if ENABLE_WEBSOCKETS:
@@ -24,7 +25,7 @@ if ENABLE_WEBSOCKETS:
 
     application = ProtocolTypeRouter(
         {
-            "http": get_asgi_application(),
+            "http": django_asgi_app,
             "websocket": OriginValidator(
                 TicketAuthMiddleware(URLRouter(agent.routing.websocket_urlpatterns)),
                 settings.CORS_ALLOWED_ORIGINS,
@@ -32,4 +33,4 @@ if ENABLE_WEBSOCKETS:
         }
     )
 else:
-    application = get_asgi_application()
+    application = django_asgi_app
