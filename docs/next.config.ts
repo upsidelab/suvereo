@@ -3,7 +3,7 @@ import nextra from "nextra";
 
 const nextConfig: NextConfig = {
   output: "export",
-  basePath: "/tools/enthusiast",
+  basePath: "/tools/suvereo",
   env: {
     GTAG_ID: process.env.GTAG_ID,
   },

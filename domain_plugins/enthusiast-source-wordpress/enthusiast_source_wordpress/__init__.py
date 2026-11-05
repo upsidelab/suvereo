@@ -1,1 +1,0 @@
-from .source import WordpressDocumentSource as WordpressDocumentSource
