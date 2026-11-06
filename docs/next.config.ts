@@ -1,10 +1,13 @@
 import type { NextConfig } from "next";
 import nextra from "nextra";
 
+const BASE_PATH = "/suvereo";
+
 const nextConfig: NextConfig = {
   output: "export",
-  basePath: "/tools/suvereo",
+  basePath: BASE_PATH,
   env: {
+    NEXT_PUBLIC_BASE_PATH: BASE_PATH,
     GTAG_ID: process.env.GTAG_ID,
   },
   images: {

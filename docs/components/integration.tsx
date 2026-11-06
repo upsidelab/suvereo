@@ -36,7 +36,7 @@ export default async function Integration(props: IntegrationProps) {
   return (
     <>
       <H1>{props.name} Integration</H1>
-      <Image className="x:py-4" src={`/tools/suvereo/img/integrations/${props.integrationKey}.png`} alt={props.name} width={256} height={256} />
+      <Image className="x:py-4" src={`${process.env.NEXT_PUBLIC_BASE_PATH}/img/integrations/${props.integrationKey}.png`} alt={props.name} width={256} height={256} />
       {props.description &&
         <>
           <MDXRemote compiledSource={installationInstructions} />

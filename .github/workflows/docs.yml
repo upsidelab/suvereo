@@ -1,0 +1,71 @@
+name: Upload docs
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.changed.outputs.changed }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if docs changed
+        id: changed
+        run: |
+          CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+          if echo "$CHANGED" | grep -q '^docs/'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  upload-docs:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: docs
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build docs
+        env:
+          GTAG_ID: ${{ vars.GTAG_ID }}
+        run: pnpm build
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.DOCS_UPLOAD_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.DOCS_UPLOAD_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.DOCS_UPLOAD_REGION }}
+
+      - name: Upload built artifacts to S3
+        run: |
+          aws s3 sync out/ s3://${{ secrets.DOCS_UPLOAD_BUCKET }}/suvereo/ --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.DOCS_CLOUDFRONT_DISTRIBUTION_ID }} --paths "/suvereo/*"

@@ -15,7 +15,7 @@ Data sets are managed under **Manage** → **Data Sets** in the left sidebar. Th
 1. Go to **Manage** → **Data Sets** and click **New Data Set**.
 2. Fill in the form:
    - **Name:** the name shown to users.
-   - **Language Model:** the provider and the model that agents in this data set use. The lists contain the providers installed on the instance, see [model providers](/integrations/openai).
+   - **Language Model:** the provider and the model that agents in this data set use. The lists contain the providers installed on the instance, see [model providers](/plugins/openai).
    - **Advanced settings:**
      - **Embedding Provider** and **Embedding Model:** the plugin and the model that turn content into embeddings for search.
      - **Vector Size:** the size of the embedding vector, 512 by default. Some models support only fixed sizes, in which case the field offers them as a list.

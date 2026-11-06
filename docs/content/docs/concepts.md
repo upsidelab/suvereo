@@ -52,7 +52,7 @@ A vertical adds a domain to Suvereo. It can define the domain's entities, its in
 
 A vertical is enabled in the instance settings, and agents are then built on top of it. Suvereo also runs without a vertical, with agents that use the basic tools it provides and the tools of any connected MCP server.
 
-[Enthusiast](https://upsidelab.io/tools/enthusiast) is the vertical for e-commerce. It defines products and documents.
+[Enthusiast](/tools/enthusiast) is the vertical for e-commerce. It defines products and documents.
 
 ## Plugin
 

@@ -43,7 +43,7 @@ Agents are then built on top of the vertical. They can use its data, its integra
 
 ## Example: Enthusiast
 
-[Enthusiast](https://upsidelab.io/tools/enthusiast) is a vertical for e-commerce. It describes a store in the three parts:
+[Enthusiast](/tools/enthusiast) is a vertical for e-commerce. It describes a store in the three parts:
 
 - **Data:** products and documents.
 - **Integration types:** an e-commerce store type, which acts in a store platform such as Shopify or Shopware, and product and document source types, which sync content in from platforms and content systems.

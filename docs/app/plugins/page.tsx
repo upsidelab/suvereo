@@ -3,6 +3,7 @@ import { useMDXComponents as getMDXComponents } from "../../mdx-components";
 import IntegrationCard from "@/components/integration-card";
 import { Metadata } from "next";
 
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH;
 const mdxComponents = getMDXComponents({});
 const Wrapper = mdxComponents.wrapper;
 const P = mdxComponents.p;
@@ -26,18 +27,18 @@ export default async function Page() {
       <P>They allow you to leverage enterprise-grade AI models for enhanced security and performance. Furthermore, each of these plugins can be customized and extended by a developer.</P>
       <H2>Language Models</H2>
       <Cards>
-        <IntegrationCard name="OpenAI" imageSrc="/tools/suvereo/img/integrations/openai.png" href="/integrations/openai/" />
-        <IntegrationCard name="Ollama" imageSrc="/tools/suvereo/img/integrations/ollama.png" href="/integrations/ollama/" />
-        <IntegrationCard name="Azure OpenAI" imageSrc="/tools/suvereo/img/integrations/azure-openai.png" href="/integrations/azure-openai/" />
-        <IntegrationCard name="Anthropic" imageSrc="/tools/suvereo/img/integrations/anthropic.png" href="/integrations/anthropic/" />
-        <IntegrationCard name="Google Gemini" imageSrc="/tools/suvereo/img/integrations/gemini.png" href="/integrations/gemini/" />
-        <IntegrationCard name="Mistral" imageSrc="/tools/suvereo/img/integrations/mistral.png" href="/integrations/mistral/" />
+        <IntegrationCard name="OpenAI" imageSrc={`${basePath}/img/integrations/openai.png`} href="/plugins/openai/" />
+        <IntegrationCard name="Ollama" imageSrc={`${basePath}/img/integrations/ollama.png`} href="/plugins/ollama/" />
+        <IntegrationCard name="Azure OpenAI" imageSrc={`${basePath}/img/integrations/azure-openai.png`} href="/plugins/azure-openai/" />
+        <IntegrationCard name="Anthropic" imageSrc={`${basePath}/img/integrations/anthropic.png`} href="/plugins/anthropic/" />
+        <IntegrationCard name="Google Gemini" imageSrc={`${basePath}/img/integrations/gemini.png`} href="/plugins/gemini/" />
+        <IntegrationCard name="Mistral" imageSrc={`${basePath}/img/integrations/mistral.png`} href="/plugins/mistral/" />
       </Cards>
       <H2>Integrations</H2>
       <P>Suvereo provides an MCP integration that connects to MCP servers, so your agents can use the tools those servers offer.</P>
       <P>It also lets you onboard integrations of your own. They can feed agents with data, let them act in external systems and provide them with tools. <A href="/docs/customization/integrations">Learn how integrations work</A>.</P>
       <H2>Enthusiast: Ecommerce Vertical</H2>
-      <P>Enthusiast brings Suvereo to online stores. It comes with ready-made integrations for connecting to e-commerce systems, and ready-made agents that, for example, search the catalog, take in orders and enrich product data. <A href="https://upsidelab.io/tools/enthusiast">Explore Enthusiast</A>.</P>
+      <P>Enthusiast brings Suvereo to online stores. It comes with ready-made integrations for connecting to e-commerce systems, and ready-made agents that, for example, search the catalog, take in orders and enrich product data. <A href="/tools/enthusiast">Explore Enthusiast</A>.</P>
     </Wrapper>
   )
 }
