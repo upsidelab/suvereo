@@ -120,7 +120,7 @@ export function MainSidebar() {
   const helpItems: SidebarSectionItemProps[] = [
     {
       title: "Help",
-      link: "https://upsidelab.io/tools/suvereo/docs",
+      link: "https://upsidelab.io/suvereo/docs",
       key: "help",
       icon: <HelpCircleIcon />,
       children: [

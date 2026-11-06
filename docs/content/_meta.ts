@@ -6,7 +6,7 @@ export default {
     title: "Documentation",
     type: "page",
   },
-  integrations: {
+  plugins: {
     title: "Plugins",
     type: "page",
     theme: {
