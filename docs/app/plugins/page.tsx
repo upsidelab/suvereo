@@ -35,7 +35,7 @@ export default async function Page() {
         <IntegrationCard name="Mistral" imageSrc={`${basePath}/img/integrations/mistral.png`} href="/plugins/mistral/" />
       </Cards>
       <H2>Integrations</H2>
-      <P>Suvereo provides an MCP integration that connects to MCP servers, so your agents can use the tools those servers offer.</P>
+      <P>Suvereo provides an <A href="/plugins/mcp">MCP integration</A> that connects to MCP servers, so your agents can use the tools those servers offer.</P>
       <P>It also lets you onboard integrations of your own. They can feed agents with data, let them act in external systems and provide them with tools. <A href="/docs/customization/integrations">Learn how integrations work</A>.</P>
       <H2>Enthusiast: Ecommerce Domain Definition</H2>
       <P>Enthusiast brings Suvereo to online stores. It comes with ready-made integrations for connecting to e-commerce systems, and ready-made agents that, for example, search the catalog, take in orders and enrich product data. <A href="/tools/enthusiast">Explore Enthusiast</A>.</P>

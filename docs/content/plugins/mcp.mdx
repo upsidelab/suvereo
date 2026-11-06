@@ -1,0 +1,71 @@
+import { Callout } from "nextra/components"
+
+# MCP Server Integration
+
+The MCP integration connects a [data set](/docs/concepts#data-set) to MCP servers, so that its [agents](/docs/concepts#agent) can use the [tools](/docs/concepts#tool) those servers offer. MCP (Model Context Protocol) is an open protocol through which a server exposes tools to AI applications. Servers for search, ticketing, documentation, databases and many other systems are available, and connecting one takes a few minutes and no code.
+
+A data set can hold any number of MCP servers. Each server is connected on its own, so one that is unreachable does not affect the others.
+
+## Overview
+
+Using an MCP server's tools takes three steps:
+
+1. [Install the plugin](#installation).
+2. [Connect the MCP server](#connecting-a-server) to a data set.
+3. [Select the server in each agent](#using-the-tools-in-an-agent) that should use its tools.
+
+<Callout type="warning">
+Connecting a server does not make its tools available to agents. Until you select the server in an agent's settings, under **Tool sources**, that agent cannot use it. This is configured per agent.
+</Callout>
+
+## Installation
+
+Run the following command inside your application directory.<br />
+If you're using the [Suvereo starter](/docs/customization/using-the-suvereo-starter), that's where its server dependencies are managed.
+
+```bash
+poetry add suvereo-integration-mcp
+```
+
+Then register the integration in `server/pecl/settings_override.py`:
+
+```python
+CATALOG_INTEGRATION_PLUGINS = [
+    ...
+    "suvereo_integration_mcp.MCPServerIntegration",
+]
+```
+
+Restart the server for the plugin to become available.
+
+## Connecting a server
+
+1. Open the integrations of a data set (**Manage** → **Data Sets** → **Integrations**) and add an integration of the **MCP Server** type.
+2. Fill in the form:
+   - **Name:** how the server is labelled in the UI. Defaults to the server's host.
+   - **Server URL:** the address of the server, for example `https://example.com/mcp`.
+   - **Transport:** `http` (streamable HTTP) by default. Choose `sse` for older servers.
+   - **Auth header** and **Auth token:** the credentials sent with every request, when the server needs them. The token includes its scheme, for example `Bearer abc123`. Leave the token empty if the server needs none. The header defaults to `Authorization`.
+3. Save.
+
+If the server requires you to sign in, press **Connect** next to the server URL instead of pasting a token. The sign-in is described below.
+
+## Signing in with OAuth
+
+Many MCP servers use OAuth to authorize access. For such servers, **Connect** does the work of obtaining a token:
+
+1. Enter the **Server URL** and press **Connect**. A pop-up opens with the server's own sign-in page. Allow pop-ups for the site if the browser blocks it.
+2. Sign in and approve the access. The pop-up closes and the form shows **Connected**, with the token already filled in.
+3. Save the integration.
+
+Suvereo finds the server's authorization service, registers itself with it as the client "Suvereo" and reuses that registration when you press **Connect** again. If the server does not ask for a token, **Connect** reports that the server can be saved as it is. If a server does not support this flow, paste a token into **Auth token** instead.
+
+The plugin renews the credentials automatically when it can; when it cannot, the integration is marked **Needs reconnecting**, and pressing **Connect** again authorizes it anew.
+
+## Using the tools in an agent
+
+Open the settings of an agent and tick the server under **Tool sources**. When a conversation starts, the agent is given the server's tools next to its own. Agents with no server selected are unaffected.
+
+Tools are supplied to agents that can answer asynchronously, such as those built on `BaseToolCallingAgent`. If a server's tool has the same name as one the agent already has, the agent's own tool is kept and the server's tool is skipped. A server that does not answer within ten seconds contributes no tools for that conversation turn.
+
+To learn how tool-providing integrations work, or to write one of your own, see [Integrations](/docs/customization/integrations#giving-agents-ready-made-tools).
