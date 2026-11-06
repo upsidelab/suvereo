@@ -115,9 +115,9 @@ The base class provides a concrete `run()` that implements the validator retry l
 - **Type**: `ClassVar[Optional[str]]`
 - **Description**: A system prompt that replaces the agent's for this execution; when unset, the execution runs with the agent's conversation prompt
 
-#### `EXTRA_TOOLS`
-- **Type**: `ClassVar[list[ToolConfig]]`
-- **Description**: Tools added to the agent's own for this execution
+#### `TOOLS`
+- **Type**: `ClassVar[Optional[list[ToolConfig]]]`
+- **Description**: The tools the agent has in this execution. A list replaces the agent's `TOOLS`, so it can be a smaller set, or the agent's tools plus others (`[*MyAgent.TOOLS, LLMToolConfig(tool_class=StopExecutionTool)]`). When unset, the execution runs with the agent's tools. The settings of every tool an execution uses are stored on the agent, keyed by the tool's `NAME`.
 
 #### `MAX_RETRIES`
 - **Type**: `ClassVar[int]`
@@ -141,4 +141,4 @@ The base class provides a concrete `run()` that implements the validator retry l
 
 ## Execution settings
 
-An agent has a single configuration, and each execution of it can differ. The settings that are specific to an execution, the prompt and the extra tools, are declared on the definition as `SYSTEM_PROMPT` and `EXTRA_TOOLS` and applied on top of the agent's configuration. See [Agent Configuration](/docs/agents/agent-config).
+An agent has a single configuration, and each execution of it can differ. The settings that are specific to an execution, the prompt and the tools, are declared on the definition as `SYSTEM_PROMPT` and `TOOLS` and applied on top of the agent's configuration. See [Agent Configuration](/docs/agents/agent-config).
