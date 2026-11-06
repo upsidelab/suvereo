@@ -2,9 +2,9 @@ const mapping = {
   "domain-onboarding": "",
   "system-architecture": "",
   "using-the-suvereo-starter": "",
-  verticals: "",
+  "domain-definitions": "",
   integrations: "",
-  tutorial: "Tutorial: Building a Vertical",
+  tutorial: "Tutorial: Building a Domain Definition",
 };
 
 export default mapping

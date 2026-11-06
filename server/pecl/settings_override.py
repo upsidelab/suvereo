@@ -1,14 +1,14 @@
 # Plugin entry point.
 #
-# A vertical installs itself on top of Suvereo by editing (or shipping) this file.
+# A domain definition installs itself on top of Suvereo by editing (or shipping) this file.
 # pecl/settings.py imports it (`from pecl.settings_override import *`) and merges
-# INSTALLED_VERTICALS into INSTALLED_APPS.
+# INSTALLED_DOMAIN_DEFINITIONS into INSTALLED_APPS.
 #
-# Out of the box (no vertical) Suvereo runs standalone, so every list here is empty.
+# Out of the box (no domain definition) Suvereo runs standalone, so every list here is empty.
 #
-# Example — Enthusiast (an eCommerce vertical) would set:
+# Example — Enthusiast (an eCommerce domain definition) would set:
 #
-#     INSTALLED_VERTICALS = ["enthusiast_vertical"]
+#     INSTALLED_DOMAIN_DEFINITIONS = ["enthusiast_vertical"]
 #     AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS = [
 #         "enthusiast_agent_catalog_enrichment.CatalogEnrichmentAgenticExecutionDefinition",
 #     ]
@@ -26,7 +26,7 @@
 #         "enthusiast_vertical.models.Document",
 #     ]
 
-INSTALLED_VERTICALS = []
+INSTALLED_DOMAIN_DEFINITIONS = []
 
 AVAILABLE_AGENTS = []
 AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS = []

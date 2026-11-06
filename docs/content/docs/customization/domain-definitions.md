@@ -1,22 +1,22 @@
-# Verticals
+# Domain definitions
 
-A [vertical](/docs/concepts#vertical) brings a [domain](/docs/concepts#domain) to Suvereo: the records it works with, the external systems it relies on and the way both reach [agents](/docs/concepts#agent). Once a vertical is installed, Suvereo stores its data, lists it in the UI, indexes it for search and makes it available to every agent built on the vertical. See [Domain onboarding](/docs/customization/domain-onboarding) for how the pieces fit together.
+A [domain definition](/docs/concepts#domain-definition) brings a [domain](/docs/concepts#domain) to Suvereo: the records it works with, the external systems it relies on and the way both reach [agents](/docs/concepts#agent). Once a domain definition is installed, Suvereo stores its data, lists it in the UI, indexes it for search and makes it available to every agent built on the domain definition. See [Domain onboarding](/docs/customization/domain-onboarding) for how the pieces fit together.
 
 ## Implementation
 
-A vertical is a Django app. It is enabled in the instance settings, and it can contain any of the parts below. The code on this page uses a hypothetical example, a vertical for articles, to show what each part looks like. Each part is optional: a vertical whose agents never search its data needs no retriever, injector or builder.
+A domain definition is a Django app. It is enabled in the instance settings, and it can contain any of the parts below. The code on this page uses a hypothetical example, a domain definition for articles, to show what each part looks like. Each part is optional: a domain definition whose agents never search its data needs no retriever, injector or builder.
 
 | Part | What it does |
 |---|---|
 | [Entities](#1-entities) | The Django models of the domain. Suvereo lists them in the UI and indexes their content. |
-| [Retrievers](#2-retrievers) | Search the vertical's entities by meaning. |
+| [Retrievers](#2-retrievers) | Search the domain definition's entities by meaning. |
 | [Injector and builder](#3-injector-and-builder) | Hand the retrievers to agents and their tools. |
 | [Integration types](#4-integration-types) | Sync entities in from external systems, or let agents act in them. |
 
 The app can ship as a standalone package, with its own `pyproject.toml` that depends on `suvereo-common`, `django` and `pgvector`, or live as a plain Django app inside a codebase that the server can already import, such as a fork. The steps below are the same for both, except where they say otherwise.
 
 ```
-articles_vertical/
+articles_domain/
 ├── __init__.py
 ├── apps.py
 ├── models/            # one module per entity, re-exported in __init__.py
@@ -27,7 +27,7 @@ articles_vertical/
 └── sync/              # when entities are synced from external systems
 ```
 
-A vertical depends on `suvereo-common` and not on the server code. It references the server's models by string, for example `"catalog.DataSet"`.
+A domain definition depends on `suvereo-common` and not on the server code. It references the server's models by string, for example `"catalog.DataSet"`.
 
 ### 1. Entities
 
@@ -77,7 +77,7 @@ from suvereo_common.indexing import BaseEmbeddingChunk
 
 
 class ArticleChunk(BaseEmbeddingChunk):
-    article = models.ForeignKey("articles_vertical.Article", on_delete=models.CASCADE, related_name="chunks")
+    article = models.ForeignKey("articles_domain.Article", on_delete=models.CASCADE, related_name="chunks")
 ```
 
 The indexer that Suvereo provides takes any entity with a `dataset`, a `chunks` relation and a `get_indexable_content()` method. It splits the returned text into pieces, embeds them with the embedding model of the data set and replaces the entity's chunks. Entities that agents never search need neither the chunk model nor `get_indexable_content()`.
@@ -89,7 +89,7 @@ A retriever is what a tool calls to search an entity. For vector search, subclas
 ```python
 from suvereo_common.retrievers import BaseVectorStoreRetriever
 
-from articles_vertical.models import ArticleChunk
+from articles_domain.models import ArticleChunk
 
 
 class ArticleRetriever(BaseVectorStoreRetriever[ArticleChunk]):
@@ -101,7 +101,7 @@ class ArticleRetriever(BaseVectorStoreRetriever[ArticleChunk]):
 
 ### 3. Injector and builder
 
-Tools reach retrievers through the [injector](/docs/agents/injector), and the [builder](/docs/agents/builder) creates the injector. To expose a vertical's retrievers, subclass `Injector` and `AgentBuilder`:
+Tools reach retrievers through the [injector](/docs/agents/injector), and the [builder](/docs/agents/builder) creates the injector. To expose a domain definition's retrievers, subclass `Injector` and `AgentBuilder`:
 
 ```python
 from suvereo_common.injectors import Injector
@@ -138,11 +138,11 @@ class ArticlesAgentBuilder(AgentBuilder[AgentConfig]):
         )
 ```
 
-An agent opts in by setting `BUILDER_CLASS = ArticlesAgentBuilder`, and its tools then read `self._injector.article_retriever`. Agents that leave `BUILDER_CLASS` unset use the default builder and do not see the vertical's retrievers. See [Agent Classes](/docs/agents/agent-classes).
+An agent opts in by setting `BUILDER_CLASS = ArticlesAgentBuilder`, and its tools then read `self._injector.article_retriever`. Agents that leave `BUILDER_CLASS` unset use the default builder and do not see the domain definition's retrievers. See [Agent Classes](/docs/agents/agent-classes).
 
 ### 4. Integration types
 
-A vertical can define the kinds of external systems it relies on, as [integration types](/docs/customization/integrations#integration-types-and-integrations). A type can serve two purposes: bringing entities in, or letting agents act in the system. A type that brings entities in is made of two classes:
+A domain definition can define the kinds of external systems it relies on, as [integration types](/docs/customization/integrations#integration-types-and-integrations). A type can serve two purposes: bringing entities in, or letting agents act in the system. A type that brings entities in is made of two classes:
 
 - A **manager**, which subclasses `BaseSourceIntegrationManager` and implements `sync(plugin, dataset_id, integration_id)`. It reads from a plugin and stores entities. Suvereo gives it an indexer as `self._indexer`, and the manager calls `self._indexer.index(entity)` for every entity that needs to be searchable.
 - The **integration type**, which subclasses `BaseIntegration`, points at the manager through `INTEGRATION_MANAGER` and declares what an integration of that type provides. The integrations, one per external system, subclass it. They are covered in [Integrations](/docs/customization/integrations).
@@ -177,39 +177,39 @@ class ArticleSourceManager(BaseArticleSourceManager):
             self._indexer.index(entity)
 ```
 
-Suvereo finds the manager of an integration by looking in `CATALOG_INTEGRATION_MANAGERS` for the class that is a subclass of the type's `INTEGRATION_MANAGER`. Integrations in other packages depend on the type and the abstract manager. When several packages are going to implement them, these two can live in a small shared package instead of the vertical.
+Suvereo finds the manager of an integration by looking in `CATALOG_INTEGRATION_MANAGERS` for the class that is a subclass of the type's `INTEGRATION_MANAGER`. Integrations in other packages depend on the type and the abstract manager. When several packages are going to implement them, these two can live in a small shared package instead of the domain definition.
 
 A type for acting in a system needs only the type class. It declares the actions as methods and has no manager, since nothing is synced. The builder resolves the integration that is configured on the data set and the injector exposes it to tools. See [Letting agents act](/docs/customization/integrations#letting-agents-act).
 
 ### 5. Registration
 
-The vertical is registered in `server/pecl/settings_override.py`:
+The domain definition is registered in `server/pecl/settings_override.py`:
 
 ```python
-INSTALLED_VERTICALS = ["articles_vertical"]
-CATALOG_ENTITY_PLUGINS = ["articles_vertical.models.Article"]
-CATALOG_INTEGRATION_MANAGERS = ["articles_vertical.sync.ArticleSourceManager"]
+INSTALLED_DOMAIN_DEFINITIONS = ["articles_domain"]
+CATALOG_ENTITY_PLUGINS = ["articles_domain.models.Article"]
+CATALOG_INTEGRATION_MANAGERS = ["articles_domain.sync.ArticleSourceManager"]
 CATALOG_INTEGRATION_PLUGINS = ["wiki_integration.WikiSource"]
 ```
 
 | Setting | Lists |
 |---|---|
-| `INSTALLED_VERTICALS` | The vertical's Django apps. Suvereo adds them to `INSTALLED_APPS`. |
+| `INSTALLED_DOMAIN_DEFINITIONS` | The domain definition's Django apps. Suvereo adds them to `INSTALLED_APPS`. |
 | `CATALOG_ENTITY_PLUGINS` | The entity models to list in the UI. |
-| `CATALOG_INTEGRATION_MANAGERS` | The managers of the vertical's integration types. |
+| `CATALOG_INTEGRATION_MANAGERS` | The managers of the domain definition's integration types. |
 | `CATALOG_INTEGRATION_PLUGINS` | The integrations that can be connected to a data set. |
 
-A standalone package must also be installed into the environment of the server, for example with `pip install -e ./articles-vertical`, a path dependency or from PyPI. A vertical that lives in the codebase is importable already.
+A standalone package must also be installed into the environment of the server, for example with `pip install -e ./articles-domain definition`, a path dependency or from PyPI. A domain definition that lives in the codebase is importable already.
 
 ### 6. Migrations
 
-Django only sees an app that is in `INSTALLED_APPS`, so register the vertical first and then generate the migrations from the `server/` directory:
+Django only sees an app that is in `INSTALLED_APPS`, so register the domain definition first and then generate the migrations from the `server/` directory:
 
 ```bash
-./manage.py makemigrations articles_vertical
+./manage.py makemigrations articles_domain
 ./manage.py migrate
 ```
 
 Django writes the migrations into the app's own `migrations/` directory. For a standalone package that works when the package is installed in editable mode, so that the app directory is the source directory. A package that cannot be installed that way needs its migration files written by hand, following what `makemigrations` would produce.
 
-Agents are then built on top of the vertical, and they can use the retrievers it exposes. See [Agent Classes](/docs/agents/agent-classes).
+Agents are then built on top of the domain definition, and they can use the retrievers it exposes. See [Agent Classes](/docs/agents/agent-classes).

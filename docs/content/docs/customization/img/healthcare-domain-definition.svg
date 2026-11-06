@@ -21,10 +21,10 @@
   </g>
   <line x1="310" y1="140" x2="358" y2="140" stroke="#334155" stroke-width="3" marker-end="url(#arrow)"/>
   <rect x="360" y="40" width="800" height="640" rx="16" fill="#f1f5ff" stroke="#4a63d9" stroke-width="3"/>
-  <text x="760" y="76" text-anchor="middle" font-size="15" fill="#4a63d9" letter-spacing="1">VERTICAL</text>
+  <text x="760" y="76" text-anchor="middle" font-size="15" fill="#4a63d9" letter-spacing="1">DOMAIN DEFINITION</text>
   <rect x="560" y="95" width="400" height="90" rx="10" fill="#4a63d9"/>
   <text x="760" y="136" text-anchor="middle" font-size="24" font-weight="700" fill="#fff">Healthcare</text>
-  <text x="760" y="162" text-anchor="middle" font-size="14" fill="#dbe3ff">hypothetical vertical</text>
+  <text x="760" y="162" text-anchor="middle" font-size="14" fill="#dbe3ff">hypothetical domain definition</text>
   <path d="M660,185 L660,235 L500,235 L500,300" fill="none" stroke="#334155" stroke-width="3" marker-end="url(#arrow)"/>
   <path d="M760,185 L760,300" fill="none" stroke="#334155" stroke-width="3" marker-end="url(#arrow)"/>
   <path d="M860,185 L860,235 L1020,235 L1020,300" fill="none" stroke="#334155" stroke-width="3" marker-end="url(#arrow)"/>

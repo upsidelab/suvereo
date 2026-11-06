@@ -55,7 +55,7 @@ class AgentConfig(ArbitraryTypeBaseModel, Generic[InjectorT]):
 | `similarity_searcher` | `EmbeddingSimilaritySearcher` |
 | `integration_plugin_resolver` | `IntegrationPluginResolver` |
 
-An agent built on a [vertical](/docs/concepts#vertical) usually sets none of these except the prompt and tools. The vertical's builder, declared as `BUILDER_CLASS` on the agent, can take care of its own injector.
+An agent built on a [domain definition](/docs/concepts#domain-definition) usually sets none of these except the prompt and tools. The domain definition's builder, declared as `BUILDER_CLASS` on the agent, can take care of its own injector.
 
 ## Declaring the configuration on the agent
 

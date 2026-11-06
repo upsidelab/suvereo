@@ -10,13 +10,13 @@ Data sets are separate from each other: an agent only uses content that belongs 
 
 ## Agent
 
-An agent is an AI assistant set up for a specific job. It can be defined on top of a [vertical](#vertical) or directly on top of Suvereo. Its definition specifies the [tools](#tool) it can call and the settings it accepts. Each agent has a name, a description and values for those settings, and belongs to one [data set](#data-set).
+An agent is an AI assistant set up for a specific job. It can be defined on top of a [domain definition](#domain-definition) or directly on top of Suvereo. Its definition specifies the [tools](#tool) it can call and the settings it accepts. Each agent has a name, a description and values for those settings, and belongs to one [data set](#data-set).
 
 An agent does its job by calling tools. People talk to agents in [conversations](#conversation), and other systems start them in [agentic executions](#agentic-execution).
 
 ## Tool
 
-A tool is a capability an agent can call while it works: searching content, reading a file, calling an external service or handing a task to another agent. Tools can come with the agent definition, from [integrations](#integration) such as MCP servers, and from the [vertical](#vertical) the agent is built on.
+A tool is a capability an agent can call while it works: searching content, reading a file, calling an external service or handing a task to another agent. Tools can come with the agent definition, from [integrations](#integration) such as MCP servers, and from the [domain definition](#domain-definition) the agent is built on.
 
 ## Conversation
 
@@ -40,20 +40,20 @@ Suvereo includes a ready-made integration for MCP servers. An MCP server is an e
 
 ## Domain
 
-A domain is a field of business with its own data, systems and workflows, such as e-commerce or healthcare. Suvereo is not tied to a domain. A [vertical](#vertical) describes one: the kinds of records it works with, the external systems it relies on and how agents reach them. Agents are then set up for a job within that domain.
+A domain is a field of business with its own data, systems and workflows, such as e-commerce or healthcare. Suvereo is not tied to a domain. A [domain definition](#domain-definition) describes one: the kinds of records it works with, the external systems it relies on and how agents reach them. Agents are then set up for a job within that domain.
 
 ## Entity
 
-An entity is a kind of record in a [domain](#domain), such as an article or a support ticket. Suvereo defines no entities of its own: they come from a [vertical](#vertical). Suvereo stores the entities, lists them in the UI and indexes their content, so agents can retrieve what is relevant to a question.
+An entity is a kind of record in a [domain](#domain), such as an article or a support ticket. Suvereo defines no entities of its own: they come from a [domain definition](#domain-definition). Suvereo stores the entities, lists them in the UI and indexes their content, so agents can retrieve what is relevant to a question.
 
-## Vertical
+## Domain definition
 
-A vertical adds a domain to Suvereo. It can define the domain's entities, its integrations with external systems, and how both are handed to agents as tools. Everything else, including conversations, agentic executions, permissions, models and the UI, comes from Suvereo.
+A domain definition adds a domain to Suvereo. It can define the domain's entities, its integrations with external systems, and how both are handed to agents as tools. Everything else, including conversations, agentic executions, permissions, models and the UI, comes from Suvereo.
 
-A vertical is enabled in the instance settings, and agents are then built on top of it. Suvereo also runs without a vertical, with agents that use the basic tools it provides and the tools of any connected MCP server.
+A domain definition is enabled in the instance settings, and agents are then built on top of it. Suvereo also runs without a domain definition, with agents that use the basic tools it provides and the tools of any connected MCP server.
 
-[Enthusiast](/tools/enthusiast) is the vertical for e-commerce. It defines products and documents.
+[Enthusiast](/tools/enthusiast) is the domain definition for e-commerce. It defines products and documents.
 
 ## Plugin
 
-A plugin is a standalone package that extends Suvereo without changing it. Plugins can supply language and embedding model providers, integrations, agent definitions and verticals. All of them are built against shared contracts, which is how Suvereo loads them and how they stay independent of each other.
+A plugin is a standalone package that extends Suvereo without changing it. Plugins can supply language and embedding model providers, integrations, agent definitions and domain definitions. All of them are built against shared contracts, which is how Suvereo loads them and how they stay independent of each other.

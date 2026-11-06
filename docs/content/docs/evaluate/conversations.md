@@ -2,10 +2,10 @@
 
 A conversation suite tests an agent through chat: each case is a dialogue of several turns, in which the agent can ask questions and the user answers them. It uses the same `suite.yaml`, mocks, metrics, reports and commands as any suite.
 
-A suite is a conversation suite when it sets `kind: conversation`, or when its agent type has no agentic execution. Any agent in `AVAILABLE_AGENTS` can run as one. The tutorial's nutrition assistant has the `weekly-meal-plan` execution, so its chat suite, `diet-vertical/evals/nutrition_chat/`, sets `kind: conversation`. It runs in a sandbox on fixture recipes, through the recipe mock from [Mocks](./mocks).
+A suite is a conversation suite when it sets `kind: conversation`, or when its agent type has no agentic execution. Any agent in `AVAILABLE_AGENTS` can run as one. The tutorial's nutrition assistant has the `weekly-meal-plan` execution, so its chat suite, `diet-domain/evals/nutrition_chat/`, sets `kind: conversation`. It runs in a sandbox on fixture recipes, through the recipe mock from [Mocks](./mocks).
 
 ```shell
-./manage.py runeval ../diet-vertical/evals/nutrition_chat/suite.yaml
+./manage.py runeval ../diet-domain/evals/nutrition_chat/suite.yaml
 ```
 
 ## Who plays the user
@@ -58,7 +58,7 @@ budget_usd: 0.20
 reports: [report, results, transcripts]
 
 integrations:
-  - class: diet_vertical.evaluation.RecipeMockIntegration
+  - class: diet_domain.evaluation.RecipeMockIntegration
     config: {data: {recipes: recipes.yaml}}
 
 metrics:

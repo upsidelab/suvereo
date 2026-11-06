@@ -3,7 +3,7 @@
 A suite is a directory with a `suite.yaml` and its cases. `suite.yaml` holds what every case shares: the agent, the models to compare, the mocks and the metrics. Each case holds what is specific to one test: the input the agent gets and the right result for it.
 
 ```text
-diet-vertical/evals/meal_plan/
+diet-domain/evals/meal_plan/
 ├── suite.yaml                  # the agent, models, metrics
 ├── plan.schema.json            # read by the json_schema metric
 ├── prompts/v2.txt              # a prompt variant to compare
@@ -209,10 +209,10 @@ A case the agent must refuse names the failure it expects:
   expected:
     profile: {dietary_preferences: [vegan], disliked_foods: [cilantro], target_calories: 2900}
   metrics:                             # a new name, so this metric is added for this case
-    - {name: follows_diet, type: diet_vertical.evaluation.FollowsDiet, pass_threshold: {equals: true}}
+    - {name: follows_diet, type: diet_domain.evaluation.FollowsDiet, pass_threshold: {equals: true}}
 ```
 
-**`metrics`** replace the suite's metric with the same `name`, or are added when the name is new. `follows_diet` is a metric you add to the vertical; [Metrics](./metrics#add-your-own-metric) shows its code.
+**`metrics`** replace the suite's metric with the same `name`, or are added when the name is new. `follows_diet` is a metric you add to the domain definition; [Metrics](./metrics#add-your-own-metric) shows its code.
 
 In a sandbox suite, a case can also change the mock data. This case from the [chat suite](./conversations) swaps the recipes for a catalog where every breakfast has dairy:
 
@@ -223,7 +223,7 @@ In a sandbox suite, a case can also change the mock data. This case from the [ch
     - I'm allergic to dairy. What could I have for breakfast?
     - No other allergies or preferences, and no calorie target.
   integrations:                        # same class as in the suite, so this changes that mock
-    - class: diet_vertical.evaluation.RecipeMockIntegration
+    - class: diet_domain.evaluation.RecipeMockIntegration
       config: {data: {recipes: dairy-breakfasts.yaml}}
   expected: {outcome: "Says it found no dairy-free breakfast and suggests no recipe with dairy"}
 ```

@@ -2,7 +2,7 @@
 
 Suvereo is an open-source AI framework built to make onboarding LLM agents into a system easy. It provides RAG, workflow orchestration and integrations with external systems.
 
-The core is domain-agnostic and defines no domain entities of its own. It runs standalone, where you can still define your own agents and integrations. A domain vertical can be installed on top to supply domain entities (e.g. products and documents) along with agents and integrations for that domain.
+The core is domain-agnostic and defines no domain entities of its own. It runs standalone, where you can still define your own agents and integrations. A domain definition can be installed on top to supply domain entities (e.g. products and documents) along with agents and integrations for that domain.
 
 ## Layout
 
@@ -30,17 +30,18 @@ Each plugin under `plugins/` is a standalone Poetry package. Contracts shared by
 - **Conversation** — an interactive exchange between a user and an agent, streamed over WebSocket.
 - **Agentic execution** — an autonomous, API-triggered batch run of an agent with structured input and result, no user in the loop. Runs in the background and is tracked through `pending`, `in_progress`, and `finished` or `failed`. An agent plugin can offer several execution definitions, selected by `execution_key`.
 - **Integration** — a configured connection to an external system on a data set. Its type comes from a plugin, which defines the settings stored in its config.
-- **Entity** — a domain object supplied by a vertical, persisted by core and listed in the UI (see Verticals).
-- **Vertical** — a plugin that adds a domain to the core by defining its entities (see Verticals).
+- **Entity** — a domain object supplied by a domain definition, persisted by core and listed in the UI (see Domain definitions).
+- **Domain** — a field Suvereo works in, such as eCommerce or healthcare. The core is domain-agnostic.
+- **Domain definition** — a plugin that adds a domain to the core by defining its entities (see Domain definitions).
 
-## Verticals
+## Domain definitions
 
-A vertical adds a domain to the core. It is a Django app (a plugin) enabled through `INSTALLED_VERTICALS` in the instance configuration (`server/pecl/settings_override.py`). Its main purpose is to:
+A domain definition adds a domain to the core. It is a Django app (a plugin) enabled through `INSTALLED_DOMAIN_DEFINITIONS` in the instance configuration (`server/pecl/settings_override.py`). Its main purpose is to:
 
 - define domain-specific entities (models and migrations), which are registered in core and persisted in the database;
 - define how those entities are handled, e.g. entity retrievers that agent tools use.
 
-Domain-specific agents and tools are built on top of the vertical, either as separate plugins or directly in the vertical's own codebase, so a vertical need not be a set of plugins. It can be installed from PyPI or maintained in-tree (e.g. in a fork).
+Domain-specific agents and tools are built on top of the domain definition, either as separate plugins or directly in the domain definition's own codebase, so a domain definition need not be a set of plugins. It can be installed from PyPI or maintained in-tree (e.g. in a fork).
 
 ## Rules
 

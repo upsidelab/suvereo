@@ -1,10 +1,10 @@
 # Using the Suvereo Starter
 
-The [Suvereo starter](https://github.com/upsidelab/suvereo-starter) is a repository to build on. It runs the Suvereo server and frontend with Docker Compose and has a place for your own code: [verticals](/docs/concepts#vertical), [agents](/docs/concepts#agent), [integrations](/docs/concepts#integration) and anything else you want to wire into Suvereo. To run it, follow [Installation](/docs/getting-started/installation).
+The [Suvereo starter](https://github.com/upsidelab/suvereo-starter) is a repository to build on. It runs the Suvereo server and frontend with Docker Compose and has a place for your own code: [domain definitions](/docs/concepts#domain-definition), [agents](/docs/concepts#agent), [integrations](/docs/concepts#integration) and anything else you want to wire into Suvereo. To run it, follow [Installation](/docs/getting-started/installation).
 
 ## What is included
 
-The starter ships with a diet advice vertical (`server/src/diet_advice_domain/`) as a working example: models and migrations, recipe and user sources, a nutrition agent and a weekly meal plan [agentic execution](/docs/concepts#agentic-execution). It is the same domain the [tutorial](/docs/customization/tutorial) builds, so the two can be read side by side. You can keep it, change it or remove it.
+The starter ships with a diet advice domain definition (`server/src/diet_advice_domain/`) as a working example: models and migrations, recipe and user sources, a nutrition agent and a weekly meal plan [agentic execution](/docs/concepts#agentic-execution). It is the same domain the [tutorial](/docs/customization/tutorial) builds, so the two can be read side by side. You can keep it, change it or remove it.
 
 ## Layout
 
@@ -15,18 +15,18 @@ frontend/  config/sample.env (copy to config/.env)
 
 ## Your code
 
-`server/src/` is part of the repository, so it is yours to change. Define your own verticals (entities and migrations), agents, agentic executions and integrations there, then register them in `server/config/settings_override.py`:
+`server/src/` is part of the repository, so it is yours to change. Define your own domain definitions (entities and migrations), agents, agentic executions and integrations there, then register them in `server/config/settings_override.py`:
 
-- `INSTALLED_VERTICALS`
+- `INSTALLED_DOMAIN_DEFINITIONS`
 - `AVAILABLE_AGENTS`
 - `AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS`
 - `CATALOG_INTEGRATION_PLUGINS` and `CATALOG_INTEGRATION_MANAGERS`
 
-See [Verticals](/docs/customization/verticals) and [Integrations](/docs/customization/integrations) for what each part contains.
+See [Domain definitions](/docs/customization/domain-definitions) and [Integrations](/docs/customization/integrations) for what each part contains.
 
 ## Packages from PyPI
 
-`server/src/pyproject.toml` describes your code as a Python package. Verticals, agents and integrations published by others can be added to its dependencies, and they are installed into the image together with your code. Register them in `settings_override.py` the same way as your own.
+`server/src/pyproject.toml` describes your code as a Python package. Domain definitions, agents and integrations published by others can be added to its dependencies, and they are installed into the image together with your code. Register them in `settings_override.py` the same way as your own.
 
 ## How the image is built
 

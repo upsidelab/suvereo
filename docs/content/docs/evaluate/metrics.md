@@ -314,14 +314,14 @@ Quote a mode with a colon in YAML (`"numeric:50"`) when it is a flow value; on i
 
 Subclass `BaseMetric` anywhere importable and set `type` to its dotted path. Declare `NAME`, `VALUE_TYPE` (`number`, `bool` or `label`) and, for params, a Pydantic model as `PARAMS`; `measure` gets the run and returns a `MetricResult`.
 
-`FollowsDiet` checks what the tutorial's validators leave open: that a vegan or vegetarian gets only vegan or vegetarian recipes. Add it to the vertical, in `diet_vertical/evaluation/follows_diet.py`, next to the [recipe mock](./mocks):
+`FollowsDiet` checks what the tutorial's validators leave open: that a vegan or vegetarian gets only vegan or vegetarian recipes. Add it to the domain definition, in `diet_domain/evaluation/follows_diet.py`, next to the [recipe mock](./mocks):
 
 ```python
 from suvereo_common.evaluation.metrics import BaseMetric, MetricContext, MetricResult
 
-from diet_vertical.models import UserProfile
-from diet_vertical.nutrition_agent.validators.shared import MealPlan, load_recipes
-from diet_vertical.structures import DietaryTag
+from diet_domain.models import UserProfile
+from diet_domain.nutrition_agent.validators.shared import MealPlan, load_recipes
+from diet_domain.structures import DietaryTag
 
 
 class FollowsDiet(BaseMetric):
@@ -353,7 +353,7 @@ class FollowsDiet(BaseMetric):
 
 ```yaml
 - name: follows_diet
-  type: diet_vertical.evaluation.FollowsDiet # the dotted path of your class
+  type: diet_domain.evaluation.FollowsDiet # the dotted path of your class
   pass_threshold: {equals: true}
 ```
 

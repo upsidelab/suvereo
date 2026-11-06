@@ -30,6 +30,6 @@ When a [conversation](/docs/concepts#conversation) or an [agentic execution](/do
 
 When an agent has [integrations](/docs/concepts#integration) that provide tools, such as MCP servers, selected under **Tool sources** in its settings, it is built with `abuild()`, which also attaches the tools of those integrations.
 
-## Where a vertical fits
+## Where a domain definition fits
 
-The core injector carries repositories, chat history, the memory compactor and the tool scratchpad. It holds no [domain](/docs/concepts#domain) data. A [vertical](/docs/concepts#vertical) can extend the injector with its own retrievers and connectors, and supply a builder that creates them. Agents built on the vertical can then reach the domain's data through the injector. See [Injector](/docs/agents/injector) and [Builder](/docs/agents/builder).
+The core injector carries repositories, chat history, the memory compactor and the tool scratchpad. It holds no [domain](/docs/concepts#domain) data. A [domain definition](/docs/concepts#domain-definition) can extend the injector with its own retrievers and connectors, and supply a builder that creates them. Agents built on the domain definition can then reach the domain's data through the injector. See [Injector](/docs/agents/injector) and [Builder](/docs/agents/builder).

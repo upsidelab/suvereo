@@ -14,10 +14,10 @@ Integrations are written on two levels:
 Defining a type is a recommendation rather than a requirement, since an integration can subclass `BaseIntegration` directly. A type is worth the extra class because it separates what is needed from where it comes from:
 
 - **A shared interface.** Integrations of one type have the same methods in code and differ only in the external system behind them. A tool, a manager or a builder depends on the type, so it works with any integration of it. Adding support for another system means adding one more integration, with no change to the code that uses it.
-- **Lookup by type.** Suvereo finds the integrations of a data set by their type. A vertical's builder, for example, resolves the one that is connected to the data set (see [Letting agents act](#letting-agents-act)).
+- **Lookup by type.** Suvereo finds the integrations of a data set by their type. A domain definition's builder, for example, resolves the one that is connected to the data set (see [Letting agents act](#letting-agents-act)).
 - **Grouping in the UI.** Integrations are grouped by the `INTEGRATION_TYPE_NAME` of their type. Each distinct name is an entry in the menu for adding an integration, the dialog offers the integrations of that type, and each connected integration is labelled with it.
 
-A type is usually defined by a [vertical](/docs/customization/verticals#4-integration-types), together with the manager that handles it. Suvereo defines a base type for tool-providing integrations (see [Giving agents ready-made tools](#giving-agents-ready-made-tools)), and an integration plugin can define a type of its own.
+A type is usually defined by a [domain definition](/docs/customization/domain-definitions#4-integration-types), together with the manager that handles it. Suvereo defines a base type for tool-providing integrations (see [Giving agents ready-made tools](#giving-agents-ready-made-tools)), and an integration plugin can define a type of its own.
 
 ### Declaring an integration
 
@@ -48,7 +48,7 @@ class WikiConfig(RequiredFieldsModel):
 
 ### Syncing content in
 
-An integration type for syncing content in points at an integration manager, which is the class that stores what the integrations fetch and is covered with the [vertical](/docs/customization/verticals#4-integration-types). The type declares the manager in `INTEGRATION_MANAGER` and the method that integrations implement:
+An integration type for syncing content in points at an integration manager, which is the class that stores what the integrations fetch and is covered with the [domain definition](/docs/customization/domain-definitions#4-integration-types). The type declares the manager in `INTEGRATION_MANAGER` and the method that integrations implement:
 
 ```python
 from abc import ABC, abstractmethod
@@ -102,7 +102,7 @@ class WikiPublisher(ArticlePublisherPlugin):
         return client.publish(title, body)
 ```
 
-The integration is made available to agents through the injector. The vertical's [builder](/docs/agents/builder) asks the integration plugin resolver for the integration of that type that is configured on the data set, and its [injector](/docs/agents/injector) exposes it:
+The integration is made available to agents through the injector. The domain definition's [builder](/docs/agents/builder) asks the integration plugin resolver for the integration of that type that is configured on the data set, and its [injector](/docs/agents/injector) exposes it:
 
 ```python
 class ArticlesAgentBuilder(AgentBuilder[AgentConfig]):
@@ -114,7 +114,7 @@ class ArticlesAgentBuilder(AgentBuilder[AgentConfig]):
         )
 ```
 
-`resolve()` returns the configured integration of that type, or `None` when the data set has none. When several are connected, it returns the one added last. A vertical that needs to provide several of them can extend the server's resolver, which the agent configuration sets as `integration_plugin_resolver`. A tool then calls the integration through the injector. It depends on `ArticlePublisherPlugin` and does not know which system is behind it:
+`resolve()` returns the configured integration of that type, or `None` when the data set has none. When several are connected, it returns the one added last. A domain definition that needs to provide several of them can extend the server's resolver, which the agent configuration sets as `integration_plugin_resolver`. A tool then calls the integration through the injector. It depends on `ArticlePublisherPlugin` and does not know which system is behind it:
 
 ```python
 def run(self, title: str, body: str) -> str:
@@ -169,4 +169,4 @@ CATALOG_INTEGRATION_PLUGINS = [
 ]
 ```
 
-The integration is then available when you add an integration to a data set in the UI. Packages outside the codebase must be installed into the environment of the server first. An integration that syncs content in also needs the manager of its type listed in `CATALOG_INTEGRATION_MANAGERS`, which the vertical does.
+The integration is then available when you add an integration to a data set in the UI. Packages outside the codebase must be installed into the environment of the server first. An integration that syncs content in also needs the manager of its type listed in `CATALOG_INTEGRATION_MANAGERS`, which the domain definition does.

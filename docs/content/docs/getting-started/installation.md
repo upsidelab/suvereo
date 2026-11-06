@@ -25,7 +25,7 @@ Then build and start the environment:
 docker compose build && docker compose up
 ```
 
-The starter comes with a diet advice [vertical](/docs/concepts#vertical) as a working example. It is not required: you can replace it with your own, as described on the [starter page](/docs/customization/using-the-suvereo-starter).
+The starter comes with a diet advice [domain definition](/docs/concepts#domain-definition) as a working example. It is not required: you can replace it with your own, as described on the [starter page](/docs/customization/using-the-suvereo-starter).
 
 ## Accessing the admin panel
 

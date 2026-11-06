@@ -6,12 +6,12 @@ This guide evaluates the nutrition assistant built in the [tutorial](/docs/custo
 
 ## Before you start
 
-Suites are plain files. Keep them with the vertical, in `diet-vertical/evals/`, one directory per suite:
+Suites are plain files. Keep them with the domain definition, in `diet-domain/evals/`, one directory per suite:
 
 ```text
-diet-vertical/
+diet-domain/
 ├── pyproject.toml
-├── diet_vertical/
+├── diet_domain/
 └── evals/
     └── meal_plan/
         ├── suite.yaml
@@ -56,8 +56,8 @@ maria,"Gluten and dairy allergies, 2100 kcal",4,1
 ## 2. Run it
 
 ```shell
-./manage.py validateeval ../diet-vertical/evals/meal_plan/suite.yaml
-./manage.py runeval ../diet-vertical/evals/meal_plan/suite.yaml
+./manage.py validateeval ../diet-domain/evals/meal_plan/suite.yaml
+./manage.py runeval ../diet-domain/evals/meal_plan/suite.yaml
 ```
 
 `validateeval` is free: it checks the suite and its cases against the execution's input and prints how many runs it plans. `runeval` runs every case and stops at `budget_usd`.
@@ -146,6 +146,6 @@ With `--baseline`, `report.md` gains a **Baseline diff**: each candidate's pass 
 
 ## 7. Test with fixture data
 
-A suite on your configured agent plans from whatever its data set holds. To test against a fixed set of records, or to try a case on data no real source has, a suite runs the agent in a throwaway data set filled from mocks: `agent: {type: nutrition-assistant}` instead of `{id: ...}`, plus a mock for each integration. [Mocks](./mocks) adds a recipe mock to the vertical, and [Conversations](./conversations) uses it to test the assistant's chat.
+A suite on your configured agent plans from whatever its data set holds. To test against a fixed set of records, or to try a case on data no real source has, a suite runs the agent in a throwaway data set filled from mocks: `agent: {type: nutrition-assistant}` instead of `{id: ...}`, plus a mock for each integration. [Mocks](./mocks) adds a recipe mock to the domain definition, and [Conversations](./conversations) uses it to test the assistant's chat.
 
 For every option, field and metric, see the [Reference](./reference).

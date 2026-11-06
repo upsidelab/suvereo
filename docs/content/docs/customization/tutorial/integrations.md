@@ -1,13 +1,13 @@
 # The Integrations
 
-The vertical can store recipes and profiles, but nothing fills the tables. This page adds the [integrations](/docs/concepts#integration) that do. It defines two integration types, a recipe source and a user source, the managers that store what they fetch, and a sample integration of each type. The concepts are covered in [Integrations](/docs/customization/integrations), and the part of a vertical that defines them in [Verticals](/docs/customization/verticals#4-integration-types).
+The domain definition can store recipes and profiles, but nothing fills the tables. This page adds the [integrations](/docs/concepts#integration) that do. It defines two integration types, a recipe source and a user source, the managers that store what they fetch, and a sample integration of each type. The concepts are covered in [Integrations](/docs/customization/integrations), and the part of a domain definition that defines them in [Domain definitions](/docs/customization/domain-definitions#4-integration-types).
 
 An integration type is split in two. The **type** states what a source of recipes must provide, and the **manager** turns what it provides into entities. Integrations only implement the type, so a new source of recipes, such as a food blog or a meal-kit service, is one new class and no change to the code that stores recipes.
 
 New files on this page:
 
 ```
-diet_vertical/
+diet_domain/
 ├── structures.py        # extended
 ├── classification.py    # allergens and dietary tags from ingredients
 ├── sync/
@@ -63,14 +63,14 @@ Move the imports to the top of the file. `calories` is per serving.
 
 ### Allergens and dietary tags
 
-When a recipe is imported, the vertical computes its allergens and dietary tags from its ingredients, since these fields drive the retriever and the validator. This is domain code that Suvereo knows nothing about: a source could supply the labels itself, and the vertical could compute them any other way. In this tutorial a classifier does it with keyword lists, in `classification.py`. It is small:
+When a recipe is imported, the domain definition computes its allergens and dietary tags from its ingredients, since these fields drive the retriever and the validator. This is domain code that Suvereo knows nothing about: a source could supply the labels itself, and the domain definition could compute them any other way. In this tutorial a classifier does it with keyword lists, in `classification.py`. It is small:
 
 ```python
-# diet_vertical/classification.py
+# diet_domain/classification.py
 import re
 from dataclasses import dataclass
 
-from diet_vertical.structures import Allergen, DietaryTag
+from diet_domain.structures import Allergen, DietaryTag
 
 # Heuristic keywords for matching ingredient names. The lists are short and can be extended.
 ALLERGEN_KEYWORDS: dict[Allergen, tuple[str, ...]] = {
@@ -122,24 +122,24 @@ class IngredientClassifier:
         return re.compile(rf"\b(?:{alternatives})(?:e?s)?\b")
 ```
 
-The keywords are keyed by `Allergen`, and the classifier returns enum members. The sync stores them as plain strings. A keyword match is a heuristic. It can label a dish wrongly, as the check at the end of this page shows. A vertical whose output people rely on for their health would need a better source of this information.
+The keywords are keyed by `Allergen`, and the classifier returns enum members. The sync stores them as plain strings. A keyword match is a heuristic. It can label a dish wrongly, as the check at the end of this page shows. A domain definition whose output people rely on for their health would need a better source of this information.
 
 ## 2. The managers
 
 A manager subclasses `BaseSourceIntegrationManager`. It receives an integration, calls `fetch()` and stores the result. Suvereo calls `sync(plugin, dataset_id, integration_id)` when a sync of an integration of the type is started, and gives the manager an indexer as `self._indexer`.
 
 ```python
-# diet_vertical/sync/recipe.py
+# diet_domain/sync/recipe.py
 from typing import TYPE_CHECKING
 
 from suvereo_common.indexing import BaseEntityIndexer
 from suvereo_common.integrations import BaseSourceIntegrationManager
 
-from diet_vertical.classification import IngredientClassifier
-from diet_vertical.models import Recipe
+from diet_domain.classification import IngredientClassifier
+from diet_domain.models import Recipe
 
 if TYPE_CHECKING:
-    from diet_vertical.integrations import RecipeSourcePlugin
+    from diet_domain.integrations import RecipeSourcePlugin
 
 
 class RecipeSourceManager(BaseSourceIntegrationManager):
@@ -169,12 +169,12 @@ class RecipeSourceManager(BaseSourceIntegrationManager):
 ```
 
 - `update_or_create` on `(dataset, external_id)` makes a sync repeatable. Running it again updates the recipes that exist and adds the new ones.
-- `self._indexer.index(recipe)` is what makes the recipe searchable. It calls `get_indexable_content()` of the recipe, embeds the text and stores the chunks, as described on the [previous page](/docs/customization/tutorial/vertical#3-making-the-recipe-searchable).
+- `self._indexer.index(recipe)` is what makes the recipe searchable. It calls `get_indexable_content()` of the recipe, embeds the text and stores the chunks, as described on the [previous page](/docs/customization/tutorial/domain-definition#3-making-the-recipe-searchable).
 
-The user manager does more than store a record. A person in the diet vertical is a Suvereo user, so the manager creates the account if it does not exist and grants the user the starter role that allows talking to agents:
+The user manager does more than store a record. A person in the diet domain definition is a Suvereo user, so the manager creates the account if it does not exist and grants the user the starter role that allows talking to agents:
 
 ```python
-# diet_vertical/sync/user.py
+# diet_domain/sync/user.py
 from dataclasses import asdict
 from typing import TYPE_CHECKING
 
@@ -182,10 +182,10 @@ from django.apps import apps
 from django.contrib.auth import get_user_model
 from suvereo_common.integrations import BaseSourceIntegrationManager
 
-from diet_vertical.models import UserProfile
+from diet_domain.models import UserProfile
 
 if TYPE_CHECKING:
-    from diet_vertical.integrations import UserSourcePlugin
+    from diet_domain.integrations import UserSourcePlugin
 
 CONVERSING_ROLE_NAME = "Agent Interaction"
 
@@ -217,13 +217,13 @@ class UserSourceManager(BaseSourceIntegrationManager):
 ```
 
 - An existing user keeps their password. The password in `details` is used only when the account is created.
-- The vertical looks up the `account` app's model by name, through `apps.get_model`, rather than importing it, since a vertical does not depend on the server's code.
+- The domain definition looks up the `account` app's model by name, through `apps.get_model`, rather than importing it, since a domain definition does not depend on the server's code.
 - **Agent Interaction** is one of the starter roles created by `./manage.py seedroles`. If the role does not exist, the user is created without it, and an admin can assign a role in the UI. See [Users](/docs/management/users).
 
 Export the managers:
 
 ```python
-# diet_vertical/sync/__init__.py
+# diet_domain/sync/__init__.py
 from .recipe import RecipeSourceManager
 from .user import UserSourceManager
 
@@ -234,17 +234,17 @@ The managers refer to the integration types only in annotations, under `TYPE_CHE
 
 ## 3. The integration types
 
-Each type subclasses `BaseIntegration`, points at its manager with `INTEGRATION_MANAGER` and declares the method its integrations implement. The names `fetch`, `RecipeDetails` and `UserDetails` belong to this vertical. Suvereo does not define them.
+Each type subclasses `BaseIntegration`, points at its manager with `INTEGRATION_MANAGER` and declares the method its integrations implement. The names `fetch`, `RecipeDetails` and `UserDetails` belong to this domain definition. Suvereo does not define them.
 
 ```python
-# diet_vertical/integrations.py
+# diet_domain/integrations.py
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 
 from suvereo_common.integrations import BaseIntegration
 
-from diet_vertical.structures import RecipeDetails, UserDetails
-from diet_vertical.sync import RecipeSourceManager, UserSourceManager
+from diet_domain.structures import RecipeDetails, UserDetails
+from diet_domain.sync import RecipeSourceManager, UserSourceManager
 
 
 class RecipeSourcePlugin(BaseIntegration, ABC):
@@ -264,18 +264,18 @@ class UserSourcePlugin(BaseIntegration, ABC):
 ```
 
 - `INTEGRATION_TYPE_NAME` is the name shown in the UI. Each distinct name becomes an entry in the **Add integration** menu of a data set.
-- `INTEGRATION_MANAGER` is the manager class itself. When a sync starts, Suvereo looks in `CATALOG_INTEGRATION_MANAGERS` for a class that is a subclass of it, which the registered manager is. A type can point at an abstract manager instead, which lets other packages implement the type without depending on the manager's code. A vertical that keeps both in one package does not need that extra class.
+- `INTEGRATION_MANAGER` is the manager class itself. When a sync starts, Suvereo looks in `CATALOG_INTEGRATION_MANAGERS` for a class that is a subclass of it, which the registered manager is. A type can point at an abstract manager instead, which lets other packages implement the type without depending on the manager's code. A domain definition that keeps both in one package does not need that extra class.
 
 ## 4. The sample integrations
 
 An integration implements a type for one external system. The two samples return fixed data, so the tutorial runs without an account anywhere. Each declares a `TYPE`, which identifies it in stored data, and a `NAME`, which the UI shows:
 
 ```python
-# diet_vertical/sources/sample_recipe_source.py
+# diet_domain/sources/sample_recipe_source.py
 from collections.abc import Iterable
 
-from diet_vertical.integrations import RecipeSourcePlugin
-from diet_vertical.structures import MealType, RecipeDetails
+from diet_domain.integrations import RecipeSourcePlugin
+from diet_domain.structures import MealType, RecipeDetails
 
 # (external id, title, meal type, calories per serving, ingredients)
 SAMPLE_RECIPES = [
@@ -309,11 +309,11 @@ class SampleRecipeSource(RecipeSourcePlugin):
 ```
 
 ```python
-# diet_vertical/sources/sample_user_source.py
+# diet_domain/sources/sample_user_source.py
 from collections.abc import Iterable
 
-from diet_vertical.integrations import UserSourcePlugin
-from diet_vertical.structures import Allergen, ProfileDetails, UserDetails
+from diet_domain.integrations import UserSourcePlugin
+from diet_domain.structures import Allergen, ProfileDetails, UserDetails
 
 SAMPLE_PASSWORD = "test123"
 
@@ -359,7 +359,7 @@ class SampleUserSource(UserSourcePlugin):
 ```
 
 ```python
-# diet_vertical/sources/__init__.py
+# diet_domain/sources/__init__.py
 from .sample_recipe_source import SampleRecipeSource
 from .sample_user_source import SampleUserSource
 
@@ -374,12 +374,12 @@ Integrations and managers are listed in `server/pecl/settings_override.py`. Type
 
 ```python
 CATALOG_INTEGRATION_PLUGINS = [
-    "diet_vertical.sources.SampleRecipeSource",
-    "diet_vertical.sources.SampleUserSource",
+    "diet_domain.sources.SampleRecipeSource",
+    "diet_domain.sources.SampleUserSource",
 ]
 CATALOG_INTEGRATION_MANAGERS = [
-    "diet_vertical.sync.RecipeSourceManager",
-    "diet_vertical.sync.UserSourceManager",
+    "diet_domain.sync.RecipeSourceManager",
+    "diet_domain.sync.UserSourceManager",
 ]
 ```
 
@@ -401,12 +401,12 @@ Running the sync again does not duplicate anything.
 
 The samples return fixed data. An integration for a real system differs in two ways: it has settings that an admin enters in the UI, and `fetch()` calls the system. This section adds one: recipes from [TheMealDB](https://www.themealdb.com/api.php), a public recipe API. TheMealDB does not state calories or servings, so the integration looks calories up in the USDA [FoodData Central](https://fdc.nal.usda.gov/) database, which needs a free API key, and estimates the servings from the weight of the ingredients.
 
-Nothing else in the vertical changes. The integration yields `RecipeDetails`, and the recipe manager from step 2 stores it as it stored the sample recipes.
+Nothing else in the domain definition changes. The integration yields `RecipeDetails`, and the recipe manager from step 2 stores it as it stored the sample recipes.
 
 New files:
 
 ```
-diet_vertical/sources/
+diet_domain/sources/
 ├── measures.py
 ├── usda.py
 └── mealdb_recipe_source.py
@@ -421,7 +421,7 @@ The settings are a Pydantic model that subclasses `RequiredFieldsModel`, set as 
 TheMealDB lists ingredients with free-text measures, such as `1 1/2 cups` or `200g`. To weigh them, convert a measure to grams:
 
 ```python
-# diet_vertical/sources/measures.py
+# diet_domain/sources/measures.py
 import re
 from fractions import Fraction
 from typing import Optional
@@ -499,7 +499,7 @@ A measure without a quantity, such as `to taste`, gives `None`, and the ingredie
 A small client asks FoodData Central for the energy of an ingredient per 100 g. It caches answers, since the same ingredients recur across recipes, and returns `None` when the lookup fails, so that one failed request skips an ingredient and not the whole sync:
 
 ```python
-# diet_vertical/sources/usda.py
+# diet_domain/sources/usda.py
 import logging
 from typing import Optional
 
@@ -550,7 +550,7 @@ class FoodDataCentralClient:
 `fetch()` walks TheMealDB letter by letter, maps its categories to the meal types and turns each meal into `RecipeDetails`. It stops when it has returned `max_recipes` recipes, 50 by default:
 
 ```python
-# diet_vertical/sources/mealdb_recipe_source.py
+# diet_domain/sources/mealdb_recipe_source.py
 import logging
 import string
 from collections.abc import Iterable
@@ -560,10 +560,10 @@ import requests
 from pydantic import Field
 from suvereo_common.utils import RequiredFieldsModel
 
-from diet_vertical.integrations import RecipeSourcePlugin
-from diet_vertical.sources.measures import measure_to_grams
-from diet_vertical.sources.usda import FoodDataCentralClient
-from diet_vertical.structures import MealType, RecipeDetails
+from diet_domain.integrations import RecipeSourcePlugin
+from diet_domain.sources.measures import measure_to_grams
+from diet_domain.sources.usda import FoodDataCentralClient
+from diet_domain.structures import MealType, RecipeDetails
 
 logger = logging.getLogger(__name__)
 
@@ -694,9 +694,9 @@ __all__ = ["MealDbRecipeSource", "SampleRecipeSource", "SampleUserSource"]
 
 ```python
 CATALOG_INTEGRATION_PLUGINS = [
-    "diet_vertical.sources.MealDbRecipeSource",
-    "diet_vertical.sources.SampleRecipeSource",
-    "diet_vertical.sources.SampleUserSource",
+    "diet_domain.sources.MealDbRecipeSource",
+    "diet_domain.sources.SampleRecipeSource",
+    "diet_domain.sources.SampleUserSource",
 ]
 ```
 

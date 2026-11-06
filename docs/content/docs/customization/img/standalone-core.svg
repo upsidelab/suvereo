@@ -25,12 +25,13 @@
   <rect x="20" y="340" width="280" height="360" rx="12" fill="#f8fafc" stroke="#94a3b8" stroke-width="2" stroke-dasharray="8 6"/>
   <text x="160" y="374" text-anchor="middle" font-size="20" font-weight="700" fill="#64748b">Data</text>
   <rect x="40" y="392" width="240" height="150" rx="8" fill="#fff" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6 5"/>
-  <text x="160" y="461" text-anchor="middle" font-size="17" fill="#64748b" font-style="italic">Nothing here</text>
-  <text x="160" y="483" text-anchor="middle" font-size="17" fill="#64748b" font-style="italic">without a vertical</text>
+  <text x="160" y="450" text-anchor="middle" font-size="17" fill="#64748b" font-style="italic">Nothing here</text>
+  <text x="160" y="472" text-anchor="middle" font-size="17" fill="#64748b" font-style="italic">without a domain</text>
+  <text x="160" y="494" text-anchor="middle" font-size="17" fill="#64748b" font-style="italic">definition</text>
   <line x1="45" y1="608" x2="275" y2="608" stroke="#cbd5e1" stroke-width="1"/>
-  <text x="160" y="634" text-anchor="middle" font-size="15" font-style="italic" fill="#64748b">Defined by a vertical; without</text>
-  <text x="160" y="656" text-anchor="middle" font-size="15" font-style="italic" fill="#64748b">one, there is no domain data</text>
-  <text x="160" y="678" text-anchor="middle" font-size="15" font-style="italic" fill="#64748b">to expose to agents</text>
+  <text x="160" y="634" text-anchor="middle" font-size="15" font-style="italic" fill="#64748b">A domain definition supplies</text>
+  <text x="160" y="656" text-anchor="middle" font-size="15" font-style="italic" fill="#64748b">it; without one, there is no</text>
+  <text x="160" y="678" text-anchor="middle" font-size="15" font-style="italic" fill="#64748b">domain data for agents</text>
   <rect x="320" y="340" width="280" height="360" rx="12" fill="#fff7ed" stroke="#f97316" stroke-width="2"/>
   <text x="460" y="374" text-anchor="middle" font-size="20" font-weight="700" fill="#9a3412">Integration types</text>
   <rect x="340" y="392" width="240" height="64" rx="8" fill="#fff" stroke="#f97316" stroke-width="2"/>

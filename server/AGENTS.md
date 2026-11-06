@@ -36,7 +36,7 @@ Apps expose their API under `/api/` and are mounted at the root in `pecl/urls.py
 
 ## Settings and plugins
 
-`pecl/settings.py` holds defaults; `pecl/settings_override.py` holds the configuration of a concrete Suvereo instance. It is valid with no vertical configured. There you choose the LLM and embedding providers, agents and agentic executions, and, if used, verticals with their entities and the agents, integrations and integration managers built on top of them. Dotted paths in these settings are loaded through registries: `INSTALLED_VERTICALS` (merged into `INSTALLED_APPS`), `AVAILABLE_AGENTS`, `AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS`, `CATALOG_LANGUAGE_MODEL_PROVIDERS`, `CATALOG_EMBEDDING_PROVIDERS`, `CATALOG_INTEGRATION_PLUGINS`, `CATALOG_INTEGRATION_MANAGERS`, `CATALOG_ENTITY_PLUGINS`, `FILE_PARSER_CLASSES`.
+`pecl/settings.py` holds defaults; `pecl/settings_override.py` holds the configuration of a concrete Suvereo instance. It is valid with no domain definition configured. There you choose the LLM and embedding providers, agents and agentic executions, and, if used, domain definitions with their entities and the agents, integrations and integration managers built on top of them. Dotted paths in these settings are loaded through registries: `INSTALLED_DOMAIN_DEFINITIONS` (merged into `INSTALLED_APPS`), `AVAILABLE_AGENTS`, `AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS`, `CATALOG_LANGUAGE_MODEL_PROVIDERS`, `CATALOG_EMBEDDING_PROVIDERS`, `CATALOG_INTEGRATION_PLUGINS`, `CATALOG_INTEGRATION_MANAGERS`, `CATALOG_ENTITY_PLUGINS`, `FILE_PARSER_CLASSES`.
 
 ## Code conventions
 

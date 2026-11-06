@@ -7,13 +7,13 @@ Agents reach external systems through integrations: a recipe source, a shop, a d
 
 A suite on an agent you configured needs no mocks for data its DataSet already holds. A sandbox suite, `agent: {type: ...}`, starts from an empty DataSet, so it needs a mock for each source of data the agent searches: for the tutorial's nutrition assistant, a recipe source that fills the catalog before the run starts.
 
-## A mock integration for your vertical
+## A mock integration for your domain definition
 
 A suite names a mock integration in one line:
 
 ```yaml
 integrations:
-  - class: diet_vertical.evaluation.RecipeMockIntegration
+  - class: diet_domain.evaluation.RecipeMockIntegration
     config: {data: {recipes: recipes.yaml}}
 ```
 
@@ -26,16 +26,16 @@ integrations:
 
 `recipes` is a YAML, JSON or CSV file relative to the suite, or an inline list. Each recipe needs `id`, `title`, `meal_type` (`breakfast`, `main` or `snack`), `calories` and `ingredients`; `servings` and `instructions` are optional. The sync works out allergens and the vegetarian and vegan tags from the ingredients, as for recipes from the tutorial's sample source.
 
-The mock is two small files in a new `diet_vertical/evaluation/` package. The first validates a fixture record and turns it into the `RecipeDetails` the tutorial's sources return:
+The mock is two small files in a new `diet_domain/evaluation/` package. The first validates a fixture record and turns it into the `RecipeDetails` the tutorial's sources return:
 
 ```python
-# diet_vertical/evaluation/fixture_recipe.py
+# diet_domain/evaluation/fixture_recipe.py
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, ValidationError
 from suvereo_common.evaluation.mocks import MockConfigError
 
-from diet_vertical.structures import MealType, RecipeDetails
+from diet_domain.structures import MealType, RecipeDetails
 
 
 class FixtureRecipe(BaseModel):
@@ -71,13 +71,13 @@ class FixtureRecipe(BaseModel):
 The second is the integration:
 
 ```python
-# diet_vertical/evaluation/recipe_mock_integration.py
+# diet_domain/evaluation/recipe_mock_integration.py
 from functools import cached_property
 
 from suvereo_common.evaluation.mocks import BaseMockIntegration, FixtureRecords
 
-from diet_vertical.integrations import RecipeSourcePlugin
-from diet_vertical.structures import RecipeDetails
+from diet_domain.integrations import RecipeSourcePlugin
+from diet_domain.structures import RecipeDetails
 
 from .fixture_recipe import FixtureRecipe
 
@@ -100,7 +100,7 @@ class RecipeMockIntegration(BaseMockIntegration, RecipeSourcePlugin):
 ```
 
 ```python
-# diet_vertical/evaluation/__init__.py
+# diet_domain/evaluation/__init__.py
 from .follows_diet import FollowsDiet
 from .recipe_mock_integration import RecipeMockIntegration
 
@@ -116,7 +116,7 @@ __all__ = ["FollowsDiet", "RecipeMockIntegration"]
 
 ## Mocking the calls an agent makes
 
-An integration the agent calls during a run, such as a shop it places orders in, is mocked call by call. The examples below come from [Enthusiast](https://upsidelab.io/tools/enthusiast), the e-commerce vertical, whose order-intake agent places orders through an e-commerce connector.
+An integration the agent calls during a run, such as a shop it places orders in, is mocked call by call. The examples below come from [Enthusiast](https://upsidelab.io/tools/enthusiast), the e-commerce domain definition, whose order-intake agent places orders through an e-commerce connector.
 
 ### Behaviour
 
@@ -192,7 +192,7 @@ class ECommerceMockIntegration(BaseMockIntegration, ECommerceIntegrationPlugin):
 
 ## Ready-made mocks
 
-Enthusiast, the e-commerce vertical, ships these:
+Enthusiast, the e-commerce domain definition, ships these:
 
 | Integration | Data | What it gives the agent |
 |---|---|---|

@@ -2,7 +2,7 @@
 
 The injector is the container that gives an [agent](/docs/concepts#agent) and its [tools](/docs/concepts#tool) access to the resources they work with. The agent receives it when it is built, and tools receive it through their constructor.
 
-Suvereo defines no [domain](/docs/concepts#domain) data, so the injector it provides carries only the resources every agent needs. A [vertical](/docs/concepts#vertical) can extend it with the resources of its domain, such as retrievers that search the vertical's [entities](/docs/concepts#entity).
+Suvereo defines no [domain](/docs/concepts#domain) data, so the injector it provides carries only the resources every agent needs. A [domain definition](/docs/concepts#domain-definition) can extend it with the resources of its domain, such as retrievers that search the domain definition's [entities](/docs/concepts#entity).
 
 ## Base Injector
 
@@ -71,7 +71,7 @@ An agent reaches the same resources through `self._injector`. `BaseToolCallingAg
 
 ## Extending the injector
 
-A vertical can subclass `Injector` to add the resources of its domain. This example adds a retriever that searches articles:
+A domain definition can subclass `Injector` to add the resources of its domain. This example adds a retriever that searches articles:
 
 ```python
 class ArticlesInjector(Injector):
@@ -84,7 +84,7 @@ class ArticlesInjector(Injector):
         return self._article_retriever
 ```
 
-Tools of agents built on this vertical can then use the retriever:
+Tools of agents built on this domain definition can then use the retriever:
 
 ```python
 class SearchArticlesInput(BaseModel):
@@ -102,4 +102,4 @@ class SearchArticlesTool(BaseLLMTool):
         return "\n\n".join(f"{c.article.title}\n{c.content}" for c in chunks) or "No matching articles."
 ```
 
-The injector is created by the builder. A vertical can override the builder's `_build_injector()` to pass its extra resources, see [Builder](/docs/agents/builder).
+The injector is created by the builder. A domain definition can override the builder's `_build_injector()` to pass its extra resources, see [Builder](/docs/agents/builder).

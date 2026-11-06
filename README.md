@@ -28,7 +28,7 @@ Get started with Suvereo by either:
 
 ## Example use cases
 
-The example use case is [Enthusiast](https://upsidelab.io/tools/enthusiast), the e-commerce vertical of Suvereo, which provides the agents below.
+The example use case is [Enthusiast](https://upsidelab.io/tools/enthusiast), the e-commerce domain definition of Suvereo, which provides the agents below.
 
 - [**AI-Based Product Discovery**](https://upsidelab.io/tools/enthusiast/agents/product-search) Enable natural-language product search. Users describe requirements in plain terms, and the agent retrieves results from your indexed catalog.
 

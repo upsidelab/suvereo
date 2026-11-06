@@ -16,7 +16,7 @@ class EntityRegistration:
 
 
 class EntityRegistry:
-    """Holds the DomainEntity models a vertical registered, each with a generated serializer.
+    """Holds the DomainEntity models a domain definition registered, each with a generated serializer.
 
     Built once at startup from ``CATALOG_ENTITY_PLUGINS`` (see ``AppConfig.ready``).
     """
