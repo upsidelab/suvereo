@@ -1,8 +1,8 @@
 # Agentic Execution
 
-Agentic execution is a first-class concept distinct from the conversation-based agent flow. Where conversations are interactive (between the user and the agent), executions are **autonomous, programmatic batch jobs**: submitted via API, the LLM agent runs to completion without user interaction, and the caller inspects the result afterward.
+An [agentic execution](/docs/concepts#agentic-execution) is distinct from the conversation-based agent flow. Where conversations are interactive, executions are **autonomous, programmatic batch jobs**: submitted via API, the agent runs to completion without user interaction, and the caller inspects the result afterward.
 
-Each execution is tightly coupled to a configured `Agent` instance, which already carries the dataset association, system prompt, and tool configuration needed to run.
+Each execution runs on a configured [agent](/docs/concepts#agent), which already carries the [data set](/docs/concepts#data-set), system prompt and tool configuration needed to run. This page describes the classes an execution is built from. To start one, see [Run an Agentic Execution via the API](/docs/connect/agentic-execution-via-api).
 
 ## Core Abstractions
 
@@ -21,12 +21,19 @@ Dataclass returned by `BaseAgenticExecutionDefinition.run()`. Communicates the f
 
 - **`success`** (`bool`): Whether the execution completed successfully
 - **`output`** (`dict`): Structured output payload — meaningful only when `success=True`
-- **`failure_code`** (`ExecutionFailureCode | None`): Standardised failure code, set when `success=False`
+- **`failure_code`** (`str | None`): Standardised failure code, set when `success=False`
 - **`failure_summary`** (`str | None`): LLM-generated plain-language explanation of what went wrong
 
 ### `ExecutionFailureCode`
 
-`StrEnum` defining standardised failure codes. Plugins can extend this enum to add execution-specific codes and point `FAILURE_CODES` at the subclass.
+A class of string constants, stored on the execution when it fails:
+
+- **`runtime_error`**: an unexpected exception ended the execution
+- **`max_retries_exceeded`**: the agent did not produce a valid response within `MAX_RETRIES` correction cycles
+- **`validation_failed`**: a validator rejected the response and indicated that retrying is not useful
+- **`unknown`**: the execution failed without providing a code
+
+It is not an enum, so a definition can subclass it to add execution-specific codes and point `FAILURE_CODES` at the subclass.
 
 ### `ExecutionInputType`
 
@@ -45,6 +52,9 @@ Structured return value from `BaseExecutionValidator.validate()`:
 - **`validation_successful`** (`bool`): Whether the response passed this validator
 - **`retry_needed`** (`bool`): Whether the run loop should retry after failure — default `True`
 - **`feedback`** (`str | None`): Message sent back to the LLM when `retry_needed=True`; used as `failure_summary` when `retry_needed=False`
+- **`failure_code`** (`str | None`): Code stored when `retry_needed=False`; falls back to `validation_failed`
+
+`ValidatorSuccessResponse` and `ValidatorFailureResponse` are shorthands for a passing and a failing response.
 
 ### `BaseExecutionValidator`
 
@@ -56,7 +66,7 @@ class BaseExecutionValidator(ABC):
         self,
         response: str,
         execution_input: ExecutionInputType,
-        tool_scratchpad: Optional[ToolScratchpad] = None,
+        tool_scratchpad: ToolScratchpad,
     ) -> ValidatorResponse:
         ...
 ```
@@ -65,7 +75,7 @@ The run loop processes the first failing `ValidatorResponse` it encounters:
 
 - All validators return `validation_successful=True` → execution succeeds
 - `validation_successful=False, retry_needed=True` → `feedback` is sent back to the LLM and the attempt retries (up to `MAX_RETRIES` times)
-- `validation_successful=False, retry_needed=False` → the loop stops immediately; `failure_code` is set to `validation_failed` and `feedback` becomes the `failure_summary`
+- `validation_successful=False, retry_needed=False` → the loop stops immediately; `failure_code` is set to the response's code, or to `validation_failed` when it has none, and `feedback` becomes the `failure_summary`
 
 ### Built-in Validators
 
@@ -87,7 +97,7 @@ The base class provides a concrete `run()` that implements the validator retry l
 
 #### `AGENT_KEY`
 - **Type**: `ClassVar[str]`
-- **Description**: Must match the `AGENT_KEY` of the target agent plugin. Multiple execution definition classes may share the same `AGENT_KEY`.
+- **Description**: Must match the `AGENT_KEY` of the target agent class. Multiple execution definition classes may share the same `AGENT_KEY`.
 
 #### `NAME` / `DESCRIPTION`
 - **Type**: `ClassVar[str]` / `ClassVar[Optional[str]]`
@@ -100,6 +110,14 @@ The base class provides a concrete `run()` that implements the validator retry l
 #### `VALIDATORS`
 - **Type**: `ClassVar[list[type[BaseExecutionValidator]]]`
 - **Description**: Ordered list of validator classes applied after each `execute()` call; defaults to `[IsValidJsonValidator]`
+
+#### `SYSTEM_PROMPT`
+- **Type**: `ClassVar[Optional[str]]`
+- **Description**: A system prompt that replaces the agent's for this execution; when unset, the execution runs with the agent's conversation prompt
+
+#### `EXTRA_TOOLS`
+- **Type**: `ClassVar[list[ToolConfig]]`
+- **Description**: Tools added to the agent's own for this execution
 
 #### `MAX_RETRIES`
 - **Type**: `ClassVar[int]`
@@ -121,14 +139,6 @@ The base class provides a concrete `run()` that implements the validator retry l
 5. `retry_needed=True` with retries remaining → clears `tool_scratchpad`, sends feedback, retries
 6. Retries exhausted → asks the LLM for a failure summary and returns `max_retries_exceeded`
 
-## Execution configuration
+## Execution settings
 
-An agent has a single configuration, declared on the agent class, see [Agent Configuration](/docs/agents/agent-config). Settings that differ for an execution are declared on the definition and applied on top of that configuration through `AgentConfigOverrides`.
-
-#### `SYSTEM_PROMPT`
-- **Type**: `ClassVar[Optional[str]]`
-- **Description**: Replaces the agent's system prompt for this execution. Execution runs often benefit from a stripped-down prompt without conversational scaffolding that asks for structured output. When it is `None`, the execution runs with the agent's conversation prompt
-
-#### `EXTRA_TOOLS`
-- **Type**: `ClassVar[list[ToolConfig]]`
-- **Description**: Tools appended to the agent's own tools for this execution, for example `StopExecutionTool`. Defaults to an empty list
+An agent has a single configuration, and each execution of it can differ. The settings that are specific to an execution, the prompt and the extra tools, are declared on the definition as `SYSTEM_PROMPT` and `EXTRA_TOOLS` and applied on top of the agent's configuration. See [Agent Configuration](/docs/agents/agent-config).

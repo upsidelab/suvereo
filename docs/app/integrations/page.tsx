@@ -6,23 +6,24 @@ import { Metadata } from "next";
 const mdxComponents = getMDXComponents({});
 const Wrapper = mdxComponents.wrapper;
 const P = mdxComponents.p;
+const A = mdxComponents.a;
 const H1 = mdxComponents.h1;
 const H2 = mdxComponents.h2;
 
 export const metadata: Metadata = {
-  title: "Integrations | Suvereo",
+  title: "Plugins | Suvereo",
 }
 
 export default async function Page() {
   const metadata = {
-    title: "Integrations | Suvereo",
+    title: "Plugins | Suvereo",
     description: "",
   }
   return (
     <Wrapper toc={[]} metadata={metadata} sourceCode={""} >
-      <H1>Integrations</H1>
-      <P>Suvereo comes with a set of ready-to-use integrations that connect your agents to language models (e.g. Gemini and Azure OpenAI).</P>
-      <P>They allow you to leverage enterprise-grade AI models for enhanced security and performance. Furthermore, each of these integrations can be customized and extended by a developer.</P>
+      <H1>Plugins</H1>
+      <P>Suvereo comes with a set of ready-to-use plugins that connect your agents to the language models and tools they need (e.g. Gemini and Azure OpenAI).</P>
+      <P>They allow you to leverage enterprise-grade AI models for enhanced security and performance. Furthermore, each of these plugins can be customized and extended by a developer.</P>
       <H2>Language Models</H2>
       <Cards>
         <IntegrationCard name="OpenAI" imageSrc="/tools/suvereo/img/integrations/openai.png" href="/integrations/openai/" />
@@ -32,9 +33,11 @@ export default async function Page() {
         <IntegrationCard name="Google Gemini" imageSrc="/tools/suvereo/img/integrations/gemini.png" href="/integrations/gemini/" />
         <IntegrationCard name="Mistral" imageSrc="/tools/suvereo/img/integrations/mistral.png" href="/integrations/mistral/" />
       </Cards>
-      <H2>Build a Custom Integration</H2>
-      <P>These ready-made integrations cover common use cases. If you need to connect a system that isn’t listed here, Suvereo allows you to build custom integrations tailored to your stack.</P>
-      <Cards.Card className="x:my-4" title="Learn How to Build a Custom Integration" href="/docs/customization/custom-integration" arrow />
+      <H2>Integrations</H2>
+      <P>Suvereo provides an MCP integration that connects to MCP servers, so your agents can use the tools those servers offer.</P>
+      <P>It also lets you onboard integrations of your own. They can feed agents with data, let them act in external systems and provide them with tools. <A href="/docs/customization/integrations">Learn how integrations work</A>.</P>
+      <H2>Enthusiast: Ecommerce Vertical</H2>
+      <P>Enthusiast brings Suvereo to online stores. It comes with ready-made integrations for connecting to e-commerce systems, and ready-made agents that, for example, search the catalog, take in orders and enrich product data. <A href="https://upsidelab.io/tools/enthusiast">Explore Enthusiast</A>.</P>
     </Wrapper>
   )
 }

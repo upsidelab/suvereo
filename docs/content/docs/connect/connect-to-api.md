@@ -1,6 +1,6 @@
 # Connect to Suvereo's API
 
-Once you have the API token of a [service account](/docs/integrate/manage-api-keys), you can call Suvereo's API. Programmatic access, such as scripts and other systems, uses a service account. Requests made with a person's login use a different header, see [Signing In and Token Refresh](/docs/integrate/signing-in).
+Once you have the API token of a [service account](/docs/connect/manage-api-keys), you can call Suvereo's API. Programmatic access, such as scripts and other systems, uses a service account. Requests made with a person's login use a different header, see [Signing In and Token Refresh](/docs/connect/signing-in).
 
 Every request carries the token in the `Authorization` header:
 

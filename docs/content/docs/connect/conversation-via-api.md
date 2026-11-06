@@ -2,7 +2,7 @@
 
 A [conversation](/docs/concepts#conversation) is an exchange between a user and an agent. Through the API, a conversation is created with an agent, messages are sent to it, and the agent's answers are read from the conversation history. Answers are produced in the background, so a message is sent first and its status is polled afterwards.
 
-All requests carry the `Authorization` header, see [Connecting to the API](/docs/integrate/connect-to-api). The examples use a hypothetical support assistant agent. The agents on your instance, and their answers, differ.
+All requests carry the `Authorization` header, see [Connecting to the API](/docs/connect/connect-to-api). The examples use a hypothetical support assistant agent. The agents on your instance, and their answers, differ.
 
 ## Find an Agent
 
@@ -163,6 +163,6 @@ If the agent accepts file uploads, a file is uploaded to the conversation first 
 
 ## Authentication and Authorization
 
-All endpoints require authentication, see [Connecting to the API](/docs/integrate/connect-to-api).
+All endpoints require authentication, see [Connecting to the API](/docs/connect/connect-to-api).
 
 Access to conversations depends on the permissions of the account, which are set through roles, see [Roles and Groups](/docs/management/roles-and-groups#permissions).

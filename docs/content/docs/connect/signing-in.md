@@ -1,6 +1,6 @@
 # Signing In and Token Refresh
 
-This page is for clients that call the API on behalf of a person, such as a custom front end. Scripts and other systems should use a [service account](/docs/integrate/manage-api-keys) instead, whose `Token` header does not expire and does not need refreshing, see [Connecting to the API](/docs/integrate/connect-to-api).
+This page is for clients that call the API on behalf of a person, such as a custom front end. Scripts and other systems should use a [service account](/docs/connect/manage-api-keys) instead, whose `Token` header does not expire and does not need refreshing, see [Connecting to the API](/docs/connect/connect-to-api).
 
 A user signs in with their email and password and receives two JWT tokens:
 
