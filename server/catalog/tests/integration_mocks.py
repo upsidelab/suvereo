@@ -37,6 +37,14 @@ class MockToolProvidingIntegration(BaseToolProvidingIntegration):
         return []
 
 
+class MockDefaultInstanceIntegration(BaseIntegration):
+    """Declares nothing about instances, so it takes BaseIntegration's default."""
+
+    TYPE = "mock_default"
+    NAME = "Mock Default Instance"
+    INTEGRATION_TYPE_NAME = "Mock category"
+
+
 class MockOAuthIntegration(BaseOAuthIntegration):
     """Stands in for a plugin that opts into the OAuth handshake, without talking to a provider."""
 
