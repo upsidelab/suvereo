@@ -10,7 +10,7 @@ Tools serve as the building blocks for agent functionality, allowing agents to:
 - Interact with external systems
 - Perform specific operations
 
-Each tool defines its inputs, its output and its logic. An agent lists its tools in `TOOLS`, see [Agent Classes](/docs/agents/agent-classes). [Integrations](/docs/concepts#integration) such as MCP servers can also supply tools, see [Tools from integrations](#tools-from-integrations).
+Each tool defines its inputs, its output and its logic. An agent lists its tools in `TOOLS`, see [Agent Classes](/docs/agents/agent-classes). [Integrations](/docs/concepts#integration) such as [MCP servers](/plugins/mcp) can also supply tools, see [Tools from integrations](#tools-from-integrations).
 
 ## Architecture
 

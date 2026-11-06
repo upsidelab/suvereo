@@ -1,6 +1,6 @@
 # Integrations
 
-An [integration](/docs/concepts#integration) connects a [data set](/docs/concepts#data-set) to an external system. It can bring content in from the system, let [agents](/docs/concepts#agent) act in it, or both. Acting can mean calling the system's API from a tool, or handing the agent a set of ready-made tools, such as those of an MCP server. Suvereo stores the settings of each connection, shows them as a form in the UI and creates the integration when it is needed, so the class you write only describes the system and what it offers. The code on this page uses a hypothetical example, a wiki that stores articles, to show what each kind of integration looks like.
+An [integration](/docs/concepts#integration) connects a [data set](/docs/concepts#data-set) to an external system. It can bring content in from the system, let [agents](/docs/concepts#agent) act in it, or both. Acting can mean calling the system's API from a tool, or handing the agent a set of ready-made tools, such as those of an [MCP server](/plugins/mcp). Suvereo stores the settings of each connection, shows them as a form in the UI and creates the integration when it is needed, so the class you write only describes the system and what it offers. The code on this page uses a hypothetical example, a wiki that stores articles, to show what each kind of integration looks like.
 
 ## Implementation
 
@@ -144,7 +144,7 @@ class WikiToolsIntegration(BaseToolProvidingIntegration):
 
 Unlike an integration that agents act through, a tool provider needs nothing in the builder or the injector, and agents do not need to know that it exists. When an agent is built for a conversation, the builder asks every tool-providing integration connected to the data set for its tools and attaches them to the agent. An integration that fails or takes longer than ten seconds to answer contributes no tools for that turn, and the others are unaffected. A tool whose name is already taken, by the agent's own tools or by an integration resolved earlier, is dropped with a warning. Agents built on `BaseToolCallingAgent` pick the tools up, as they can answer asynchronously. See [Tools](/docs/agents/tools#tools-from-integrations).
 
-Suvereo ships one tool provider, for MCP servers, in the `suvereo-integration-mcp` package. It is registered in the same way as a custom integration.
+Suvereo ships one tool provider, for MCP servers, in the `suvereo-integration-mcp` package (see [MCP Server Integration](/plugins/mcp)). It is registered in the same way as a custom integration.
 
 ### OAuth
 
