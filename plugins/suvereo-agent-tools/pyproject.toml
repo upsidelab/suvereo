@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://upsidelab.io/tools/suvereo"
+Homepage = "https://upsidelab.io/suvereo"
 Repository = "https://github.com/upsidelab/suvereo.git"
 Issues = "https://github.com/upsidelab/suvereo/issues"
 
