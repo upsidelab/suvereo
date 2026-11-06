@@ -3,3 +3,15 @@
     height: 32px;
     margin-right: 8px;
 }
+
+.logo__image--dark {
+    display: none;
+}
+
+:global(html.dark) .logo__image--light {
+    display: none;
+}
+
+:global(html.dark) .logo__image--dark {
+    display: block;
+}

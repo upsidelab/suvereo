@@ -1,6 +1,6 @@
 import { LoginForm } from "@/components/login/login-form.tsx";
-import logoUrl from '@/assets/logo.png';
-import logoSvgUrl from '@/assets/logo.svg';
+import logoUrl from '@/assets/logo-dark.png';
+import logoSvgUrl from '@/assets/logo-dark.svg';
 
 export function LoginPage() {
   return (
