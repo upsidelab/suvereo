@@ -146,7 +146,7 @@ A case can override the suite's behaviour for a method; its `behaviour` replaces
 
 ```yaml
 integrations:
-  - interface: enthusiast_vertical_common.interfaces.ECommerceIntegrationPlugin
+  - interface: enthusiast_domain_common.interfaces.ECommerceIntegrationPlugin
     config:
       behaviour:
         create_order_with_items: {returns: "ORD-{n}"}
@@ -196,5 +196,5 @@ Enthusiast, the e-commerce domain definition, ships these:
 
 | Integration | Data | What it gives the agent |
 |---|---|---|
-| `enthusiast_vertical_common.evaluation.ECommerceMockIntegration` | `catalog`: products (`sku` and `name` required) | The catalog synced for product search, and a shop connector with in-memory orders (`ORD-1`, `ORD-2`, …), stock and an admin URL. |
-| `enthusiast_vertical_common.evaluation.DocumentMockIntegration` | `documents`: records with `url`, `title` and `content` | The documents synced, with embeddings, for document search agents. |
+| `enthusiast_domain_common.evaluation.ECommerceMockIntegration` | `catalog`: products (`sku` and `name` required) | The catalog synced for product search, and a shop connector with in-memory orders (`ORD-1`, `ORD-2`, …), stock and an admin URL. |
+| `enthusiast_domain_common.evaluation.DocumentMockIntegration` | `documents`: records with `url`, `title` and `content` | The documents synced, with embeddings, for document search agents. |

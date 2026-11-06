@@ -8,7 +8,7 @@
 #
 # Example — Enthusiast (an eCommerce domain definition) would set:
 #
-#     INSTALLED_DOMAIN_DEFINITIONS = ["enthusiast_vertical"]
+#     INSTALLED_DOMAIN_DEFINITIONS = ["enthusiast_domain"]
 #     AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS = [
 #         "enthusiast_agent_catalog_enrichment.CatalogEnrichmentAgenticExecutionDefinition",
 #     ]
@@ -17,13 +17,13 @@
 #         "enthusiast_source_medusa.MedusaIntegration",
 #     ]
 #     CATALOG_INTEGRATION_MANAGERS = [
-#         "enthusiast_vertical.sync.ProductSourceManager",
-#         "enthusiast_vertical.sync.DocumentSourceManager",
-#         "enthusiast_vertical.sync.ECommerceIntegrationManager",
+#         "enthusiast_domain.sync.ProductSourceManager",
+#         "enthusiast_domain.sync.DocumentSourceManager",
+#         "enthusiast_domain.sync.ECommerceIntegrationManager",
 #     ]
 #     CATALOG_ENTITY_PLUGINS = [
-#         "enthusiast_vertical.models.Product",
-#         "enthusiast_vertical.models.Document",
+#         "enthusiast_domain.models.Product",
+#         "enthusiast_domain.models.Document",
 #     ]
 
 INSTALLED_DOMAIN_DEFINITIONS = []
