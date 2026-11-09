@@ -1,6 +1,5 @@
 import { LoginForm } from "@/components/login/login-form.tsx";
-import logoUrl from '@/assets/logo.png';
-import logoSvgUrl from '@/assets/logo.svg';
+import logoUrl from '@/assets/logo-dark.svg';
 
 export function LoginPage() {
   return (
@@ -9,10 +8,7 @@ export function LoginPage() {
         <div className="relative hidden h-full flex-col bg-muted p-10 text-white dark:border-r lg:flex">
           <div className="absolute inset-0 bg-zinc-900" />
           <div className="relative z-20 flex items-center text-lg font-medium">
-            <img src={logoUrl} srcSet={logoSvgUrl} alt="Suvereo" className="w-10 h-10" />
-            <p className="ml-4 text-2xl">
-              suvereo.
-            </p>
+            <img src={logoUrl} alt="Suvereo" className="h-8 w-auto" />
           </div>
         </div>
         <div className="lg:p-8">

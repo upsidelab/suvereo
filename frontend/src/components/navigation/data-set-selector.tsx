@@ -36,9 +36,8 @@ export function DataSetSelector() {
           size="lg"
           className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
         >
-          <div
-            className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-            <img src={logoUrl} srcSet={logoSvgUrl} alt="Suvereo" className="size-8 rounded-lg"/>
+          <div className="flex aspect-square size-8 items-center justify-center">
+            <img src={logoUrl} srcSet={logoSvgUrl} alt="Suvereo" className="size-8"/>
           </div>
           <div className="flex flex-col gap-0.5 leading-none">
             <span className="font-semibold">Suvereo</span>
