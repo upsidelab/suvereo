@@ -360,7 +360,7 @@ The builder takes effect when an agent names it. The [agent page](/docs/customiz
 
 ## 7. Register the domain definition
 
-Registration tells Suvereo that the domain definition exists. Edit `server/pecl/settings_override.py`. In a codebase that has no other domain definition, the file needs only these entries:
+Registration tells Suvereo that the domain definition exists. Edit `server/config/settings_override.py`. In a starter that has no other domain definition, the file needs only these entries besides the ones it already has for the language model provider:
 
 ```python
 INSTALLED_DOMAIN_DEFINITIONS = ["diet_domain"]
@@ -378,14 +378,15 @@ CATALOG_ENTITY_PLUGINS = [
 
 ## 8. Create the tables
 
-Generate the migrations from the `server/` directory and apply them:
+Generate the migrations. The settings are baked into the image, so rebuild it first with `docker compose build`. The command runs in the server container, with `server/src/` mounted over the installed package so that the migration is written to your source directory:
 
 ```bash
-./manage.py makemigrations diet_domain
-./manage.py migrate
+docker compose run --rm --no-deps --entrypoint python \
+  -v "$PWD/server/src:/src" -e PYTHONPATH=/src \
+  api manage.py makemigrations diet_domain
 ```
 
-`makemigrations` writes `0001_initial.py` into `diet_domain/migrations/`, because the package is installed in editable mode. It reports the three models and the unique constraint:
+`makemigrations` writes `0001_initial.py` into `diet_domain/migrations/`, through the mount. It reports the three models and the unique constraint:
 
 ```
 Migrations for 'diet_domain':
@@ -396,10 +397,10 @@ Migrations for 'diet_domain':
     + Create constraint uq_diet_recipe on model recipe
 ```
 
-Commit the migration with the package. The migration declares a dependency on the `catalog` app, which holds data sets and integrations, so it is applied after that app's tables exist.
+The migrations are applied when the server starts, which the next step does. Commit the migration with the package. The migration declares a dependency on the `catalog` app, which holds data sets and integrations, so it is applied after that app's tables exist.
 
 ## Check the result
 
-Restart the server and the worker, so that they read the new settings. Open a data set in the UI. Its sidebar now has a **Catalog** section with two entries, **Recipes** and **User profiles**, each listing an empty table with the columns declared in `EntityMeta`.
+Rebuild and restart with `docker compose up -d --build`, so that the image contains the code and the settings and the migration is applied. Open a data set in the UI. Its sidebar now has a **Catalog** section with two entries, **Recipes** and **User profiles**, each listing an empty table with the columns declared in `EntityMeta`.
 
 Nothing fills the tables yet. The [next page](/docs/customization/tutorial/integrations) adds the integrations that do.

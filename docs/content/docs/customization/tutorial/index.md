@@ -27,30 +27,31 @@ The tutorial shows the code and says what each part does. The linked pages descr
 
 ## Before you start
 
-The Suvereo starter, a repository for building on Suvereo, is not available yet (see [Using the Suvereo starter](/docs/customization/using-the-suvereo-starter)). Until it is, the tutorial extends a checkout of the Suvereo repository.
+The tutorial builds on the [Suvereo starter](/docs/customization/using-the-suvereo-starter). Set it up as described in [Installation](/docs/getting-started/installation), and check that you can sign in. The starter runs the migrations and creates the starter roles on its first start, so nothing else needs to be prepared.
 
-TODO: update once the Suvereo starter lands. This section, the package location and the install step in "Create the package" will need to be revisited to build on the starter instead of the Suvereo repository.
+The starter ships with a finished diet advice domain definition in `server/src/diet_advice_domain/`, which is the same example as the tutorial. To build your own version from scratch, remove the shipped one:
+
+1. Delete `server/src/diet_advice_domain/`.
+2. In `server/config/settings_override.py`, delete the lines that refer to `diet_advice_domain`. The tutorial adds its own entries as it goes.
 
 You need:
 
-- The `server/` directory set up as described in its README: PostgreSQL with the pgvector extension, Redis, Poetry, migrations applied and an admin account created. Run `./manage.py seedroles` as well, so that the starter roles exist.
-- The server, the Celery worker and the frontend running. The worker is needed by the sync and by the execution.
-- An API key of a language model provider and of an embedding model provider, set up as described in [Managing data sets](/docs/management/data-sets). The tutorial does not depend on a particular provider.
+- An API key of a language model provider and of an embedding model provider, set up as described in [Managing data sets](/docs/management/data-sets). The starter reads the OpenAI key from `server/config/.env`, and the tutorial does not depend on a particular provider.
 - A data set. Create one now in the UI if the instance has none.
 
 ## Create the package
 
-A domain definition is a Django app, and it can be a standalone package. This tutorial creates one next to `server/`:
+A domain definition is a Django app, and it can be a standalone package. In the starter, your code is the package in `server/src/`, so this tutorial adds the domain definition there:
 
 ```
-diet-domain/
+server/src/
 ├── pyproject.toml
 └── diet_domain/
     ├── __init__.py
     └── apps.py
 ```
 
-`pyproject.toml` declares the package and what it depends on:
+`server/src/pyproject.toml` declares the package. Change the name and add the package to it:
 
 ```toml
 [tool.poetry]
@@ -61,26 +62,23 @@ authors = ["Your Name <you@example.com>"]
 packages = [{ include = "diet_domain" }]
 
 [tool.poetry.dependencies]
-python = "^3.11"
-django = ">=5.2,<6.0"
-pgvector = ">=0.4.1"
+python = "^3.10"
 requests = ">=2.31.0"
-suvereo-common = ">=1.7.0,<2.0.0"
-suvereo-agent-tool-calling = ">=1.2.0"
-suvereo-agent-tools = ">=1.0.0,<2.0.0"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 ```
 
-| Dependency | Used for |
-|---|---|
-| `suvereo-common` | The contracts a domain definition is written against: entities, retrievers, integrations, the builder and the agent. The domain definition does not import the server's code. |
-| `pgvector` | The embedding column of the searchable entity. |
-| `requests` | HTTP calls of the recipe source that reads a real API, at the end of the [integrations page](/docs/customization/tutorial/integrations#connecting-a-real-system). |
-| `suvereo-agent-tool-calling` | `BaseToolCallingAgent`, the agent class used on the [agent page](/docs/customization/tutorial/agent). |
-| `suvereo-agent-tools` | Ready-made tools, of which the tutorial uses the one that ends an execution. |
+The Suvereo server image already contains everything else the domain definition imports, so `requests` is the only dependency to declare:
+
+| Package | Used for | Where it comes from |
+|---|---|---|
+| `suvereo_common` | The contracts a domain definition is written against: entities, retrievers, integrations, the builder and the agent. The domain definition does not import the server's code. | The server image |
+| `pgvector` | The embedding column of the searchable entity. | The server image |
+| `suvereo_agent_tool_calling` | `BaseToolCallingAgent`, the agent class used on the [agent page](/docs/customization/tutorial/agent). | The server image |
+| `suvereo_agent_tools` | Ready-made tools, of which the tutorial uses the one that ends an execution. | The server image |
+| `requests` | HTTP calls of the recipe source that reads a real API, at the end of the [integrations page](/docs/customization/tutorial/integrations#connecting-a-real-system). | `pyproject.toml` |
 
 `diet_domain/__init__.py` is empty, and `apps.py` names the Django app:
 
@@ -94,14 +92,13 @@ class DietDomainConfig(AppConfig):
     verbose_name = "Diet Domain"
 ```
 
-Then install the package into the environment of the server in editable mode, so that edits take effect without reinstalling and so that `makemigrations` writes into your source directory:
+The starter builds `server/src/` into the image, so a change to the code takes effect after a rebuild:
 
 ```bash
-cd server
-poetry add --editable ../diet-domain
+docker compose up -d --build
 ```
 
-If the package imports, the setup is done: `poetry run python -c "import diet_domain"` prints nothing.
+The tutorial asks for a rebuild each time it registers something.
 
 ## What the tutorial simplifies
 
