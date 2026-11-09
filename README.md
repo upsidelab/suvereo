@@ -25,7 +25,7 @@ The core is domain-agnostic: it works for any field, from e-commerce to healthca
 
 ## Features
 
-- **Conversations** - chat with an agent in the web UI, with streamed answers and saved history.
+- **Conversations** - chat with an agent in the web UI or through the API, with streamed answers and saved history.
 - **Agentic executions** - autonomous, API-triggered agent runs with structured input and result, checked by validators that send the agent back to correct its answer.
 - **Search across your content** - content is split, embedded and searched by meaning, so agents answer from your data (RAG).
 - **Integrations** - connect external systems to pull data in or to let agents act there through tools, MCP servers included.
@@ -59,12 +59,17 @@ Open the management panel at [http://localhost:10001](http://localhost:10001) an
 
 Everything you add, from a model provider to a domain definition, is a plugin registered in the instance settings. See [Concepts](https://upsidelab.io/suvereo/docs/concepts) for the full picture.
 
-## Example Domains
+## What Domains You Can Onboard
 
-- **Diet advice** - recipes and user profiles, a nutrition assistant that suggests meals within a user's allergies and diet, and a weekly meal plan execution validated against their calorie target. The starter ships it as a working example, and the [tutorial](https://upsidelab.io/suvereo/docs/customization/tutorial) builds it step by step, from the entities to the execution. The [evaluation guide](https://upsidelab.io/suvereo/docs/evaluate/getting-started) then tests it.
-- **E-commerce** - [Enthusiast](https://upsidelab.io/tools/enthusiast) is the domain definition for online stores, with integrations for store platforms and agents for product search, order intake and catalog enrichment.
+Any field your agents need to work in. A domain definition adds the domain's records, the systems they come from and the tools agents use on them, for example:
 
-The [plugins page](https://upsidelab.io/suvereo/plugins) lists everything ready to install.
+- **Healthcare** - agents that de-identify patient data before it reaches a model, or check answers against approved medical sources.
+- **Legal** - agents that review contracts against a firm's clause library.
+- **Customer support** - agents that answer from product manuals and open tickets in the help desk.
+
+**[Enthusiast](https://upsidelab.io/tools/enthusiast)** is the domain definition we maintain for e-commerce, with integrations for store platforms and agents for product search, order intake and catalog enrichment.
+
+To onboard your own domain, follow the [tutorial](https://upsidelab.io/suvereo/docs/customization/tutorial). It builds a diet advice domain definition step by step, and the starter ships the finished one as a working example. The [plugins page](https://upsidelab.io/suvereo/plugins) lists everything ready to install.
 
 ## Documentation
 
@@ -73,7 +78,7 @@ The [plugins page](https://upsidelab.io/suvereo/plugins) lists everything ready 
 | Install and run Suvereo | [Getting started](https://upsidelab.io/suvereo/docs/getting-started/installation) |
 | Build agents, tools and prompts | [Agents](https://upsidelab.io/suvereo/docs/agents/agent-architecture) |
 | Add a domain, integrations and entities | [Customization](https://upsidelab.io/suvereo/docs/customization/domain-onboarding) and the [tutorial](https://upsidelab.io/suvereo/docs/customization/tutorial) |
-| Test agents across models and prompts | [Evaluate](https://upsidelab.io/suvereo/docs/evaluate/getting-started) |
+| Test agents across models and prompts | [Evaluate](https://upsidelab.io/suvereo/docs/evaluate/evaluate-an-agent) |
 
 ## Developing Suvereo
 
@@ -83,7 +88,7 @@ This repository holds the framework itself:
 |---|---|
 | `server/` | Django backend: REST API, Celery workers, WebSocket conversations |
 | `frontend/` | React and TypeScript management panel |
-| `plugins/` | Core plugins: `suvereo-common` contracts, model providers, the MCP integration and the tool-calling agent |
+| `plugins/` | Core plugins: `suvereo-common` contracts, model providers, the MCP integration, the tool-calling agent and its file and execution tools |
 | `docs/` | The documentation site |
 | `adrs/` | Architectural decision records |
 
