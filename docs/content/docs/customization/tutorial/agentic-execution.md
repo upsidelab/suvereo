@@ -414,7 +414,7 @@ __all__ = ["NutritionAssistantAgent", "WeeklyMealPlanExecutionDefinition", "Week
 
 ## 5. Register the execution
 
-Add it to `server/pecl/settings_override.py`:
+Add it to `server/config/settings_override.py`:
 
 ```python
 AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS = [
@@ -422,7 +422,7 @@ AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS = [
 ]
 ```
 
-Restart the server and the worker.
+Rebuild and restart with `docker compose up -d --build`.
 
 ## Try it
 

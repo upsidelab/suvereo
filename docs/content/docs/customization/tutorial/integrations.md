@@ -370,7 +370,7 @@ Every sample user gets the password `test123`. Use the samples only on an instan
 
 ## 5. Register the integrations
 
-Integrations and managers are listed in `server/pecl/settings_override.py`. Types are not listed, since Suvereo finds them through the integrations that subclass them:
+Integrations and managers are listed in `server/config/settings_override.py`. Types are not listed, since Suvereo finds them through the integrations that subclass them:
 
 ```python
 CATALOG_INTEGRATION_PLUGINS = [
@@ -383,7 +383,7 @@ CATALOG_INTEGRATION_MANAGERS = [
 ]
 ```
 
-Restart the server and the worker.
+Rebuild and restart with `docker compose up -d --build`.
 
 ## Try it
 
@@ -700,7 +700,7 @@ CATALOG_INTEGRATION_PLUGINS = [
 ]
 ```
 
-Restart the server and the worker, then add a **Recipe source** in the UI and choose **TheMealDB recipes with USDA nutrition**. The form has the TheMealDB key, already filled with `1`, and the maximum number of recipes, already filled with `50`, and asks for the USDA API key, which you can get at [fdc.nal.usda.gov/api-key-signup](https://fdc.nal.usda.gov/api-key-signup). Start the sync as before. It makes a request for each distinct ingredient, so it takes a few minutes, and more if you raise the maximum. The `requests` dependency is already declared in the package's `pyproject.toml`.
+Rebuild and restart with `docker compose up -d --build`, then add a **Recipe source** in the UI and choose **TheMealDB recipes with USDA nutrition**. The form has the TheMealDB key, already filled with `1`, and the maximum number of recipes, already filled with `50`, and asks for the USDA API key, which you can get at [fdc.nal.usda.gov/api-key-signup](https://fdc.nal.usda.gov/api-key-signup). Start the sync as before. It makes a request for each distinct ingredient, so it takes a few minutes, and more if you raise the maximum. The `requests` dependency is already declared in the package's `pyproject.toml`.
 
 Several connections of one integration can exist on a data set by default. Set `ALLOWS_MULTIPLE_INSTANCES = False` on an integration that makes sense only once.
 

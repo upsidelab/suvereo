@@ -266,7 +266,7 @@ An agent declares more than this, such as the settings an admin can change in th
 
 ## 5. Register the agent
 
-Add the class to `server/pecl/settings_override.py`:
+Add the class to `server/config/settings_override.py`:
 
 ```python
 AVAILABLE_AGENTS = [
@@ -274,7 +274,7 @@ AVAILABLE_AGENTS = [
 ]
 ```
 
-Restart the server and the worker.
+Rebuild and restart with `docker compose up -d --build`.
 
 ## Try it
 
