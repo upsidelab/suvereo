@@ -102,4 +102,4 @@ The builder creates the compactor as `compactor_class(conversation_repo, convers
 
 ### Custom injector
 
-The injector exposes `chat_history` and `memory_compactor`. The default `Injector` already carries both, so a [vertical's](/docs/concepts#vertical) injector that extends it can pass them along, see [Injector](/docs/agents/injector).
+The injector exposes `chat_history` and `memory_compactor`. The default `Injector` already carries both, so a [domain definition's](/docs/concepts#domain-definition) injector that extends it can pass them along, see [Injector](/docs/agents/injector).

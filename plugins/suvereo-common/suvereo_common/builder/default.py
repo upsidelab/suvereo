@@ -40,8 +40,8 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
     (repositories, registries, memory classes, callback handlers, the
     integration plugin resolver) arrives through the config, so this class
     depends only on contracts defined in ``suvereo-common``. The framework
-    host supplies its implementations via its default config; a vertical
-    subclasses this builder only to extend the injector with domain-specific
+    host supplies its implementations via its default config; a domain
+    definition subclasses this builder only to extend the injector with domain-specific
     dependencies.
     """
 
@@ -254,7 +254,7 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
 
     def _build_agent_tool(self, config: AgentToolConfig) -> BaseAgentTool:
         # Sub-agents are built with the same builder class as their parent, so a
-        # vertical builder propagates its injector (and its build costs) to
+        # domain definition's builder propagates its injector (and its build costs) to
         # sub-agents — overriding whatever config.agent.injector declares.
         agent = type(self)(
             config.agent_class,

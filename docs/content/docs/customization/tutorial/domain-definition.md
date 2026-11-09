@@ -1,11 +1,11 @@
-# The Vertical
+# The Domain Definition
 
-This page gives the diet vertical its data, and the way agents search it. It covers the entities, the retriever, the profile accessor, the injector and the builder, then registers the vertical and creates its tables. Each part is described in [Verticals](/docs/customization/verticals), and this page shows it for the diet domain.
+This page gives the diet domain definition its data, and the way agents search it. It covers the entities, the retriever, the profile accessor, the injector and the builder, then registers the domain definition and creates its tables. Each part is described in [Domain definitions](/docs/customization/domain-definitions), and this page shows it for the diet domain.
 
-Everything on this page is in the `diet_vertical` package created in the [overview](/docs/customization/tutorial#create-the-package). The layout after this page:
+Everything on this page is in the `diet_domain` package created in the [overview](/docs/customization/tutorial#create-the-package). The layout after this page:
 
 ```
-diet_vertical/
+diet_domain/
 ├── __init__.py
 ├── apps.py
 ├── structures.py
@@ -25,7 +25,7 @@ diet_vertical/
 
 ## 1. The vocabulary
 
-`structures.py` holds plain Python types that the rest of the vertical shares. The values that the data can take are enums, so that code refers to `Allergen.PEANUTS` instead of repeating the string `"peanuts"`. The models store the plain strings, since an enum member of `StrEnum` is a string.
+`structures.py` holds plain Python types that the rest of the domain definition shares. The values that the data can take are enums, so that code refers to `Allergen.PEANUTS` instead of repeating the string `"peanuts"`. The models store the plain strings, since an enum member of `StrEnum` is a string.
 
 ```python
 from enum import StrEnum
@@ -64,14 +64,14 @@ class DietaryTag(StrEnum):
 
 ## 2. The recipe entity
 
-An [entity](/docs/customization/verticals#1-entities) is a Django model that mixes in `DomainEntity` and declares `EntityMeta`. The recipe is the entity that agents search:
+An [entity](/docs/customization/domain-definitions#1-entities) is a Django model that mixes in `DomainEntity` and declares `EntityMeta`. The recipe is the entity that agents search:
 
 ```python
-# diet_vertical/models/recipe.py
+# diet_domain/models/recipe.py
 from django.db import models
 from suvereo_common.entities import DomainEntity, EntityField
 
-from diet_vertical.structures import MealType
+from diet_domain.structures import MealType
 
 
 class Recipe(DomainEntity, models.Model):
@@ -127,23 +127,23 @@ What each part is for:
 A chunk stores one piece of an entity's indexable text together with its embedding. Add one to the recipe:
 
 ```python
-# diet_vertical/models/recipe_chunk.py
+# diet_domain/models/recipe_chunk.py
 from django.db import models
 from suvereo_common.indexing import BaseEmbeddingChunk
 
 
 class RecipeChunk(BaseEmbeddingChunk):
-    recipe = models.ForeignKey("diet_vertical.Recipe", on_delete=models.CASCADE, related_name="chunks")
+    recipe = models.ForeignKey("diet_domain.Recipe", on_delete=models.CASCADE, related_name="chunks")
 ```
 
-`BaseEmbeddingChunk` provides the `content` and `embedding` fields. The relation must be named `chunks` on the entity's side, since the indexer that Suvereo provides looks for it. The indexer splits the text from `get_indexable_content()` into pieces, embeds them with the embedding model of the recipe's data set and replaces the stored chunks of the recipe. The vertical calls it once per synced recipe, as shown on the next page.
+`BaseEmbeddingChunk` provides the `content` and `embedding` fields. The relation must be named `chunks` on the entity's side, since the indexer that Suvereo provides looks for it. The indexer splits the text from `get_indexable_content()` into pieces, embeds them with the embedding model of the recipe's data set and replaces the stored chunks of the recipe. The domain definition calls it once per synced recipe, as shown on the next page.
 
 ## 4. The user profile entity
 
 The profile holds what the agent must know about a person. It is an entity so that the profiles are stored, listed in the UI and available to the execution, but agents do not search it by meaning, so it has no chunk model and no `get_indexable_content()`:
 
 ```python
-# diet_vertical/models/user_profile.py
+# diet_domain/models/user_profile.py
 from django.conf import settings
 from django.db import models
 from suvereo_common.entities import DomainEntity, EntityField
@@ -182,13 +182,13 @@ class UserProfile(DomainEntity, models.Model):
 
 Two things differ from the recipe:
 
-- **The profile points at a Suvereo user.** A vertical can reference the user model through `settings.AUTH_USER_MODEL`, so the profile of a person is found from the account they sign in with. `OneToOneField` makes it one profile per user.
+- **The profile points at a Suvereo user.** A domain definition can reference the user model through `settings.AUTH_USER_MODEL`, so the profile of a person is found from the account they sign in with. `OneToOneField` makes it one profile per user.
 - **A list field can name a read-only property.** `user_email` is not a column. Suvereo builds the table's serializer from the field names, so a property is listed like a column.
 
-Re-export the models, so that they can be imported from `diet_vertical.models` and found by Django:
+Re-export the models, so that they can be imported from `diet_domain.models` and found by Django:
 
 ```python
-# diet_vertical/models/__init__.py
+# diet_domain/models/__init__.py
 from .recipe import Recipe
 from .recipe_chunk import RecipeChunk
 from .user_profile import UserProfile
@@ -198,16 +198,16 @@ __all__ = ["Recipe", "RecipeChunk", "UserProfile"]
 
 ## 5. The recipe retriever
 
-A [retriever](/docs/customization/verticals#2-retrievers) is the object a tool calls to search an entity. `BaseVectorStoreRetriever` embeds a query and returns the closest chunks within one data set. The diet vertical adds the filters that matter for food:
+A [retriever](/docs/customization/domain-definitions#2-retrievers) is the object a tool calls to search an entity. `BaseVectorStoreRetriever` embeds a query and returns the closest chunks within one data set. The diet domain definition adds the filters that matter for food:
 
 ```python
-# diet_vertical/retrievers/recipe.py
+# diet_domain/retrievers/recipe.py
 from typing import Optional
 
 from suvereo_common.retrievers import BaseVectorStoreRetriever
 
-from diet_vertical.models import Recipe, RecipeChunk
-from diet_vertical.structures import Allergen, MealType
+from diet_domain.models import Recipe, RecipeChunk
+from diet_domain.structures import Allergen, MealType
 
 MAX_RECIPES_RETURNED = 20
 
@@ -232,7 +232,7 @@ class RecipeRetriever(BaseVectorStoreRetriever[RecipeChunk]):
 ```
 
 ```python
-# diet_vertical/retrievers/__init__.py
+# diet_domain/retrievers/__init__.py
 from .recipe import RecipeRetriever
 
 __all__ = ["RecipeRetriever"]
@@ -244,15 +244,15 @@ __all__ = ["RecipeRetriever"]
 
 ## 6. The profile accessor, the injector and the builder
 
-Tools reach the vertical's code through the [injector](/docs/agents/injector), and the [builder](/docs/agents/builder) creates the injector. The injector holds two things here: the retriever, and an accessor for the profile of the user in the conversation.
+Tools reach the domain definition's code through the [injector](/docs/agents/injector), and the [builder](/docs/agents/builder) creates the injector. The injector holds two things here: the retriever, and an accessor for the profile of the user in the conversation.
 
 The accessor is bound to one user when it is created. It reads and updates that user's profile and nothing else, so a tool that uses it cannot reach another person's data, whatever the model asks for:
 
 ```python
-# diet_vertical/profiles.py
+# diet_domain/profiles.py
 from typing import Any, Optional
 
-from diet_vertical.models import UserProfile
+from diet_domain.models import UserProfile
 
 UPDATABLE_FIELDS = (
     "allergies",
@@ -286,11 +286,11 @@ class UserProfileAccessor:
 The injector extends the default one:
 
 ```python
-# diet_vertical/injector.py
+# diet_domain/injector.py
 from suvereo_common.injectors import Injector
 
-from diet_vertical.profiles import UserProfileAccessor
-from diet_vertical.retrievers import RecipeRetriever
+from diet_domain.profiles import UserProfileAccessor
+from diet_domain.retrievers import RecipeRetriever
 
 
 class DietInjector(Injector):
@@ -308,16 +308,16 @@ class DietInjector(Injector):
         return self._user_profile
 ```
 
-The builder creates it. The builder of the vertical subclasses `AgentBuilder` and overrides `_build_injector()`:
+The builder creates it. The builder of the domain definition subclasses `AgentBuilder` and overrides `_build_injector()`:
 
 ```python
-# diet_vertical/builder.py
+# diet_domain/builder.py
 from suvereo_common.builder import AgentBuilder
 from suvereo_common.config import AgentConfig
 
-from diet_vertical.injector import DietInjector
-from diet_vertical.profiles import UserProfileAccessor
-from diet_vertical.retrievers import RecipeRetriever
+from diet_domain.injector import DietInjector
+from diet_domain.profiles import UserProfileAccessor
+from diet_domain.retrievers import RecipeRetriever
 
 CHUNKS_SEARCHED = 100
 
@@ -358,22 +358,22 @@ By the time `_build_injector()` runs, the base builder has resolved the data set
 
 The builder takes effect when an agent names it. The [agent page](/docs/customization/tutorial/agent) sets it with `BUILDER_CLASS`.
 
-## 7. Register the vertical
+## 7. Register the domain definition
 
-Registration tells Suvereo that the vertical exists. Edit `server/pecl/settings_override.py`. In a codebase that has no other vertical, the file needs only these entries:
+Registration tells Suvereo that the domain definition exists. Edit `server/pecl/settings_override.py`. In a codebase that has no other domain definition, the file needs only these entries:
 
 ```python
-INSTALLED_VERTICALS = ["diet_vertical"]
+INSTALLED_DOMAIN_DEFINITIONS = ["diet_domain"]
 
 CATALOG_ENTITY_PLUGINS = [
-    "diet_vertical.models.Recipe",
-    "diet_vertical.models.UserProfile",
+    "diet_domain.models.Recipe",
+    "diet_domain.models.UserProfile",
 ]
 ```
 
 | Setting | Effect |
 |---|---|
-| `INSTALLED_VERTICALS` | Adds the app to Django's `INSTALLED_APPS`, so its models and migrations are found. |
+| `INSTALLED_DOMAIN_DEFINITIONS` | Adds the app to Django's `INSTALLED_APPS`, so its models and migrations are found. |
 | `CATALOG_ENTITY_PLUGINS` | Lists the entities that appear in the UI. The chunk model is not listed, since it is not shown to users. |
 
 ## 8. Create the tables
@@ -381,15 +381,15 @@ CATALOG_ENTITY_PLUGINS = [
 Generate the migrations from the `server/` directory and apply them:
 
 ```bash
-./manage.py makemigrations diet_vertical
+./manage.py makemigrations diet_domain
 ./manage.py migrate
 ```
 
-`makemigrations` writes `0001_initial.py` into `diet_vertical/migrations/`, because the package is installed in editable mode. It reports the three models and the unique constraint:
+`makemigrations` writes `0001_initial.py` into `diet_domain/migrations/`, because the package is installed in editable mode. It reports the three models and the unique constraint:
 
 ```
-Migrations for 'diet_vertical':
-  diet_vertical/migrations/0001_initial.py
+Migrations for 'diet_domain':
+  diet_domain/migrations/0001_initial.py
     + Create model Recipe
     + Create model RecipeChunk
     + Create model UserProfile

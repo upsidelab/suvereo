@@ -39,7 +39,7 @@ class BaseAgent(ABC, metaclass=AgentExtraArgsClassBaseMeta):
       ``None`` keeps the host's default.
     - ``MEMORY_COMPACTOR_ENABLED``: whether the agent summarises old messages to stay within the history limit.
     - ``BUILDER_CLASS``: the builder that assembles the agent. ``None`` selects the framework's default builder;
-      declare one when the agent needs a vertical's builder (e.g. one wiring domain-specific retrievers).
+      declare one when the agent needs a domain definition's builder (e.g. one wiring domain-specific retrievers).
 
     An agentic execution that needs another prompt or extra tools declares them on its definition.
 

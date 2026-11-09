@@ -1,6 +1,6 @@
 const mapping = {
   index: "Overview",
-  vertical: "",
+  "domain-definition": "",
   integrations: "",
   agent: "",
   "agentic-execution": "",

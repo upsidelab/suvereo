@@ -1,13 +1,13 @@
-# Tutorial: Building a Vertical
+# Tutorial: Building a Domain Definition
 
-This tutorial builds a [vertical](/docs/concepts#vertical) from an empty directory to a working feature. By the end, an instance of Suvereo knows about recipes and the people who eat them, a user can ask an [agent](/docs/concepts#agent) for meals that suit them, and an API call can return a validated meal plan for a week.
+This tutorial builds a [domain definition](/docs/concepts#domain-definition) from an empty directory to a working feature. By the end, an instance of Suvereo knows about recipes and the people who eat them, a user can ask an [agent](/docs/concepts#agent) for meals that suit them, and an API call can return a validated meal plan for a week.
 
-The example is a vertical for personalised nutrition, the **diet vertical**. It is one example of how a [domain](/docs/concepts#domain) can be described. The parts are the same for any other domain, so you can follow the tutorial as written and then replace recipes and diets with the data and systems of your own.
+The example is a domain definition for personalised nutrition, the **diet domain definition**. It is one example of how a [domain](/docs/concepts#domain) can be described. The parts are the same for any other domain, so you can follow the tutorial as written and then replace recipes and diets with the data and systems of your own.
 
 ## What you will build
 
 - **Data.** Two [entities](/docs/concepts#entity): `Recipe`, which is searchable by meaning, and `UserProfile`, which holds a person's allergies, dietary preferences and daily calorie target.
-- **Integration types.** A recipe source and a user source: the kinds of external systems the vertical can import from.
+- **Integration types.** A recipe source and a user source: the kinds of external systems the domain definition can import from.
 - **Integrations.** A sample of each, which bring recipes and users into a [data set](/docs/concepts#data-set), and one that connects a real recipe API.
 - **An agent.** A nutrition assistant that finds recipes for a user in a [conversation](/docs/concepts#conversation), using tools that search the recipes and read and update the user's profile.
 - **An agentic execution.** A weekly meal plan that runs in the background, started through the API, and is checked against the user's allergies and calorie target before it is returned.
@@ -18,7 +18,7 @@ Each page builds on the previous one and leaves the instance in a working state.
 
 | Page | Adds | Explained in |
 |---|---|---|
-| [The vertical](/docs/customization/tutorial/vertical) | Entities, the recipe retriever, the profile accessor, the injector and builder, registration and migrations | [Verticals](/docs/customization/verticals) |
+| [The domain definition](/docs/customization/tutorial/domain-definition) | Entities, the recipe retriever, the profile accessor, the injector and builder, registration and migrations | [Domain definitions](/docs/customization/domain-definitions) |
 | [The integrations](/docs/customization/tutorial/integrations) | The recipe and user source types, their managers and two sample integrations | [Integrations](/docs/customization/integrations) |
 | [The agent](/docs/customization/tutorial/agent) | Tools that search recipes and read and update the user's profile, a prompt and the agent class | [Agents](/docs/agents/agent-architecture) |
 | [The agentic execution](/docs/customization/tutorial/agentic-execution) | An execution definition with its input, prompt and validator | [Agentic execution](/docs/agents/agentic-execution) |
@@ -40,12 +40,12 @@ You need:
 
 ## Create the package
 
-A vertical is a Django app, and it can be a standalone package. This tutorial creates one next to `server/`:
+A domain definition is a Django app, and it can be a standalone package. This tutorial creates one next to `server/`:
 
 ```
-diet-vertical/
+diet-domain/
 ├── pyproject.toml
-└── diet_vertical/
+└── diet_domain/
     ├── __init__.py
     └── apps.py
 ```
@@ -54,11 +54,11 @@ diet-vertical/
 
 ```toml
 [tool.poetry]
-name = "diet-vertical"
+name = "diet-domain"
 version = "0.1.0"
-description = "A vertical for personalised nutrition, built in the Suvereo tutorial."
+description = "A domain definition for personalised nutrition, built in the Suvereo tutorial."
 authors = ["Your Name <you@example.com>"]
-packages = [{ include = "diet_vertical" }]
+packages = [{ include = "diet_domain" }]
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -76,38 +76,38 @@ build-backend = "poetry.core.masonry.api"
 
 | Dependency | Used for |
 |---|---|
-| `suvereo-common` | The contracts a vertical is written against: entities, retrievers, integrations, the builder and the agent. The vertical does not import the server's code. |
+| `suvereo-common` | The contracts a domain definition is written against: entities, retrievers, integrations, the builder and the agent. The domain definition does not import the server's code. |
 | `pgvector` | The embedding column of the searchable entity. |
 | `requests` | HTTP calls of the recipe source that reads a real API, at the end of the [integrations page](/docs/customization/tutorial/integrations#connecting-a-real-system). |
 | `suvereo-agent-tool-calling` | `BaseToolCallingAgent`, the agent class used on the [agent page](/docs/customization/tutorial/agent). |
 | `suvereo-agent-tools` | Ready-made tools, of which the tutorial uses the one that ends an execution. |
 
-`diet_vertical/__init__.py` is empty, and `apps.py` names the Django app:
+`diet_domain/__init__.py` is empty, and `apps.py` names the Django app:
 
 ```python
 from django.apps import AppConfig
 
 
-class DietVerticalConfig(AppConfig):
+class DietDomainConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "diet_vertical"
-    verbose_name = "Diet Vertical"
+    name = "diet_domain"
+    verbose_name = "Diet Domain"
 ```
 
 Then install the package into the environment of the server in editable mode, so that edits take effect without reinstalling and so that `makemigrations` writes into your source directory:
 
 ```bash
 cd server
-poetry add --editable ../diet-vertical
+poetry add --editable ../diet-domain
 ```
 
-If the package imports, the setup is done: `poetry run python -c "import diet_vertical"` prints nothing.
+If the package imports, the setup is done: `poetry run python -c "import diet_domain"` prints nothing.
 
 ## What the tutorial simplifies
 
-The snippets are a reduced version of a complete diet vertical. Every part is present, but some pieces of a production vertical are left out so that each page stays focused on the structure:
+The snippets are a reduced version of a complete diet domain definition. Every part is present, but some pieces of a production domain definition are left out so that each page stays focused on the structure:
 
-- Allergens are detected from a short list of keywords. A real vertical would use a more complete list or a food database.
+- Allergens are detected from a short list of keywords. A real domain definition would use a more complete list or a food database.
 - The agent has three tools: reading and updating the user's profile, and searching recipes. A real assistant would have more, for example for logging what the user ate.
 
-Continue with [the vertical](/docs/customization/tutorial/vertical).
+Continue with [the domain definition](/docs/customization/tutorial/domain-definition).

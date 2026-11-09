@@ -13,7 +13,7 @@ One short file per architectural decision, numbered in the order they were recor
 |-----|-------|--------|
 | [0001](0001-plugin-architecture.md) | Plugin architecture and the role of suvereo-common | Accepted |
 | [0002](0002-agentic-execution.md) | Agentic execution as a concept separate from conversations | Accepted |
-| [0003](0003-domain-agnostic-core-and-verticals.md) | Domain-agnostic core with pluggable verticals | Accepted |
+| [0003](0003-domain-agnostic-core-and-domain-definitions.md) | Domain-agnostic core with pluggable domain definitions | Accepted |
 | [0004](0004-role-based-authorization.md) | Role-based authorization with global and data-set scopes | Accepted |
 | [0005](0005-jwt-authentication.md) | JWT access and refresh tokens for users | Accepted |
 | [0006](0006-mcp-servers-as-tool-providing-integrations.md) | MCP servers as tool-providing integrations, connected with OAuth | Accepted |

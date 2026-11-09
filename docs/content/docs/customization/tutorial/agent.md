@@ -1,13 +1,13 @@
 # The Agent
 
-The vertical now holds recipes and profiles. This page adds an [agent](/docs/concepts#agent) that uses them: a nutrition assistant that a user can talk to, and that suggests meals through [tools](/docs/concepts#tool) which search the recipes and read and update the user's profile. The parts of an agent are described in [Agent architecture](/docs/agents/agent-architecture), and the class that this page uses in [Agent classes](/docs/agents/agent-classes).
+The domain definition now holds recipes and profiles. This page adds an [agent](/docs/concepts#agent) that uses them: a nutrition assistant that a user can talk to, and that suggests meals through [tools](/docs/concepts#tool) which search the recipes and read and update the user's profile. The parts of an agent are described in [Agent architecture](/docs/agents/agent-architecture), and the class that this page uses in [Agent classes](/docs/agents/agent-classes).
 
-An agent can live in its own plugin, in a vertical or in the Suvereo codebase. This tutorial puts it in the vertical, in a sub-package, so that the vertical's builder and the agent that needs it stay together.
+An agent can live in its own plugin, in a domain definition or in the Suvereo codebase. This tutorial puts it in the domain definition, in a sub-package, so that the domain definition's builder and the agent that needs it stay together.
 
 New files on this page:
 
 ```
-diet_vertical/
+diet_domain/
 └── nutrition_agent/
     ├── __init__.py
     ├── agent.py
@@ -25,11 +25,11 @@ diet_vertical/
 A tool is what the language model calls to get something done. Two things decide how well it is used: the description the model reads, and what the tool returns. The first tool gives the model the recipe search, including the filters that matter for a diet. The tools share a small file that turns recipes and profiles into dictionaries for the model:
 
 ```python
-# diet_vertical/nutrition_agent/tools/serialization.py
+# diet_domain/nutrition_agent/tools/serialization.py
 from typing import Any
 
-from diet_vertical.models import Recipe, UserProfile
-from diet_vertical.profiles import UPDATABLE_FIELDS
+from diet_domain.models import Recipe, UserProfile
+from diet_domain.profiles import UPDATABLE_FIELDS
 
 
 def recipe_as_dict(recipe: Recipe) -> dict[str, Any]:
@@ -49,15 +49,15 @@ def profile_as_dict(profile: UserProfile) -> dict[str, Any]:
 ```
 
 ```python
-# diet_vertical/nutrition_agent/tools/search_recipes_tool.py
+# diet_domain/nutrition_agent/tools/search_recipes_tool.py
 import json
 from typing import Optional
 
 from pydantic import BaseModel, Field
 from suvereo_common.tools import BaseLLMTool
 
-from diet_vertical.nutrition_agent.tools.serialization import recipe_as_dict
-from diet_vertical.structures import Allergen, MealType
+from diet_domain.nutrition_agent.tools.serialization import recipe_as_dict
+from diet_domain.structures import Allergen, MealType
 
 
 class SearchRecipesInput(BaseModel):
@@ -91,7 +91,7 @@ class SearchRecipesTool(BaseLLMTool):
 
 - **`ARGS_SCHEMA`** is the input the model fills in. Suvereo derives the tool's definition for the model from it, and the `description` of each field is part of that definition. Typing `excluded_allergens` as a list of `Allergen` and `meal_type` as `MealType` puts the allowed values in the schema, so the model is told which ones exist and the input is validated against them. The values are the same ones the recipes store.
 - **`DESCRIPTION`** tells the model when to use the tool. The last sentence asks it to pass the allergies, which is the instruction that keeps unsafe recipes out of the answer. The prompt repeats it.
-- **`run()`** is where the vertical is used. The tool reaches the retriever through `self._injector`, which is the `DietInjector` created by the vertical's builder, and returns JSON for the model to read. The recipe is serialized with its `recipe_id`, so that a later step can refer to it exactly. A message instead of an empty list tells the model to retry with a broader query.
+- **`run()`** is where the domain definition is used. The tool reaches the retriever through `self._injector`, which is the `DietInjector` created by the domain definition's builder, and returns JSON for the model to read. The recipe is serialized with its `recipe_id`, so that a later step can refer to it exactly. A message instead of an empty list tells the model to retry with a broader query.
 - **`RETURN_DIRECT = False`** sends the result back to the model, which writes the answer. See [Tools](/docs/agents/tools) for the other base classes and for tools that return their result to the user as it is.
 
 ## 2. The profile tools
@@ -99,13 +99,13 @@ class SearchRecipesTool(BaseLLMTool):
 The assistant should know who it is talking to, and remember what they say. Two tools read and change the user's profile:
 
 ```python
-# diet_vertical/nutrition_agent/tools/get_user_profile_tool.py
+# diet_domain/nutrition_agent/tools/get_user_profile_tool.py
 import json
 
 from pydantic import BaseModel
 from suvereo_common.tools import BaseLLMTool
 
-from diet_vertical.nutrition_agent.tools.serialization import profile_as_dict
+from diet_domain.nutrition_agent.tools.serialization import profile_as_dict
 
 
 class GetUserProfileInput(BaseModel):
@@ -129,15 +129,15 @@ class GetUserProfileTool(BaseLLMTool):
 ```
 
 ```python
-# diet_vertical/nutrition_agent/tools/update_user_profile_tool.py
+# diet_domain/nutrition_agent/tools/update_user_profile_tool.py
 import json
 from typing import Optional
 
 from pydantic import BaseModel, Field
 from suvereo_common.tools import BaseLLMTool
 
-from diet_vertical.nutrition_agent.tools.serialization import profile_as_dict
-from diet_vertical.structures import Allergen
+from diet_domain.nutrition_agent.tools.serialization import profile_as_dict
+from diet_domain.structures import Allergen
 
 
 class UpdateUserProfileInput(BaseModel):
@@ -176,7 +176,7 @@ class UpdateUserProfileTool(BaseLLMTool):
 ```
 
 ```python
-# diet_vertical/nutrition_agent/tools/__init__.py
+# diet_domain/nutrition_agent/tools/__init__.py
 from .get_user_profile_tool import GetUserProfileTool
 from .search_recipes_tool import SearchRecipesTool
 from .update_user_profile_tool import UpdateUserProfileTool
@@ -186,7 +186,7 @@ __all__ = ["GetUserProfileTool", "SearchRecipesTool", "UpdateUserProfileTool"]
 
 - **`get_user_profile` takes no arguments.** The model does not say whose profile it wants, so it cannot ask for another person's.
 - **`update_user_profile` has optional fields.** The model sends only what changed. A list replaces the stored one, so the description tells the model to read the profile first and send the complete list. The tool drops the fields that were not sent before it calls the accessor.
-- **Both go through `self._injector.user_profile`**, the accessor from the [vertical page](/docs/customization/tutorial/vertical#6-the-profile-accessor-the-injector-and-the-builder), which the builder bound to the user of the conversation.
+- **Both go through `self._injector.user_profile`**, the accessor from the [domain definition page](/docs/customization/tutorial/domain-definition#6-the-profile-accessor-the-injector-and-the-builder), which the builder bound to the user of the conversation.
 
 ### What a tool can reach
 
@@ -203,7 +203,7 @@ The model decides when to call a tool and with which values, so what it passes i
 The system prompt sets the role and the rules of the assistant:
 
 ```python
-# diet_vertical/nutrition_agent/prompt.py
+# diet_domain/nutrition_agent/prompt.py
 NUTRITION_ASSISTANT_PROMPT = """
 You are a nutrition assistant. You suggest meals that suit the user you are talking to.
 
@@ -225,11 +225,11 @@ The prompt names the tools, so the model knows what to call. The first rule make
 An agent declares its own configuration as class variables. `BaseToolCallingAgent`, from `suvereo-agent-tool-calling`, runs the loop in which the model calls tools until it can answer, and the class only says what is specific to the assistant:
 
 ```python
-# diet_vertical/nutrition_agent/agent.py
+# diet_domain/nutrition_agent/agent.py
 from suvereo_agent_tool_calling import BaseToolCallingAgent
 from suvereo_common.config import LLMToolConfig
 
-from diet_vertical.builder import DietAgentBuilder
+from diet_domain.builder import DietAgentBuilder
 
 from .prompt import NUTRITION_ASSISTANT_PROMPT
 from .tools import GetUserProfileTool, SearchRecipesTool, UpdateUserProfileTool
@@ -248,7 +248,7 @@ class NutritionAssistantAgent(BaseToolCallingAgent):
 ```
 
 ```python
-# diet_vertical/nutrition_agent/__init__.py
+# diet_domain/nutrition_agent/__init__.py
 from .agent import NutritionAssistantAgent
 
 __all__ = ["NutritionAssistantAgent"]
@@ -259,7 +259,7 @@ __all__ = ["NutritionAssistantAgent"]
 | `AGENT_KEY` | The identifier of the agent class. The execution on the [next page](/docs/customization/tutorial/agentic-execution) refers to it. |
 | `NAME` | The name shown in the list of agent types in the UI. |
 | `SYSTEM_PROMPT` | The prompt of step 3. |
-| `BUILDER_CLASS` | The builder from the [vertical page](/docs/customization/tutorial/vertical#6-the-profile-accessor-the-injector-and-the-builder). This is the line that connects the agent to the vertical: without it, the agent is built with the default builder, and its tools would not find `recipe_retriever` or `user_profile` on the injector. |
+| `BUILDER_CLASS` | The builder from the [domain definition page](/docs/customization/tutorial/domain-definition#6-the-profile-accessor-the-injector-and-the-builder). This is the line that connects the agent to the domain definition: without it, the agent is built with the default builder, and its tools would not find `recipe_retriever` or `user_profile` on the injector. |
 | `TOOLS` | The tools of the agent. `LLMToolConfig` wraps a tool class together with its settings. |
 
 An agent declares more than this, such as the settings an admin can change in the UI and the size of the conversation history that is sent to the model. They have defaults, and the page [Agent classes](/docs/agents/agent-classes) lists them.
@@ -270,7 +270,7 @@ Add the class to `server/pecl/settings_override.py`:
 
 ```python
 AVAILABLE_AGENTS = [
-    "diet_vertical.nutrition_agent.NutritionAssistantAgent",
+    "diet_domain.nutrition_agent.NutritionAssistantAgent",
 ]
 ```
 

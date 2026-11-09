@@ -21,7 +21,7 @@ MINIMAL = {
 FULL = {
     "name": "order-intake-ocr",
     "description": "OCR purchase orders into e-commerce orders",
-    "agent": {"type": "my-vertical-order-intake", "config": {}},
+    "agent": {"type": "my-domain-order-intake", "config": {}},
     "execution_key": "order-intake",
     "models": [
         {"provider": "OpenAI", "model": "gpt-4o"},
@@ -34,7 +34,7 @@ FULL = {
     "min_pass_rate": 0.8,
     "integrations": [
         {
-            "class": "my_vertical.evaluation.ShopMockIntegration",
+            "class": "my_domain.evaluation.ShopMockIntegration",
             "config": {
                 "catalog": "data/products.yaml",
                 "behaviour": {"create_order_with_items": {"returns": "ORD-{n}"}},

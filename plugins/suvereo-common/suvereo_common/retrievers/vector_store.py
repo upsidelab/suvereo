@@ -9,7 +9,7 @@ T = TypeVar("T")
 
 
 class BaseVectorStoreRetriever(BaseRetriever, Generic[T]):
-    """Vector-similarity retriever over a vertical's embedding chunk table.
+    """Vector-similarity retriever over a domain definition's embedding chunk table.
 
     A subclass only declares what is searchable:
       - ``chunk_model`` — the concrete ``BaseEmbeddingChunk`` subclass to query,
@@ -19,7 +19,7 @@ class BaseVectorStoreRetriever(BaseRetriever, Generic[T]):
     The query is embedded with the same provider/config that produced the stored
     vectors; the actual similarity search is delegated to an injected
     ``BaseSimilaritySearcher``, so this class stays free of any database
-    technology choice. Override ``find_content_matching_query`` when a vertical
+    technology choice. Override ``find_content_matching_query`` when a domain definition
     needs a custom strategy (e.g. an extra lexical filter before the ranking).
     """
 

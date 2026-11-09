@@ -7,7 +7,7 @@ The classes an execution is made of are described in [Agentic execution](/docs/a
 New files on this page:
 
 ```
-diet_vertical/
+diet_domain/
 └── nutrition_agent/
     ├── __init__.py              # extended
     ├── prompt.py                # extended
@@ -20,7 +20,7 @@ diet_vertical/
 The input is a Pydantic model. The server derives the JSON Schema of the API from it and rejects a request that does not match it:
 
 ```python
-# diet_vertical/nutrition_agent/execution_definition.py (the top of the file, shown in full in step 4)
+# diet_domain/nutrition_agent/execution_definition.py (the top of the file, shown in full in step 4)
 from pydantic import Field
 from suvereo_common.agentic_execution import ExecutionInputType
 
@@ -67,7 +67,7 @@ A model's answer can be well formed and still wrong. A validator checks the answ
 Each validator is a small file in a `validators` package. The files of this step:
 
 ```
-diet_vertical/nutrition_agent/validators/
+diet_domain/nutrition_agent/validators/
 ├── __init__.py
 ├── shared.py
 ├── meal_plan_json.py
@@ -80,7 +80,7 @@ diet_vertical/nutrition_agent/validators/
 The plan is described once, as Pydantic models, in `shared.py`. The small helpers next to them share the parsing and the database lookups:
 
 ```python
-# diet_vertical/nutrition_agent/validators/shared.py
+# diet_domain/nutrition_agent/validators/shared.py
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -91,7 +91,7 @@ from suvereo_common.agentic_execution import (
     ValidatorSuccessResponse,
 )
 
-from diet_vertical.models import Recipe, UserProfile
+from diet_domain.models import Recipe, UserProfile
 
 
 class PlannedMeal(BaseModel):
@@ -130,7 +130,7 @@ def reject(problems: list[str]) -> ValidatorResponse:
 The validators follow, one per file. First the check that the later ones rely on:
 
 ```python
-# diet_vertical/nutrition_agent/validators/meal_plan_json.py
+# diet_domain/nutrition_agent/validators/meal_plan_json.py
 from pydantic import ValidationError
 from suvereo_common.agentic_execution import (
     ExecutionInputType,
@@ -167,7 +167,7 @@ class MealPlanJsonValidator(IsValidJsonValidator):
 Then the checks of the plan's content:
 
 ```python
-# diet_vertical/nutrition_agent/validators/all_days_planned.py
+# diet_domain/nutrition_agent/validators/all_days_planned.py
 from suvereo_common.agentic_execution import (
     BaseExecutionValidator,
     ExecutionInputType,
@@ -193,7 +193,7 @@ class AllDaysPlannedValidator(BaseExecutionValidator):
 ```
 
 ```python
-# diet_vertical/nutrition_agent/validators/recipes_exist.py
+# diet_domain/nutrition_agent/validators/recipes_exist.py
 from suvereo_common.agentic_execution import (
     BaseExecutionValidator,
     ExecutionInputType,
@@ -223,7 +223,7 @@ class RecipesExistValidator(BaseExecutionValidator):
 ```
 
 ```python
-# diet_vertical/nutrition_agent/validators/no_allergens.py
+# diet_domain/nutrition_agent/validators/no_allergens.py
 from suvereo_common.agentic_execution import (
     BaseExecutionValidator,
     ExecutionInputType,
@@ -254,7 +254,7 @@ class NoAllergensValidator(BaseExecutionValidator):
 ```
 
 ```python
-# diet_vertical/nutrition_agent/validators/calorie_target.py
+# diet_domain/nutrition_agent/validators/calorie_target.py
 from suvereo_common.agentic_execution import (
     BaseExecutionValidator,
     ExecutionInputType,
@@ -290,10 +290,10 @@ class CalorieTargetValidator(BaseExecutionValidator):
         return reject(problems)
 ```
 
-The package exports them, so that the rest of the vertical imports from `.validators`:
+The package exports them, so that the rest of the domain definition imports from `.validators`:
 
 ```python
-# diet_vertical/nutrition_agent/validators/__init__.py
+# diet_domain/nutrition_agent/validators/__init__.py
 from .all_days_planned import AllDaysPlannedValidator
 from .calorie_target import CalorieTargetValidator
 from .meal_plan_json import MealPlanJsonValidator
@@ -330,7 +330,7 @@ Allergens are checked against the recipes' stored `allergens`, not against what 
 The definition ties the pieces together and implements `execute()`, which performs one attempt:
 
 ```python
-# diet_vertical/nutrition_agent/execution_definition.py
+# diet_domain/nutrition_agent/execution_definition.py
 from pydantic import Field
 from suvereo_agent_tools import StopExecutionTool
 from suvereo_common.agentic_execution import (
@@ -341,8 +341,8 @@ from suvereo_common.agentic_execution import (
 )
 from suvereo_common.config import LLMToolConfig
 
-from diet_vertical.models import UserProfile
-from diet_vertical.nutrition_agent.tools.serialization import profile_as_dict
+from diet_domain.models import UserProfile
+from diet_domain.nutrition_agent.tools.serialization import profile_as_dict
 
 from .prompt import WEEKLY_MEAL_PLAN_EXECUTION_PROMPT
 from .tools import SearchRecipesTool
@@ -400,12 +400,12 @@ class WeeklyMealPlanExecutionDefinition(BaseAgenticExecutionDefinition):
 | `SYSTEM_PROMPT` | Replaces the agent's conversation prompt for this execution. |
 | `TOOLS` | The tools of the agent in this execution. A list replaces the agent's own, so it can be a smaller set. Here it is the recipe search and the tool that ends the execution. The profile tools are left out: they act on the user of the conversation, and the caller of an execution may not be the user the plan is made for, whose `user_id` is passed in the input. |
 
-`execute()` is where the vertical's data enters. The agent runs without a person, so the code loads the profile of the user from the input and puts it in the first message, rather than relying on the model to ask. `conversation.ask()` sends a message to the agent and returns its answer, and the base class passes that answer to the validators. When a validator rejects it, the base class sends the feedback to the model and the retry loop continues.
+`execute()` is where the domain definition's data enters. The agent runs without a person, so the code loads the profile of the user from the input and puts it in the first message, rather than relying on the model to ask. `conversation.ask()` sends a message to the agent and returns its answer, and the base class passes that answer to the validators. When a validator rejects it, the base class sends the feedback to the model and the retry loop continues.
 
 Export the definition:
 
 ```python
-# diet_vertical/nutrition_agent/__init__.py
+# diet_domain/nutrition_agent/__init__.py
 from .agent import NutritionAssistantAgent
 from .execution_definition import WeeklyMealPlanExecutionDefinition, WeeklyMealPlanInput
 
@@ -418,7 +418,7 @@ Add it to `server/pecl/settings_override.py`:
 
 ```python
 AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS = [
-    "diet_vertical.nutrition_agent.WeeklyMealPlanExecutionDefinition",
+    "diet_domain.nutrition_agent.WeeklyMealPlanExecutionDefinition",
 ]
 ```
 
@@ -457,7 +457,7 @@ With only nine sample recipes, a tight calorie target can be hard to meet, and a
 
 ## Where to go from here
 
-The vertical now has every part described in [Verticals](/docs/customization/verticals) and [Integrations](/docs/customization/integrations), and an agent with a conversation and an execution on top of it. To adapt it to your own domain:
+The domain definition now has every part described in [Domain definitions](/docs/customization/domain-definitions) and [Integrations](/docs/customization/integrations), and an agent with a conversation and an execution on top of it. To adapt it to your own domain:
 
 - Replace the entities with those of your domain, and write the integration types for the systems that hold them.
 - Connect a real system by following [Connecting a real system](/docs/customization/tutorial/integrations#connecting-a-real-system).

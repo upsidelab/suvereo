@@ -9,7 +9,7 @@ An agent is a Python package that the server discovers through `AVAILABLE_AGENTS
 
 There are two ways to ship it:
 - **Standalone plugin** — its own installable package (own `pyproject.toml`, `src/` layout). Recommended for agents maintained by the Suvereo team.
-- **In the codebase** — a plain package living directly in a codebase that is already importable by the server (e.g. a vertical's own code). No packaging, no install step.
+- **In the codebase** — a plain package living directly in a codebase that is already importable by the server (e.g. a domain definition's own code). No packaging, no install step.
 
 Sections marked *(standalone plugin only)* are skipped for in-codebase agents. Everything else applies to both.
 
@@ -22,8 +22,8 @@ Where to look in this repo:
 
 Ask only what the code cannot tell you:
 - Agent name and purpose (drives `AGENT_KEY`, `NAME`, the prompt).
-- Which tools it needs. Reuse existing tools (e.g. from `plugins/suvereo-agent-tools`, or a vertical's tools) before writing new ones.
-- Does it need a vertical's retrievers (e.g. `injector.<entity>_retriever`)? If yes it needs the vertical's builder as `BUILDER_CLASS`; if no, leave `BUILDER_CLASS` unset so the framework's default `AgentBuilder` is used.
+- Which tools it needs. Reuse existing tools (e.g. from `plugins/suvereo-agent-tools`, or a domain definition's tools) before writing new ones.
+- Does it need a domain definition's retrievers (e.g. `injector.<entity>_retriever`)? If yes it needs the domain definition's builder as `BUILDER_CLASS`; if no, leave `BUILDER_CLASS` unset so the framework's default `AgentBuilder` is used.
 - Conversation only, or also an agentic execution (autonomous, API-triggered batch run)?
 - Does it accept file uploads (`FILE_UPLOAD = True` adds the default file tools)?
 - Where it lives: a standalone plugin (under `plugins/` for domain-agnostic agents), or directly in a codebase (which one, and which package inside it).
@@ -43,7 +43,7 @@ The agent package has the same contents in both cases:
 ```
 
 - **In the codebase:** `<package>` is a directory inside the target codebase, named `<name>_agent` (or following that codebase's naming). The dotted path used for registration is `<its import path>.<Name>Agent`. Stop here; do not add the packaging files below.
-- **Standalone plugin:** wrap it with the packaging files and use `src/suvereo_agent_<name>/` as `<package>` (an agent that belongs to a vertical follows that vertical's plugin naming instead):
+- **Standalone plugin:** wrap it with the packaging files and use `src/suvereo_agent_<name>/` as `<package>` (an agent that belongs to a domain definition follows that domain definition's plugin naming instead):
 
 ```
 suvereo-agent-<name>/
@@ -54,7 +54,7 @@ suvereo-agent-<name>/
 
 ### Packaging *(standalone plugin only)*
 
-`pyproject.toml`: Poetry with a `src` layout, modelled on `plugins/suvereo-agent-tool-calling/pyproject.toml`. Dependencies: `suvereo-common`, `suvereo-agent-tool-calling`, `langchain`, plus the vertical package if you use its builder or retrievers, and `suvereo-agent-tools` if you reuse its shared tools (`FileListTool`, `FileRetrievalTool`, `StopExecutionTool`). Take version ranges from that file and from the current `suvereo-common` version, not from memory.
+`pyproject.toml`: Poetry with a `src` layout, modelled on `plugins/suvereo-agent-tool-calling/pyproject.toml`. Dependencies: `suvereo-common`, `suvereo-agent-tool-calling`, `langchain`, plus the domain definition's package if you use its builder or retrievers, and `suvereo-agent-tools` if you reuse its shared tools (`FileListTool`, `FileRetrievalTool`, `StopExecutionTool`). Take version ranges from that file and from the current `suvereo-common` version, not from memory.
 
 ```toml
 [tool.poetry]
@@ -93,7 +93,7 @@ The agent declares its whole configuration with class variables. Everything else
 - `AGENT_ARGS`: a `RequiredFieldsModel` of per-agent settings that change how the agent behaves; shown as a form section in the UI.
 - `PROMPT_INPUT`: a `RequiredFieldsModel` of per-agent settings used as system prompt variables, also shown in the UI.
 - `FILE_UPLOAD`: whether the agent accepts uploaded files (`True` adds the default file tools).
-- `BUILDER_CLASS`: the builder that assembles the agent; set a vertical's builder only when the agent needs its retrievers, otherwise the default `AgentBuilder` is used.
+- `BUILDER_CLASS`: the builder that assembles the agent; set a domain definition's builder only when the agent needs its retrievers, otherwise the default `AgentBuilder` is used.
 - `CONVERSATION_HISTORY_TOKEN_LIMIT`: how many tokens of conversation history are sent to the model; unset keeps the server's default.
 - `MEMORY_COMPACTOR_ENABLED`: `True` opts in to summarising old messages and passing that summary to LLM as context (default is skipping the messages beyond the history token limit).
 

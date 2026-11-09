@@ -1,25 +1,25 @@
 ---
-name: add-vertical
-description: Scaffold a new Suvereo vertical — a Django app with domain entities (models, migrations), retrievers, builder/injector and integration managers — and register it in settings. Use when asked to add, create or build a new vertical or domain.
+name: add-domain-definition
+description: Scaffold a new Suvereo domain definition — a Django app with domain entities (models, migrations), retrievers, builder/injector and integration managers — and register it in settings. Use when asked to add, create or build a new domain definition or domain.
 ---
 
-# Add a vertical
+# Add a domain definition
 
-A vertical adds a domain to the domain-agnostic core. It is a Django app enabled through `INSTALLED_VERTICALS` in `server/pecl/settings_override.py`. Its job: define domain entities (models and migrations, persisted by core and listed in the UI) and how they are handled (retrievers that agent tools use, integration managers that sync data in). 
+A domain definition adds a domain to the domain-agnostic core. It is a Django app enabled through `INSTALLED_DOMAIN_DEFINITIONS` in `server/pecl/settings_override.py`. Its job: define domain entities (models and migrations, persisted by core and listed in the UI) and how they are handled (retrievers that agent tools use, integration managers that sync data in). 
 There are two ways to ship it; core prescribes neither:
 - **Standalone package** — its own installable package (own `pyproject.toml`), e.g. published to PyPI or kept in its own repository.
 - **In the codebase** — a plain Django app living directly in a codebase that is already importable by the server (e.g. in-tree in a fork). No packaging, no install step.
 
-Sections marked *(standalone package only)* are skipped for in-codebase verticals. Everything else applies to both.
+Sections marked *(standalone package only)* are skipped for in-codebase domain definitions. Everything else applies to both.
 
 Where to look in this repo:
 - Contracts: `plugins/suvereo-common/` (`entities`, `indexing`, `retrievers`, `injectors`, `builder`, `integrations`) — read its `AGENTS.md`.
-- How core loads a vertical: `server/catalog/entities/registry.py` (entities), `server/catalog/integrations/registry/manager.py` (integration managers), `INSTALLED_VERTICALS` handling in `server/pecl/settings.py`.
+- How core loads a domain definition: `server/catalog/entities/registry.py` (entities), `server/catalog/integrations/registry/manager.py` (integration managers), `INSTALLED_DOMAIN_DEFINITIONS` handling in `server/pecl/settings.py`.
 
 ## 1. Settle the design first
 
 Ask only what the code cannot tell you:
-- Domain name (drives the app name `<domain>_vertical`).
+- Domain name (drives the app name `<domain>_domain`).
 - The entities and their fields, and which of them need vector search (those get an embedding chunk model).
 - Where data comes from: which integration types will sync it, or is that out of scope for now?
 - Do agent tools need domain retrievers? (Then you need an injector and a builder.)
@@ -30,7 +30,7 @@ Ask only what the code cannot tell you:
 The Django app has the same contents in both cases:
 
 ```
-<domain>_vertical/
+<domain>_domain/
   __init__.py
   apps.py
   models/            # one module per entity, re-exported in __init__.py
@@ -41,14 +41,14 @@ The Django app has the same contents in both cases:
   sync/              # only with integration managers
 ```
 
-- **In the codebase:** put `<domain>_vertical/` inside the target codebase, so it is importable as `<domain>_vertical` (or under that codebase's import path, adjusting the dotted paths below). Do not add the packaging files.
+- **In the codebase:** put `<domain>_domain/` inside the target codebase, so it is importable as `<domain>_domain` (or under that codebase's import path, adjusting the dotted paths below). Do not add the packaging files.
 - **Standalone package:** wrap it with the packaging files:
 
 ```
-<domain>-vertical/
+<domain>-domain/
   pyproject.toml
   README.md
-  <domain>_vertical/   # the app above
+  <domain>_domain/   # the app above
 ```
 
 ### Packaging *(standalone package only)*
@@ -63,10 +63,10 @@ The Django app has the same contents in both cases:
 from django.apps import AppConfig
 
 
-class <Domain>VerticalConfig(AppConfig):
+class <Domain>DomainConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "<domain>_vertical"
-    verbose_name = "<Domain> Vertical"
+    name = "<domain>_domain"
+    verbose_name = "<Domain> Domain"
 ```
 
 ## 3. Entities (`models/`)
@@ -110,10 +110,10 @@ from suvereo_common.indexing import BaseEmbeddingChunk
 
 
 class <Entity>Chunk(BaseEmbeddingChunk):
-    <entity> = models.ForeignKey("<domain>_vertical.<Entity>", on_delete=models.CASCADE, related_name="chunks")
+    <entity> = models.ForeignKey("<domain>_domain.<Entity>", on_delete=models.CASCADE, related_name="chunks")
 ```
 
-Reference other apps' models by string (`"catalog.DataSet"`); never import server code. A vertical depends on `suvereo-common`, not on the server. Re-export models in `models/__init__.py`.
+Reference other apps' models by string (`"catalog.DataSet"`); never import server code. A domain definition depends on `suvereo-common`, not on the server. Re-export models in `models/__init__.py`.
 
 ## 4. Retrievers, injector, builder (only if tools need them)
 
@@ -122,7 +122,7 @@ Retriever (vector search): declare what is searchable, the base class does the r
 ```python
 from suvereo_common.retrievers import BaseVectorStoreRetriever
 
-from <domain>_vertical.models import <Entity>Chunk
+from <domain>_domain.models import <Entity>Chunk
 
 
 class <Entity>Retriever(BaseVectorStoreRetriever[<Entity>Chunk]):
@@ -192,26 +192,26 @@ class <Entity>SourceManager(Base<Entity>SourceManager):
             self._indexer.index(entity)
 ```
 
-The plugin ABCs and the abstract manager are what third-party source plugins depend on, so when several packages will implement them, put these in a small shared package instead of the vertical itself. The framework injects `self._indexer`; call it for every embedded entity.
+The plugin ABCs and the abstract manager are what third-party source plugins depend on, so when several packages will implement them, put these in a small shared package instead of the domain definition itself. The framework injects `self._indexer`; call it for every embedded entity.
 
 ## 6. Register
 
 In `server/pecl/settings_override.py`:
 
 ```python
-INSTALLED_VERTICALS = ["<domain>_vertical"]
-CATALOG_ENTITY_PLUGINS = ["<domain>_vertical.models.<Entity>"]
-CATALOG_INTEGRATION_MANAGERS = ["<domain>_vertical.sync.<Entity>SourceManager"]
+INSTALLED_DOMAIN_DEFINITIONS = ["<domain>_domain"]
+CATALOG_ENTITY_PLUGINS = ["<domain>_domain.models.<Entity>"]
+CATALOG_INTEGRATION_MANAGERS = ["<domain>_domain.sync.<Entity>SourceManager"]
 CATALOG_INTEGRATION_PLUGINS = [...]  # concrete source plugins, if any
 ```
 
-`INSTALLED_VERTICALS` is merged into `INSTALLED_APPS`. In-codebase verticals are importable already. *(standalone package only)* Install the package into the server's environment (`pip install -e <dir>` or a path dependency, or from PyPI).
+`INSTALLED_DOMAIN_DEFINITIONS` is merged into `INSTALLED_APPS`. In-codebase domain definitions are importable already. *(standalone package only)* Install the package into the server's environment (`pip install -e <dir>` or a path dependency, or from PyPI).
 
 ## 7. Migrations
 
-The vertical must be registered first: `makemigrations` only sees apps in `INSTALLED_APPS`. Generate with `./manage.py makemigrations <domain>_vertical` from `server/` and review the output. **Never run `migrate`**; the user does that.
+The domain definition must be registered first: `makemigrations` only sees apps in `INSTALLED_APPS`. Generate with `./manage.py makemigrations <domain>_domain` from `server/` and review the output. **Never run `migrate`**; the user does that.
 
-Django writes migrations into the app's own directory (`<domain>_vertical/migrations/`). For a standalone package this works only when it is installed as editable, so that the app directory is the source directory. If the package cannot be installed as editable, `makemigrations` would write into `site-packages`; instead write the migration files by hand in the package's `migrations/` directory, following what `makemigrations` would produce for the models.
+Django writes migrations into the app's own directory (`<domain>_domain/migrations/`). For a standalone package this works only when it is installed as editable, so that the app directory is the source directory. If the package cannot be installed as editable, `makemigrations` would write into `site-packages`; instead write the migration files by hand in the package's `migrations/` directory, following what `makemigrations` would produce for the models.
 
 ## 8. Checks
 

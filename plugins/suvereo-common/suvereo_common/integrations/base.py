@@ -24,12 +24,12 @@ class BaseSourceIntegrationManager(BaseIntegrationManager):
 
 
 class BaseIntegration(ABC):
-    """A connection to one external system, declared by a vertical.
+    """A connection to one external system, declared by a domain definition.
 
     The framework stores the integration's configuration and instantiates the
     plugin with that config before use. A DataSet may hold several integrations
     of a given ``TYPE``, unless the type opts out through ``ALLOWS_MULTIPLE_INSTANCES``.
-    A vertical may add further capabilities in its own subclass; the base only
+    A domain definition may add further capabilities in its own subclass; the base only
     covers configuration and how an instance presents itself.
     """
 
@@ -37,9 +37,9 @@ class BaseIntegration(ABC):
     TYPE: str
     #: Human-readable name shown in the UI.
     NAME: str
-    #: Human-readable category label shown in the UI. Verticals override this on their plugin ABCs.
+    #: Human-readable category label shown in the UI. Domain definitions override this on their plugin ABCs.
     INTEGRATION_TYPE_NAME: str = "Basic integration"
-    #: Category this integration belongs to. Verticals set this on their plugin ABCs.
+    #: Category this integration belongs to. Domain definitions set this on their plugin ABCs.
     INTEGRATION_MANAGER: type[BaseIntegrationManager] | None = None
     #: Pydantic model class describing the configuration fields. Set to None when no config is required.
     CONFIGURATION_ARGS = None
