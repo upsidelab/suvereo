@@ -1,4 +1,5 @@
 const mapping = {
+  index: "Overview",
   "evaluate-an-agent": "",
   suites: "",
   conversations: "",

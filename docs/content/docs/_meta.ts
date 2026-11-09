@@ -3,10 +3,10 @@ const mapping = {
   "getting-started": "",
   customization: "",
   agents: "",
+  evaluate: "",
   management: "",
   connect: "",
   observe: "",
-  evaluate: "",
   concepts: "",
 };
 
