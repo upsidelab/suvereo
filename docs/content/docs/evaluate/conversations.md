@@ -1,8 +1,8 @@
 # Conversations
 
-A conversation suite tests an agent through chat: each case is a dialogue of several turns, in which the agent can ask questions and the user answers them. It uses the same `suite.yaml`, mocks, metrics, reports and commands as any suite.
+A conversation suite tests an [agent](/docs/concepts#agent) through [chat](/docs/concepts#conversation): each case is a dialogue of several turns, in which the agent can ask questions and the user answers them. It uses the same `suite.yaml`, mocks, metrics, reports and commands as any suite.
 
-A suite is a conversation suite when it sets `kind: conversation`, or when its agent type has no agentic execution. Any agent in `AVAILABLE_AGENTS` can run as one. The tutorial's nutrition assistant has the `weekly-meal-plan` execution, so its chat suite, `diet-domain/evals/nutrition_chat/`, sets `kind: conversation`. It runs in a sandbox on fixture recipes, through the recipe mock from [Mocks](./mocks).
+A suite is a conversation suite when it sets `kind: conversation`, or when its agent type has no [agentic execution](/docs/concepts#agentic-execution). Any agent in `AVAILABLE_AGENTS` can run as one. The tutorial's nutrition assistant has the `weekly-meal-plan` execution, so its chat suite, `diet-domain/evals/nutrition_chat/`, sets `kind: conversation`. It runs in a sandbox on fixture recipes, through the recipe mock from [Mocks](./mocks).
 
 ```shell
 ./manage.py runeval ../diet-domain/evals/nutrition_chat/suite.yaml
@@ -112,7 +112,7 @@ The validator metrics (`attempts`, `first_attempt_success`, `failure_code`, the 
 ## Reading the results
 
 - **`report.md`** shows each candidate's pass rate, flaky rate, `goal_reached` rate and mean `turns`. Each failed conversation shows how it ended and its last two turns.
-- **`transcripts/<run_id>.md`** holds each run as a readable dialogue: how it ended, the simulated user's goal, persona and facts, then every turn with the tools called. Add `transcripts` to `reports` to write it.
+- **`transcripts/<run_id>.md`** holds each run as a readable dialogue: how it ended, the simulated user's goal, persona and facts, then every turn with the [tools](/docs/concepts#tool) called. Add `transcripts` to `reports` to write it.
 - **`results.csv`** has `conversation_completed`, `conversation_end`, `goal_reached`, `turns` and `user_cost_usd` per run.
 
 ## Keeping results steady

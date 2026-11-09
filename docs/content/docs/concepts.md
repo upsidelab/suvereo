@@ -28,6 +28,12 @@ An agentic execution is an autonomous run of an agent, started through the API w
 
 An agent definition can offer several kinds of execution, and the caller picks one with an `execution_key`. Executions suit work that arrives in batches or from other systems, such as processing a stream of documents.
 
+## Evaluation
+
+An evaluation measures how well an [agent](#agent) does its job. A suite of plain files names the agent, the models and prompts to run it with, and a set of cases: inputs, each with what a right result looks like. Every run is scored by metrics, such as whether the output matches the expected one, which [tools](#tool) the agent called and how a judge model grades its work. Mocks stand in for [integrations](#integration), so runs work on fixture data.
+
+An evaluation runs an agent's [agentic executions](#agentic-execution) or [conversations](#conversation) from the command line and writes reports that compare models, prompts and code changes side by side. See [Evaluate an Agent](/docs/evaluate/evaluate-an-agent).
+
 ## Integration
 
 An integration is a configured connection to an external system on a data set.

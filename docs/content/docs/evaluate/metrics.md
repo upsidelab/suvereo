@@ -2,6 +2,23 @@
 
 A metric measures one thing about every run: a **number**, a **bool** or a **label**. Some are measured on every run with no config; the rest you add under `metrics` in `suite.yaml`, or in a case to add or replace one for that case. `./manage.py listevalmetrics` lists them all with their params.
 
+| Metric | Value | Checks |
+|---|---|---|
+| [Measured on every run](#measured-on-every-run) | – | Success, failure code, attempts, duration, cost, tokens and calls, with no config |
+| [`json_subset`](#json_subset) | 0–1 | The share of expected output fields the output matches |
+| [`field_match`](#field_match) | bool | One output field against its expected value |
+| [`list_match`](#list_match) | 0–1 | An output list against the expected one, as F1 |
+| [`mock_calls`](#mock_calls) | 0–1 | What reached a mock against the expected calls, as F1 |
+| [`json_schema`](#json_schema) | bool | The output conforms to a JSON Schema |
+| [`tool_called`](#tool_called) | number | How many times the agent called a tool |
+| [`tool_not_called`](#tool_not_called) | bool | The agent never called a tool |
+| [`tool_order`](#tool_order) | bool | The agent called tools in a given order |
+| [`mock_called`](#mock_called) | number | How many times a mocked method was called |
+| [`trace_event`](#trace_event) | bool | A retry, tool error, validator failure or stop happened during the run |
+| [`llm_judge`](#llm_judge) | 0–1 | A judge model grades the run against criteria you write |
+| [`llm_classify`](#llm_classify) | label | A judge model answers a question with one of your labels |
+| [Your own metric](#add-your-own-metric) | any | Anything else, in a `BaseMetric` subclass |
+
 This metric, from the meal-plan suite for the tutorial's nutrition assistant, checks that the nutrition assistant found its recipes without searching in circles:
 
 ```yaml
@@ -36,7 +53,7 @@ A metric that cannot measure a run, such as a case with no expected value for it
 | `duration_s` | number | Wall-clock seconds |
 | `cost_usd` | number | The agent's LLM cost in USD, nested calls included; the judge's is `judge_cost_usd` |
 | `input_tokens`, `output_tokens` | number | Tokens over every LLM call |
-| `llm_calls`, `tool_calls` | number | LLM calls and tool calls the run made |
+| `llm_calls`, `tool_calls` | number | LLM calls and [tool](/docs/concepts#tool) calls the run made |
 
 A conversation suite measures `conversation_completed`, `conversation_end`, `turns`, `goal_reached` and `user_cost_usd` in place of the first four; see [Conversations](./conversations#what-a-run-measures).
 
@@ -44,7 +61,7 @@ Give one a `pass_threshold` by adding it to `metrics` under its own name, e.g. `
 
 ## What the agent produced
 
-These compare the run's output, or what reached the mocks, with the case's `expected`. The nutrition assistant's output is a meal plan of recipe ids, which `json_schema` and your own `follows_diet` check best; the examples for the other metrics use the answers of other agents.
+These compare the run's output, or what reached the mocks, with the case's `expected`. The nutrition assistant's output is a meal plan of recipe ids, which `json_schema` and your own `follows_diet` check best; the examples for the other metrics use the answers of other [agents](/docs/concepts#agent).
 
 ### `json_subset`
 
@@ -125,7 +142,7 @@ F1 is their balance, 1 only when both are 1. For example, if 4 items are expecte
 
 ### `mock_calls`
 
-F1 of what reached a mock against `expected.mock_calls.<method>`, 0–1. It scores what the agent sent to the outside system, whatever its output says. It suits agents that call an integration at runtime, such as Enthusiast's order-intake agent and its mocked shop (see [Mocks](./mocks#mocking-the-calls-an-agent-makes)):
+F1 of what reached a mock against `expected.mock_calls.<method>`, 0–1. It scores what the agent sent to the outside system, whatever its output says. It suits agents that call an [integration](/docs/concepts#integration) at runtime, such as Enthusiast's order-intake agent and its mocked shop (see [Mocks](./mocks#mocking-the-calls-an-agent-makes)):
 
 ```yaml
 # suite.yaml
@@ -207,7 +224,7 @@ Whether the agent called tools in this order; bool. Other calls may come in betw
     strict: false              # other calls may come in between
 ```
 
-This one belongs in the chat suite: the assistant has `get_user_profile` in a conversation, and the meal-plan execution gets the profile in its first message.
+This one belongs in the chat suite: the assistant has `get_user_profile` in a [conversation](/docs/concepts#conversation), and the meal-plan [execution](/docs/concepts#agentic-execution) gets the profile in its first message.
 
 ### `mock_called`
 
@@ -314,7 +331,7 @@ Quote a mode with a colon in YAML (`"numeric:50"`) when it is a flow value; on i
 
 Subclass `BaseMetric` anywhere importable and set `type` to its dotted path. Declare `NAME`, `VALUE_TYPE` (`number`, `bool` or `label`) and, for params, a Pydantic model as `PARAMS`; `measure` gets the run and returns a `MetricResult`.
 
-`FollowsDiet` checks what the tutorial's validators leave open: that a vegan or vegetarian gets only vegan or vegetarian recipes. Add it to the domain definition, in `diet_domain/evaluation/follows_diet.py`, next to the [recipe mock](./mocks):
+`FollowsDiet` checks what the tutorial's validators leave open: that a vegan or vegetarian gets only vegan or vegetarian recipes. Add it to the [domain definition](/docs/concepts#domain-definition), in `diet_domain/evaluation/follows_diet.py`, next to the [recipe mock](./mocks):
 
 ```python
 from suvereo_common.evaluation.metrics import BaseMetric, MetricContext, MetricResult

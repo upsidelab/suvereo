@@ -1,6 +1,6 @@
 # Suites and Cases
 
-A suite is a directory with a `suite.yaml` and its cases. `suite.yaml` holds what every case shares: the agent, the models to compare, the mocks and the metrics. Each case holds what is specific to one test: the input the agent gets and the right result for it.
+A suite is a directory with a `suite.yaml` and its cases. `suite.yaml` holds what every case shares: the [agent](/docs/concepts#agent), the models to compare, the mocks and the metrics. Each case holds what is specific to one test: the input the agent gets and the right result for it.
 
 ```text
 diet-domain/evals/meal_plan/
@@ -12,7 +12,7 @@ diet-domain/evals/meal_plan/
     └── edge-cases.yaml
 ```
 
-`./manage.py validateeval <suite.yaml>` checks a suite for free and prints the runs it would make; `./manage.py evalschema` prints the JSON Schema of `suite.yaml` for editor completion.
+`./manage.py validateeval <suite.yaml>` checks a suite without making any LLM calls and prints the runs it would make; `./manage.py evalschema` prints the JSON Schema of `suite.yaml` for editor completion.
 
 ## suite.yaml
 
@@ -22,7 +22,7 @@ The meal-plan suite for the tutorial's nutrition assistant, every line explained
 name: meal-plan                        # shown in reports; defaults to the directory name
 description: Multi-day meal plans for the sample users, on two prompts
 
-agent: {id: 7}                         # the agent you configured, on its own DataSet
+agent: {id: 7}                         # the agent you configured, on its own data set
 
 models:                                # the models to run the agent with
   - {provider: OpenAI, model: gpt-4o-mini}
@@ -61,11 +61,11 @@ Which agent to test. Set one of:
 
 | Form | Runs |
 |---|---|
-| `{id: <agent id>}` | An agent you already configured, with its DataSet as it is: the meal-plan suite plans from the synced sample recipes for the sample users. Its stored config stays unchanged, and the runs' conversations are removed afterwards. The suite's mocks replace its integrations; one the suite leaves unmocked runs for real only with `--allow-real-integrations`. |
-| `{type: <agent key>}` | A new agent of that type in a throwaway DataSet. The mocks' data, such as fixture recipes, is synced into it, and it is removed after the run (`--keep-run-data` keeps it). See [Mocks](./mocks). |
+| `{id: <agent id>}` | An agent you already configured, with its [data set](/docs/concepts#data-set) as it is: the meal-plan suite plans from the synced sample recipes for the sample users. Its stored config stays unchanged, and the runs' [conversations](/docs/concepts#conversation) are removed afterwards. The suite's mocks replace its [integrations](/docs/concepts#integration); one the suite leaves unmocked runs for real only with `--allow-real-integrations`. |
+| `{type: <agent key>}` | A new agent of that type in a throwaway data set. The mocks' data, such as fixture recipes, is synced into it, and it is removed after the run (`--keep-run-data` keeps it). See [Mocks](./mocks). |
 | `{type: <agent key>, config: {...}}` | The same, with this agent config. |
 
-The agent type must be in `AVAILABLE_AGENTS` and its execution in `AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS`. `execution_key` picks the execution when the agent type has more than one. An agent type with no execution runs as a conversation suite, and `kind: conversation` runs any agent through chat; see [Conversations](./conversations).
+The agent type must be in `AVAILABLE_AGENTS` and its [execution](/docs/concepts#agentic-execution) in `AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS`. `execution_key` picks the execution when the agent type has more than one. An agent type with no execution runs as a conversation suite, and `kind: conversation` runs any agent through chat; see [Conversations](./conversations).
 
 ### `models`
 
@@ -78,9 +78,9 @@ The models to run the agent with, each `{provider, model}`. Every model is compa
 | `label` | Optional; the name in reports and for `--model`, instead of the model name. |
 | `pricing` | Optional; `{input_per_million, output_per_million, cached_input_per_million}` in USD, for a model the bundled price table lacks. |
 
-A provider is usable once its model plugin is installed and listed in `CATALOG_LANGUAGE_MODEL_PROVIDERS`; `validateeval` names the installed ones when a suite asks for another.
+A provider is usable once its model [plugin](/docs/concepts#plugin) is installed and listed in `CATALOG_LANGUAGE_MODEL_PROVIDERS`; `validateeval` names the installed ones when a suite asks for another.
 
-Left empty, the DataSet's configured model runs. `--model gpt-4o-mini` runs one of them, and `--model OpenAI:gpt-4.1-nano` adds one without editing the suite.
+Left empty, the data set's configured model runs. `--model gpt-4o-mini` runs one of them, and `--model OpenAI:gpt-4.1-nano` adds one without editing the suite.
 
 ### `variants`
 
@@ -115,11 +115,11 @@ A run passes when it meets every required pass threshold of its metrics, see [Me
 
 ### `reports`
 
-What to write to `results/<date>-<id>/` besides `summary.json`, which is always written: `report`, `results`, `comparison`, `cases`, `metrics`, `traces` and, for a conversation suite, `transcripts`. The default is `report` and `results`; `--reports` overrides it. [Getting started](./getting-started#2-read-the-results) says what each holds.
+What to write to `results/<date>-<id>/` besides `summary.json`, which is always written: `report`, `results`, `comparison`, `cases`, `metrics`, `traces` and, for a conversation suite, `transcripts`. The default is `report` and `results`; `--reports` overrides it. [Evaluate an Agent](./evaluate-an-agent#3-read-the-results) says what each holds.
 
 ### `integrations`
 
-The mocks standing in for every system the agent reaches, each with `class` (a mock integration) or `interface` (a mock built from YAML alone), and a `config` with the mock's `data` and per-method `behaviour`. Paths in `data` are relative to the suite. The meal-plan suite needs none: its agent's DataSet already holds the recipes, and the execution reaches no external system. See [Mocks](./mocks).
+The mocks standing in for every system the agent reaches, each with `class` (a mock integration) or `interface` (a mock built from YAML alone), and a `config` with the mock's `data` and per-method `behaviour`. Paths in `data` are relative to the suite. The meal-plan suite needs none: its agent's data set already holds the recipes, and the execution reaches no external system. See [Mocks](./mocks).
 
 ### `metrics`
 
@@ -212,7 +212,7 @@ A case the agent must refuse names the failure it expects:
     - {name: follows_diet, type: diet_domain.evaluation.FollowsDiet, pass_threshold: {equals: true}}
 ```
 
-**`metrics`** replace the suite's metric with the same `name`, or are added when the name is new. `follows_diet` is a metric you add to the domain definition; [Metrics](./metrics#add-your-own-metric) shows its code.
+**`metrics`** replace the suite's metric with the same `name`, or are added when the name is new. `follows_diet` is a metric you add to the [domain definition](/docs/concepts#domain-definition); [Metrics](./metrics#add-your-own-metric) shows its code.
 
 In a sandbox suite, a case can also change the mock data. This case from the [chat suite](./conversations) swaps the recipes for a catalog where every breakfast has dairy:
 

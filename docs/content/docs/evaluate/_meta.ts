@@ -1,5 +1,5 @@
 const mapping = {
-  "getting-started": "",
+  "evaluate-an-agent": "",
   suites: "",
   conversations: "",
   mocks: "",
