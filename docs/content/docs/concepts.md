@@ -16,7 +16,7 @@ An agent does its job by calling tools. People talk to agents in [conversations]
 
 ## Tool
 
-A tool is a capability an agent can call while it works: searching content, reading a file, calling an external service or handing a task to another agent. Tools can come with the agent definition, from [integrations](#integration) such as MCP servers, and from the [domain definition](#domain-definition) the agent is built on.
+A tool is a capability an agent can call while it works: searching content, reading a file, calling an external service or handing a task to another agent. Tools can come with the agent definition, from [integrations](#integration) such as [MCP servers](/plugins/mcp), and from the [domain definition](#domain-definition) the agent is built on.
 
 ## Conversation
 
@@ -42,7 +42,7 @@ Integrations serve two purposes:
 - **Bringing content in.** A source integration syncs content from an external system. The content is stored as [entities](#entity) and indexed for search.
 - **Letting agents act.** A tool-providing integration gives agents tools for working in the external system. It syncs no content; each agent picks the ones it uses under **Tool sources**.
 
-Suvereo includes a ready-made integration for MCP servers. An MCP server is an external server that exposes tools through the Model Context Protocol. Once it is connected to a data set by signing in with OAuth, its tools are available to the data set's agents that select it under **Tool sources** in their settings.
+Suvereo includes a ready-made [integration for MCP servers](/plugins/mcp). An MCP server is an external server that exposes tools through the Model Context Protocol. Once it is connected to a data set by signing in with OAuth, its tools are available to the data set's agents that select it under **Tool sources** in their settings.
 
 ## Domain
 

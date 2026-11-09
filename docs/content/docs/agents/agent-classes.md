@@ -92,7 +92,7 @@ def get_answer(self, input_text: str) -> str:
     return self._record_turn(result, context_messages)
 ```
 
-`aget_answer()` is the async equivalent. It lets tools supplied by integrations, such as MCP servers, be awaited.
+`aget_answer()` is the async equivalent. It lets tools supplied by integrations, such as [MCP servers](/plugins/mcp), be awaited.
 
 ```python
 from suvereo_common.utils import run_off_event_loop

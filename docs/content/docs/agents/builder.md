@@ -51,7 +51,7 @@ def build(self) -> BaseAgent:
 - **Tools** are created according to the type of their config: `FunctionToolConfig`, `LLMToolConfig`, `FileToolConfig` or `AgentToolConfig`. A sub-agent of an `AgentToolConfig` is built with the same builder class as its parent.
 - **Stored settings** entered in the UI are applied to the agent and its tools as the last step.
 
-`abuild()` is the async twin. It runs `build()` in a worker thread and then attaches the tools of the [integrations](/docs/concepts#integration) connected to the data set, such as MCP servers. Each integration has ten seconds to answer. One that fails or times out contributes no tools for that turn, and the others are not affected.
+`abuild()` is the async twin. It runs `build()` in a worker thread and then attaches the tools of the [integrations](/docs/concepts#integration) connected to the data set, such as [MCP servers](/plugins/mcp). Each integration has ten seconds to answer. One that fails or times out contributes no tools for that turn, and the others are not affected.
 
 ## Extending the builder
 
