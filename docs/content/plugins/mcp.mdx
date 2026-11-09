@@ -36,13 +36,13 @@ CATALOG_INTEGRATION_PLUGINS = [
 ]
 ```
 
-Restart the server for the plugin to become available.
+Restart the server and the Celery worker for the plugin to become available.
 
 ## Connecting a server
 
 1. Open the integrations of a data set (**Manage** → **Data Sets** → **Integrations**) and add an integration of the **MCP Server** type.
 2. Fill in the form:
-   - **Name:** how the server is labelled in the UI. Defaults to the server's host.
+   - **Name:** how the server is labelled in the UI. Defaults to `MCP Server (host)`, where `host` is the server's host.
    - **Server URL:** the address of the server, for example `https://example.com/mcp`.
    - **Transport:** `http` (streamable HTTP) by default. Choose `sse` for older servers.
    - **Auth header** and **Auth token:** the credentials sent with every request, when the server needs them. The token includes its scheme, for example `Bearer abc123`. Leave the token empty if the server needs none. The header defaults to `Authorization`.
