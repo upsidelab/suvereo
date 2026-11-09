@@ -1,12 +1,24 @@
 # Evaluate an Agent
 
-An evaluation suite runs your agent on a set of cases, measures every run and writes reports you can compare across models, prompts and code changes. Each run calls a real LLM and costs a few cents.
+An [evaluation](/docs/concepts#evaluation) suite runs your [agent](/docs/concepts#agent) on a set of cases, measures every run and writes reports you can compare across models, prompts and code changes. Each run calls a real LLM and costs a few cents.
 
-This guide evaluates the nutrition assistant built in the [tutorial](/docs/customization/tutorial): its `weekly-meal-plan` execution, which plans meals for a user and checks every plan against their allergies and calorie target. Finish the tutorial first, so the instance has the assistant, the execution, and the sample recipes and users synced into a data set.
+This guide evaluates the nutrition assistant built in the [tutorial](/docs/customization/tutorial): its `weekly-meal-plan` [execution](/docs/concepts#agentic-execution), which plans meals for a user and checks every plan against their allergies and calorie target. Finish the tutorial first, so the instance has the assistant, the execution, and the sample recipes and users synced into a [data set](/docs/concepts#data-set).
+
+## How it works
+
+An evaluation answers one question with numbers: how well does this agent do its job, and does a change make it better or worse?
+
+- **A suite** is a directory of plain files you keep next to your code: which agent to run, with which models and prompts, and what to measure. See [Suites and Cases](./suites).
+- **Cases** are the inputs the agent gets, each with what a right result looks like. An execution suite gives each case the execution's input; a [conversation suite](./conversations) gives it a dialogue.
+- **Metrics** score every run: what the agent produced, how it worked, and what a judge model thinks of it. See [Metrics](./metrics).
+- **Mocks** stand in for external systems, so a run can use fixture data and never reaches a real shop or API. See [Mocks](./mocks).
+- **Reports** compare every model and prompt side by side, keep a history of runs and give CI an exit code.
+
+A suite runs either an agent you already configured, on its data set as it is, or a new agent in a throwaway data set filled from mocks.
 
 ## Before you start
 
-Suites are plain files. Keep them with the vertical, in `diet-vertical/evals/`, one directory per suite:
+Suites are plain files. Keep them with the [vertical](/docs/concepts#vertical), in `diet-vertical/evals/`, one directory per suite:
 
 ```text
 diet-vertical/
@@ -42,7 +54,7 @@ metrics:
 cases: cases.csv
 ```
 
-`agent: {id: 7}` runs the agent you configured, on its own data set, so the runs plan from the sample recipes and read the sample users' profiles. The agent's stored config stays as it is, and the suite removes the runs' conversations afterwards.
+`agent: {id: 7}` runs the agent you configured, on its own data set, so the runs plan from the sample recipes and read the sample users' profiles. The agent's stored config stays as it is, and the suite removes the runs' [conversations](/docs/concepts#conversation) afterwards.
 
 `cases.csv` holds one case per row; `input.<field>` columns fill the execution's input. Put in the ids of your sample users:
 
@@ -60,7 +72,7 @@ maria,"Gluten and dairy allergies, 2100 kcal",4,1
 ./manage.py runeval ../diet-vertical/evals/meal_plan/suite.yaml
 ```
 
-`validateeval` is free: it checks the suite and its cases against the execution's input and prints how many runs it plans. `runeval` runs every case and stops at `budget_usd`.
+`validateeval` makes no LLM calls: it checks the suite and its cases against the execution's input and prints how many runs it plans. `runeval` runs every case and stops at `budget_usd`.
 
 A run passes when the execution returns a plan and every metric meets its pass threshold. The execution's validators already reject a plan with an allergen or a missed calorie target; the suite adds what they leave open, here how many searches the agent needed.
 
@@ -146,6 +158,6 @@ With `--baseline`, `report.md` gains a **Baseline diff**: each candidate's pass 
 
 ## 7. Test with fixture data
 
-A suite on your configured agent plans from whatever its data set holds. To test against a fixed set of records, or to try a case on data no real source has, a suite runs the agent in a throwaway data set filled from mocks: `agent: {type: nutrition-assistant}` instead of `{id: ...}`, plus a mock for each integration. [Mocks](./mocks) adds a recipe mock to the vertical, and [Conversations](./conversations) uses it to test the assistant's chat.
+A suite on your configured agent plans from whatever its data set holds. To test against a fixed set of records, or to try a case on data no real source has, a suite runs the agent in a throwaway data set filled from mocks: `agent: {type: nutrition-assistant}` instead of `{id: ...}`, plus a mock for each [integration](/docs/concepts#integration). [Mocks](./mocks) adds a recipe mock to the vertical, and [Conversations](./conversations) uses it to test the assistant's chat.
 
 For every option, field and metric, see the [Reference](./reference).

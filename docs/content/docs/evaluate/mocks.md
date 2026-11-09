@@ -1,11 +1,11 @@
 # Mocks
 
-Agents reach external systems through integrations: a recipe source, a shop, a document store. During an evaluation, each integration the suite declares is replaced by a mock. A mock gives the agent two things:
+[Agents](/docs/concepts#agent) reach external systems through [integrations](/docs/concepts#integration): a recipe source, a shop, a document store. During an evaluation, each integration the suite declares is replaced by a mock. A mock gives the agent two things:
 
-- **Data**: in sandbox mode (`agent: {type: ...}`) the mock's data is synced into the throwaway DataSet, the same way a real integration's sync fills a DataSet, so the agent searches a known set of records.
+- **Data**: in sandbox mode (`agent: {type: ...}`) the mock's data is synced into the throwaway [data set](/docs/concepts#data-set), the same way a real integration's sync fills a data set, so the agent searches a known set of records.
 - **Calls**: methods the agent calls at runtime answer from the suite's YAML, and every call is recorded. Metrics such as `mock_calls` and `mock_called` then read those recorded calls.
 
-A suite on an agent you configured needs no mocks for data its DataSet already holds. A sandbox suite, `agent: {type: ...}`, starts from an empty DataSet, so it needs a mock for each source of data the agent searches: for the tutorial's nutrition assistant, a recipe source that fills the catalog before the run starts.
+A suite on an agent you configured needs no mocks for data its data set already holds. A sandbox suite, `agent: {type: ...}`, starts from an empty data set, so it needs a mock for each source of data the agent searches: for the tutorial's nutrition assistant, a recipe source that fills the catalog before the run starts.
 
 ## A mock integration for your vertical
 
@@ -26,7 +26,7 @@ integrations:
 
 `recipes` is a YAML, JSON or CSV file relative to the suite, or an inline list. Each recipe needs `id`, `title`, `meal_type` (`breakfast`, `main` or `snack`), `calories` and `ingredients`; `servings` and `instructions` are optional. The sync works out allergens and the vegetarian and vegan tags from the ingredients, as for recipes from the tutorial's sample source.
 
-The mock is two small files in a new `diet_vertical/evaluation/` package. The first validates a fixture record and turns it into the `RecipeDetails` the tutorial's sources return:
+The mock is two small files in a new `diet_vertical/evaluation/` package of your [vertical](/docs/concepts#vertical). The first validates a fixture record and turns it into the `RecipeDetails` the tutorial's sources return:
 
 ```python
 # diet_vertical/evaluation/fixture_recipe.py

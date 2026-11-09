@@ -5,7 +5,7 @@
 | Command | What it does |
 |---|---|
 | `./manage.py runeval <suite.yaml>` | Runs the suite and writes its reports. |
-| `./manage.py validateeval <suite.yaml>` | Checks the suite, its cases, mocks and metrics, that every model has a price when a budget is set, and prints the planned run count. Free. |
+| `./manage.py validateeval <suite.yaml>` | Checks the suite, its cases, mocks and metrics, that every model has a price when a budget is set, and prints the planned run count. Makes no LLM calls. |
 | `./manage.py evalschema` | Prints the JSON Schema of `suite.yaml`, for editor completion. |
 | `./manage.py listevalmetrics` | Lists the built-in metrics with their value types and params. |
 
@@ -27,7 +27,7 @@
 | `--format json` | Prints `summary.json` to stdout; logs go to stderr. |
 | `--history` | Prints the suite's earlier runs and exits. |
 | `--allow-real-integrations` | Lets an existing agent's unmocked integrations run for real. |
-| `--keep-run-data` | Keeps the sandbox DataSet and conversations for inspection. |
+| `--keep-run-data` | Keeps the sandbox data set and conversations for inspection. |
 
 ### Exit codes
 
@@ -46,11 +46,11 @@ Only `agent`, `metrics` and `cases` are required. [Suites and Cases](./suites) w
 | Field | Meaning |
 |---|---|
 | `name`, `description` | The name defaults to the suite's directory name. |
-| `agent` | `{type: <agent key>, config: {...}}` runs in a throwaway sandbox DataSet; `{id: N}` runs an existing agent. |
+| `agent` | `{type: <agent key>, config: {...}}` runs in a throwaway sandbox data set; `{id: N}` runs an existing agent. |
 | `kind` | `execution` or `conversation`; defaults to `execution` when the agent type has an agentic execution. See [Conversations](./conversations). |
 | `execution_key` | The agentic execution to run; needed only when the agent type has several. |
 | `integrations` | The mocks, see [Mocks](./mocks). |
-| `models` | `{provider, model, label, pricing}` each. Left empty, the DataSet's configured model runs. |
+| `models` | `{provider, model, label, pricing}` each. Left empty, the data set's configured model runs. |
 | `variants` | `{name, system_prompt_file}` and/or `{name, agent_config}`, each compared against `default`, the agent's own prompt. `agent_config` is deep-merged over the agent's config; lists are replaced whole. |
 | `judge` | The model `llm_judge` and `llm_classify` ask; it also decides `goal_reached`. |
 | `user_model` | The model playing simulated users in a conversation suite. |
