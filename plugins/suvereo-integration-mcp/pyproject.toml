@@ -7,7 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-suvereo-common = ">=1.7.0"
+suvereo-common = ">=1.0.0"
 # Deliberately unpinned at the top end: langchain.mcp is in beta and moving, and pinning would
 # hold this plugin back from fixes. The mcp extra first appears in 1.4.2.
 langchain = { version = ">=1.4.2", extras = ["mcp"] }
