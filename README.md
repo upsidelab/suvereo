@@ -48,7 +48,7 @@ cp frontend/config/sample.env frontend/config/.env
 docker compose build && docker compose up
 ```
 
-Open the management panel at [http://localhost:10001](http://localhost:10001) and sign in as `admin@example.com` with the password `changeme`. The [installation guide](https://upsidelab.io/suvereo/docs/getting-started/installation) covers the details, and you can also book a [live demo](https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ3NyFdPn_jqYqD24asveLkfrB1NTal0PWkLNHFTT4Fmp6sNW50-0or8WyIzBriF8IFdP1jXSPjQ) to see it in action.
+Open the management panel at [http://localhost:10001](http://localhost:10001) and sign in as `admin@example.com` with the password `changeme`. The [installation guide](https://upsidelab.io/suvereo/docs/getting-started/installation) covers the details.
 
 ## How It Works
 
