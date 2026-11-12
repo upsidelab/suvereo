@@ -13,7 +13,7 @@ cp server/config/sample.env server/config/.env
 cp frontend/config/sample.env frontend/config/.env
 ```
 
-The default configuration uses the OpenAI API for generating embeddings and for the language model. Set your key in `server/config/.env`:
+The default configuration uses the OpenAI API for generating embeddings and for the language model. To use local models instead, see [Running with local models](/docs/getting-started/local-models). Set your key in `server/config/.env`:
 
 ```
 OPENAI_API_KEY=...
