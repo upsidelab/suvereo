@@ -6,7 +6,7 @@ This page explains how that split works, so you can see what Suvereo gives you f
 
 ## What Suvereo provides on its own
 
-Suvereo is the generic engine behind every agent. Whatever the domain, it provides:
+Suvereo is the generic core behind every agent. Whatever the domain, it provides:
 
 - **Chat with agents** - [conversations](/docs/concepts#conversation) in the web UI.
 - **Automated background tasks** - [agentic executions](/docs/concepts#agentic-execution), started through the API.
@@ -55,7 +55,7 @@ Agents such as Product Search, User Manual Search, Order Intake and Catalog Enri
 
 ## Example: healthcare
 
-The same structure can describe a different domain. The diagram below is an illustration of how a healthcare domain definition could be laid out. It is hypothetical and not maintained by us.
+The same structure can describe a different domain. The diagram below is an illustration of how a healthcare domain definition could be laid out.
 
 - **Data:** patients, medical history entries and doctors.
 - **Integration types:** an electronic health record system, appointment scheduling and a lab results provider.
