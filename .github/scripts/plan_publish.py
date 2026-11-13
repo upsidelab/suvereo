@@ -28,6 +28,10 @@ import urllib.request
 from pathlib import Path
 
 
+# TEMPORARY: REVERT after publishing.
+TEMP_ONLY = {"suvereo-model-openai", "suvereo-agent-tools", "suvereo-agent-tool-calling", "suvereo-integration-mcp"}
+
+
 def normalize(name: str) -> str:
     """Normalize a distribution name per PEP 503."""
     return re.sub(r"[-_.]+", "-", name).lower()
@@ -98,6 +102,10 @@ def main() -> None:
     pending: dict[str, dict] = {}
     lines = ["| Package | Version | Status |", "|---|---|---|"]
     for package in all_packages:
+        # TEMPORARY: PyPI new-project rate limit - publish only these packages. REVERT.
+        if package["name"] not in TEMP_ONLY:
+            lines.append(f"| {package['name']} | {package['version']} | temporarily excluded |")
+            continue
         if is_published(package["name"], package["version"]):
             lines.append(f"| {package['name']} | {package['version']} | already published, skipped |")
         else:
