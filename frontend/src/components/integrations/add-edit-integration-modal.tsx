@@ -110,7 +110,6 @@ export function AddEditIntegrationModal({
       ? integrationTypes.filter(t => t.integration_type_name === integrationTypeName)
       : integrationTypes);
 
-  const showTypeSelect = readOnly || typeOptions.length > 1;
   const oauthField = selectedIntegrationType?.supports_oauth ? selectedIntegrationType.oauth_field : "";
   const canConnect = !readOnly && !!selectedType && !!oauthField;
   const refreshField = selectedIntegrationType?.supports_oauth ? selectedIntegrationType.oauth_refresh_field : "";
@@ -122,7 +121,7 @@ export function AddEditIntegrationModal({
       ? integrationTypes.filter(t => t.integration_type_name === integrationTypeName)
       : integrationTypes;
     if (selectedType && options.some(t => t.type === selectedType)) return;
-    setSelectedType(options.length === 1 ? options[0].type : "");
+    setSelectedType("");
   }, [open, integrationTypes, integrationTypeName, selectedType, readOnly, isEditing]);
 
   useEffect(() => {
@@ -131,7 +130,7 @@ export function AddEditIntegrationModal({
     const props = (chosen?.config_schema as ConfigSchema | undefined)?.properties ?? {};
     setConfig(Object.fromEntries(
       Object.entries(props)
-        .filter(([, prop]) => prop.default !== undefined && prop.default !== "")
+        .filter(([, prop]) => prop.default != null && prop.default !== "")
         .map(([key, prop]) => [key, String(prop.default)])
     ));
   }, [open, integration, selectedType, integrationTypes]);
@@ -289,25 +288,23 @@ export function AddEditIntegrationModal({
         </div>
       )}
 
-      {showTypeSelect && (
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="integration-type">Type</Label>
-          <Select
-            value={selectedType}
-            onValueChange={setSelectedType}
-            disabled={readOnly || isEditing || typeOptions.length === 0}
-          >
-            <SelectTrigger id="integration-type">
-              <SelectValue placeholder="Select integration type" />
-            </SelectTrigger>
-            <SelectContent>
-              {typeOptions.map(t => (
-                <SelectItem key={t.type} value={t.type}>{t.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="integration-type">Type</Label>
+        <Select
+          value={selectedType}
+          onValueChange={setSelectedType}
+          disabled={readOnly || isEditing || typeOptions.length === 0}
+        >
+          <SelectTrigger id="integration-type">
+            <SelectValue placeholder="Select integration type" />
+          </SelectTrigger>
+          <SelectContent>
+            {typeOptions.map(t => (
+              <SelectItem key={t.type} value={t.type}>{t.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       {selectedType && Object.entries(properties).filter(([, prop]) => !prop.hidden).map(([key, prop]) => (
         <div key={key} className="flex flex-col gap-1">
