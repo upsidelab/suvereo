@@ -28,9 +28,9 @@ In practice:
 
 - `account` — users, groups, roles, service accounts, JWT auth (access + refresh tokens), `account/authorization/` (permission codes and rules)
 - `agent` — agents, conversations (`agent/conversation/`, `ConversationManager`), agentic execution (`agent/agentic_execution/`), task status (`agent/task_status/`), agent building and plugin registries (`agent/core/`), memory strategies (`agent/core/memory/`), file parsers
-- `catalog` — data sets, integrations and their OAuth flow (`catalog/integrations/`), entities, indexing pipeline, retrieval; embeddings are stored with pgvector
+- `catalog` — data sets, integrations and their OAuth flow (`catalog/integrations/`), integration sync task status (`catalog/task_status/`), entities, indexing pipeline, retrieval; embeddings are stored with pgvector
 - `pecl` — project settings, URL routing, Celery app
-- `utils` — shared helpers (base registry, function helpers, serializers)
+- `utils` — shared helpers (base registry, function helpers, serializers, `utils/views/task_status.py` base task status view)
 
 Apps expose their API under `/api/` and are mounted at the root in `pecl/urls.py`.
 
