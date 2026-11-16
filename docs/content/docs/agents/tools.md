@@ -51,6 +51,8 @@ Enables tools to call and interact with other agents, creating a hierarchical ag
 - **Multi-Agent Workflows**: Coordinate complex operations across multiple agents
 - **Agent Delegation**: Delegate specialized tasks to appropriate agents
 
+A sub-agent is declared with `AgentToolConfig(tool_class=..., agent_class=...)` and has no stored configuration of its own. It reuses the settings of the agent that uses it: its tools take theirs by `NAME`, see [`CONFIGURATION_ARGS`](#configuration_args-requiredfieldsmodel-or-none), and its `AGENT_ARGS` and `PROMPT_INPUT` fields take the values of the agent's fields with the same name. Its other fields keep their defaults.
+
 ## Required Class Variables
 
 Tools define these class variables to ensure proper validation and functionality. `CONFIGURATION_ARGS` is optional and defaults to `None`:
@@ -97,6 +99,8 @@ RETURN_DIRECT = False
 Optional configuration parameters that can be set at runtime. If not needed, set to `None`.
 
 The fields are set per agent when the agent is created or updated through the API, and the UI shows them as a form and handles them. They are stored with the agent and applied to the tool when the agent is built.
+
+An agent's settings cover the tools of its agentic executions and of its sub-agents too, keyed by the tool's `NAME`, so a tool used in several places is configured once. Two different tools with the same `NAME` and different `CONFIGURATION_ARGS` are reported when the server starts, and so is a chain of sub-agents that reaches back to an agent already in it.
 
 **Example:**
 ```python

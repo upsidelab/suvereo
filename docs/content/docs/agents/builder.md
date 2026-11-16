@@ -48,7 +48,7 @@ def build(self) -> BaseAgent:
 
 - **Repositories** are created from the classes in the configuration, each bound to its database model.
 - **The agent's language model** streams its answer when `streaming` is true. **The default language model** is the one tools use unless a tool's config sets its own `llm`.
-- **Tools** are created according to the type of their config: `FunctionToolConfig`, `LLMToolConfig`, `FileToolConfig` or `AgentToolConfig`. A sub-agent of an `AgentToolConfig` is built with the same builder class as its parent.
+- **Tools** are created according to the type of their config: `FunctionToolConfig`, `LLMToolConfig`, `FileToolConfig` or `AgentToolConfig`. A sub-agent of an `AgentToolConfig` is built with the same builder class as its parent, and reuses the parent's settings: tool settings by tool `NAME`, `AGENT_ARGS` and `PROMPT_INPUT` by field name.
 - **Stored settings** entered in the UI are applied to the agent and its tools as the last step.
 
 `abuild()` is the async twin. It runs `build()` in a worker thread and then attaches the tools of the [integrations](/docs/concepts#integration) connected to the data set, such as [MCP servers](/plugins/mcp). Each integration has ten seconds to answer. One that fails or times out contributes no tools for that turn, and the others are not affected.

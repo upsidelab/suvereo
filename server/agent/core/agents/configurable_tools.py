@@ -1,7 +1,8 @@
 import logging
+from collections.abc import Iterator
 
 from suvereo_common.agents import BaseAgent
-from suvereo_common.config import ToolConfig
+from suvereo_common.config import AgentToolConfig, ToolConfig
 from suvereo_common.tools.base import BaseTool
 from utils.functions import get_model_descriptor_default_value_from_class, get_model_descriptor_from_class_field
 
@@ -40,10 +41,14 @@ class ConfigurableTools:
     @classmethod
     def conflicts(cls, agent_class: type[BaseAgent]) -> list[str]:
         return [
-            f"Agent '{agent_class.AGENT_KEY}' and its executions define tool '{name}' with different settings "
+            f"Agent '{agent_class.AGENT_KEY}' or its executions or sub-agents define tool '{name}' with different settings "
             f"({', '.join(tool.__name__ for tool in tools)}); give the tools different NAMEs."
             for name, tools in cls._by_name(cls._tool_sets(agent_class)).items()
             if len({tool.CONFIGURATION_ARGS for tool in tools}) > 1
+        ] + [
+            f"Agent '{agent_class.AGENT_KEY}' reaches itself through its sub-agents "
+            f"({' -> '.join(agent.__name__ for agent in cycle)}); remove one of the agent tools."
+            for cycle in cls._sub_agent_cycles(agent_class)
         ]
 
     @staticmethod
@@ -72,8 +77,49 @@ class ConfigurableTools:
                 used_by.setdefault(name, []).append(user)
         return used_by
 
+    @classmethod
+    def _tool_sets(cls, agent_class: type[BaseAgent]) -> list[tuple[str, list[ToolConfig]]]:
+        own = cls._own_tool_sets(agent_class)
+        return own + cls._sub_agent_tool_sets(own, chain=(agent_class,))
+
+    @classmethod
+    def _sub_agent_tool_sets(
+        cls, tool_sets: list[tuple[str, list[ToolConfig]]], chain: tuple[type[BaseAgent], ...]
+    ) -> list[tuple[str, list[ToolConfig]]]:
+        found = []
+        for sub_agent in cls._sub_agents(tool_sets):
+            if sub_agent in chain:
+                continue
+            sub_agent_tools = [(f"Sub-agent {sub_agent.NAME}", sub_agent.TOOLS or [])]
+            found += sub_agent_tools + cls._sub_agent_tool_sets(sub_agent_tools, chain + (sub_agent,))
+        return found
+
+    @classmethod
+    def _sub_agent_cycles(cls, agent_class: type[BaseAgent]) -> list[tuple[type[BaseAgent], ...]]:
+        def walk(
+            tool_sets: list[tuple[str, list[ToolConfig]]], chain: tuple[type[BaseAgent], ...]
+        ) -> Iterator[tuple[type[BaseAgent], ...]]:
+            for sub_agent in cls._sub_agents(tool_sets):
+                if sub_agent in chain:
+                    yield chain + (sub_agent,)
+                else:
+                    yield from walk([("", sub_agent.TOOLS or [])], chain + (sub_agent,))
+
+        return list(walk(cls._own_tool_sets(agent_class), (agent_class,)))
+
     @staticmethod
-    def _tool_sets(agent_class: type[BaseAgent]) -> list[tuple[str, list[ToolConfig]]]:
+    def _sub_agents(tool_sets: list[tuple[str, list[ToolConfig]]]) -> list[type[BaseAgent]]:
+        return list(
+            dict.fromkeys(
+                tool_config.agent_class
+                for _, tool_configs in tool_sets
+                for tool_config in tool_configs
+                if isinstance(tool_config, AgentToolConfig)
+            )
+        )
+
+    @staticmethod
+    def _own_tool_sets(agent_class: type[BaseAgent]) -> list[tuple[str, list[ToolConfig]]]:
         agent_tools = agent_class.TOOLS or []
         try:
             executions = AgenticExecutionDefinitionRegistry().get_by_agent_type(agent_class.AGENT_KEY)

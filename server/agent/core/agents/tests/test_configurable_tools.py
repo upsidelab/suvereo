@@ -1,9 +1,10 @@
 from unittest.mock import patch
 
 import pytest
-from pydantic import Field
-from suvereo_common.config import FunctionToolConfig
-from suvereo_common.tools import BaseFunctionTool
+from pydantic import BaseModel, Field
+from suvereo_common.agents import BaseAgent
+from suvereo_common.config import AgentToolConfig, FunctionToolConfig
+from suvereo_common.tools import BaseAgentTool, BaseFunctionTool
 from suvereo_common.utils import RequiredFieldsModel
 
 from agent.agentic_execution.checks import check_tool_settings_conflicts
@@ -59,6 +60,62 @@ class Clashes:
     AGENT_KEY = "stub"
     NAME = "Clashes"
     TOOLS = [FunctionToolConfig(tool_class=ClashingTool)]
+
+
+class AskTool(BaseAgentTool):
+    NAME = "ask"
+    DESCRIPTION = "Asks a sub-agent"
+    ARGS_SCHEMA = BaseModel
+    RETURN_DIRECT = False
+
+    def run(self):
+        return ""
+
+
+class SubAgent(BaseAgent):
+    AGENT_KEY = "sub"
+    NAME = "Research"
+    SYSTEM_PROMPT = "Research."
+
+    def get_answer(self, input_text: str) -> str:
+        return input_text
+
+    async def aget_answer(self, input_text: str) -> str:
+        return input_text
+
+
+class ResearchAgent(SubAgent):
+    TOOLS = [FunctionToolConfig(tool_class=TokenTool), FunctionToolConfig(tool_class=StopTool)]
+
+
+class ReviewAgent(SubAgent):
+    NAME = "Review"
+    TOOLS = [AgentToolConfig(tool_class=AskTool, agent_class=ResearchAgent)]
+
+
+class ClashingSubAgent(SubAgent):
+    NAME = "Clashing"
+    TOOLS = [FunctionToolConfig(tool_class=ClashingTool)]
+
+
+class LoopAgent(SubAgent):
+    NAME = "Loop"
+
+
+class OtherLoopAgent(SubAgent):
+    NAME = "Other loop"
+    TOOLS = [AgentToolConfig(tool_class=AskTool, agent_class=LoopAgent)]
+
+
+LoopAgent.TOOLS = [AgentToolConfig(tool_class=AskTool, agent_class=OtherLoopAgent)]
+
+
+def agent_with(*tools) -> type:
+    return type("Parent", (), {"AGENT_KEY": "stub", "TOOLS": [FunctionToolConfig(tool_class=ProxiedTool), *tools]})
+
+
+def ask(agent_class: type[BaseAgent]) -> AgentToolConfig:
+    return AgentToolConfig(tool_class=AskTool, agent_class=agent_class)
 
 
 @pytest.fixture
@@ -118,6 +175,48 @@ class TestConfigurableTools:
         executions.return_value = [KeepsAgentTools]
 
         assert ConfigurableTools.conflicts(StubAgent) == []
+
+
+class TestSubAgentTools:
+    def test_a_sub_agents_configurable_tools_are_configured_on_the_agent(self, executions):
+        assert ConfigurableTools.for_agent(agent_with(ask(ResearchAgent))) == {
+            "proxied": ProxiedTool,
+            "token_tool": TokenTool,
+        }
+
+    def test_the_schema_lists_the_sub_agent_as_a_user_of_its_tools(self, executions):
+        schema = ConfigurableTools.schema(agent_with(ask(ResearchAgent)))
+
+        assert schema["token_tool"]["used_by"] == ["Sub-agent Research"]
+
+    def test_defaults_cover_the_sub_agents_tools(self, executions):
+        assert ConfigurableTools.defaults(agent_with(ask(ResearchAgent))) == {
+            "proxied": {"proxy": ""},
+            "token_tool": {},
+        }
+
+    def test_the_tools_of_a_sub_agents_sub_agent_count_too(self, executions):
+        schema = ConfigurableTools.schema(agent_with(ask(ReviewAgent)))
+
+        assert schema["token_tool"]["used_by"] == ["Sub-agent Research"]
+
+    def test_a_sub_agent_of_an_execution_counts_too(self, executions):
+        executions.return_value = [type("Delegates", (), {"NAME": "Delegates", "TOOLS": [ask(ResearchAgent)]})]
+
+        assert "token_tool" in ConfigurableTools.for_agent(StubAgent)
+
+    def test_a_sub_agent_tool_named_like_one_of_the_agent_with_other_settings_is_a_conflict(self, executions):
+        [conflict] = ConfigurableTools.conflicts(agent_with(ask(ClashingSubAgent)))
+
+        assert "'proxied'" in conflict and "ClashingTool" in conflict
+
+    def test_sub_agents_that_reach_back_to_each_other_are_a_conflict(self, executions):
+        [conflict] = ConfigurableTools.conflicts(agent_with(ask(LoopAgent)))
+
+        assert "Parent -> LoopAgent -> OtherLoopAgent -> LoopAgent" in conflict
+
+    def test_sub_agents_that_reach_back_to_each_other_are_walked_once(self, executions):
+        assert ConfigurableTools.for_agent(agent_with(ask(LoopAgent))) == {"proxied": ProxiedTool}
 
 
 class TestToolSettingsConflictsCheck:
