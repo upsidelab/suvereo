@@ -26,7 +26,7 @@ class TestFileUploadStatusView:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    @patch("agent.task_status.views.AsyncResult")
+    @patch("utils.views.task_status.AsyncResult")
     def test_get_status_success_for_owner(self, mock_async_result, api_client, url, conversation):
         mock_result = MagicMock()
         mock_result.status = TaskStatus.SUCCESS
@@ -52,7 +52,7 @@ class TestFileUploadStatusView:
         assert response.data["result"]["file_id"] == 123
         assert response.data["result"]["uploaded_file"]["filename"] == "test.txt"
 
-    @patch("agent.task_status.views.AsyncResult")
+    @patch("utils.views.task_status.AsyncResult")
     def test_get_status_success_for_view_all_holder(self, mock_async_result, api_client, user, url):
         someone_elses_conversation = baker.make(Conversation)
         assign_role(
@@ -76,7 +76,7 @@ class TestFileUploadStatusView:
         assert response.data["status"] == TaskStatus.SUCCESS
         assert response.data["result"]["file_id"] == 123
 
-    @patch("agent.task_status.views.AsyncResult")
+    @patch("utils.views.task_status.AsyncResult")
     def test_get_status_success_masked_for_non_owner(self, mock_async_result, api_client, url):
         someone_elses_conversation = baker.make(Conversation)
         mock_result = MagicMock()
@@ -95,7 +95,7 @@ class TestFileUploadStatusView:
         assert response.data["status"] == TaskStatus.PENDING
         assert "result" not in response.data
 
-    @patch("agent.task_status.views.AsyncResult")
+    @patch("utils.views.task_status.AsyncResult")
     def test_get_status_success_masked_for_wrong_task_type(self, mock_async_result, api_client, url, conversation):
         mock_result = MagicMock()
         mock_result.status = TaskStatus.SUCCESS
@@ -112,7 +112,7 @@ class TestFileUploadStatusView:
         assert response.data["status"] == TaskStatus.PENDING
         assert "result" not in response.data
 
-    @patch("agent.task_status.views.AsyncResult")
+    @patch("utils.views.task_status.AsyncResult")
     def test_get_status_success_masked_for_unrecognised_result_shape(self, mock_async_result, api_client, url):
         mock_result = MagicMock()
         mock_result.status = TaskStatus.SUCCESS
@@ -125,7 +125,7 @@ class TestFileUploadStatusView:
         assert response.data["status"] == TaskStatus.PENDING
         assert "result" not in response.data
 
-    @patch("agent.task_status.views.AsyncResult")
+    @patch("utils.views.task_status.AsyncResult")
     def test_get_status_failure(self, mock_async_result, api_client, url):
         mock_result = MagicMock()
         mock_result.status = TaskStatus.FAILURE
@@ -139,7 +139,7 @@ class TestFileUploadStatusView:
         assert response.data["status"] == TaskStatus.FAILURE
         assert "error" in response.data["result"]
 
-    @patch("agent.task_status.views.AsyncResult")
+    @patch("utils.views.task_status.AsyncResult")
     def test_get_status_pending(self, mock_async_result, api_client, url):
         mock_result = MagicMock()
         mock_result.status = TaskStatus.PENDING
@@ -152,7 +152,7 @@ class TestFileUploadStatusView:
         assert response.data["task_id"] == "fake-task-id"
         assert response.data["status"] == TaskStatus.PENDING
 
-    @patch("agent.task_status.views.AsyncResult")
+    @patch("utils.views.task_status.AsyncResult")
     def test_get_status_exception_returns_500(self, mock_async_result, api_client, url):
         mock_async_result.side_effect = Exception("Celery error")
 
@@ -175,7 +175,7 @@ class TestMessagePushStatusView:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    @patch("agent.task_status.views.AsyncResult")
+    @patch("utils.views.task_status.AsyncResult")
     def test_get_status_success_for_owner(self, mock_async_result, api_client, url, conversation):
         mock_result = MagicMock()
         mock_result.status = TaskStatus.SUCCESS
@@ -190,7 +190,7 @@ class TestMessagePushStatusView:
         assert response.data["result"]["conversation_id"] == conversation.id
         assert response.data["result"]["message_id"] == 123
 
-    @patch("agent.task_status.views.AsyncResult")
+    @patch("utils.views.task_status.AsyncResult")
     def test_get_status_success_for_view_all_holder(self, mock_async_result, api_client, user, url):
         someone_elses_conversation = baker.make(Conversation)
         assign_role(
@@ -213,7 +213,7 @@ class TestMessagePushStatusView:
         assert response.data["status"] == TaskStatus.SUCCESS
         assert response.data["result"]["message_id"] == 123
 
-    @patch("agent.task_status.views.AsyncResult")
+    @patch("utils.views.task_status.AsyncResult")
     def test_get_status_success_masked_for_non_owner(self, mock_async_result, api_client, url):
         someone_elses_conversation = baker.make(Conversation)
         mock_result = MagicMock()
@@ -231,7 +231,7 @@ class TestMessagePushStatusView:
         assert response.data["status"] == TaskStatus.PENDING
         assert "result" not in response.data
 
-    @patch("agent.task_status.views.AsyncResult")
+    @patch("utils.views.task_status.AsyncResult")
     def test_get_status_success_masked_for_wrong_task_type(self, mock_async_result, api_client, url, conversation):
         mock_result = MagicMock()
         mock_result.status = TaskStatus.SUCCESS
@@ -244,7 +244,7 @@ class TestMessagePushStatusView:
         assert response.data["status"] == TaskStatus.PENDING
         assert "result" not in response.data
 
-    @patch("agent.task_status.views.AsyncResult")
+    @patch("utils.views.task_status.AsyncResult")
     def test_get_status_failure(self, mock_async_result, api_client, url):
         mock_result = MagicMock()
         mock_result.status = TaskStatus.FAILURE
@@ -258,7 +258,7 @@ class TestMessagePushStatusView:
         assert response.data["status"] == TaskStatus.FAILURE
         assert "error" in response.data["result"]
 
-    @patch("agent.task_status.views.AsyncResult")
+    @patch("utils.views.task_status.AsyncResult")
     def test_get_status_pending(self, mock_async_result, api_client, url):
         mock_result = MagicMock()
         mock_result.status = TaskStatus.PENDING
@@ -271,7 +271,7 @@ class TestMessagePushStatusView:
         assert response.data["task_id"] == "fake-task-id"
         assert response.data["status"] == TaskStatus.PENDING
 
-    @patch("agent.task_status.views.AsyncResult")
+    @patch("utils.views.task_status.AsyncResult")
     def test_get_status_exception_returns_500(self, mock_async_result, api_client, url):
         mock_async_result.side_effect = Exception("Celery error")
 

@@ -35,6 +35,7 @@ urlpatterns = [
     path("api/docs/", schema_view.with_ui("swagger", cache_timeout=0), name="schema-swagger-ui"),
     path("", include("catalog.urls")),
     path("", include("catalog.integrations.urls")),
+    path("", include("catalog.task_status.urls")),
     path("", include("agent.urls")),
     path("", include("agent.agentic_execution.urls")),
     path("", include("agent.task_status.urls")),
