@@ -10,6 +10,12 @@ from agent.models import Conversation
 from catalog.models import DataSet
 
 
+@pytest.fixture(autouse=True)
+def local_memory_cache():
+    with override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}):
+        yield
+
+
 @pytest.fixture
 def user():
     return baker.make(User)

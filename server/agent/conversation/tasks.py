@@ -10,6 +10,7 @@ from django.utils import timezone
 from agent.conversation.manager import ConversationManager
 from agent.conversation.serializers import ConversationFileSerializer
 from agent.conversation.services import FileParsingService
+from agent.conversation.turn_lock import ConversationTurnLock
 from agent.core.callbacks import BaseWebSocketHandler
 from agent.models import Message
 from agent.models.conversation import Conversation, ConversationFile
@@ -33,10 +34,15 @@ class TaskStatus(StrEnum):
 class SaveMessageOnFailureTask(Task):
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         conversation_id = kwargs.get("conversation_id")
-        data_set_id = kwargs.get("data_set_id")
-        user_id = kwargs.get("user_id")
-        message = kwargs.get("message")
+        try:
+            self._save_failed_turn(
+                conversation_id, kwargs.get("data_set_id"), kwargs.get("user_id"), kwargs.get("message"), exc
+            )
+        finally:
+            ConversationTurnLock(conversation_id).release()
 
+    @staticmethod
+    def _save_failed_turn(conversation_id: int, data_set_id: int, user_id: int, message: str, exc: Exception) -> None:
         Message.objects.create(
             conversation_id=conversation_id,
             created_at=datetime.now(),
@@ -64,6 +70,7 @@ def respond_to_user_message_task(
             message=message,
             streaming=streaming,
         )
+        ConversationTurnLock(conversation_id).release()
         if streaming:
             channel_layer = get_channel_layer()
             group_name = f"conversation_{conversation_id}"
