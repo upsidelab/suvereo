@@ -1,5 +1,5 @@
 import io
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from model_bakery import baker
@@ -66,8 +66,7 @@ def _make_file(name="doc.pdf", content=b"data", content_type="application/pdf"):
 class TestStart:
     @pytest.fixture(autouse=True)
     def mock_task(self):
-        with patch("agent.agentic_execution.services.run_agentic_execution_task.delay") as mock:
-            mock.return_value = MagicMock(id="fake-celery-id")
+        with patch("agent.agentic_execution.services.run_agentic_execution_task.apply_async") as mock:
             yield mock
 
     def test_creates_conversation_linked_to_agent_and_user(self, service, agent, user):
@@ -84,15 +83,34 @@ class TestStart:
         assert execution.execution_key == "dummy"
         assert execution.status == AgenticExecution.Status.PENDING
 
-    def test_stores_celery_task_id(self, service, agent, user):
-        execution = service.start(agent=agent, user=user, execution_key="dummy", validated_input={}, uploaded_files=[])
+    def test_enqueues_task_with_execution_id_under_the_stored_task_id(
+        self, service, agent, user, mock_task, django_capture_on_commit_callbacks
+    ):
+        with django_capture_on_commit_callbacks(execute=True):
+            execution = service.start(agent=agent, user=user, execution_key="dummy", validated_input={}, uploaded_files=[])
 
-        assert execution.celery_task_id == "fake-celery-id"
+        mock_task.assert_called_once_with(args=(execution.pk,), task_id=execution.celery_task_id)
+        assert AgenticExecution.objects.get(pk=execution.pk).celery_task_id == execution.celery_task_id
 
-    def test_enqueues_task_with_execution_id(self, service, agent, user, mock_task):
-        execution = service.start(agent=agent, user=user, execution_key="dummy", validated_input={}, uploaded_files=[])
+    def test_enqueues_task_only_once_the_transaction_commits(
+        self, service, agent, user, mock_task, django_capture_on_commit_callbacks
+    ):
+        with django_capture_on_commit_callbacks(execute=False):
+            service.start(agent=agent, user=user, execution_key="dummy", validated_input={}, uploaded_files=[])
 
-        mock_task.assert_called_once_with(execution.pk)
+        mock_task.assert_not_called()
+
+    def test_marks_the_execution_failed_when_it_cannot_be_queued(
+        self, service, agent, user, mock_task, django_capture_on_commit_callbacks
+    ):
+        mock_task.side_effect = ConnectionError("broker down")
+
+        with django_capture_on_commit_callbacks(execute=True):
+            execution = service.start(agent=agent, user=user, execution_key="dummy", validated_input={}, uploaded_files=[])
+
+        execution.refresh_from_db()
+        assert execution.status == AgenticExecution.Status.FAILED
+        assert "broker down" in execution.failure_explanation
 
     def test_raises_when_files_sent_to_non_file_upload_agent(self, service, user, dataset):
         non_upload_agent = baker.make(Agent, deleted_at=None, dataset=dataset, file_upload=False)

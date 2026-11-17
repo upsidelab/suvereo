@@ -108,7 +108,7 @@ export function AgenticExecutionDetailPage() {
 
         {isRunning && (
           <div className="text-sm text-muted-foreground animate-pulse">
-            Running…
+            {execution.status === "pending" ? "Waiting to start…" : "Running…"}
           </div>
         )}
 

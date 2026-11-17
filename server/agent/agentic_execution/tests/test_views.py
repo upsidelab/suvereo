@@ -461,8 +461,7 @@ class TestStartAgenticExecutionView:
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_happy_path_returns_202_with_execution_data(self, api_client, url, user, agent, dataset):
-        with patch("agent.agentic_execution.views.AgenticExecutionService.start") as mock_start, \
-             patch("agent.agentic_execution.services.run_agentic_execution_task.delay"):
+        with patch("agent.agentic_execution.views.AgenticExecutionService.start") as mock_start:
             conversation = baker.make(Conversation, user=user, agent=agent, data_set=dataset)
             baker.make("agent.ConversationFile", conversation=conversation, is_hidden=False)
             execution = baker.make(AgenticExecution, agent=agent, conversation=conversation, input={"required_field": "hello"})
@@ -474,8 +473,7 @@ class TestStartAgenticExecutionView:
         assert response.status_code == status.HTTP_202_ACCEPTED
 
     def test_happy_path_passes_correct_args_to_service(self, api_client, url, agent, user):
-        with patch("agent.agentic_execution.views.AgenticExecutionService.start") as mock_start, \
-             patch("agent.agentic_execution.services.run_agentic_execution_task.delay"):
+        with patch("agent.agentic_execution.views.AgenticExecutionService.start") as mock_start:
             mock_start.return_value = baker.make(AgenticExecution, agent=agent, execution_key="dummy")
             api_client.post(
                 url, {"execution_key": "dummy", "input": {"required_field": "hello"}}, format="json"
@@ -534,8 +532,7 @@ class TestStartAgenticExecutionView:
         holder = baker.make(User, is_superuser=False)
         grant(holder, PERMISSIONS.AGENTIC_EXECUTION.CREATE)
 
-        with patch("agent.agentic_execution.views.AgenticExecutionService.start") as mock_start, \
-             patch("agent.agentic_execution.services.run_agentic_execution_task.delay"):
+        with patch("agent.agentic_execution.views.AgenticExecutionService.start") as mock_start:
             mock_start.return_value = baker.make(AgenticExecution, agent=agent, execution_key="dummy")
             response = _client_for(holder).post(
                 url, {"execution_key": "dummy", "input": {"required_field": "hello"}}, format="json"
