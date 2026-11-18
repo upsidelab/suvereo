@@ -62,6 +62,8 @@ Authorization: Token <API_TOKEN>
 
 The message is processed asynchronously, and `task_id` identifies the processing. The conversation of an agent that has been deleted, and the conversation of an agentic execution, reject new messages with 400.
 
+A conversation answers one message at a time. A message sent while the previous one is still being answered is rejected with `409 Conflict`; send it once the processing status is `SUCCESS` or `FAILURE`.
+
 ## Check the Processing Status
 
 ```http

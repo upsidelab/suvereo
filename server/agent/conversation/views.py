@@ -29,6 +29,7 @@ from agent.conversation.serializers import (
 )
 from agent.conversation.services import ConversationFileMessageService
 from agent.conversation.tasks import process_file_upload_task, respond_to_user_message_task
+from agent.conversation.turn_lock import ConversationTurnLock
 from agent.core.registries.agents.agent_registry import AgentRegistry, AgentRegistryError
 from agent.core.registries.language_models import LanguageModelRegistry
 from agent.core.repositories import DjangoDataSetRepository
@@ -84,28 +85,39 @@ class ConversationView(APIView):
         if conversation.agent.deleted_at is not None or hasattr(conversation, "agentic_execution"):
             return Response({"detail": "Conversation locked."}, status=status.HTTP_400_BAD_REQUEST)
 
-        if file_ids := serializer.validated_data.get("file_ids"):
-            files = ConversationFile.objects.filter(conversation_id=conversation_id, pk__in=file_ids, is_hidden=True)
-            for file in files:
-                ConversationFileMessageService.create_for_file(file)
-                file.is_hidden = False
-                file.save()
+        turn_lock = ConversationTurnLock(conversation_id)
+        if not turn_lock.acquire():
+            return Response(
+                {"detail": "The previous message is still being answered."}, status=status.HTTP_409_CONFLICT
+            )
+        try:
+            if file_ids := serializer.validated_data.get("file_ids"):
+                files = ConversationFile.objects.filter(
+                    conversation_id=conversation_id, pk__in=file_ids, is_hidden=True
+                )
+                for file in files:
+                    ConversationFileMessageService.create_for_file(file)
+                    file.is_hidden = False
+                    file.save()
 
-        data_set_id = serializer.validated_data.get("data_set_id")
-        question_message = serializer.validated_data.get("question_message")
-        data_set = Conversation.objects.get(id=conversation_id).data_set
-        data_set_repo = DjangoDataSetRepository(DataSet)
-        language_model_provider_class = LanguageModelRegistry(data_set_repo).provider_for_dataset(data_set.id)
-        streaming = language_model_provider_class.STREAMING_AVAILABLE and serializer.validated_data.get("streaming")
-        task = respond_to_user_message_task.apply_async(
-            kwargs={
-                "conversation_id": conversation_id,
-                "data_set_id": data_set_id,
-                "user_id": request.user.id,
-                "message": question_message,
-                "streaming": streaming,
-            }
-        )
+            data_set_id = serializer.validated_data.get("data_set_id")
+            question_message = serializer.validated_data.get("question_message")
+            data_set = Conversation.objects.get(id=conversation_id).data_set
+            data_set_repo = DjangoDataSetRepository(DataSet)
+            language_model_provider_class = LanguageModelRegistry(data_set_repo).provider_for_dataset(data_set.id)
+            streaming = language_model_provider_class.STREAMING_AVAILABLE and serializer.validated_data.get("streaming")
+            task = respond_to_user_message_task.apply_async(
+                kwargs={
+                    "conversation_id": conversation_id,
+                    "data_set_id": data_set_id,
+                    "user_id": request.user.id,
+                    "message": question_message,
+                    "streaming": streaming,
+                }
+            )
+        except Exception:
+            turn_lock.release()
+            raise
 
         return Response(
             {"task_id": task.id, "streaming": streaming},
