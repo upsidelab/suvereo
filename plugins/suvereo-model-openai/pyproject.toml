@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "suvereo-model-openai"
-version = "1.0.0"
+version = "1.0.1"
 description = "A plugin for Suvereo that provides an OpenAI connector."
 authors = ["Rafal Cymerys <rafal@upsidelab.io>"]
 readme = "README.md"
@@ -9,8 +9,8 @@ readme = "README.md"
 langchain-core = "^1.2"
 python = "^3.10"
 suvereo-common = ">=1.0.0,<2"
-openai = "^1.86.0"
-langchain-openai = "^1.1"
+openai = "^2.45.0"
+langchain-openai = ">=1.7.4,<1.8"
 
 
 [build-system]

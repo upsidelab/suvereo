@@ -2,7 +2,8 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, AIMessageChunk
+from langchain_core.outputs import ChatGenerationChunk
 from langchain_core.tools import tool
 
 from agent.core.callbacks import ConversationWebSocketCallbackHandler
@@ -53,3 +54,28 @@ class TestConversationWebSocketCallbackHandlerUnderAsyncRun:
             if call.args[1]["event"] == "stream"
         ]
         assert "".join(streamed) == "hello there"
+
+
+class TestConversationWebSocketCallbackHandlerContentBlocks:
+    """Models that stream content blocks (e.g. OpenAI's Responses API) hand ``on_llm_new_token`` a list of
+    blocks instead of a string; only their text may reach the WebSocket."""
+
+    @staticmethod
+    def _stream(handler, blocks: list) -> None:
+        handler.on_llm_new_token(blocks, chunk=ChatGenerationChunk(message=AIMessageChunk(content=blocks)))
+
+    @patch("agent.core.callbacks.base_websocket_handler.get_channel_layer")
+    def test_only_text_of_content_blocks_is_streamed(self, mock_get_channel_layer):
+        channel_layer = MagicMock()
+        channel_layer.group_send = AsyncMock()
+        mock_get_channel_layer.return_value = channel_layer
+        handler = ConversationWebSocketCallbackHandler(conversation_id=1)
+
+        self._stream(handler, [{"type": "function_call", "name": "ping_tool", "arguments": "", "index": 0}])
+        self._stream(handler, [{"type": "text", "text": "", "index": 0}])
+        self._stream(handler, [{"type": "text", "text": "hello", "index": 0}])
+        self._stream(handler, [{"type": "text", "text": " there", "index": 0}])
+
+        streamed = [call.args[1]["token"] for call in channel_layer.group_send.await_args_list]
+        assert streamed == ["hello", " there"]
+
