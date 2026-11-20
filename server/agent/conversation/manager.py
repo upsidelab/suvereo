@@ -120,6 +120,6 @@ class ConversationManager:
         Message.objects.create(
             conversation=conversation,
             created_at=datetime.now(),
-            type=Message.MessageType.SYSTEM,
+            type=Message.MessageType.NOTICE,
             text=self.DEFAULT_ERROR_MESSAGE,
         )

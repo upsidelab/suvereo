@@ -31,7 +31,7 @@ export type FileMessageProps = {
 };
 
 export type MessageProps = {
-  type: "human" | "ai" | "system";
+  type: "human" | "ai" | "notice";
   text: string;
   id: number | null;
 } | FileMessageProps;
@@ -179,7 +179,7 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
         setStatusText(DEFAULT_STATUS_TEXT);
         setMessages((prevMessages) => [
           ...prevMessages,
-          { type: "system", text: data.data.output, id: null },
+          { type: "notice", text: data.data.output, id: null },
         ]);
       },
     };
@@ -257,7 +257,7 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
         setIsAgentLoading(false);
         setMessages((prev) => [
           ...prev,
-          { type: response.type === "system" ? "system" : "ai", text: response.text, id: response.id }
+          { type: response.type === "notice" ? "notice" : "ai", text: response.text, id: response.id }
         ]);
         setIsLoading(false);
         scrollToLastMessage();
@@ -304,7 +304,7 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
       setIsAgentLoading(false);
       setMessages((prev) => [
         ...prev,
-        { type: "system", text: "You don't have permission to converse in this data set", id: null },
+        { type: "notice", text: "You don't have permission to converse in this data set", id: null },
       ]);
       return;
     }
@@ -360,7 +360,7 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
               {messages.map((message, index) => {
                 const inMessageGroup = isUserMessage(message) && index > 0 && isUserMessage(messages[index - 1]);
 
-                if (message.type === "system") {
+                if (message.type === "notice") {
                   return (
                     <MessageError key={index} text={message.text} />
                   );

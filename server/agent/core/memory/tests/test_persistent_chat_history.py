@@ -169,23 +169,6 @@ class TestPersistentChatHistory:
         assert ai_with_tool_calls[1].tool_calls[0]["id"] == "call_1"
         assert tool_messages[1].tool_call_id == "call_1"
 
-    def test_messages_property_excludes_failed_messages(self, conversation):
-        # Given
-        history = PersistentChatHistory(
-            conversation_repo=DjangoConversationRepository(Conversation),
-            conversation_id=conversation.id,
-        )
-        history.add_message(HumanMessage(content="Will fail"))
-        conversation.messages.filter(type=Message.MessageType.HUMAN).update(answer_failed=True)
-        history.add_message(HumanMessage(content="Will succeed"))
-
-        # When
-        messages = history.messages
-
-        # Then
-        assert len(messages) == 1
-        assert messages[0].content == "Will succeed"
-
     def test_clear(self, conversation):
         # Given
         history = PersistentChatHistory(
@@ -213,5 +196,21 @@ class TestPersistentChatHistory:
 
         # Then
         assert len(messages) == 1
-        assert isinstance(messages[0], SystemMessage)
-        assert messages[0].content == "An error occurred"
+        assert isinstance(messages[0], AIMessage)
+        assert messages[0].content == "[Notice shown to the user: An error occurred]"
+
+    def test_messages_property_keeps_failed_turn_with_its_notice(self, conversation):
+        # Given
+        history = PersistentChatHistory(
+            conversation_repo=DjangoConversationRepository(Conversation),
+            conversation_id=conversation.id,
+        )
+        conversation.messages.create(type="human", text="hi", answer_failed=True)
+        history.add_message(SystemMessage(content="An error occurred"))
+
+        # When
+        messages = history.messages
+
+        # Then
+        assert [m.type for m in messages] == ["human", "ai"]
+        assert history.last_message_database_id == conversation.messages.order_by("id").last().id

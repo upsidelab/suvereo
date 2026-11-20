@@ -9,7 +9,7 @@ class Message(models.Model):
         FUNCTION = "function"
         HUMAN = "human"
         AI = "ai"
-        SYSTEM = "system"
+        NOTICE = "notice"
         INTERMEDIATE_STEP = "intermediate_step"
         FILE = "file"
 
@@ -39,7 +39,7 @@ class Message(models.Model):
             self.MessageType.INTERMEDIATE_STEP: "ai",
             self.MessageType.HUMAN: "human",
             self.MessageType.AI: "ai",
-            self.MessageType.SYSTEM: "system",
+            self.MessageType.NOTICE: "ai",
         }
         return langchain_type_mapping[self.type]
 
