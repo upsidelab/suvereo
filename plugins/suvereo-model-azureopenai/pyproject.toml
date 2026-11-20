@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "suvereo-model-azureopenai"
-version = "1.0.0"
+version = "2.0.1"
 description = "A plugin for Suvereo that provides an OpenAI connector."
 authors = ["Damian Sowiński <damian.sowinski@upsidelab.io>"]
 readme = "README.md"
