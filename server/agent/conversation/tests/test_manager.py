@@ -307,7 +307,7 @@ class TestConversationManager:
         user_message.refresh_from_db()
         assert conversation.messages.count() == 2
         error_message = conversation.messages.last()
-        assert error_message.type == Message.MessageType.SYSTEM
+        assert error_message.type == Message.MessageType.NOTICE
         assert error_message.text == "We couldn't process your request at this time"
         assert error_message.created_at is not None
         assert user_message.answer_failed is True
@@ -396,5 +396,5 @@ class TestConversationManager:
 
             # Verify error message was created
             latest_message = conversation.messages.order_by("-created_at").first()
-            assert latest_message.type == Message.MessageType.SYSTEM
+            assert latest_message.type == Message.MessageType.NOTICE
             assert latest_message.text == "We couldn't process your request at this time"

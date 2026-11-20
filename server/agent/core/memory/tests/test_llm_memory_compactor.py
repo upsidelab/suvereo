@@ -2,10 +2,10 @@ from unittest.mock import MagicMock
 
 import pytest
 from django.contrib.auth import get_user_model
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from model_bakery import baker
 
-from agent.core.memory.llm_memory_compactor import COMPACTION_INTERVAL, LLMMemoryCompactor
+from agent.core.memory.llm_memory_compactor import COMPACTION_INTERVAL, TOOL_RESULT_MAX_CHARACTERS, LLMMemoryCompactor
 from agent.core.memory.persistent_chat_history import PersistentChatHistory
 from agent.core.repositories import DjangoConversationRepository
 from agent.models import Agent, Conversation, Message
@@ -133,25 +133,51 @@ class TestLLMMemoryCompactorCompactIfNeeded:
         assert conversation.last_summarized_message_id == db_message_2.id
         llm.invoke.assert_called_once()
 
-    def test_first_compaction_sends_full_history(self, conversation, compactor, llm, chat_history):
+    def test_first_compaction_sends_transcript_as_single_human_message(
+        self, conversation, compactor, llm, chat_history
+    ):
         db_message = baker.make(Message, conversation=conversation, type=Message.MessageType.HUMAN, text="Hello")
         messages = [HumanMessage(content=f"msg {i}") for i in range(COMPACTION_INTERVAL)]
-        messages += [AIMessage(content="response") for _ in range(COMPACTION_INTERVAL)]
+        messages += [AIMessage(content="response")]
         chat_history.messages_after.return_value = messages
         chat_history.last_message_database_id = db_message.id
 
         compactor.compact_if_needed()
 
         call_args = llm.invoke.call_args[0][0]
+        assert len(call_args) == 2
         assert isinstance(call_args[0], SystemMessage)
-        # First message after the prompt should be the first content message, not an existing summary
         assert isinstance(call_args[1], HumanMessage)
-        assert "msg 0" in call_args[1].content
-        # No "Existing summary:" HumanMessage injected — this is the initial compaction
-        assert not any(
-            isinstance(m, HumanMessage) and "Existing summary" in m.content
-            for m in call_args
-        )
+        assert "User: msg 0" in call_args[1].content
+        assert call_args[1].content.index("Assistant: response") > call_args[1].content.index("User: msg 9")
+        assert "<existing_summary>" not in call_args[1].content
+
+    def test_transcript_renders_tool_calls_and_truncates_tool_results(
+        self, conversation, compactor, llm, chat_history
+    ):
+        db_message = baker.make(Message, conversation=conversation, type=Message.MessageType.HUMAN, text="Hello")
+        messages = _make_langchain_messages(human_count=COMPACTION_INTERVAL - 1)
+        messages += [
+            HumanMessage(content="Find shoes"),
+            AIMessage(content="Invoking...", tool_calls=[{"id": "1", "name": "search", "args": {}}]),
+            ToolMessage(content="x" * (TOOL_RESULT_MAX_CHARACTERS + 50), tool_call_id="1", name="search"),
+            AIMessage(
+                content="[Notice shown to the user: We couldn't process your request at this time]",
+                additional_kwargs={"origin": "notice"},
+            ),
+        ]
+        chat_history.messages_after.return_value = messages
+        chat_history.last_message_database_id = db_message.id
+
+        compactor.compact_if_needed()
+
+        content = llm.invoke.call_args[0][0][1].content
+        assert "[Tool call: search]" in content
+        assert "Invoking..." not in content
+        assert "[Tool result from search: " + "x" * TOOL_RESULT_MAX_CHARACTERS + "...]" in content
+        assert "x" * (TOOL_RESULT_MAX_CHARACTERS + 1) not in content
+        assert "\n[Notice shown to the user: We couldn't process" in content
+        assert "Assistant: [Notice" not in content
 
     def test_second_compaction_sends_only_new_messages_and_existing_summary(
         self, conversation, compactor, llm, chat_history
@@ -169,6 +195,7 @@ class TestLLMMemoryCompactorCompactIfNeeded:
         compactor.compact_if_needed()
 
         call_args = llm.invoke.call_args[0][0]
+        assert len(call_args) == 2
         assert isinstance(call_args[0], SystemMessage)
-        assert "Existing summary" in call_args[1].content
-        assert "This is a summary." in call_args[1].content
+        assert "<existing_summary>\nThis is a summary.\n</existing_summary>" in call_args[1].content
+        assert "<conversation>" in call_args[1].content

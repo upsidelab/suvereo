@@ -1,10 +1,13 @@
 from typing import Any, Dict, Optional
 
 from langchain_core.chat_history import BaseChatMessageHistory
-from langchain_core.messages import AIMessage, BaseMessage, ToolMessage, messages_from_dict
+from langchain_core.messages import AIMessage, BaseMessage, SystemMessage, ToolMessage, messages_from_dict
 from suvereo_common.repositories import BaseConversationRepository
 
 from agent.models import Message
+
+SYSTEM_NOTICE_TEMPLATE = "[Notice shown to the user: {text}]"
+NOTICE_ORIGIN = {"origin": "notice"}
 
 
 class PersistentChatHistory(BaseChatMessageHistory):
@@ -46,6 +49,8 @@ class PersistentChatHistory(BaseChatMessageHistory):
             self._create_intermediate_step_message(message)
         elif isinstance(message, ToolMessage):
             self.create_tool_message(message)
+        elif isinstance(message, SystemMessage):
+            self._conversation.messages.create(type=Message.MessageType.NOTICE, text=message.text)
         else:
             self._conversation.messages.create(
                 type=message.type,
@@ -73,16 +78,13 @@ class PersistentChatHistory(BaseChatMessageHistory):
 
     @property
     def messages(self) -> list[BaseMessage]:
-        messages = list(self._conversation.messages.filter(answer_failed=False).order_by("id"))
-        message_dicts = []
-        for msg in messages:
-            message_dicts.append(self._parse_message_to_dict(msg))
-        return messages_from_dict(message_dicts)
+        messages = list(self._conversation.messages.order_by("id"))
+        return messages_from_dict([self._parse_message_to_dict(m) for m in messages])
 
     @property
     def last_message_database_id(self) -> Optional[int]:
         """Return the DB primary key of the most recent message in this conversation, or None."""
-        last = self._conversation.messages.filter(answer_failed=False).order_by("id").last()
+        last = self._conversation.messages.order_by("id").last()
         return last.id if last else None
 
     def messages_after(self, message_id: Optional[int]) -> list[BaseMessage]:
@@ -91,7 +93,7 @@ class PersistentChatHistory(BaseChatMessageHistory):
         If message_id is None, returns all messages. Used by the memory compactor to fetch
         only messages that have not yet been included in the conversation summary.
         """
-        queryset = self._conversation.messages.filter(answer_failed=False).order_by("id")
+        queryset = self._conversation.messages.order_by("id")
         if message_id is not None:
             queryset = queryset.filter(id__gt=message_id)
         db_messages = list(queryset)
@@ -110,6 +112,14 @@ class PersistentChatHistory(BaseChatMessageHistory):
                 }
             case Message.MessageType.FUNCTION:
                 data = {"content": message.text, "name": message.function_name, "tool_call_id": message.tool_call_id}
+            case Message.MessageType.NOTICE:
+                return {
+                    "type": "ai",
+                    "data": {
+                        "content": SYSTEM_NOTICE_TEMPLATE.format(text=message.text),
+                        "additional_kwargs": dict(NOTICE_ORIGIN),
+                    },
+                }
         return {"type": message.langchain_type, "data": data}
 
     def clear(self) -> None:
