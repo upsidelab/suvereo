@@ -198,6 +198,7 @@ class TestPersistentChatHistory:
         assert len(messages) == 1
         assert isinstance(messages[0], AIMessage)
         assert messages[0].content == "[Notice shown to the user: An error occurred]"
+        assert messages[0].additional_kwargs == {"origin": "notice"}
 
     def test_messages_property_keeps_failed_turn_with_its_notice(self, conversation):
         # Given

@@ -7,6 +7,7 @@ from suvereo_common.repositories import BaseConversationRepository
 from agent.models import Message
 
 SYSTEM_NOTICE_TEMPLATE = "[Notice shown to the user: {text}]"
+NOTICE_ORIGIN = {"origin": "notice"}
 
 
 class PersistentChatHistory(BaseChatMessageHistory):
@@ -112,7 +113,13 @@ class PersistentChatHistory(BaseChatMessageHistory):
             case Message.MessageType.FUNCTION:
                 data = {"content": message.text, "name": message.function_name, "tool_call_id": message.tool_call_id}
             case Message.MessageType.NOTICE:
-                return {"type": "ai", "data": {"content": SYSTEM_NOTICE_TEMPLATE.format(text=message.text)}}
+                return {
+                    "type": "ai",
+                    "data": {
+                        "content": SYSTEM_NOTICE_TEMPLATE.format(text=message.text),
+                        "additional_kwargs": dict(NOTICE_ORIGIN),
+                    },
+                }
         return {"type": message.langchain_type, "data": data}
 
     def clear(self) -> None:
