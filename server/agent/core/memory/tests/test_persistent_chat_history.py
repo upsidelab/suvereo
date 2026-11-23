@@ -72,7 +72,7 @@ class TestPersistentChatHistory:
         assert stored.tool_call_args == {"query": "shoes"}
         assert stored.text == ""
 
-    def test_tool_calls_are_rebuilt_with_their_args_and_no_text(self, conversation):
+    def test_tool_calls_are_rebuilt_with_their_args(self, conversation):
         # Given
         history = PersistentChatHistory(
             conversation_repo=DjangoConversationRepository(Conversation),
@@ -90,28 +90,30 @@ class TestPersistentChatHistory:
         assert rebuilt.content == ""
         assert rebuilt.tool_calls[0]["args"] == {"query": "shoes"}
 
-    def test_legacy_invoking_text_is_not_replayed(self, conversation):
+    def test_narration_is_kept_once_on_the_first_of_parallel_tool_calls(self, conversation):
         # Given
-        baker.make(
-            Message,
-            conversation=conversation,
-            type=Message.MessageType.INTERMEDIATE_STEP,
-            text="Invoking `search_products` with `{'query': 'shoes'}`.",
-            function_name="search_products",
-            tool_call_id="call_abc",
-        )
         history = PersistentChatHistory(
             conversation_repo=DjangoConversationRepository(Conversation),
             conversation_id=conversation.id,
         )
+        message = AIMessage(
+            content="Let me check both.",
+            tool_calls=[
+                {"id": "call_1", "name": "search_products", "args": {}},
+                {"id": "call_2", "name": "search_documents", "args": {}},
+            ],
+        )
+        results = [
+            ToolMessage(content="3 products", tool_call_id="call_1", name="search_products"),
+            ToolMessage(content="2 documents", tool_call_id="call_2", name="search_documents"),
+        ]
 
         # When
-        rebuilt = history.messages[0]
+        history.add_messages([message, *results])
+        rebuilt = [m for m in history.messages if isinstance(m, AIMessage)]
 
         # Then
-        assert rebuilt.content == ""
-        assert rebuilt.tool_calls[0]["name"] == "search_products"
-        assert rebuilt.tool_calls[0]["args"] == {}
+        assert [m.content for m in rebuilt] == ["Let me check both.", ""]
 
     def test_add_tool_message_stored_as_function(self, conversation):
         # Given

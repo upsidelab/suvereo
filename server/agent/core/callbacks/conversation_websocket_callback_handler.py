@@ -19,7 +19,7 @@ class ConversationWebSocketCallbackHandler(BaseWebSocketHandler):
 
     def on_llm_end(self, response: LLMResult, **kwargs: Any) -> None:
         if self._requests_tool_calls(response):
-            self.send_message({"type": "chat_message", "event": "narration"})
+            self.send_message({"type": "chat_message", "event": "tool_call_narration_end"})
 
     def on_tool_start(self, serialized: dict, input_str: str, **kwargs: Any) -> None:
         tool_name = serialized.get("name", "tool")

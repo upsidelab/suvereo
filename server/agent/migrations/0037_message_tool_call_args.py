@@ -3,6 +3,11 @@
 from django.db import migrations, models
 
 
+def clear_invoking_texts(apps, schema_editor):
+    Message = apps.get_model("agent", "Message")
+    Message.objects.filter(type="intermediate_step", text__startswith="Invoking `").update(text="")
+
+
 class Migration(migrations.Migration):
     dependencies = [
         ("agent", "0036_rename_system_message_type_to_notice"),
@@ -14,4 +19,5 @@ class Migration(migrations.Migration):
             name="tool_call_args",
             field=models.JSONField(blank=True, null=True),
         ),
+        migrations.RunPython(clear_invoking_texts, migrations.RunPython.noop),
     ]

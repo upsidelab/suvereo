@@ -80,9 +80,7 @@ class TestConversationWebSocketCallbackHandlerContentBlocks:
         assert streamed == ["hello", " there"]
 
 
-class TestConversationWebSocketCallbackHandlerNarration:
-    """Text a model writes alongside tool calls is narration; the UI shows it as a step, not the answer."""
-
+class TestConversationWebSocketCallbackHandlerToolCallNarration:
     def _build_handler(self, mock_get_channel_layer):
         channel_layer = MagicMock()
         channel_layer.group_send = AsyncMock()
@@ -94,16 +92,16 @@ class TestConversationWebSocketCallbackHandlerNarration:
         return [call.args[1] for call in channel_layer.group_send.await_args_list]
 
     @patch("agent.core.callbacks.base_websocket_handler.get_channel_layer")
-    def test_a_model_call_ending_in_tool_calls_marks_its_text_as_narration(self, mock_get_channel_layer):
+    def test_a_model_call_ending_in_tool_calls_ends_the_narration(self, mock_get_channel_layer):
         handler, channel_layer = self._build_handler(mock_get_channel_layer)
         message = AIMessage(content="Let me check.", tool_calls=[{"id": "call_1", "name": "ping_tool", "args": {}}])
 
         handler.on_llm_end(LLMResult(generations=[[ChatGeneration(message=message)]]))
 
-        assert [event["event"] for event in self._events(channel_layer)] == ["narration"]
+        assert [event["event"] for event in self._events(channel_layer)] == ["tool_call_narration_end"]
 
     @patch("agent.core.callbacks.base_websocket_handler.get_channel_layer")
-    def test_a_final_answer_is_not_marked_as_narration(self, mock_get_channel_layer):
+    def test_a_final_answer_does_not_end_a_narration(self, mock_get_channel_layer):
         handler, channel_layer = self._build_handler(mock_get_channel_layer)
 
         handler.on_llm_end(LLMResult(generations=[[ChatGeneration(message=AIMessage(content="Done."))]]))

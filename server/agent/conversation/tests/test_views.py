@@ -246,6 +246,21 @@ class TestConversationView:
         assert response.status_code == status.HTTP_200_OK
         assert response.data["id"] == conversation.id
 
+    def test_get_history_includes_tool_call_narration_and_hides_tool_internals(self, api_client, conversation, url):
+        baker.make(Message, conversation=conversation, type=Message.MessageType.HUMAN, text="What time is it?")
+        baker.make(Message, conversation=conversation, type=Message.MessageType.INTERMEDIATE_STEP, text="Let me check.")
+        baker.make(Message, conversation=conversation, type=Message.MessageType.INTERMEDIATE_STEP, text="")
+        baker.make(Message, conversation=conversation, type=Message.MessageType.FUNCTION, text="14:05")
+        baker.make(Message, conversation=conversation, type=Message.MessageType.AI, text="It's 14:05.")
+
+        response = api_client.get(url)
+
+        assert [(m["type"], m["text"]) for m in response.data["history"]] == [
+            ("human", "What time is it?"),
+            ("intermediate_step", "Let me check."),
+            ("ai", "It's 14:05."),
+        ]
+
     def test_get_non_owner_without_view_all_gets_not_found(self, api_client, conversation, url):
         conversation.user = baker.make(User)
         conversation.save()

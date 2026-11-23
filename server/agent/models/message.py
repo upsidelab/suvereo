@@ -28,10 +28,6 @@ class Message(models.Model):
     file_name = models.CharField(max_length=256, blank=True, null=True)
     file_type = models.CharField(max_length=50, blank=True, null=True)
 
-    @classmethod
-    def internal_message_types(cls):
-        return [cls.MessageType.FUNCTION, cls.MessageType.INTERMEDIATE_STEP]
-
     @property
     def langchain_type(self):
         langchain_type_mapping = {

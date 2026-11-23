@@ -29,8 +29,9 @@ class PersistentChatHistory(BaseChatMessageHistory):
         tool_messages = {m.tool_call_id: m for m in messages if isinstance(m, ToolMessage)}
         for message in messages:
             if isinstance(message, AIMessage) and message.tool_calls:
-                for tool_call in message.tool_calls:
-                    self.add_message(AIMessage(content="", tool_calls=[tool_call]))
+                for index, tool_call in enumerate(message.tool_calls):
+                    narration = message.text if index == 0 else ""
+                    self.add_message(AIMessage(content=narration, tool_calls=[tool_call]))
                     if tool_call["id"] in tool_messages:
                         self.add_message(tool_messages[tool_call["id"]])
             elif isinstance(message, ToolMessage):
@@ -60,7 +61,7 @@ class PersistentChatHistory(BaseChatMessageHistory):
         for tool_call in message.tool_calls:
             self._conversation.messages.create(
                 type=Message.MessageType.INTERMEDIATE_STEP,
-                text="",
+                text=message.text,
                 function_name=tool_call["name"],
                 tool_call_id=tool_call["id"],
                 tool_call_args=tool_call["args"],
@@ -101,9 +102,8 @@ class PersistentChatHistory(BaseChatMessageHistory):
         data: Dict[str, Any] = {"content": message.text, "name": message.function_name}
         match message.type:
             case Message.MessageType.INTERMEDIATE_STEP:
-                # Older rows hold an "Invoking ..." text, which models copy as narration, so it is not replayed.
                 data = {
-                    "content": "",
+                    "content": message.text,
                     "tool_calls": [
                         {
                             "id": message.tool_call_id,

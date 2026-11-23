@@ -14,7 +14,7 @@ import { AttachmentBubble } from "@/components/conversation-view/attachment-bubb
 import { MessageError } from "@/components/conversation-view/message-error.tsx";
 import { MessageBubbleTyping } from "@/components/conversation-view/message-bubble-typing.tsx";
 import { ChatWindow } from "@/components/conversation-view/chat-window.tsx";
-import { appendToken, dropNarration, isHeldBack } from "@/components/conversation-view/streamed-answer.ts";
+import { appendToken, endToolCallNarration } from "@/components/conversation-view/streamed-answer.ts";
 import { NotFound } from "@/pages/not-found.tsx";
 import { ApiError } from "@/lib/api-error.ts";
 
@@ -32,7 +32,7 @@ export type FileMessageProps = {
 };
 
 export type TextMessageProps = {
-  type: "human" | "ai" | "notice";
+  type: "human" | "ai" | "notice" | "intermediate_step";
   text: string;
   id: number | null;
 };
@@ -151,9 +151,9 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
         setMessages((prevMessages) => appendToken(prevMessages, data.data.chunk));
         scrollToLastMessage();
       },
-      narration: () => {
+      tool_call_narration_end: () => {
         setIsAgentLoading(true);
-        setMessages(dropNarration);
+        setMessages(endToolCallNarration);
       },
       message_id: () => {
         setMessages((prevMessages) => {
@@ -246,14 +246,11 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
     }
 
     try {
-      const response = await api.conversations().fetchResponseMessage(conversationId!, taskHandle);
+      const history = await api.conversations().fetchHistoryWhenAnswered(conversationId!, taskHandle);
 
-      if (response) {
+      if (history) {
         setIsAgentLoading(false);
-        setMessages((prev) => [
-          ...prev,
-          { type: response.type === "notice" ? "notice" : "ai", text: response.text, id: response.id }
-        ]);
+        setMessages(history as MessageProps[]);
         setIsLoading(false);
         scrollToLastMessage();
       } else {
@@ -367,7 +364,7 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
                   );
                 }
 
-                if (message.type === 'ai' && (message.text === '' || isHeldBack(message))) {
+                if (message.type === 'ai' && message.text === '') {
                   return (<MessageBubbleTyping key={index} statusText={statusText} />);
                 }
 
@@ -376,7 +373,7 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
                     key={index}
                     text={message.text}
                     variant={message.type === "human" ? "primary" : "secondary"}
-                    questionId={message.id}
+                    questionId={message.type === "intermediate_step" ? null : message.id}
                     inMessageGroup={inMessageGroup}
                   />
                 );

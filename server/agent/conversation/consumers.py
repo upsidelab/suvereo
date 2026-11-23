@@ -40,7 +40,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         handlers = {
             "start": self.handle_start,
             "stream": self.handle_stream,
-            "narration": self.handle_narration,
+            "tool_call_narration_end": self.handle_tool_call_narration_end,
             "end": self.handle_end,
             "message_created": self.handle_message_created,
             "tool_call": self.handle_tool_call,
@@ -58,8 +58,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def handle_stream(self, event):
         await self.send(json.dumps({"event": "on_parser_stream", "data": {"chunk": event.get("token")}}))
 
-    async def handle_narration(self, event):
-        await self.send(json.dumps({"event": "narration", "data": {}}))
+    async def handle_tool_call_narration_end(self, event):
+        await self.send(json.dumps({"event": "tool_call_narration_end", "data": {}}))
 
     async def handle_end(self, event):
         await self.send(json.dumps({"event": "on_parser_end", "data": {"output": event.get("output")}}))
