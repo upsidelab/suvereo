@@ -1,44 +1,21 @@
-import type { AgentStep } from "@/components/conversation-view/agent-steps.tsx";
-import type { AiMessageProps, MessageProps } from "@/components/conversation-view/chat-session.tsx";
+import type { MessageProps, TextMessageProps } from "@/components/conversation-view/chat-session.tsx";
 
-const isStreamedAnswer = (message: MessageProps | undefined): message is AiMessageProps =>
+// The start of a reply is held back: if a tool call follows, that text was narration and is dropped unseen.
+const HOLD_BACK_CHARS = 200;
+
+const isStreamedAnswer = (message: MessageProps | undefined): message is TextMessageProps =>
   !!message && message.type === "ai" && message.id === null;
 
-const updateStreamedAnswer = (messages: MessageProps[], update: (answer: AiMessageProps) => AiMessageProps) => {
+export const isHeldBack = (message: MessageProps) =>
+  isStreamedAnswer(message) && message.text.length < HOLD_BACK_CHARS;
+
+export const appendToken = (messages: MessageProps[], token: string): MessageProps[] => {
   const last = messages[messages.length - 1];
   if (isStreamedAnswer(last)) {
-    return [...messages.slice(0, -1), update(last)];
+    return [...messages.slice(0, -1), { ...last, text: last.text + token }];
   }
-  return [...messages, update({ type: "ai", text: "", id: null, steps: [] })];
+  return [...messages, { type: "ai", text: token, id: null }];
 };
 
-export const appendToken = (messages: MessageProps[], token: string) =>
-  updateStreamedAnswer(messages, (answer) => ({ ...answer, text: answer.text + token }));
-
-export const moveTextToNarration = (messages: MessageProps[]) => {
-  const last = messages[messages.length - 1];
-  if (!isStreamedAnswer(last) || !last.text.trim()) {
-    return messages;
-  }
-  const narration: AgentStep = { kind: "narration", text: last.text.trim() };
-  return [...messages.slice(0, -1), { ...last, text: "", steps: [...(last.steps ?? []), narration] }];
-};
-
-export const startTool = (messages: MessageProps[], toolName: string) =>
-  updateStreamedAnswer(messages, (answer) => ({
-    ...answer,
-    steps: [...(answer.steps ?? []), { kind: "tool", toolName, done: false }],
-  }));
-
-export const finishTool = (messages: MessageProps[]) => {
-  const last = messages[messages.length - 1];
-  if (!isStreamedAnswer(last) || !last.steps) {
-    return messages;
-  }
-  const index = last.steps.map((step) => step.kind === "tool" && !step.done).lastIndexOf(true);
-  if (index === -1) {
-    return messages;
-  }
-  const steps = last.steps.map((step, i) => (i === index ? { ...step, done: true } : step));
-  return [...messages.slice(0, -1), { ...last, steps }];
-};
+export const dropNarration = (messages: MessageProps[]) =>
+  isStreamedAnswer(messages[messages.length - 1]) ? messages.slice(0, -1) : messages;

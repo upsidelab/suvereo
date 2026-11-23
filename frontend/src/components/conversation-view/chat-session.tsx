@@ -14,13 +14,11 @@ import { AttachmentBubble } from "@/components/conversation-view/attachment-bubb
 import { MessageError } from "@/components/conversation-view/message-error.tsx";
 import { MessageBubbleTyping } from "@/components/conversation-view/message-bubble-typing.tsx";
 import { ChatWindow } from "@/components/conversation-view/chat-window.tsx";
-import { AgentSteps } from "@/components/conversation-view/agent-steps.tsx";
-import { appendToken, finishTool, moveTextToNarration, startTool } from "@/components/conversation-view/streamed-answer.ts";
+import { appendToken, dropNarration, isHeldBack } from "@/components/conversation-view/streamed-answer.ts";
 import { NotFound } from "@/pages/not-found.tsx";
 import { ApiError } from "@/lib/api-error.ts";
 
 import type { AgentDetails } from "@/lib/types";
-import type { AgentStep } from "@/components/conversation-view/agent-steps.tsx";
 import type { Conversation as ConversationSchema } from '@/lib/types.ts';
 import type { Message, MessageFile } from "@/components/conversation-view/message-composer.tsx";
 
@@ -33,18 +31,13 @@ export type FileMessageProps = {
   file_type: string;
 };
 
-export type AiMessageProps = {
-  type: "ai";
+export type TextMessageProps = {
+  type: "human" | "ai" | "notice";
   text: string;
   id: number | null;
-  steps?: AgentStep[];
 };
 
-export type MessageProps = {
-  type: "human" | "notice";
-  text: string;
-  id: number | null;
-} | AiMessageProps | FileMessageProps;
+export type MessageProps = TextMessageProps | FileMessageProps;
 
 interface ChatSessionProps {
   pendingMessage?: Message;
@@ -160,7 +153,7 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
       },
       narration: () => {
         setIsAgentLoading(true);
-        setMessages(moveTextToNarration);
+        setMessages(dropNarration);
       },
       message_id: () => {
         setMessages((prevMessages) => {
@@ -171,12 +164,9 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
       },
       tool_call: () => {
         setStatusText(`Invoking ${data.data.tool_name}...`);
-        setMessages((prevMessages) => startTool(prevMessages, data.data.tool_name));
-        scrollToLastMessage();
       },
       tool_done: () => {
         setStatusText(DEFAULT_STATUS_TEXT);
-        setMessages(finishTool);
       },
       error: () => {
         setIsLoading(false);
@@ -377,16 +367,7 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
                   );
                 }
 
-                if (message.type === "ai" && message.steps?.length) {
-                  return message.text ? (
-                    <div key={index} className="space-y-2">
-                      <AgentSteps steps={message.steps} />
-                      <MessageBubble text={message.text} variant="secondary" questionId={message.id} />
-                    </div>
-                  ) : null;
-                }
-
-                if (message.type === 'ai' && message.text === '') {
+                if (message.type === 'ai' && (message.text === '' || isHeldBack(message))) {
                   return (<MessageBubbleTyping key={index} statusText={statusText} />);
                 }
 
