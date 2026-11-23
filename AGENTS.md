@@ -13,6 +13,7 @@ plugins/      Core plugins: suvereo-common contracts, LLM providers, MCP integra
 docs/         Documentation site (Next.js)
 specs/        Design specs, written before implementation
 adrs/         Architectural decision records — the why behind intentional design
+scripts/      Repository tooling: scripts/lint/check_conventions.py checks the code conventions
 ```
 
 Docker: `docker-compose.yml` (production), `docker-compose.development.yml` (development; postgres with pgvector, redis, api, frontend, worker, beat).
@@ -45,6 +46,6 @@ Domain-specific agents and tools are built on top of the domain definition, eith
 
 ## Rules
 
-- Pre-commit runs ruff and the frontend lint.
+- Pre-commit runs ruff, the frontend lint and `scripts/lint/check_conventions.py`, which enforces the code conventions in `server/AGENTS.md` and `frontend/AGENTS.md`. Existing violations are recorded in `scripts/lint/baseline.json`; only new ones fail. After fixing old ones, run `python scripts/lint/check_conventions.py --update-baseline`.
 - Role names are area-nouns ("Management", never "Managers"). People-nouns belong to Groups.
 - A change that adds or removes an app, plugin or top-level directory must update the relevant `AGENTS.md`.

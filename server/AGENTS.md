@@ -43,7 +43,8 @@ Apps expose their API under `/api/` and are mounted at the root in `pecl/urls.py
 - Code is validated with ruff.
 - OOP-first: Favor object-oriented design — use classes, inheritance, and polymorphism. The codebase is built around abstract base classes and the plugin system relies on subclassing contracts in `suvereo-common`.
 - Annotate all function signatures and public attributes with types.
-- Keep modules short, one concern each. Split views and serializers into packages once they grow.
+- Keep modules short, one concern each, at most 300 lines. Split views and serializers into packages once they grow.
+- Use absolute imports; relative imports only re-export a package's modules in its `__init__.py`.
 - Use descriptive class and method names so comments are unnecessary. Comment only non-obvious or deliberately hacky code, briefly.
 - Docstrings go on public interfaces only: `suvereo-common` contracts and other APIs plugin authors build against. Implementations and server-internal code have none.
 - Extend through the documented extension points (`suvereo-common` base classes and registries) instead of adding new abstraction layers.
