@@ -39,10 +39,10 @@ class AzureOpenAILanguageModelProvider(LanguageModelProvider):
     NAME = "Azure OpenAI"
 
     def provide_language_model(self, callbacks: list[BaseCallbackHandler] | None = None) -> BaseLanguageModel:
-        return AzureChatOpenAI(model=self._model, callbacks=callbacks, use_responses_api=True)
+        return AzureChatOpenAI(model=self._model, callbacks=callbacks, use_responses_api=True, store=False)
 
     def provide_streaming_language_model(self, callbacks: list[BaseCallbackHandler] | None = None, **kwargs) -> BaseLanguageModel:
-        return AzureChatOpenAI(model=self._model, callbacks=callbacks, streaming=True, use_responses_api=True)
+        return AzureChatOpenAI(model=self._model, callbacks=callbacks, streaming=True, use_responses_api=True, store=False)
 
     def model_name(self) -> str:
         return self._model
