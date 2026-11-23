@@ -1,6 +1,6 @@
 import pytest
 from django.contrib.auth import get_user_model
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from model_bakery import baker
 
 from agent.core.memory.persistent_chat_history import PersistentChatHistory
@@ -189,7 +189,7 @@ class TestPersistentChatHistory:
             conversation_repo=DjangoConversationRepository(Conversation),
             conversation_id=conversation.id,
         )
-        history.add_message(SystemMessage(content="An error occurred"))
+        conversation.messages.create(type="notice", text="An error occurred")
 
         # When
         messages = history.messages
@@ -207,7 +207,7 @@ class TestPersistentChatHistory:
             conversation_id=conversation.id,
         )
         conversation.messages.create(type="human", text="hi", answer_failed=True)
-        history.add_message(SystemMessage(content="An error occurred"))
+        conversation.messages.create(type="notice", text="An error occurred")
 
         # When
         messages = history.messages

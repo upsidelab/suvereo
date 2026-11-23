@@ -1,7 +1,7 @@
 from typing import Any, Dict, Optional
 
 from langchain_core.chat_history import BaseChatMessageHistory
-from langchain_core.messages import AIMessage, BaseMessage, SystemMessage, ToolMessage, messages_from_dict
+from langchain_core.messages import AIMessage, BaseMessage, ToolMessage, messages_from_dict
 from suvereo_common.repositories import BaseConversationRepository
 
 from agent.models import Message
@@ -49,8 +49,6 @@ class PersistentChatHistory(BaseChatMessageHistory):
             self._create_intermediate_step_message(message)
         elif isinstance(message, ToolMessage):
             self.create_tool_message(message)
-        elif isinstance(message, SystemMessage):
-            self._conversation.messages.create(type=Message.MessageType.NOTICE, text=message.text)
         else:
             self._conversation.messages.create(
                 type=message.type,
