@@ -1,6 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Optional, Type
+from typing import TYPE_CHECKING, Any
 
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.language_models import BaseLanguageModel
@@ -51,15 +51,15 @@ class BaseAgent(ABC, metaclass=AgentExtraArgsClassBaseMeta):
 
     NAME: str
     AGENT_KEY: str
-    AGENT_ARGS: Optional[Type[RequiredFieldsModel] | RequiredFieldsModel] = None
-    PROMPT_INPUT: Optional[Type[RequiredFieldsModel] | RequiredFieldsModel] = None
+    AGENT_ARGS: type[RequiredFieldsModel] | RequiredFieldsModel | None = None
+    PROMPT_INPUT: type[RequiredFieldsModel] | RequiredFieldsModel | None = None
     TOOLS: list["ToolConfig"] = []
 
     FILE_UPLOAD: bool = False
     SYSTEM_PROMPT: str
-    CONVERSATION_HISTORY_TOKEN_LIMIT: Optional[int] = None
+    CONVERSATION_HISTORY_TOKEN_LIMIT: int | None = None
     MEMORY_COMPACTOR_ENABLED: bool = False
-    BUILDER_CLASS: Optional[Type["BaseAgentBuilder"]] = None
+    BUILDER_CLASS: type["BaseAgentBuilder"] | None = None
 
     def __init__(
         self,

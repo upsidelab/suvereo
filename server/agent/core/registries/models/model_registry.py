@@ -1,5 +1,4 @@
 from importlib import import_module
-from typing import Type
 
 from django.conf import settings
 from django.db import models
@@ -12,26 +11,26 @@ class BaseDjangoSettingsDBModelRegistry(BaseDBModelsRegistry[models.Model]):
         super().__init__(models_config)
         self.models_config = models_config
 
-    def get_model_class_by_name(self, name: str) -> Type[models.Model]:
+    def get_model_class_by_name(self, name: str) -> type[models.Model]:
         try:
             model_class_path = self.models_config[name]
         except KeyError:
-            raise ValueError(f"Model '{name}' is not defined in settings.CATALOG_MODELS.")
+            raise ValueError(f"Model '{name}' is not defined in settings.CATALOG_MODELS.") from None
 
         try:
             module_name, class_name = model_class_path.rsplit(".", 1)
-        except ValueError:
-            raise ValueError(f"Invalid model path format for '{name}': '{model_class_path}'")
+        except ValueError as e:
+            raise ValueError(f"Invalid model path format for '{name}': '{model_class_path}'") from e
 
         try:
             module = import_module(module_name)
-        except ModuleNotFoundError:
-            raise ImportError(f"Cannot import module '{module_name}' for model '{name}'.")
+        except ModuleNotFoundError as e:
+            raise ImportError(f"Cannot import module '{module_name}' for model '{name}'.") from e
 
         try:
             model_class = getattr(module, class_name)
-        except AttributeError:
-            raise ImportError(f"Module '{module_name}' has no attribute '{class_name}' for model '{name}'.")
+        except AttributeError as e:
+            raise ImportError(f"Module '{module_name}' has no attribute '{class_name}' for model '{name}'.") from e
 
         if not issubclass(model_class, models.Model):
             raise TypeError(

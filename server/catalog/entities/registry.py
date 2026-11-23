@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from importlib import import_module
-from typing import List, Optional, Type
 
 from rest_framework import serializers
 from suvereo_common.entities import EntityField
@@ -11,8 +10,8 @@ class EntityRegistration:
     slug: str
     label: str
     model: type
-    fields: List[EntityField]
-    serializer: Type[serializers.ModelSerializer]
+    fields: list[EntityField]
+    serializer: type[serializers.ModelSerializer]
 
 
 class EntityRegistry:
@@ -51,15 +50,15 @@ class EntityRegistry:
         return getattr(import_module(module_path), class_name)
 
     @staticmethod
-    def _build_serializer(model: type, meta) -> Type[serializers.ModelSerializer]:
+    def _build_serializer(model: type, meta) -> type[serializers.ModelSerializer]:
         field_names = ["id"] + [field.name for field in getattr(meta, "list_fields", [])]
         meta_cls = type("Meta", (), {"model": model, "fields": field_names})
         return type(f"{model.__name__}Serializer", (serializers.ModelSerializer,), {"Meta": meta_cls})
 
-    def all(self) -> List[EntityRegistration]:
+    def all(self) -> list[EntityRegistration]:
         return list(self._by_slug.values())
 
-    def get(self, slug: str) -> Optional[EntityRegistration]:
+    def get(self, slug: str) -> EntityRegistration | None:
         return self._by_slug.get(slug)
 
 

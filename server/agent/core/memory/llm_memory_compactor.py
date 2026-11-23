@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
@@ -42,7 +42,7 @@ class LLMMemoryCompactor(BaseMemoryCompactor):
         self._llm = llm
         self._chat_history = chat_history
 
-    def get_summary(self) -> Optional[str]:
+    def get_summary(self) -> str | None:
         """Return the current persisted summary, or None if one has not been generated yet."""
         return self._conversation.conversation_summary or None
 
@@ -63,7 +63,7 @@ class LLMMemoryCompactor(BaseMemoryCompactor):
         self._conversation.last_summarized_message_id = self._chat_history.last_message_database_id
         self._conversation.save(update_fields=["conversation_summary", "last_summarized_message_id"])
 
-    def _generate_summary(self, new_messages: list[BaseMessage], existing_summary: Optional[str]) -> str:
+    def _generate_summary(self, new_messages: list[BaseMessage], existing_summary: str | None) -> str:
         if existing_summary:
             prompt_messages = [
                 _INCREMENTAL_SUMMARIZATION_PROMPT,

@@ -15,4 +15,4 @@ class Command(BaseCommand):
         serializer.is_valid(raise_exception=True)
         service_account = serializer.save()
         token, _ = Token.objects.get_or_create(user=service_account)
-        print("Service Account token:", token.key)
+        self.stdout.write(f"Service Account token: {token.key}")

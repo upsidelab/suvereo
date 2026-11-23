@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional, Type
 
 from django.conf import settings
 from suvereo_common.agentic_execution.memory import ToolScratchpad
@@ -36,7 +35,7 @@ class BaseAgentRegistry(ABC, BaseRegistry[BaseAgent]):
         pass
 
     @abstractmethod
-    def get_agent_class_by_type(self, *args, **kwargs) -> Type[BaseAgent]:
+    def get_agent_class_by_type(self, *args, **kwargs) -> type[BaseAgent]:
         pass
 
 
@@ -46,8 +45,8 @@ class AgentRegistry(BaseAgentRegistry):
         self,
         conversation: Conversation,
         streaming: bool,
-        tool_scratchpad: Optional[ToolScratchpad] = None,
-        overrides: Optional[AgentConfigOverrides] = None,
+        tool_scratchpad: ToolScratchpad | None = None,
+        overrides: AgentConfigOverrides | None = None,
     ) -> BaseAgent:
         try:
             builder = self._build_agent_builder(conversation, streaming, tool_scratchpad, overrides)
@@ -59,8 +58,8 @@ class AgentRegistry(BaseAgentRegistry):
         self,
         conversation: Conversation,
         streaming: bool,
-        tool_scratchpad: Optional[ToolScratchpad] = None,
-        overrides: Optional[AgentConfigOverrides] = None,
+        tool_scratchpad: ToolScratchpad | None = None,
+        overrides: AgentConfigOverrides | None = None,
     ) -> BaseAgent:
         try:
             builder = self._build_agent_builder(conversation, streaming, tool_scratchpad, overrides)
@@ -72,8 +71,8 @@ class AgentRegistry(BaseAgentRegistry):
         self,
         conversation: Conversation,
         streaming: bool,
-        tool_scratchpad: Optional[ToolScratchpad],
-        overrides: Optional[AgentConfigOverrides] = None,
+        tool_scratchpad: ToolScratchpad | None,
+        overrides: AgentConfigOverrides | None = None,
     ):
         agent_class = self.get_agent_class_by_type(conversation.agent.agent_type)
         builder_cls = agent_class.BUILDER_CLASS or AgentBuilder
@@ -88,17 +87,17 @@ class AgentRegistry(BaseAgentRegistry):
             tool_scratchpad=tool_scratchpad,
         )
 
-    def get_agent_class_by_type(self, agent_type: str) -> Type[BaseAgent]:
-        agents = [agent for agent in self.get_plugin_classes() if agent.AGENT_KEY == agent_type]
+    def get_agent_class_by_type(self, agent_type: str) -> type[BaseAgent]:
+        agents = [agent for agent in self.get_plugin_classes() if agent_type == agent.AGENT_KEY]
 
         if not agents:
             raise AgentNotFoundError(f"Could not find agent type '{agent_type}'.")
 
         return agents[0]
 
-    def get_plugin_classes(self) -> List[Type[BaseAgent]]:
+    def get_plugin_classes(self) -> list[type[BaseAgent]]:
         return [self._get_plugin_class_by_path(path) for path in self._get_plugin_paths()]
 
     @staticmethod
-    def _get_plugin_paths() -> List[str]:
+    def _get_plugin_paths() -> list[str]:
         return settings.AVAILABLE_AGENTS

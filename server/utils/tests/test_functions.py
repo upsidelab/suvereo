@@ -1,6 +1,5 @@
 import sys
 from types import ModuleType
-from typing import Dict, List
 
 import pytest
 from pydantic import BaseModel, Field
@@ -17,11 +16,11 @@ class SimpleModel(BaseModel):
 
 
 class ListModel(BaseModel):
-    tags: List[str] = Field(description="List of tags")
+    tags: list[str] = Field(description="List of tags")
 
 
 class DictModel(BaseModel):
-    mapping: Dict[str, int] = Field(title="Mapping field")
+    mapping: dict[str, int] = Field(title="Mapping field")
 
 
 class DummySimple:
@@ -70,22 +69,23 @@ def test_extract_type_info_simple():
 
 
 def test_extract_type_info_list():
-    info = extract_type_info(List[str])
+    info = extract_type_info(list[str])
 
     assert info["container"] == "list"
     assert info["inner_type"] == {"container": None, "inner_type": "str"}
 
 
 def test_extract_type_info_dict():
-    info = extract_type_info(Dict[str, int])
+    info = extract_type_info(dict[str, int])
 
     assert info == {"container": "dict", "key_type": "str", "value_type": "int"}
 
 
 def test_extract_type_info_no_args_dict():
-    from typing import Dict as TypingDict
+    # A bare typing.Dict differs from dict: it reports dict as its origin.
+    from typing import Dict as TypingDict  # noqa: UP035
 
-    info = extract_type_info(TypingDict)
+    info = extract_type_info(TypingDict)  # noqa: UP006
 
     assert info == {"container": "dict", "key_type": "Any", "value_type": "Any"}
 

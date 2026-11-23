@@ -141,6 +141,11 @@ class ReportMdWriter(BaseReportWriter):
             if reasons := JudgeReasoning.lines(judged_result):
                 lines.append(f"  - {judged} says ({MarkdownText.cell(judged_result.value)}):")
                 lines += [f"    - {reason}" for reason in reasons]
+        return "\n".join(lines + cls._run_context_lines(run, report))
+
+    @staticmethod
+    def _run_context_lines(run: RunResult, report: SuiteReport) -> list[str]:
+        lines = []
         if run.trace.error:
             lines.append(f"  - error: {MarkdownText.one_line(run.trace.error)}")
         if report.kind == SuiteKind.CONVERSATION:
@@ -151,7 +156,7 @@ class ReportMdWriter(BaseReportWriter):
             lines.append(f"  - transcript: [{transcript}]({transcript})")
         if trace := report.linked_trace_path(run):
             lines.append(f"  - trace: [{trace}]({trace}) ({len(run.trace.tool_calls)} tool calls)")
-        return "\n".join(lines)
+        return lines
 
     @staticmethod
     def _missed_lines(run: RunResult, name: str, report: SuiteReport) -> list[str]:

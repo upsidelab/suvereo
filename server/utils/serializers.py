@@ -14,7 +14,7 @@ class ParentDataContextSerializerMixin:
         return super().to_internal_value(data)
 
     def _propagate_context(self, data):
-        for field_name, field in self.fields.items():
+        for field in self.fields.values():
             if isinstance(field, serializers.BaseSerializer):
                 for key in self.context_keys_to_propagate:
                     if key in self.context:

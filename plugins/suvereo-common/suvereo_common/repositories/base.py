@@ -1,24 +1,25 @@
+import builtins
 from abc import ABC, abstractmethod
-from typing import Any, Generic, List, Optional, Type, TypeVar
+from typing import Any, Generic, TypeVar
 
 T = TypeVar("T")
 U = TypeVar("U")
 
 
 class BaseRepository(ABC, Generic[T]):
-    def __init__(self, model: Type[T]):
+    def __init__(self, model: type[T]):
         self.model = model
 
     @abstractmethod
-    def get_by_id(self, pk: int) -> Optional[T]:
+    def get_by_id(self, pk: int) -> T | None:
         pass
 
     @abstractmethod
-    def list(self) -> List[T]:
+    def list(self) -> list[T]:
         pass
 
     @abstractmethod
-    def filter(self, **kwargs) -> List[T]:
+    def filter(self, **kwargs) -> builtins.list[T]:
         pass
 
     @abstractmethod
@@ -54,11 +55,11 @@ class BaseConversationRepository(BaseRepository[T], ABC):
         pass
 
     @abstractmethod
-    def list_files(self, conversation_id: Any) -> List[Any]:
+    def list_files(self, conversation_id: Any) -> list[Any]:
         pass
 
     @abstractmethod
-    def get_file_objects(self, conversation_id: Any, file_ids: list[Any]) -> List[Any]:
+    def get_file_objects(self, conversation_id: Any, file_ids: list[Any]) -> list[Any]:
         pass
 
 

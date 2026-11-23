@@ -23,7 +23,7 @@ def tools_list_to_map(apps, schema_editor):
         if not isinstance(stored, list) or tools is None:
             continue
         agent.config["tools"] = {
-            tool.NAME: settings for tool, settings in zip(tools, stored) if tool.CONFIGURATION_ARGS is not None
+            tool.NAME: settings for tool, settings in zip(tools, stored, strict=False) if tool.CONFIGURATION_ARGS is not None
         }
         agent.save(update_fields=["config"])
 

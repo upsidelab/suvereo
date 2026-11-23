@@ -2,7 +2,8 @@ import asyncio
 import inspect
 import json
 from abc import ABCMeta
-from typing import Any, Callable, Dict, List, TypeVar, Union, get_args, get_origin
+from collections.abc import Callable
+from typing import Any, TypeVar, Union, get_args, get_origin
 
 from pydantic import BaseModel, Json, model_validator
 from pydantic._internal._model_construction import ModelMetaclass
@@ -75,16 +76,14 @@ def validate_required_vars(cls, name: str, required_vars: dict[str, type]):
 
         origin = get_origin(expected_type)
 
-        if origin:
-            if isinstance(value, origin):
-                continue
+        if origin and isinstance(value, origin):
+            continue
 
         if isinstance(value, expected_type):
             continue
 
-        if isinstance(value, type):
-            if issubclass(value, expected_type):
-                continue
+        if isinstance(value, type) and issubclass(value, expected_type):
+            continue
         raise TypeError(
             f"Class variable '{var_name}' in '{name}' must be of type or subclass of '{expected_type.__name__}', "
             f"but got '{type(value).__name__ if not isinstance(value, type) else value.__name__}'"
@@ -142,11 +141,11 @@ class RequiredFieldsMeta(ModelMetaclass):
             if origin is None:
                 return
 
-            if origin in {list, List, dict, Dict, Union, tuple}:
+            if origin in {list, list, dict, dict, Union, tuple}:
                 for arg in args:
                     check_type_depth(arg, current_depth + 1)
 
-        for field_name, field in getattr(new_cls, "model_fields", {}).items():
+        for field in getattr(new_cls, "model_fields", {}).values():
             check_type_depth(field.annotation)
         return new_cls
 

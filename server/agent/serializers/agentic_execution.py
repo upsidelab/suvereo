@@ -80,7 +80,7 @@ class StartAgenticExecutionSerializer(serializers.Serializer):
                 plain_data["input"] = json.loads(plain_data["input"])
                 data = plain_data
             except json.JSONDecodeError as exc:
-                raise serializers.ValidationError({"input": f"Invalid JSON: {exc}"})
+                raise serializers.ValidationError({"input": f"Invalid JSON: {exc}"}) from exc
         return super().to_internal_value(data)
 
     def validate_input(self, value):
@@ -90,7 +90,7 @@ class StartAgenticExecutionSerializer(serializers.Serializer):
         except PydanticValidationError as exc:
             raise serializers.ValidationError(
                 {".".join(str(loc) for loc in e["loc"]): e["msg"] for e in exc.errors()}
-            )
+            ) from exc
         except Exception as exc:
-            raise serializers.ValidationError(str(exc))
+            raise serializers.ValidationError(str(exc)) from exc
         return validated.model_dump()

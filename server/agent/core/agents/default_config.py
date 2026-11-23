@@ -1,4 +1,3 @@
-from typing import Optional, Type
 
 from django.conf import settings
 from pydantic import BaseModel
@@ -36,14 +35,14 @@ from catalog.retrieval.searcher import EmbeddingSimilaritySearcher
 
 class DefaultAgentConfig(BaseModel):
     repositories: RepositoriesConfig
-    injector: Type[Injector]
+    injector: type[Injector]
     registry: RegistryConfig
     llm: LLMConfig
     memory: MemoryConfig
     conversation_history_token_limit: int
-    agent_callback_handler: Optional[AgentCallbackHandlerConfig] = None
-    similarity_searcher: Optional[Type[BaseSimilaritySearcher]] = None
-    integration_plugin_resolver: Optional[Type[BaseIntegrationPluginResolver]] = None
+    agent_callback_handler: AgentCallbackHandlerConfig | None = None
+    similarity_searcher: type[BaseSimilaritySearcher] | None = None
+    integration_plugin_resolver: type[BaseIntegrationPluginResolver] | None = None
 
 
 def get_default_config() -> DefaultAgentConfig:

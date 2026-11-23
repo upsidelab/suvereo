@@ -1,7 +1,8 @@
 import json
 import logging
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Callable, ClassVar, Optional, Protocol, Type
+from collections.abc import Callable
+from typing import TYPE_CHECKING, ClassVar, Protocol
 
 from .errors import ExecutionFailureCode
 from .input import ExecutionInputType
@@ -14,7 +15,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-AttemptObserver = Callable[[int, str, Optional[ValidatorResponse]], None]
+AttemptObserver = Callable[[int, str, ValidatorResponse | None], None]
 
 
 class ExecutionConversationInterface(Protocol):
@@ -79,13 +80,13 @@ class BaseAgenticExecutionDefinition(ABC):
     EXECUTION_KEY: ClassVar[str]
     AGENT_KEY: ClassVar[str]
     NAME: ClassVar[str]
-    DESCRIPTION: ClassVar[Optional[str]] = None
-    INPUT_TYPE: ClassVar[Type[ExecutionInputType]] = ExecutionInputType
-    VALIDATORS: ClassVar[list[Type[BaseExecutionValidator]]] = [IsValidJsonValidator]
-    SYSTEM_PROMPT: ClassVar[Optional[str]] = None
-    TOOLS: ClassVar[Optional[list["ToolConfig"]]] = None
+    DESCRIPTION: ClassVar[str | None] = None
+    INPUT_TYPE: ClassVar[type[ExecutionInputType]] = ExecutionInputType
+    VALIDATORS: ClassVar[list[type[BaseExecutionValidator]]] = [IsValidJsonValidator]
+    SYSTEM_PROMPT: ClassVar[str | None] = None
+    TOOLS: ClassVar[list["ToolConfig"] | None] = None
     MAX_RETRIES: ClassVar[int] = 3
-    FAILURE_CODES: ClassVar[Type[ExecutionFailureCode]] = ExecutionFailureCode
+    FAILURE_CODES: ClassVar[type[ExecutionFailureCode]] = ExecutionFailureCode
     FAILURE_SUMMARY_PROMPT: ClassVar[str] = (
         "You were unable to produce a valid response after multiple attempts. "
         "Please provide a brief (max 100 words), impersonal, plain-language summary of what went wrong."
@@ -95,7 +96,7 @@ class BaseAgenticExecutionDefinition(ABC):
         self,
         input_data: ExecutionInputType,
         conversation: ExecutionConversationInterface,
-        attempt_observer: Optional[AttemptObserver] = None,
+        attempt_observer: AttemptObserver | None = None,
     ) -> ExecutionResult:
         """Orchestrate the validator retry loop and return the final result.
 
@@ -172,7 +173,7 @@ class BaseAgenticExecutionDefinition(ABC):
 
     @staticmethod
     def _notify_observer(
-        observer: AttemptObserver, number: int, response: str, validator_response: Optional[ValidatorResponse]
+        observer: AttemptObserver, number: int, response: str, validator_response: ValidatorResponse | None
     ) -> None:
         """Tell the observer about an attempt; its errors are logged so recording can never break a real run."""
         try:
@@ -182,7 +183,7 @@ class BaseAgenticExecutionDefinition(ABC):
 
     def _first_failed_validator_response(
         self, response: str, execution_input: ExecutionInputType, tool_scratchpad: ToolScratchpad
-    ) -> Optional[ValidatorResponse]:
+    ) -> ValidatorResponse | None:
         """Run all validators and return the first failing response, or ``None`` if all pass."""
 
         for validator_cls in self.VALIDATORS:

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable
-from typing import Any, Optional, TypeVar
+from typing import Any, TypeVar
 
 from langchain_core.tools import BaseTool as LCBaseTool
 from suvereo_common.indexing import BaseEntityIndexer
@@ -169,7 +169,7 @@ class BaseIntegrationPluginResolver(ABC):
     """
 
     @abstractmethod
-    def resolve(self, data_set_id: Any, plugin_base: type[IntegrationT]) -> Optional[IntegrationT]:
+    def resolve(self, data_set_id: Any, plugin_base: type[IntegrationT]) -> IntegrationT | None:
         """Return a configured plugin instance of *plugin_base* for the data set, or None."""
 
     @abstractmethod

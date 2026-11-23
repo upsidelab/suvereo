@@ -40,7 +40,7 @@ class EmbeddingIndexer(BaseEntityIndexer):
             # racing through the delete and producing duplicate chunk rows.
             entity.__class__.objects.select_for_update().get(pk=entity.pk)
             entity.chunks.all().delete()
-            for piece, embedding in zip(pieces, embeddings):
+            for piece, embedding in zip(pieces, embeddings, strict=False):
                 chunk = entity.chunks.create(content=piece)
                 chunk.set_embedding(embedding)
                 chunk.save()

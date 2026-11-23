@@ -19,7 +19,7 @@ class FileParsingService(BaseFileService):
 
     def _get_parser(self) -> BaseFileParser:
         file_type = self._get_file_type()
-        for key in settings.FILE_PARSER_CLASSES.keys():
+        for key in settings.FILE_PARSER_CLASSES:
             if file_type in key:
                 return self._load_parser_class(settings.FILE_PARSER_CLASSES[key])
         raise NotSupportedFileTypeException()

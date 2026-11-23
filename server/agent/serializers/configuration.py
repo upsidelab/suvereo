@@ -126,7 +126,7 @@ class AgentSerializer(ParentDataContextSerializerMixin, serializers.ModelSeriali
         try:
             class_obj = AgentRegistry().get_agent_class_by_type(agent_type)
         except Exception as e:
-            raise APIException(f"Error loading agent: {str(e)}")
+            raise APIException(f"Error loading agent: {str(e)}") from e
         validated_data["file_upload"] = class_obj.FILE_UPLOAD
         return super().create(validated_data)
 
@@ -138,7 +138,7 @@ class AgentSerializer(ParentDataContextSerializerMixin, serializers.ModelSeriali
         try:
             class_obj = AgentRegistry().get_agent_class_by_type(agent_type)
         except Exception as e:
-            raise APIException(f"Error loading agent: {str(e)}")
+            raise APIException(f"Error loading agent: {str(e)}") from e
 
         validated_data["file_upload"] = class_obj.FILE_UPLOAD
         return super().update(instance, validated_data)

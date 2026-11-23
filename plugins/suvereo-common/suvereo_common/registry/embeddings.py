@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Type
+from typing import Any
 
 
 class EmbeddingProvider(ABC):
@@ -13,7 +13,7 @@ class EmbeddingProvider(ABC):
     NAME: str = None
 
     def __init__(self, model: str, dimensions: int):
-        super(EmbeddingProvider, self).__init__()
+        super().__init__()
         self._model = model
         self._dimensions = dimensions
 
@@ -24,7 +24,6 @@ class EmbeddingProvider(ABC):
         Args:
             content (str): The input content for which the embedding vector is generated.
         """
-        pass
 
     @staticmethod
     @abstractmethod
@@ -60,11 +59,11 @@ class BaseEmbeddingProviderRegistry(ABC):
     """
 
     @abstractmethod
-    def get_provider_classes(self) -> list[Type[EmbeddingProvider]]:
+    def get_provider_classes(self) -> list[type[EmbeddingProvider]]:
         """Returns all registered provider classes."""
 
     @abstractmethod
-    def provider_class_by_name(self, name: str) -> Type[EmbeddingProvider]:
+    def provider_class_by_name(self, name: str) -> type[EmbeddingProvider]:
         """Looks up a provider class by its ``NAME`` attribute."""
 
     @abstractmethod

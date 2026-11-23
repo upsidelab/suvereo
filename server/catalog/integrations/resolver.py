@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional, TypeVar
+from typing import Any, TypeVar
 
 from django.db.models import QuerySet
 from pydantic import ValidationError
@@ -19,7 +19,7 @@ class IntegrationPluginResolver(BaseIntegrationPluginResolver):
     def __init__(self) -> None:
         self._registry = IntegrationPluginRegistry()
 
-    def resolve(self, data_set_id: Any, plugin_base: type[IntegrationT]) -> Optional[IntegrationT]:
+    def resolve(self, data_set_id: Any, plugin_base: type[IntegrationT]) -> IntegrationT | None:
         """Return a configured plugin instance of *plugin_base* for the data set, or None.
 
         When more than one integration matches (a type with ``ALLOWS_MULTIPLE_INSTANCES``, or several

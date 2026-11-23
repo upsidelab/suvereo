@@ -1,7 +1,7 @@
 import inspect
 from enum import StrEnum
 from importlib import import_module
-from typing import Generic, Type, TypeVar
+from typing import Generic, TypeVar
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -14,13 +14,13 @@ class PathType(StrEnum):
 
 class BaseRegistry(Generic[T]):
     PathType = PathType
-    plugin_base: Type[T]
+    plugin_base: type[T]
 
-    def _get_plugin_class_by_path(self, path: str) -> Type[T]:
+    def _get_plugin_class_by_path(self, path: str) -> type[T]:
         return self._get_class_by_path(path, self.plugin_base)
 
     @staticmethod
-    def _get_class_by_path(path: str, base_class: Type[U], path_type: PathType = PathType.CLASS) -> Type[U]:
+    def _get_class_by_path(path: str, base_class: type[U], path_type: PathType = PathType.CLASS) -> type[U]:
         if "." in path and path_type is PathType.CLASS:
             module_path, plugin_name = path.rsplit(".", 1)
         else:

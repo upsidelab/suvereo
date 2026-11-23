@@ -122,7 +122,7 @@ class TestComparisonCsvWriter:
             }
         ]
         runs = [run_result("ada"), run_result("bob")]
-        for run, label in zip(runs, ["yes", "yes"]):
+        for run, label in zip(runs, ["yes", "yes"], strict=True):
             run.metrics["verdict"] = MetricResult(value=label)
 
         [path] = ComparisonCsvWriter().write(suite_report(tmp_path, runs, metrics=metrics), tmp_path)

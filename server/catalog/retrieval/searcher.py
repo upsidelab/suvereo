@@ -1,4 +1,5 @@
-from typing import Any, Iterable, TypeVar
+from collections.abc import Iterable
+from typing import Any, TypeVar
 
 from pgvector.django import CosineDistance
 from suvereo_common.retrievers import BaseSimilaritySearcher

@@ -1,3 +1,5 @@
+import contextlib
+
 from celery import Task, shared_task
 from suvereo_common.agentic_execution import ExecutionFailureCode
 
@@ -12,13 +14,11 @@ class MarkExecutionFailedOnErrorTask(Task):
         execution_id = args[0] if args else kwargs.get("execution_id")
         if execution_id is None:
             return
-        try:
+        with contextlib.suppress(AgenticExecution.DoesNotExist):
             AgenticExecution.objects.get(pk=execution_id).mark_failed(
                 failure_code=ExecutionFailureCode.RUNTIME_ERROR,
                 failure_explanation=f"{type(exc).__name__}: {exc}",
             )
-        except AgenticExecution.DoesNotExist:
-            pass
 
 
 @shared_task(base=MarkExecutionFailedOnErrorTask, max_retries=0)

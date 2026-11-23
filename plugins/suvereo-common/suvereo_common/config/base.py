@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Generic, Optional, Type, TypeVar
+from typing import Any, Generic, TypeVar
 
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.chat_history import BaseChatMessageHistory
@@ -34,18 +34,18 @@ class ArbitraryTypeBaseModel(BaseModel):
 
 
 class EmbeddingsRegistryConfig(ArbitraryTypeBaseModel):
-    registry_class: Type[BaseEmbeddingProviderRegistry]
-    providers: Optional[dict[str, str]] = None
+    registry_class: type[BaseEmbeddingProviderRegistry]
+    providers: dict[str, str] | None = None
 
 
 class LLMRegistryConfig(ArbitraryTypeBaseModel):
-    registry_class: Type[BaseLanguageModelRegistry]
-    providers: Optional[dict[str, str]] = None
+    registry_class: type[BaseLanguageModelRegistry]
+    providers: dict[str, str] | None = None
 
 
 class ModelsRegistryConfig(ArbitraryTypeBaseModel):
-    registry_class: Type[BaseDBModelsRegistry]
-    models_config: Optional[dict[str, str]] = None
+    registry_class: type[BaseDBModelsRegistry]
+    models_config: dict[str, str] | None = None
 
 
 class RegistryConfig(ArbitraryTypeBaseModel):
@@ -55,46 +55,46 @@ class RegistryConfig(ArbitraryTypeBaseModel):
 
 
 class CallbackHandlerConfig(ArbitraryTypeBaseModel):
-    handler_class: Type[BaseCallbackHandler]
+    handler_class: type[BaseCallbackHandler]
 
 
 class LLMConfig(ArbitraryTypeBaseModel):
-    llm_class: Type[BaseLLM] = BaseLLM
-    callbacks: Optional[list[CallbackHandlerConfig]] = None
+    llm_class: type[BaseLLM] = BaseLLM
+    callbacks: list[CallbackHandlerConfig] | None = None
 
 
 class RepositoriesConfig(ArbitraryTypeBaseModel):
-    user: Type[BaseUserRepository]
-    message: Type[BaseMessageRepository]
-    conversation: Type[BaseConversationRepository]
-    data_set: Type[BaseDataSetRepository]
-    agent: Type[BaseAgentRepository]
+    user: type[BaseUserRepository]
+    message: type[BaseMessageRepository]
+    conversation: type[BaseConversationRepository]
+    data_set: type[BaseDataSetRepository]
+    agent: type[BaseAgentRepository]
 
 
 class FunctionToolConfig(ArbitraryTypeBaseModel):
-    tool_class: Type[BaseFunctionTool]
+    tool_class: type[BaseFunctionTool]
 
 
 class LLMToolConfig(ArbitraryTypeBaseModel):
-    tool_class: Type[BaseLLMTool]
-    llm: Optional[LLMConfig] = None
+    tool_class: type[BaseLLMTool]
+    llm: LLMConfig | None = None
 
 
 class FileToolConfig(ArbitraryTypeBaseModel):
-    tool_class: Type[BaseFileTool]
-    llm: Optional[LLMConfig] = None
+    tool_class: type[BaseFileTool]
+    llm: LLMConfig | None = None
 
 
 class AgentToolConfig(ArbitraryTypeBaseModel):
-    tool_class: Type[BaseAgentTool]
-    agent_class: Type[BaseAgent]
+    tool_class: type[BaseAgentTool]
+    agent_class: type[BaseAgent]
 
 
 ToolConfig = FunctionToolConfig | LLMToolConfig | AgentToolConfig | FileToolConfig
 
 
 class AgentCallbackHandlerConfig(ArbitraryTypeBaseModel):
-    handler_class: Type[BaseCallbackHandler]
+    handler_class: type[BaseCallbackHandler]
 
 
 class MemoryConfig(ArbitraryTypeBaseModel):
@@ -104,30 +104,30 @@ class MemoryConfig(ArbitraryTypeBaseModel):
     ``compactor_class`` as ``(conversation_repo, conversation_id, llm, chat_history)``.
     """
 
-    chat_history_class: Type[BaseChatMessageHistory]
-    compactor_class: Optional[Type[BaseMemoryCompactor]] = None
+    chat_history_class: type[BaseChatMessageHistory]
+    compactor_class: type[BaseMemoryCompactor] | None = None
 
 
 class AgentConfig(ArbitraryTypeBaseModel, Generic[InjectorT]):
     llm: LLMConfig
     repositories: RepositoriesConfig
-    injector: Type[InjectorT]
+    injector: type[InjectorT]
     registry: RegistryConfig
     system_prompt: str
     memory: MemoryConfig
-    tools: Optional[list[ToolConfig]] = None
-    agent_callback_handler: Optional[AgentCallbackHandlerConfig] = None
+    tools: list[ToolConfig] | None = None
+    agent_callback_handler: AgentCallbackHandlerConfig | None = None
     conversation_history_token_limit: int = Field(gt=0)
     memory_compactor_enabled: bool = False
-    similarity_searcher: Optional[Type[BaseSimilaritySearcher]] = None
-    integration_plugin_resolver: Optional[Type[BaseIntegrationPluginResolver]] = None
-    runtime_arguments_patch: Optional[dict[str, Any]] = None
+    similarity_searcher: type[BaseSimilaritySearcher] | None = None
+    integration_plugin_resolver: type[BaseIntegrationPluginResolver] | None = None
+    runtime_arguments_patch: dict[str, Any] | None = None
 
 
 class AgentConfigWithDefaults(AgentConfig, Generic[InjectorT]):
-    repositories: Optional[RepositoriesConfig] = None
-    injector: Optional[Type[InjectorT]] = None
-    registry: Optional[RegistryConfig] = None
-    llm: Optional[LLMConfig] = None
-    memory: Optional[MemoryConfig] = None
-    conversation_history_token_limit: Optional[int] = Field(default=None, gt=0)
+    repositories: RepositoriesConfig | None = None
+    injector: type[InjectorT] | None = None
+    registry: RegistryConfig | None = None
+    llm: LLMConfig | None = None
+    memory: MemoryConfig | None = None
+    conversation_history_token_limit: int | None = Field(default=None, gt=0)

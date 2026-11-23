@@ -7,11 +7,12 @@ import re
 import string
 import time
 from abc import ABCMeta
+from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from datetime import datetime
 from threading import Lock
 from types import SimpleNamespace
-from typing import Any, ClassVar, Iterator, Mapping
+from typing import Any, ClassVar
 
 from pydantic import TypeAdapter, ValidationError
 

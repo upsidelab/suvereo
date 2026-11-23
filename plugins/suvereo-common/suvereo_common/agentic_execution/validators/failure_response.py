@@ -1,4 +1,3 @@
-from typing import Optional
 
 from .response import ValidatorResponse
 
@@ -17,5 +16,5 @@ class ValidatorFailureResponse(ValidatorResponse):
             not provided. Ignored when ``retry_needed`` is ``True``.
     """
 
-    def __init__(self, feedback: Optional[str] = None, retry_needed: bool = True, failure_code: Optional[str] = None) -> None:
+    def __init__(self, feedback: str | None = None, retry_needed: bool = True, failure_code: str | None = None) -> None:
         super().__init__(validation_successful=False, retry_needed=retry_needed, feedback=feedback, failure_code=failure_code)

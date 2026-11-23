@@ -74,7 +74,7 @@ class SuiteLoader:
     def _resolve_execution(suite: EvalSuite, agent_type: str) -> type[BaseAgenticExecutionDefinition]:
         definitions = AgenticExecutionDefinitionRegistry().get_by_agent_type(agent_type)
         if suite.execution_key:
-            definitions = [d for d in definitions if d.EXECUTION_KEY == suite.execution_key]
+            definitions = [d for d in definitions if suite.execution_key == d.EXECUTION_KEY]
             if not definitions:
                 raise EvalSuiteError(f"Agent type '{agent_type}' has no execution '{suite.execution_key}'.")
         if len(definitions) != 1:
@@ -145,14 +145,7 @@ class SuiteLoader:
                 continue
         for case in loaded.cases:
             for config in loaded.suite.metrics_for(case):
-                if config.name in reserved_metric_names(kind):
-                    raise EvalSuiteError(
-                        f"Metric name '{config.name}' is reserved for a built-in figure; pick another."
-                    )
-                if "." in config.name:
-                    raise EvalSuiteError(
-                        f"Metric name '{config.name}' may not contain '.'; reports use it for components."
-                    )
+                SuiteLoader._check_metric_name(config.name, kind)
                 try:
                     metric = registry.build_metric(config, loaded.base_dir)
                 except MetricError as e:
@@ -164,18 +157,27 @@ class SuiteLoader:
                     raise EvalSuiteError(
                         f"Metric '{config.name}' needs a judge model; set 'judge' in the suite or in its params."
                     )
-                if config.aggregate == "distribution" and metric.VALUE_TYPE != "label":
-                    raise EvalSuiteError(f"Metric '{config.name}': aggregate 'distribution' is only for label metrics.")
-                if metric.VALUE_TYPE == "label" and config.aggregate not in (None, "distribution"):
-                    raise EvalSuiteError(
-                        f"Metric '{config.name}' is a label metric; its only aggregate is distribution."
-                    )
+                SuiteLoader._check_aggregate(config.name, config.aggregate, metric.VALUE_TYPE)
                 shape = (metric.VALUE_TYPE, config.aggregate)
                 if first_seen.setdefault(config.name, shape) != shape:
                     raise EvalSuiteError(
                         f"Case '{case.id}': metric '{config.name}' must keep the value type and aggregate it has "
                         "elsewhere in the suite, as its results are aggregated together."
                     )
+
+    @staticmethod
+    def _check_metric_name(name: str, kind: SuiteKind) -> None:
+        if name in reserved_metric_names(kind):
+            raise EvalSuiteError(f"Metric name '{name}' is reserved for a built-in figure; pick another.")
+        if "." in name:
+            raise EvalSuiteError(f"Metric name '{name}' may not contain '.'; reports use it for components.")
+
+    @staticmethod
+    def _check_aggregate(name: str, aggregate: str | None, value_type: str) -> None:
+        if aggregate == "distribution" and value_type != "label":
+            raise EvalSuiteError(f"Metric '{name}': aggregate 'distribution' is only for label metrics.")
+        if value_type == "label" and aggregate not in (None, "distribution"):
+            raise EvalSuiteError(f"Metric '{name}' is a label metric; its only aggregate is distribution.")
 
     @staticmethod
     def _check_integrations(loaded: LoadedSuite) -> None:

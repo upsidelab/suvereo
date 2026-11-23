@@ -1,4 +1,3 @@
-from typing import Type
 
 from django.conf import settings
 from suvereo_common.agentic_execution import BaseAgenticExecutionDefinition
@@ -8,14 +7,14 @@ from utils.base_registry import BaseRegistry
 class AgenticExecutionDefinitionRegistry(BaseRegistry[BaseAgenticExecutionDefinition]):
     plugin_base = BaseAgenticExecutionDefinition
 
-    def get_all(self) -> list[Type[BaseAgenticExecutionDefinition]]:
+    def get_all(self) -> list[type[BaseAgenticExecutionDefinition]]:
         return [self._get_plugin_class_by_path(path) for path in settings.AVAILABLE_AGENTIC_EXECUTION_DEFINITIONS]
 
-    def get_by_key(self, key: str) -> Type[BaseAgenticExecutionDefinition]:
+    def get_by_key(self, key: str) -> type[BaseAgenticExecutionDefinition]:
         for cls in self.get_all():
-            if cls.EXECUTION_KEY == key:
+            if key == cls.EXECUTION_KEY:
                 return cls
         raise KeyError(f"No agentic execution definition registered with EXECUTION_KEY='{key}'.")
 
-    def get_by_agent_type(self, agent_type: str) -> list[Type[BaseAgenticExecutionDefinition]]:
-        return [cls for cls in self.get_all() if cls.AGENT_KEY == agent_type]
+    def get_by_agent_type(self, agent_type: str) -> list[type[BaseAgenticExecutionDefinition]]:
+        return [cls for cls in self.get_all() if agent_type == cls.AGENT_KEY]

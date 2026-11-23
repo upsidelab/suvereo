@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Optional
 
 from langchain_core.chat_history import BaseChatMessageHistory
 from suvereo_common.agentic_execution import ToolScratchpad
@@ -18,7 +17,7 @@ class BaseInjector(ABC):
 
     @property
     @abstractmethod
-    def memory_compactor(self) -> Optional[BaseMemoryCompactor]:
+    def memory_compactor(self) -> BaseMemoryCompactor | None:
         pass
 
     @property

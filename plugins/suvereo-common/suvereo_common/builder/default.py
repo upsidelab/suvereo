@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from typing import Optional, Type
 
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.chat_history import BaseChatMessageHistory
@@ -176,7 +175,7 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
 
     def _build_and_set_repositories(self, models_registry: BaseDBModelsRegistry) -> None:
         repositories = {}
-        for name in self._config.repositories.__class__.model_fields.keys():
+        for name in self._config.repositories.__class__.model_fields:
             repo_class = getattr(self._config.repositories, name)
             model_class = models_registry.get_model_class_by_name(name)
             repositories[name] = repo_class(model_class)
@@ -264,7 +263,7 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
         ).build()
         return config.tool_class(agent=agent)
 
-    def _sub_agent_config(self, agent_class: Type[BaseAgent]) -> AgentConfig:
+    def _sub_agent_config(self, agent_class: type[BaseAgent]) -> AgentConfig:
         """The sub-agent's own config laid over this agent's resolved one; fields it leaves unset are inherited."""
         own = agent_class.get_config()
         update = {name: value for name in AgentConfig.model_fields if (value := getattr(own, name, None)) is not None}
@@ -280,14 +279,14 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
             tool_scratchpad=self._tool_scratchpad,
         )
 
-    def _build_agent_callback_handler(self) -> Optional[BaseCallbackHandler]:
+    def _build_agent_callback_handler(self) -> BaseCallbackHandler | None:
         if not self._config.agent_callback_handler:
             return None
         if issubclass(self._config.agent_callback_handler.handler_class, ConversationCallbackHandler):
             return self._config.agent_callback_handler.handler_class(conversation_id=self.conversation_id)
         return self._config.agent_callback_handler.handler_class()
 
-    def _build_llm_callback_handlers(self) -> Optional[list[BaseCallbackHandler]]:
+    def _build_llm_callback_handlers(self) -> list[BaseCallbackHandler] | None:
         if not self._config.llm.callbacks:
             return None
         handlers = []
@@ -302,7 +301,7 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
     def _build_chat_history(self) -> BaseChatMessageHistory:
         return self._config.memory.chat_history_class(self._repositories.conversation, self.conversation_id)
 
-    def _build_memory_compactor(self, chat_history: BaseChatMessageHistory) -> Optional[BaseMemoryCompactor]:
+    def _build_memory_compactor(self, chat_history: BaseChatMessageHistory) -> BaseMemoryCompactor | None:
         if not self._config.memory_compactor_enabled:
             return None
         if self._config.memory.compactor_class is None:

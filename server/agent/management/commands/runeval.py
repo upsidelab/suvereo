@@ -1,9 +1,9 @@
 import json
 import logging
 import sys
+from collections.abc import Iterator
 from contextlib import contextmanager, nullcontext
 from pathlib import Path
-from typing import Iterator
 
 from django.core.management.base import BaseCommand
 from pydantic import TypeAdapter, ValidationError
