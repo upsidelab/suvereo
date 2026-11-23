@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Optional
 
 
 class BaseMemoryCompactor(ABC):
@@ -12,9 +11,8 @@ class BaseMemoryCompactor(ABC):
     """
 
     @abstractmethod
-    def get_summary(self) -> Optional[str]:
+    def get_summary(self) -> str | None:
         """Return the current persisted summary, or None if not yet generated."""
-        pass
 
     @abstractmethod
     def compact_if_needed(self) -> None:
@@ -23,4 +21,3 @@ class BaseMemoryCompactor(ABC):
 
         Should be called after new messages have been added to history.
         """
-        pass

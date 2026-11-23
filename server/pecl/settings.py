@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import json
 import os
 import sys
+from contextlib import suppress
 from datetime import timedelta
 from pathlib import Path
 
@@ -296,9 +297,7 @@ UPLOADED_FILE_RETENTION_PERIOD_HOURS: int = 48
 
 SERVICE_ACCOUNT_DOMAIN = env.str("SERVICE_ACCOUNT_DOMAIN", "suvereo.internal")
 
-try:
+with suppress(ImportError):
     from pecl.settings_override import *  # noqa: F401, F403
-except ImportError:
-    pass
 
 INSTALLED_APPS += INSTALLED_DOMAIN_DEFINITIONS

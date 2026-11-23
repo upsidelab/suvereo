@@ -1,4 +1,3 @@
-from typing import List, Type
 
 from django.conf import settings
 from suvereo_common.integrations import BaseIntegration, BaseOAuthIntegration
@@ -13,17 +12,17 @@ class IntegrationPluginRegistry(BaseRegistry[BaseIntegration]):
 
     plugin_base = BaseIntegration
 
-    def get_plugin_classes(self) -> List[Type[BaseIntegration]]:
+    def get_plugin_classes(self) -> list[type[BaseIntegration]]:
         return [self._get_plugin_class_by_path(path) for path in settings.CATALOG_INTEGRATION_PLUGINS]
 
-    def _classes_by_type(self) -> dict[str, Type[BaseIntegration]]:
+    def _classes_by_type(self) -> dict[str, type[BaseIntegration]]:
         return {cls.TYPE: cls for cls in self.get_plugin_classes()}
 
-    def get_plugin_class_by_type(self, integration_type: str) -> Type[BaseIntegration]:
+    def get_plugin_class_by_type(self, integration_type: str) -> type[BaseIntegration]:
         try:
             return self._classes_by_type()[integration_type]
         except KeyError:
-            raise KeyError(f"No integration plugin registered with TYPE='{integration_type}'.")
+            raise KeyError(f"No integration plugin registered with TYPE='{integration_type}'.") from None
 
     def build_instance(self, integration: Integration) -> BaseIntegration:
         """Instantiate the plugin for a stored Integration record, with its config on self."""

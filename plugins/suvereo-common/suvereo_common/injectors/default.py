@@ -1,4 +1,3 @@
-from typing import Optional
 
 from langchain_core.chat_history import BaseChatMessageHistory
 
@@ -15,8 +14,8 @@ class Injector(BaseInjector):
         self,
         repositories: RepositoriesInstances,
         chat_history: BaseChatMessageHistory,
-        tool_scratchpad: Optional[ToolScratchpad] = None,
-        memory_compactor: Optional[BaseMemoryCompactor] = None,
+        tool_scratchpad: ToolScratchpad | None = None,
+        memory_compactor: BaseMemoryCompactor | None = None,
     ):
         super().__init__(repositories)
         self._chat_history = chat_history
@@ -28,7 +27,7 @@ class Injector(BaseInjector):
         return self._chat_history
 
     @property
-    def memory_compactor(self) -> Optional[BaseMemoryCompactor]:
+    def memory_compactor(self) -> BaseMemoryCompactor | None:
         return self._memory_compactor
 
     @property

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Generic, Optional, Type, TypeVar
+from typing import Any, Generic, TypeVar
 
 from ..agentic_execution.memory import ToolScratchpad
 from ..agents import BaseAgent
@@ -20,11 +20,11 @@ class BaseAgentBuilder(ABC, Generic[ConfigT]):
 
     def __init__(
         self,
-        agent_class: Type[BaseAgent],
+        agent_class: type[BaseAgent],
         config: ConfigT,
         conversation_id: Any,
         streaming: bool = False,
-        tool_scratchpad: Optional[ToolScratchpad] = None,
+        tool_scratchpad: ToolScratchpad | None = None,
     ):
         self._agent_class = agent_class
         self._config = config

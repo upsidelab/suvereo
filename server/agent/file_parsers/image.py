@@ -1,4 +1,5 @@
 import base64
+import contextlib
 from io import BytesIO
 from typing import IO, AnyStr
 
@@ -11,10 +12,8 @@ class ImageFileParser(BaseFileParser):
         file.seek(0)
         image = Image.open(file)
 
-        try:
+        with contextlib.suppress(Exception):
             image = ImageOps.exif_transpose(image)
-        except Exception:
-            pass
 
         has_transparency = image.mode in ("RGBA", "LA") or (
             image.mode == "P" and image.info.get("transparency") is not None

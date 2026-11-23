@@ -233,7 +233,7 @@ class ConversationFileUploadView(APIView):
         file = request.FILES["file"]
         file_extension = os.path.splitext(file.name)[1].lower()
         supported_extensions = []
-        for extensions_tuple in settings.FILE_PARSER_CLASSES.keys():
+        for extensions_tuple in settings.FILE_PARSER_CLASSES:
             supported_extensions.extend(extensions_tuple)
 
         if file_extension not in supported_extensions:
@@ -276,7 +276,7 @@ class SupportedFileTypesView(APIView):
     )
     def get(self, request):
         supported_extensions = []
-        for extensions_tuple in settings.FILE_PARSER_CLASSES.keys():
+        for extensions_tuple in settings.FILE_PARSER_CLASSES:
             supported_extensions.extend(extensions_tuple)
 
         response_data = {"supported_extensions": supported_extensions}

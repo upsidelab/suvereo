@@ -37,7 +37,7 @@ class PermissionCodeField(serializers.RelatedField):
         try:
             return PUBLIC_CODES[label]
         except KeyError:
-            raise ImproperlyConfigured(f"Permission {label} is in the database but is not declared in PERMISSIONS.")
+            raise ImproperlyConfigured(f"Permission {label} is in the database but is not declared in PERMISSIONS.") from None
 
     def to_internal_value(self, code) -> Permission:
         codename = INTERNAL_CODES.get(code)
@@ -47,7 +47,7 @@ class PermissionCodeField(serializers.RelatedField):
         try:
             return self.get_queryset().get(content_type__app_label=app_label, codename=bare_codename)
         except Permission.DoesNotExist:
-            raise serializers.ValidationError(f"Permission {code} is declared but missing from the database.")
+            raise serializers.ValidationError(f"Permission {code} is declared but missing from the database.") from None
 
 
 class GrantedPermissionsMixin:

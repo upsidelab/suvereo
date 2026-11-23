@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any
 
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.messages import AIMessage, BaseMessage, ToolMessage, messages_from_dict
@@ -80,12 +80,12 @@ class PersistentChatHistory(BaseChatMessageHistory):
         return messages_from_dict(message_dicts)
 
     @property
-    def last_message_database_id(self) -> Optional[int]:
+    def last_message_database_id(self) -> int | None:
         """Return the DB primary key of the most recent message in this conversation, or None."""
         last = self._conversation.messages.filter(answer_failed=False).order_by("id").last()
         return last.id if last else None
 
-    def messages_after(self, message_id: Optional[int]) -> list[BaseMessage]:
+    def messages_after(self, message_id: int | None) -> list[BaseMessage]:
         """Return messages after the given message ID.
 
         If message_id is None, returns all messages. Used by the memory compactor to fetch
@@ -100,8 +100,8 @@ class PersistentChatHistory(BaseChatMessageHistory):
         return messages_from_dict([self._parse_message_to_dict(m) for m in db_messages])
 
     @staticmethod
-    def _parse_message_to_dict(message: BaseMessage) -> Dict[str, Any]:
-        data: Dict[str, Any] = {"content": message.text, "name": message.function_name}
+    def _parse_message_to_dict(message: BaseMessage) -> dict[str, Any]:
+        data: dict[str, Any] = {"content": message.text, "name": message.function_name}
         match message.type:
             case Message.MessageType.INTERMEDIATE_STEP:
                 data = {

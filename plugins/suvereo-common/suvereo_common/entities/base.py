@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -11,7 +10,7 @@ class EntityField:
     """
 
     name: str
-    label: Optional[str] = None
+    label: str | None = None
 
 
 class DomainEntity:

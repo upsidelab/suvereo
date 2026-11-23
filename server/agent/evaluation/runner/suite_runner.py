@@ -2,11 +2,11 @@ import json
 import logging
 import tempfile
 import threading
+from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import ExitStack, contextmanager, nullcontext
 from datetime import datetime
 from itertools import product
-from typing import Iterator
 
 from django.db import connection
 from django.test import override_settings

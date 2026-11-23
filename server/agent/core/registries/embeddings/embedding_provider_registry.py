@@ -1,5 +1,4 @@
 from importlib import import_module
-from typing import List, Type
 
 from suvereo_common.registry import BaseEmbeddingProviderRegistry
 from suvereo_common.registry.embeddings import EmbeddingProvider
@@ -23,15 +22,15 @@ class EmbeddingProviderRegistry(BaseRegistry[EmbeddingProvider], BaseEmbeddingPr
         else:
             self._data_set_repo = data_set_repo
 
-    def get_provider_classes(self) -> List[Type[EmbeddingProvider]]:
+    def get_provider_classes(self) -> list[type[EmbeddingProvider]]:
         """Returns all registered provider classes."""
         return [self._get_plugin_class_by_path(path) for path in self._get_plugin_paths()]
 
-    def _get_provider_classes_by_name(self) -> dict[str, Type[EmbeddingProvider]]:
+    def _get_provider_classes_by_name(self) -> dict[str, type[EmbeddingProvider]]:
         """Returns a mapping of provider NAME to provider class."""
         return {cls.NAME: cls for cls in self.get_provider_classes()}
 
-    def provider_class_by_name(self, name: str) -> Type[EmbeddingProvider]:
+    def provider_class_by_name(self, name: str) -> type[EmbeddingProvider]:
         """Looks up a provider class by its ``NAME`` attribute."""
         return self._get_provider_classes_by_name()[name]
 
@@ -42,6 +41,6 @@ class EmbeddingProviderRegistry(BaseRegistry[EmbeddingProvider], BaseEmbeddingPr
         return provider_class(data_set.embedding_model, data_set.embedding_vector_dimensions)
 
     @staticmethod
-    def _get_plugin_paths() -> List[str]:
+    def _get_plugin_paths() -> list[str]:
         """Returns the list of provider class paths from settings."""
         return settings.CATALOG_EMBEDDING_PROVIDERS

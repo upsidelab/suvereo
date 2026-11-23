@@ -1,4 +1,4 @@
-from typing import Any, Optional, Type, TypeVar
+from typing import Any, TypeVar
 
 from django.db import models
 from django.db.models import QuerySet
@@ -23,11 +23,11 @@ T = TypeVar("T", bound=models.Model)
 
 
 class BaseDjangoRepository(BaseRepository[T]):
-    def __init__(self, model: Type[T]):
-        super(BaseDjangoRepository, self).__init__(model)
+    def __init__(self, model: type[T]):
+        super().__init__(model)
         self.model = model
 
-    def get_by_id(self, pk: int) -> Optional[T]:
+    def get_by_id(self, pk: int) -> T | None:
         try:
             return self.model.objects.get(pk=pk)
         except self.model.DoesNotExist:
@@ -44,7 +44,7 @@ class BaseDjangoRepository(BaseRepository[T]):
         instance.save()
         return instance
 
-    def update(self, pk: int, **kwargs) -> Optional[T]:
+    def update(self, pk: int, **kwargs) -> T | None:
         obj = self.get_by_id(pk)
         if obj:
             for key, value in kwargs.items():

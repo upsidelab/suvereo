@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from suvereo_common.integrations import BaseIntegrationPluginResolver
 from suvereo_common.integrations.base import IntegrationT
@@ -9,7 +9,7 @@ from agent.evaluation.run_context import EvalRunContext
 class EvalIntegrationPluginResolver(BaseIntegrationPluginResolver):
     """Answers integration lookups from the current run's mocks; an interface no mock covers goes to the real resolver if the run allows it."""
 
-    def resolve(self, data_set_id: Any, plugin_base: type[IntegrationT]) -> Optional[IntegrationT]:
+    def resolve(self, data_set_id: Any, plugin_base: type[IntegrationT]) -> IntegrationT | None:
         mocks = self._mocks(plugin_base)
         if mocks:
             return mocks[-1]

@@ -93,7 +93,7 @@ class TestSetRuntimeArguments:
 
         agent.set_runtime_arguments({"prompt_input": {}, "tools": {"proxied": {"proxy": "http://proxy:8080"}}})
 
-        assert agent._tools[1].CONFIGURATION_ARGS == ProxyConfig(proxy="http://proxy:8080")
+        assert ProxyConfig(proxy="http://proxy:8080") == agent._tools[1].CONFIGURATION_ARGS
         assert agent._tools[0].CONFIGURATION_ARGS is None
 
     def test_a_tool_with_no_stored_settings_gets_its_defaults(self):
@@ -101,7 +101,7 @@ class TestSetRuntimeArguments:
 
         agent.set_runtime_arguments({"prompt_input": {}, "tools": {}})
 
-        assert agent._tools[0].CONFIGURATION_ARGS == ProxyConfig()
+        assert ProxyConfig() == agent._tools[0].CONFIGURATION_ARGS
 
 
     def test_tool_settings_still_stored_as_a_list_fall_back_to_defaults(self):
@@ -109,7 +109,7 @@ class TestSetRuntimeArguments:
 
         agent.set_runtime_arguments({"prompt_input": {}, "tools": [{"proxy": "http://proxy:8080"}]})
 
-        assert agent._tools[0].CONFIGURATION_ARGS == ProxyConfig()
+        assert ProxyConfig() == agent._tools[0].CONFIGURATION_ARGS
 
 
     def test_a_tool_missing_a_required_setting_names_the_tool(self):

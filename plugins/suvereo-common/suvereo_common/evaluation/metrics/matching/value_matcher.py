@@ -69,7 +69,7 @@ class ValueMatcher:
         if isinstance(actual, bool) != isinstance(expected, bool):
             return False
         if isinstance(actual, list) and isinstance(expected, list):
-            return len(actual) == len(expected) and all(cls._strictly_equal(a, e) for a, e in zip(actual, expected))
+            return len(actual) == len(expected) and all(cls._strictly_equal(a, e) for a, e in zip(actual, expected, strict=True))
         if isinstance(actual, dict) and isinstance(expected, dict):
             return actual.keys() == expected.keys() and all(cls._strictly_equal(actual[k], expected[k]) for k in actual)
         return actual == expected

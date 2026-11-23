@@ -1,6 +1,7 @@
 """Writing back config an integration renewed for itself."""
 
-from typing import Any, Awaitable, Callable
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from channels.db import database_sync_to_async
 from django.db import transaction

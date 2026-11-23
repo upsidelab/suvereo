@@ -93,7 +93,7 @@ class MetricAggregator:
             outcomes.setdefault(run.case_id, []).append(run.passed)
         attempts = [run.metrics.get(Attempts.NAME) for run in runs]
         first_attempt = [
-            None if result is None else run.passed and (result.value or 0) <= 1 for run, result in zip(runs, attempts)
+            None if result is None else run.passed and (result.value or 0) <= 1 for run, result in zip(runs, attempts, strict=True)
         ]
         return {
             PASS_RATE: MetricAggregate.from_values([run.passed for run in runs], "bool"),

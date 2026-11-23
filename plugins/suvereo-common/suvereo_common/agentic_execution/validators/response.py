@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Optional
 
 
 @dataclass
@@ -23,5 +22,5 @@ class ValidatorResponse:
 
     validation_successful: bool
     retry_needed: bool
-    feedback: Optional[str] = field(default=None)
-    failure_code: Optional[str] = field(default=None)
+    feedback: str | None = field(default=None)
+    failure_code: str | None = field(default=None)

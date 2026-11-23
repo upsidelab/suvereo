@@ -1,6 +1,6 @@
 import inspect
 from abc import ABC, ABCMeta, abstractmethod
-from typing import TYPE_CHECKING, Any, Type
+from typing import TYPE_CHECKING, Any
 
 from suvereo_common.registry import BaseLanguageModelRegistry
 
@@ -35,7 +35,7 @@ class ToolMeta(ABCMeta):
 class BaseTool(metaclass=ToolMeta):
     NAME: str
     DESCRIPTION: str
-    ARGS_SCHEMA: Type[BaseModel]
+    ARGS_SCHEMA: type[BaseModel]
     RETURN_DIRECT: bool
     CONFIGURATION_ARGS = None
 
@@ -64,7 +64,7 @@ class BaseTool(metaclass=ToolMeta):
         field = getattr(self, "CONFIGURATION_ARGS", None)
         if field is None:
             return
-        setattr(self, "CONFIGURATION_ARGS", field(**runtime_arguments))
+        self.CONFIGURATION_ARGS = field(**runtime_arguments)
 
 
 class BaseFunctionTool(BaseTool, ABC):

@@ -1,3 +1,5 @@
+import contextlib
+
 from langchain_core.documents import Document
 from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
 from langchain_core.messages import AIMessage
@@ -62,10 +64,8 @@ class TestTraceCallbackHandler:
         handler = TraceCallbackHandler(recorder)
 
         lookup_sku.invoke({"product": "mug"}, config={"callbacks": [handler]})
-        try:
+        with contextlib.suppress(RuntimeError):
             place_order.invoke({"sku": "SKU-1"}, config={"callbacks": [handler]})
-        except RuntimeError:
-            pass
 
         lookup, order = recorder.trace.tool_calls
         assert (lookup.name, lookup.args, lookup.output) == ("lookup_sku", {"product": "mug"}, "SKU-1")

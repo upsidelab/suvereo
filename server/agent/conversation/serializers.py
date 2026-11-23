@@ -94,8 +94,7 @@ class MessagesSerializer(serializers.ModelSerializer):
     def get_text(self, obj: Message):
         if obj.type == Message.MessageType.FILE:
             return ""
-        else:
-            return obj.text
+        return obj.text
 
 
 class ConversationContentSerializer(serializers.ModelSerializer):

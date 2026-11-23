@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Generic, Type, TypeVar
+from typing import Any, Generic, TypeVar
 
 T = TypeVar("T")
 
@@ -9,5 +9,5 @@ class BaseDBModelsRegistry(ABC, Generic[T]):
         self._models_config = models_config
 
     @abstractmethod
-    def get_model_class_by_name(self, name: str) -> Type[T]:
+    def get_model_class_by_name(self, name: str) -> type[T]:
         pass

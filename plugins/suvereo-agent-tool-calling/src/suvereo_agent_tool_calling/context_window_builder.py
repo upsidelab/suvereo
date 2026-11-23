@@ -1,4 +1,3 @@
-from typing import Optional
 
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage, trim_messages
@@ -16,7 +15,7 @@ class ContextWindowBuilder:
     def __init__(
         self,
         chat_history: BaseChatMessageHistory,
-        memory_compactor: Optional[BaseMemoryCompactor] = None,
+        memory_compactor: BaseMemoryCompactor | None = None,
     ):
         self._chat_history = chat_history
         self._memory_compactor = memory_compactor
@@ -37,7 +36,7 @@ class ContextWindowBuilder:
             return [summary_message] + limited_history
         return limited_history
 
-    def _build_summary_message(self) -> Optional[SystemMessage]:
+    def _build_summary_message(self) -> SystemMessage | None:
         if self._memory_compactor is None:
             return None
         summary = self._memory_compactor.get_summary()

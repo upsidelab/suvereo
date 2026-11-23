@@ -22,12 +22,12 @@ class PydanticModelField(BasePydanticModelField):
         try:
             class_obj = AgentRegistry().get_agent_class_by_type(agent_type)
         except Exception as e:
-            raise APIException(f"Error loading agent: {str(e)}")
+            raise APIException(f"Error loading agent: {str(e)}") from e
 
         try:
             schema = getattr(class_obj, self.agent_field_name)
         except KeyError:
-            raise serializers.ValidationError(f"Unknown schema for field: {self.agent_field_name}")
+            raise serializers.ValidationError(f"Unknown schema for field: {self.agent_field_name}") from None
 
         if not schema:
             return {}
@@ -35,7 +35,7 @@ class PydanticModelField(BasePydanticModelField):
         try:
             return schema(**data).model_dump()
         except PydanticValidationError as e:
-            raise serializers.ValidationError(self._format_pydantic_errors(e))
+            raise serializers.ValidationError(self._format_pydantic_errors(e)) from e
 
     def to_representation(self, value):
         if isinstance(value, BaseModel):

@@ -93,7 +93,7 @@ class StartAgenticExecutionView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if execution_cls.AGENT_KEY != agent.agent_type:
+        if agent.agent_type != execution_cls.AGENT_KEY:
             return Response(
                 {"detail": f"Execution '{execution_key}' does not belong to this agent."},
                 status=status.HTTP_400_BAD_REQUEST,

@@ -32,7 +32,7 @@ class ConversationFileAttachService:
         if not agent.file_upload:
             raise FileUploadNotSupportedError()
 
-        supported = [ext for extensions in settings.FILE_PARSER_CLASSES.keys() for ext in extensions]
+        supported = [ext for extensions in settings.FILE_PARSER_CLASSES for ext in extensions]
         for filename in filenames:
             ext = os.path.splitext(filename)[1].lower()
             if ext not in supported:

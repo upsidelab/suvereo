@@ -1,4 +1,5 @@
-from typing import Any, ClassVar, Generic, Iterable, TypeVar
+from collections.abc import Iterable
+from typing import Any, ClassVar, Generic, TypeVar
 
 from suvereo_common.registry import BaseEmbeddingProviderRegistry
 

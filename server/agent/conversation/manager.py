@@ -1,6 +1,5 @@
 import asyncio
 from datetime import datetime
-from typing import Optional
 
 from suvereo_common.agentic_execution.memory import ToolScratchpad
 from suvereo_common.integrations import BaseToolProvidingIntegration
@@ -22,8 +21,8 @@ class ConversationManager:
         conversation: Conversation,
         question_message: str,
         streaming: bool,
-        tool_scratchpad: Optional[ToolScratchpad] = None,
-        overrides: Optional[AgentConfigOverrides] = None,
+        tool_scratchpad: ToolScratchpad | None = None,
+        overrides: AgentConfigOverrides | None = None,
     ) -> str:
         """Formulate an answer to a given question and store the decision-making process.
 
@@ -43,12 +42,11 @@ class ConversationManager:
             tool_scratchpad=tool_scratchpad,
             overrides=overrides,
         )
-        response = agent.get_answer(question_message)
+        return agent.get_answer(question_message)
 
-        return response
 
     def _should_answer_asynchronously(
-        self, conversation: Conversation, overrides: Optional[AgentConfigOverrides] = None
+        self, conversation: Conversation, overrides: AgentConfigOverrides | None = None
     ) -> bool:
         """Decide whether this turn needs the async path, which exists to await the tools of tool-providing integrations.
 
@@ -69,8 +67,8 @@ class ConversationManager:
         conversation: Conversation,
         question_message: str,
         streaming: bool,
-        tool_scratchpad: Optional[ToolScratchpad],
-        overrides: Optional[AgentConfigOverrides] = None,
+        tool_scratchpad: ToolScratchpad | None,
+        overrides: AgentConfigOverrides | None = None,
     ) -> str:
         agent = await AgentRegistry().aget_conversation_agent(
             conversation,
@@ -84,13 +82,12 @@ class ConversationManager:
         user = User.objects.get(id=user_id)
         agent = Agent.objects.get(id=agent_id)
 
-        conversation = Conversation.objects.create(
+        return Conversation.objects.create(
             started_at=datetime.now(),
             user=user,
             data_set=agent.dataset,
             agent=agent,
         )
-        return conversation
 
     def get_conversation(self, user_id: int, data_set_id: int, conversation_id: int) -> Conversation:
         user = User.objects.get(id=user_id)
@@ -108,9 +105,8 @@ class ConversationManager:
             conversation.save()
 
         self.get_answer(conversation, message, streaming)
-        response = conversation.messages.order_by("created_at").last()
+        return conversation.messages.order_by("created_at").last()
 
-        return response
 
     def record_error(self, conversation_id: int, user_id: int, data_set_id: int, error: Exception):
         conversation = self.get_conversation(user_id=user_id, data_set_id=data_set_id, conversation_id=conversation_id)

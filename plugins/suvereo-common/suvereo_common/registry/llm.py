@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Type
+from typing import Any
 
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.language_models import BaseLanguageModel
@@ -19,7 +19,7 @@ class LanguageModelProvider(ABC):
     STREAMING_AVAILABLE = True
 
     def __init__(self, model: str):
-        super(LanguageModelProvider, self).__init__()
+        super().__init__()
         self._model = model
 
     @abstractmethod
@@ -29,7 +29,6 @@ class LanguageModelProvider(ABC):
         Returns:
             An instance of the language model for the agent.
         """
-        pass
 
     def provide_streaming_language_model(
         self, callbacks: list[BaseCallbackHandler] | None = None, **kwargs
@@ -82,13 +81,13 @@ class BaseLanguageModelRegistry(ABC):
     """
 
     @abstractmethod
-    def get_provider_classes(self) -> list[Type[LanguageModelProvider]]:
+    def get_provider_classes(self) -> list[type[LanguageModelProvider]]:
         """Returns all registered provider classes."""
 
     @abstractmethod
-    def provider_class_by_name(self, name: str) -> Type[LanguageModelProvider]:
+    def provider_class_by_name(self, name: str) -> type[LanguageModelProvider]:
         """Looks up a provider class by its ``NAME`` attribute."""
 
     @abstractmethod
-    def provider_for_dataset(self, data_set_id: Any) -> Type[LanguageModelProvider]:
+    def provider_for_dataset(self, data_set_id: Any) -> type[LanguageModelProvider]:
         """Returns the provider class configured for the given data set."""

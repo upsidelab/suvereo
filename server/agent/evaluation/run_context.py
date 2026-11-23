@@ -1,7 +1,8 @@
+from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from pathlib import Path
-from typing import ClassVar, Iterator, Optional
+from typing import ClassVar, Optional
 
 from suvereo_common.evaluation.trace import TraceRecorder
 from suvereo_common.integrations import BaseIntegration, BaseIntegrationPluginResolver
