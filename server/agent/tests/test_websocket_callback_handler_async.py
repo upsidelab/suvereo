@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
 from langchain_core.messages import AIMessage, AIMessageChunk
-from langchain_core.outputs import ChatGenerationChunk
+from langchain_core.outputs import ChatGeneration, ChatGenerationChunk, LLMResult
 from langchain_core.tools import tool
 
 from agent.core.callbacks import ConversationWebSocketCallbackHandler
@@ -79,3 +79,33 @@ class TestConversationWebSocketCallbackHandlerContentBlocks:
         streamed = [call.args[1]["token"] for call in channel_layer.group_send.await_args_list]
         assert streamed == ["hello", " there"]
 
+
+class TestConversationWebSocketCallbackHandlerNarration:
+    """Text a model writes alongside tool calls is narration; the UI shows it as a step, not the answer."""
+
+    def _build_handler(self, mock_get_channel_layer):
+        channel_layer = MagicMock()
+        channel_layer.group_send = AsyncMock()
+        mock_get_channel_layer.return_value = channel_layer
+        return ConversationWebSocketCallbackHandler(conversation_id=1), channel_layer
+
+    @staticmethod
+    def _events(channel_layer):
+        return [call.args[1] for call in channel_layer.group_send.await_args_list]
+
+    @patch("agent.core.callbacks.base_websocket_handler.get_channel_layer")
+    def test_a_model_call_ending_in_tool_calls_marks_its_text_as_narration(self, mock_get_channel_layer):
+        handler, channel_layer = self._build_handler(mock_get_channel_layer)
+        message = AIMessage(content="Let me check.", tool_calls=[{"id": "call_1", "name": "ping_tool", "args": {}}])
+
+        handler.on_llm_end(LLMResult(generations=[[ChatGeneration(message=message)]]))
+
+        assert [event["event"] for event in self._events(channel_layer)] == ["narration"]
+
+    @patch("agent.core.callbacks.base_websocket_handler.get_channel_layer")
+    def test_a_final_answer_is_not_marked_as_narration(self, mock_get_channel_layer):
+        handler, channel_layer = self._build_handler(mock_get_channel_layer)
+
+        handler.on_llm_end(LLMResult(generations=[[ChatGeneration(message=AIMessage(content="Done."))]]))
+
+        assert self._events(channel_layer) == []

@@ -58,12 +58,12 @@ class PersistentChatHistory(BaseChatMessageHistory):
 
     def _create_intermediate_step_message(self, message: AIMessage) -> None:
         for tool_call in message.tool_calls:
-            text = f"Invoking `{tool_call['name']}` with `{tool_call['args']}`."
             self._conversation.messages.create(
                 type=Message.MessageType.INTERMEDIATE_STEP,
-                text=text,
+                text="",
                 function_name=tool_call["name"],
                 tool_call_id=tool_call["id"],
+                tool_call_args=tool_call["args"],
             )
 
     def create_tool_message(self, message: ToolMessage) -> None:
@@ -101,9 +101,16 @@ class PersistentChatHistory(BaseChatMessageHistory):
         data: Dict[str, Any] = {"content": message.text, "name": message.function_name}
         match message.type:
             case Message.MessageType.INTERMEDIATE_STEP:
+                # Older rows hold an "Invoking ..." text, which models copy as narration, so it is not replayed.
                 data = {
-                    "content": message.text,
-                    "tool_calls": [{"id": message.tool_call_id, "name": message.function_name or "", "args": {}}],
+                    "content": "",
+                    "tool_calls": [
+                        {
+                            "id": message.tool_call_id,
+                            "name": message.function_name or "",
+                            "args": message.tool_call_args or {},
+                        }
+                    ],
                 }
             case Message.MessageType.FUNCTION:
                 data = {"content": message.text, "name": message.function_name, "tool_call_id": message.tool_call_id}

@@ -69,6 +69,49 @@ class TestPersistentChatHistory:
         assert stored.type == Message.MessageType.INTERMEDIATE_STEP
         assert stored.function_name == "search_products"
         assert stored.tool_call_id == "call_abc"
+        assert stored.tool_call_args == {"query": "shoes"}
+        assert stored.text == ""
+
+    def test_tool_calls_are_rebuilt_with_their_args_and_no_text(self, conversation):
+        # Given
+        history = PersistentChatHistory(
+            conversation_repo=DjangoConversationRepository(Conversation),
+            conversation_id=conversation.id,
+        )
+        history.add_message(AIMessage(
+            content="",
+            tool_calls=[{"id": "call_abc", "name": "search_products", "args": {"query": "shoes"}}],
+        ))
+
+        # When
+        rebuilt = history.messages[0]
+
+        # Then
+        assert rebuilt.content == ""
+        assert rebuilt.tool_calls[0]["args"] == {"query": "shoes"}
+
+    def test_legacy_invoking_text_is_not_replayed(self, conversation):
+        # Given
+        baker.make(
+            Message,
+            conversation=conversation,
+            type=Message.MessageType.INTERMEDIATE_STEP,
+            text="Invoking `search_products` with `{'query': 'shoes'}`.",
+            function_name="search_products",
+            tool_call_id="call_abc",
+        )
+        history = PersistentChatHistory(
+            conversation_repo=DjangoConversationRepository(Conversation),
+            conversation_id=conversation.id,
+        )
+
+        # When
+        rebuilt = history.messages[0]
+
+        # Then
+        assert rebuilt.content == ""
+        assert rebuilt.tool_calls[0]["name"] == "search_products"
+        assert rebuilt.tool_calls[0]["args"] == {}
 
     def test_add_tool_message_stored_as_function(self, conversation):
         # Given

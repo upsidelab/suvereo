@@ -14,10 +14,13 @@ import { AttachmentBubble } from "@/components/conversation-view/attachment-bubb
 import { MessageError } from "@/components/conversation-view/message-error.tsx";
 import { MessageBubbleTyping } from "@/components/conversation-view/message-bubble-typing.tsx";
 import { ChatWindow } from "@/components/conversation-view/chat-window.tsx";
+import { AgentSteps } from "@/components/conversation-view/agent-steps.tsx";
+import { appendToken, finishTool, moveTextToNarration, startTool } from "@/components/conversation-view/streamed-answer.ts";
 import { NotFound } from "@/pages/not-found.tsx";
 import { ApiError } from "@/lib/api-error.ts";
 
 import type { AgentDetails } from "@/lib/types";
+import type { AgentStep } from "@/components/conversation-view/agent-steps.tsx";
 import type { Conversation as ConversationSchema } from '@/lib/types.ts';
 import type { Message, MessageFile } from "@/components/conversation-view/message-composer.tsx";
 
@@ -30,11 +33,18 @@ export type FileMessageProps = {
   file_type: string;
 };
 
-export type MessageProps = {
-  type: "human" | "ai" | "notice";
+export type AiMessageProps = {
+  type: "ai";
   text: string;
   id: number | null;
-} | FileMessageProps;
+  steps?: AgentStep[];
+};
+
+export type MessageProps = {
+  type: "human" | "notice";
+  text: string;
+  id: number | null;
+} | AiMessageProps | FileMessageProps;
 
 interface ChatSessionProps {
   pendingMessage?: Message;
@@ -145,20 +155,12 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
         setIsLoading(false);
         setIsAgentLoading(false);
 
-        setMessages((prevMessages) => {
-          const lastMessage = prevMessages[prevMessages.length - 1];
-
-          if (lastMessage && lastMessage.type === "ai" && lastMessage.id === null) {
-            return [
-              ...prevMessages.slice(0, -1),
-              { ...lastMessage, text: lastMessage.text + data.data.chunk }
-            ];
-          } else {
-            return [...prevMessages, { type: "ai", text: data.data.chunk, id: null }];
-          }
-        });
-
+        setMessages((prevMessages) => appendToken(prevMessages, data.data.chunk));
         scrollToLastMessage();
+      },
+      narration: () => {
+        setIsAgentLoading(true);
+        setMessages(moveTextToNarration);
       },
       message_id: () => {
         setMessages((prevMessages) => {
@@ -169,9 +171,12 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
       },
       tool_call: () => {
         setStatusText(`Invoking ${data.data.tool_name}...`);
+        setMessages((prevMessages) => startTool(prevMessages, data.data.tool_name));
+        scrollToLastMessage();
       },
       tool_done: () => {
         setStatusText(DEFAULT_STATUS_TEXT);
+        setMessages(finishTool);
       },
       error: () => {
         setIsLoading(false);
@@ -370,6 +375,15 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
                   return (
                     <AttachmentBubble key={index} variant="primary" message={message} inMessageGroup={inMessageGroup} />
                   );
+                }
+
+                if (message.type === "ai" && message.steps?.length) {
+                  return message.text ? (
+                    <div key={index} className="space-y-2">
+                      <AgentSteps steps={message.steps} />
+                      <MessageBubble text={message.text} variant="secondary" questionId={message.id} />
+                    </div>
+                  ) : null;
                 }
 
                 if (message.type === 'ai' && message.text === '') {
