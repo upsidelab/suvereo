@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from .base_report_writer import BaseReportWriter
-from .csv_table import CsvTable
-from .suite_report import SuiteReport
+from agent.evaluation.reports.base_report_writer import BaseReportWriter
+from agent.evaluation.reports.csv_table import CsvTable
+from agent.evaluation.reports.suite_report import SuiteReport
 
 
 class CasesCsvWriter(BaseReportWriter):

@@ -1,9 +1,8 @@
 from agent.evaluation.aggregation import PASS_RATE
-
-from .exit_code import ExitCode
-from .markdown_text import MarkdownText
-from .suite_report import SuiteReport
-from .suite_verdict import SuiteVerdict
+from agent.evaluation.reports.exit_code import ExitCode
+from agent.evaluation.reports.markdown_text import MarkdownText
+from agent.evaluation.reports.suite_report import SuiteReport
+from agent.evaluation.reports.suite_verdict import SuiteVerdict
 
 LOW_SAMPLE_RUNS = 5
 HEADLINES = {

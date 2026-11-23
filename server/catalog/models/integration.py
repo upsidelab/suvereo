@@ -1,7 +1,7 @@
 from django.db import models
 from django.db.models import Q
 
-from .data_set import DataSet
+from catalog.models.data_set import DataSet
 
 #: Name of the partial unique constraint below. Callers that need to tell "this type is already
 #: configured" apart from any other integrity failure match on it, so it lives here rather than

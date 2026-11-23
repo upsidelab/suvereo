@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views
+from agent.conversation import views
 
 urlpatterns = (
     path("api/conversations", views.ConversationListView.as_view(), name="conversation-list"),

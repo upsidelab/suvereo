@@ -5,8 +5,7 @@ from suvereo_common.evaluation.errors import EvalSuiteError
 
 from agent.evaluation.reports import ReportMdWriter, RunHistory, SummaryFile, SummaryJsonWriter
 from agent.evaluation.reports.case_outcome import CaseOutcome
-
-from .suite_reports import run_result, suite_report
+from agent.evaluation.tests.suite_reports import run_result, suite_report
 
 
 def _baseline(tmp_path, runs) -> SummaryFile:

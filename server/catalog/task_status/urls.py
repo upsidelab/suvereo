@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import IntegrationSyncStatusView
+from catalog.task_status.views import IntegrationSyncStatusView
 
 urlpatterns = [
     path(

@@ -15,11 +15,10 @@ from agent.core.registries.agents.agent_registry import AgentRegistry
 from agent.evaluation.integrations import MockIntegrationFactory
 from agent.evaluation.runner import CaseRunner, RunResult, SuiteRunner, SuiteRunOptions
 from agent.evaluation.sandbox import EvalSandbox
+from agent.evaluation.tests.greeter import GreeterMockIntegration, GreetingExecution
 from agent.models import Agent
 from agent.services import AgentPreconfigurationService
 from catalog.integrations.resolver import IntegrationPluginResolver
-
-from .greeter import GreeterMockIntegration, GreetingExecution
 
 GREETER = f"{GreeterMockIntegration.__module__}.GreeterMockIntegration"
 CASES = [

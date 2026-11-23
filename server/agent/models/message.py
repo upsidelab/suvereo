@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.db import models
 
-from .conversation import Conversation
+from agent.models.conversation import Conversation
 
 
 class Message(models.Model):

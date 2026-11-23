@@ -5,8 +5,7 @@ from utils.views.task_status import TaskStatusView
 from account.authorization import PERMISSIONS, has_dataset_perm
 from agent.conversation.tasks import TaskType
 from agent.models import Conversation
-
-from .serializers import FileUploadTaskStatusSerializer, MessagePushTaskStatusSerializer
+from agent.task_status.serializers import FileUploadTaskStatusSerializer, MessagePushTaskStatusSerializer
 
 
 class ConversationTaskStatusView(TaskStatusView):

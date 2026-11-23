@@ -1,6 +1,6 @@
 from django.urls import include, path
 
-from . import views
+from agent import views
 
 urlpatterns = (
     path("", include("agent.conversation.urls")),

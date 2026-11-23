@@ -5,7 +5,7 @@ from suvereo_common.evaluation.metrics import BaseMetric, MetricContext, MetricE
 from suvereo_common.evaluation.metrics.auto import auto_metrics_for
 from suvereo_common.evaluation.suite import MetricConfig, PassThreshold, SuiteKind
 
-from .run_result import ThresholdResult
+from agent.evaluation.runner.run_result import ThresholdResult
 
 logger = logging.getLogger(__name__)
 

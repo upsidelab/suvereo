@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import ClassVar
 
-from .suite_report import SuiteReport
+from agent.evaluation.reports.suite_report import SuiteReport
 
 
 class BaseReportWriter(ABC):

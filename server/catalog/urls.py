@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views
+from catalog import views
 
 urlpatterns = [
     path("api/data_sets", views.DataSetListView.as_view(), name="data_set_list"),

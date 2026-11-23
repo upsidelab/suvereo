@@ -5,10 +5,9 @@ from suvereo_common.evaluation.trace import TraceRecorder
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
 from agent.agentic_execution.runner import AgenticExecutionRunner
 from agent.core.agents.config_overrides import AgentConfigOverrides
+from agent.evaluation.runner.base_run_driver import BaseRunDriver
+from agent.evaluation.runner.eval_execution_conversation import EvalExecutionConversation
 from agent.models import Conversation
-
-from .base_run_driver import BaseRunDriver
-from .eval_execution_conversation import EvalExecutionConversation
 
 
 class ExecutionRunDriver(BaseRunDriver):

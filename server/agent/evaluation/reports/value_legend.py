@@ -1,9 +1,8 @@
 from suvereo_common.evaluation.suite import PassThreshold, SuiteKind
 
 from agent.evaluation.aggregation.metric_aggregate import DEFAULT_AGGREGATE_NAMES
-
-from .suite_report import SuiteReport
-from .threshold_text import threshold_words
+from agent.evaluation.reports.suite_report import SuiteReport
+from agent.evaluation.reports.threshold_text import threshold_words
 
 AGGREGATE_WORDS = {
     "mean": "avg",

@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
 
-from .base_report_writer import BaseReportWriter
-from .suite_report import SuiteReport
+from agent.evaluation.reports.base_report_writer import BaseReportWriter
+from agent.evaluation.reports.suite_report import SuiteReport
 
 
 class TraceFilesWriter(BaseReportWriter):

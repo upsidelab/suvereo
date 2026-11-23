@@ -6,9 +6,8 @@ from suvereo_common.integrations import BaseIntegrationPluginResolver
 
 from account.models import User
 from agent.evaluation.sandbox import EvalSandbox
+from agent.evaluation.targets.base_agent_target import BaseAgentTarget
 from agent.models import Agent
-
-from .base_agent_target import BaseAgentTarget
 
 logger = logging.getLogger(__name__)
 

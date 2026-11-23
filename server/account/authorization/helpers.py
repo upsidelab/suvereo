@@ -2,12 +2,11 @@ from django.contrib.auth.models import Permission
 from django.db.models import Q, QuerySet
 from django.http import Http404
 
+from account.authorization.permission_codenames import PERMISSIONS
+from account.authorization.permission_codes import PUBLIC_CODES
+from account.authorization.permission_rules import DATASET_SCOPE_PERMISSIONS
 from account.models import DatasetGroupRoleAssignment, DatasetUserRoleAssignment, User
 from catalog.models import DataSet
-
-from .permission_codenames import PERMISSIONS
-from .permission_codes import PUBLIC_CODES
-from .permission_rules import DATASET_SCOPE_PERMISSIONS
 
 
 def _permissions(*labels: str) -> QuerySet[Permission]:

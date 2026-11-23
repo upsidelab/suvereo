@@ -10,10 +10,9 @@ from suvereo_common.evaluation.users import BaseUserSimulator
 
 from agent.conversation.manager import ConversationManager
 from agent.core.agents.config_overrides import AgentConfigOverrides
+from agent.evaluation.runner.base_run_driver import BaseRunDriver
 from agent.evaluation.user_simulator_registry import UserSimulatorRegistry
 from agent.models import Conversation
-
-from .base_run_driver import BaseRunDriver
 
 logger = logging.getLogger(__name__)
 

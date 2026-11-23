@@ -1,12 +1,12 @@
 from django.urls import path
 
-from .oauth import (
+from catalog.integrations.oauth import (
     IntegrationOAuthCallbackView,
     IntegrationOAuthRefreshView,
     IntegrationOAuthResultView,
     IntegrationOAuthStartView,
 )
-from .views import (
+from catalog.integrations.views import (
     IntegrationListView,
     IntegrationSyncView,
     IntegrationTypeListView,

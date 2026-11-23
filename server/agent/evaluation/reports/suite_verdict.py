@@ -3,9 +3,8 @@ from typing import Literal
 from pydantic import BaseModel
 
 from agent.evaluation.aggregation import PASS_RATE
-
-from .exit_code import ExitCode
-from .suite_report import SuiteReport
+from agent.evaluation.reports.exit_code import ExitCode
+from agent.evaluation.reports.suite_report import SuiteReport
 
 SuiteRunStatus = Literal["complete", "partial"]
 

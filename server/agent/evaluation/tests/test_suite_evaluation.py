@@ -7,8 +7,7 @@ from agent.evaluation.reports import ExitCode, ReportOutput, RunHistory, Summary
 from agent.evaluation.runner import SuiteRunner
 from agent.evaluation.runner.suite_run_result import SuiteRunResult
 from agent.evaluation.suite_evaluation import ReportWritingError, SuiteEvaluation
-
-from .suite_reports import loaded_suite, run_result
+from agent.evaluation.tests.suite_reports import loaded_suite, run_result
 
 
 def _evaluate(tmp_path, runs, **kwargs):

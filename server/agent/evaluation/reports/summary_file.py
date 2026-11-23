@@ -5,8 +5,8 @@ from typing import Any
 from pydantic import BaseModel, ValidationError
 from suvereo_common.evaluation.errors import EvalSuiteError
 
-from .case_outcome import CaseStatus
-from .run_directory import LATEST_LINK, RESULTS_DIR
+from agent.evaluation.reports.case_outcome import CaseStatus
+from agent.evaluation.reports.run_directory import LATEST_LINK, RESULTS_DIR
 
 SUMMARY_FILE = "summary.json"
 

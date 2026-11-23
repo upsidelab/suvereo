@@ -3,9 +3,8 @@ from typing import Any
 from pydantic import BaseModel
 
 from agent.evaluation.aggregation import PASS_RATE, CandidateMetrics
-
-from .case_outcome import CaseOutcome, CaseStatus
-from .summary_file import SummarizedCandidate, SummaryFile
+from agent.evaluation.reports.case_outcome import CaseOutcome, CaseStatus
+from agent.evaluation.reports.summary_file import SummarizedCandidate, SummaryFile
 
 STATUS_RANK: dict[str, int] = {"fail": 0, "flaky": 1, "pass": 2}
 

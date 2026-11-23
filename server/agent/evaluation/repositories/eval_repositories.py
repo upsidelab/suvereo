@@ -7,8 +7,7 @@ from agent.core.repositories import (
     DjangoMessageRepository,
     DjangoUserRepository,
 )
-
-from .all_objects_repository_mixin import AllObjectsRepositoryMixin
+from agent.evaluation.repositories.all_objects_repository_mixin import AllObjectsRepositoryMixin
 
 
 class EvalConversationRepository(AllObjectsRepositoryMixin, DjangoConversationRepository):

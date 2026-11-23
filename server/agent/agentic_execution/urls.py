@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import (
+from agent.agentic_execution.views import (
     AgenticExecutionDefinitionTypesView,
     AgenticExecutionDetailView,
     AgenticExecutionListView,

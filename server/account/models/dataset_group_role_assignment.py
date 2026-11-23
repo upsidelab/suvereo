@@ -1,7 +1,7 @@
 from django.db import models
 
-from .dataset_role import DatasetRole
-from .user_group import UserGroup
+from account.models.dataset_role import DatasetRole
+from account.models.user_group import UserGroup
 
 
 class DatasetGroupRoleAssignment(models.Model):

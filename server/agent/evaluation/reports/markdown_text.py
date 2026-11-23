@@ -2,7 +2,7 @@ import json
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from .baseline_diff import ValueChange
+    from agent.evaluation.reports.baseline_diff import ValueChange
 
 MAX_INLINE_CHARS = 160
 

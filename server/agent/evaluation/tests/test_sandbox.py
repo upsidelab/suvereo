@@ -7,13 +7,12 @@ from model_bakery import baker
 from agent.core.registries.agents.agent_registry import AgentRegistry
 from agent.evaluation.integrations import IntegrationFixtureSyncer
 from agent.evaluation.sandbox import EvalSandbox
+from agent.evaluation.tests.greeter import GreeterMockIntegration
 from agent.models import Agent, Conversation, Message
 from agent.models.conversation import ConversationFile
 from agent.services import AgentPreconfigurationService
 from catalog.integrations.registry import IntegrationManagerRegistry
 from catalog.models import DataSet, Integration
-
-from .greeter import GreeterMockIntegration
 
 pytestmark = pytest.mark.django_db
 

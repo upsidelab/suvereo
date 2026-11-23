@@ -1,8 +1,7 @@
 import pytest
 
 from agent.evaluation.aggregation import MetricAggregate, MetricAggregator
-
-from .aggregation_runs import run
+from agent.evaluation.tests.aggregation_runs import run
 
 
 class TestMetricAggregate:

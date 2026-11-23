@@ -12,10 +12,9 @@ from agent.evaluation.model_client import EvalModelClient
 from agent.evaluation.pricing_table import PricingTable, TraceCost
 from agent.evaluation.runner import CaseRunner
 from agent.evaluation.targets import ExistingAgentTarget
+from agent.evaluation.tests.chatter import FakeChat
+from agent.evaluation.tests.greeter import GreeterMockIntegration
 from agent.models import Agent
-
-from .chatter import FakeChat
-from .greeter import GreeterMockIntegration
 
 pytestmark = pytest.mark.django_db
 

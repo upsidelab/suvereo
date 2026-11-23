@@ -2,8 +2,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
 from account.models import UserGroup
-
-from .global_roles import GlobalRoleSerializer
+from account.serializers.global_roles import GlobalRoleSerializer
 
 
 class GroupSerializer(serializers.ModelSerializer):

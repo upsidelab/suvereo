@@ -1,6 +1,6 @@
 from suvereo_common.evaluation.metrics import MetricResult
 
-from .markdown_text import MarkdownText
+from agent.evaluation.reports.markdown_text import MarkdownText
 
 REASONING = "reasoning"
 

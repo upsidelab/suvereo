@@ -9,9 +9,8 @@ from agent.core.registries.agents.agent_registry import AgentNotFoundError, Agen
 from agent.core.registries.language_models import LanguageModelRegistry
 from agent.evaluation.judge_models_used_by_metrics import judge_models_used_by_metrics
 from agent.evaluation.suite_loader import SuiteLoader
+from agent.evaluation.tests.greeter import GreeterMockIntegration, GreetingExecution
 from agent.evaluation.user_model_in_use import user_model_in_use
-
-from .greeter import GreeterMockIntegration, GreetingExecution
 
 pytestmark = pytest.mark.django_db
 
