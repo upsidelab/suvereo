@@ -5,8 +5,6 @@ from suvereo_common.registry.llm import LanguageModelProvider
 
 
 class RecordingProvider(LanguageModelProvider):
-    STREAMING_AVAILABLE = True
-
     def provide_language_model(self, callbacks=None):
         return ("plain", self._model, callbacks)
 
@@ -50,7 +48,7 @@ class TestBaseLLM:
 
         assert _llm(callbacks=[handler]).create(1)[2] == [handler]
 
-    def test_create_uses_the_streaming_model_when_asked_and_available(self):
+    def test_create_uses_the_streaming_model_when_asked(self):
         assert _llm(streaming=True).create(1)[0] == "streaming"
 
     def test_overriding_resolve_target_changes_what_is_built(self):

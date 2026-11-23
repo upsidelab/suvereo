@@ -33,6 +33,6 @@ class BaseLLM:
 
     def _build(self, provider_class: Type[LanguageModelProvider], model: str) -> BaseLanguageModel:
         provider = provider_class(model)
-        if self._streaming and provider.STREAMING_AVAILABLE:
+        if self._streaming:
             return provider.provide_streaming_language_model(callbacks=self._callbacks)
         return provider.provide_language_model(callbacks=self._callbacks)

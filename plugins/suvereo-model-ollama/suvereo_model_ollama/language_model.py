@@ -13,12 +13,18 @@ class OllamaImageContent(BaseContent):
     image_url: str
 
 
+class StreamingChatOllama(ChatOllama):
+    streaming: bool = False
+
+
 class OllamaLanguageModelProvider(LanguageModelProvider):
     NAME = "Ollama"
-    STREAMING_AVAILABLE = False
 
     def provide_language_model(self, callbacks: list[BaseCallbackHandler] | None = None) -> BaseLanguageModel:
         return ChatOllama(model=self._model, callbacks=callbacks)
+
+    def provide_streaming_language_model(self, callbacks: list[BaseCallbackHandler] | None = None) -> BaseLanguageModel:
+        return StreamingChatOllama(model=self._model, callbacks=callbacks, streaming=True)
 
     def model_name(self) -> str:
         return self._model

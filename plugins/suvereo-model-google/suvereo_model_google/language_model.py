@@ -20,10 +20,12 @@ class GoogleAIFileContent(BaseContent):
 
 class GoogleLanguageModelProvider(LanguageModelProvider):
     NAME = "Google"
-    STREAMING_AVAILABLE = False
 
     def provide_language_model(self, callbacks: list[BaseCallbackHandler] | None = None) -> BaseLanguageModel:
         return ChatGoogleGenerativeAI(model=self._model, callbacks=callbacks)
+
+    def provide_streaming_language_model(self, callbacks: list[BaseCallbackHandler] | None = None) -> BaseLanguageModel:
+        return ChatGoogleGenerativeAI(model=self._model, callbacks=callbacks, streaming=True)
 
     def model_name(self) -> str:
         return self._model
