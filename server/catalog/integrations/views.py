@@ -3,6 +3,7 @@ from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from suvereo_common.integrations import BaseOAuthIntegration
@@ -22,7 +23,7 @@ class IntegrationTypeListView(APIView):
         operation_description="List the registered integration types and the config form each one expects."
     )
     @any_permission_on_any_dataset_required(PERMISSIONS.INTEGRATION.ADD, PERMISSIONS.INTEGRATION.CHANGE)
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         types = [
             {
                 "type": cls.TYPE,
@@ -42,21 +43,21 @@ class IntegrationTypeListView(APIView):
 class _DataSetScopedView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def _get_dataset(self, data_set_id):
+    def _get_dataset(self, data_set_id: int) -> DataSet:
         return get_object_or_404(DataSet, pk=data_set_id)
 
-    def _get_integration(self, data_set_id, pk):
+    def _get_integration(self, data_set_id: int, pk: int) -> Integration:
         return get_object_or_404(Integration, pk=pk, dataset_id=data_set_id)
 
 
 class IntegrationListView(_DataSetScopedView):
-    def get(self, request, data_set_id):
+    def get(self, request: Request, data_set_id: int) -> Response:
         data_set = self._get_dataset(data_set_id)
         enforce_dataset_scoped_permission(self, PERMISSIONS.INTEGRATION.VIEW, data_set)
         qs = Integration.objects.filter(dataset_id=data_set_id).order_by("type", "id")
         return Response(IntegrationSerializer(qs, many=True).data)
 
-    def post(self, request, data_set_id):
+    def post(self, request: Request, data_set_id: int) -> Response:
         data_set = self._get_dataset(data_set_id)
         enforce_dataset_scoped_permission(self, PERMISSIONS.INTEGRATION.ADD, data_set)
 
@@ -89,7 +90,7 @@ class IntegrationListView(_DataSetScopedView):
 
 
 class IntegrationSyncView(_DataSetScopedView):
-    def post(self, request, data_set_id, pk):
+    def post(self, request: Request, data_set_id: int, pk: int) -> Response:
         data_set = self._get_dataset(data_set_id)
         enforce_dataset_scoped_permission(self, PERMISSIONS.INTEGRATION.SYNC, data_set)
         integration = self._get_integration(data_set_id, pk)
@@ -98,7 +99,7 @@ class IntegrationSyncView(_DataSetScopedView):
 
 
 class IntegrationUpdateDeleteView(_DataSetScopedView):
-    def patch(self, request, data_set_id, pk):
+    def patch(self, request: Request, data_set_id: int, pk: int) -> Response:
         data_set = self._get_dataset(data_set_id)
         enforce_dataset_scoped_permission(self, PERMISSIONS.INTEGRATION.CHANGE, data_set)
         integration = self._get_integration(data_set_id, pk)
@@ -107,7 +108,7 @@ class IntegrationUpdateDeleteView(_DataSetScopedView):
         serializer.save()
         return Response(IntegrationSerializer(integration).data)
 
-    def delete(self, request, data_set_id, pk):
+    def delete(self, request: Request, data_set_id: int, pk: int) -> Response:
         data_set = self._get_dataset(data_set_id)
         enforce_dataset_scoped_permission(self, PERMISSIONS.INTEGRATION.DELETE, data_set)
         integration = self._get_integration(data_set_id, pk)

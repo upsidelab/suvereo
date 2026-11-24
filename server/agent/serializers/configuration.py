@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from rest_framework.exceptions import APIException
+from suvereo_common.agents import BaseAgent
 from utils.functions import get_model_descriptor_from_class_field
 from utils.serializers import ExtraArgDetailSerializer, ParentDataContextSerializerMixin
 
@@ -12,7 +13,7 @@ from catalog.models import DataSet, Integration
 from catalog.serializers import IntegrationSerializer
 
 
-def agent_class_for(agent: Agent):
+def agent_class_for(agent: Agent) -> type[BaseAgent] | None:
     try:
         return AgentRegistry().get_agent_class_by_type(agent.agent_type)
     except Exception:
@@ -24,7 +25,7 @@ def agent_type_display_name(agent: Agent) -> str:
     return getattr(agent_class, "NAME", None) or agent.agent_type
 
 
-def agent_type_config_schema(agent_class) -> dict:
+def agent_type_config_schema(agent_class: type[BaseAgent]) -> dict:
     return {
         "agent_args": get_model_descriptor_from_class_field(agent_class, "AGENT_ARGS"),
         "prompt_input": get_model_descriptor_from_class_field(agent_class, "PROMPT_INPUT"),
@@ -84,7 +85,7 @@ class AgentSerializer(ParentDataContextSerializerMixin, serializers.ModelSeriali
         ]
         read_only_fields = ["id", "created_at", "updated_at", "file_upload"]
 
-    def get_fields(self):
+    def get_fields(self) -> dict[str, serializers.Field]:
         fields = super().get_fields()
         if self.instance is not None:
             fields["dataset"] = serializers.PrimaryKeyRelatedField(read_only=True)
@@ -102,14 +103,14 @@ class AgentSerializer(ParentDataContextSerializerMixin, serializers.ModelSeriali
     def _data_set_id(self) -> int | None:
         return self.instance.dataset_id if self.instance is not None else self.context.get("data_set_id")
 
-    def get_agent_type_name(self, agent) -> str:
+    def get_agent_type_name(self, agent: Agent) -> str:
         return agent_type_display_name(agent)
 
-    def get_config_schema(self, agent) -> dict:
+    def get_config_schema(self, agent: Agent) -> dict:
         agent_class = agent_class_for(agent)
         return agent_type_config_schema(agent_class) if agent_class else {}
 
-    def validate_name(self, name):
+    def validate_name(self, name: str) -> str:
         data_set = self.instance.dataset if self.instance else self.initial_data.get("dataset")
 
         if Agent.objects.filter(dataset=data_set, name=name).exclude(pk=getattr(self.instance, "pk", None)).exists():
@@ -117,7 +118,7 @@ class AgentSerializer(ParentDataContextSerializerMixin, serializers.ModelSeriali
 
         return name
 
-    def create(self, validated_data):
+    def create(self, validated_data: dict) -> Agent:
         agent_type = self.context.get("agent_type")
         if not agent_type:
             raise AssertionError("Missing 'agent_type' in field context")
@@ -129,7 +130,7 @@ class AgentSerializer(ParentDataContextSerializerMixin, serializers.ModelSeriali
         validated_data["file_upload"] = class_obj.FILE_UPLOAD
         return super().create(validated_data)
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Agent, validated_data: dict) -> Agent:
         agent_type = self.context.get("agent_type")
         if not agent_type:
             raise AssertionError("Missing 'agent_type' in field context")
@@ -163,7 +164,7 @@ class AgentListSerializer(ParentDataContextSerializerMixin, serializers.ModelSer
             "corrupted",
         ]
 
-    def get_agent_type_name(self, agent) -> str:
+    def get_agent_type_name(self, agent: Agent) -> str:
         return agent_type_display_name(agent)
 
 

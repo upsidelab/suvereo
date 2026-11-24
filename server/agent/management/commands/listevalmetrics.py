@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.core.management.base import BaseCommand
 from pydantic import BaseModel
 from suvereo_common.evaluation.metrics import BaseMetric
@@ -8,7 +10,7 @@ from suvereo_common.evaluation.metrics.builtins import BUILTIN_METRICS
 class Command(BaseCommand):
     help = "Lists the built-in evaluation metrics with their value type, params and description."
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         for metric in BUILTIN_METRICS:
             heading = f"{metric.NAME}: {metric.VALUE_TYPE}{self._measured_on(metric)}"
             self.stdout.write(self.style.MIGRATE_HEADING(heading))

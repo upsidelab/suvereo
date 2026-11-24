@@ -3,6 +3,7 @@ import json
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 
+from account.models import User
 from agent.models import Conversation
 
 CLOSE_UNAUTHENTICATED = 4401
@@ -10,7 +11,7 @@ CLOSE_FORBIDDEN = 4403
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
-    async def connect(self):
+    async def connect(self) -> None:
         self.conversation_id = self.scope["url_route"]["kwargs"]["conversation_id"]
         user = self.scope["user"]
         if not user.is_authenticated:
@@ -27,15 +28,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
     @database_sync_to_async
-    def _is_conversation_visible(self, user) -> bool:
+    def _is_conversation_visible(self, user: User) -> bool:
         return Conversation.objects.visible_to(user).filter(id=self.conversation_id).exists()
 
-    async def disconnect(self, close_code):
+    async def disconnect(self, close_code: int) -> None:
         if not hasattr(self, "group_name"):
             return
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
-    async def chat_message(self, event):
+    async def chat_message(self, event: dict) -> None:
         event_type = event.get("event")
         handlers = {
             "start": self.handle_start,
@@ -51,23 +52,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if handler:
             await handler(event)
 
-    async def handle_start(self, event):
+    async def handle_start(self, event: dict) -> None:
         await self.send(json.dumps({"event": "on_parser_start", "data": {"run_id": event.get("run_id")}}))
 
-    async def handle_stream(self, event):
+    async def handle_stream(self, event: dict) -> None:
         await self.send(json.dumps({"event": "on_parser_stream", "data": {"chunk": event.get("token")}}))
 
-    async def handle_end(self, event):
+    async def handle_end(self, event: dict) -> None:
         await self.send(json.dumps({"event": "on_parser_end", "data": {"output": event.get("output")}}))
 
-    async def handle_message_created(self, event):
+    async def handle_message_created(self, event: dict) -> None:
         await self.send(json.dumps({"event": "message_id", "data": {"output": event.get("answer_id")}}))
 
-    async def handle_tool_call(self, event):
+    async def handle_tool_call(self, event: dict) -> None:
         await self.send(json.dumps({"event": "tool_call", "data": {"tool_name": event.get("tool_name")}}))
 
-    async def handle_tool_done(self, event):
+    async def handle_tool_done(self, event: dict) -> None:
         await self.send(json.dumps({"event": "tool_done", "data": {}}))
 
-    async def handle_error(self, event):
+    async def handle_error(self, event: dict) -> None:
         await self.send(json.dumps({"event": "error", "data": {"output": event.get("output")}}))

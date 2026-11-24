@@ -4,6 +4,7 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -27,7 +28,7 @@ class GroupGlobalRoleListView(APIView):
         responses={201: GlobalRoleSerializer},
     )
     @global_permission_required(PERMISSIONS.GLOBAL_ROLE.ASSIGN)
-    def post(self, request, id):
+    def post(self, request: Request, id: int) -> Response:
         group = get_object_or_404(UserGroup, pk=id)
         serializer = GlobalRoleReferenceSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -50,7 +51,7 @@ class GroupGlobalRoleDetailView(APIView):
         manual_parameters=[GROUP_ID_PARAMETER, GLOBAL_ROLE_ID_PARAMETER],
     )
     @global_permission_required(PERMISSIONS.GLOBAL_ROLE.ASSIGN)
-    def delete(self, request, id, global_role_id):
+    def delete(self, request: Request, id: int, global_role_id: int) -> Response:
         group = get_object_or_404(UserGroup, pk=id)
         global_role = get_object_or_404(GlobalRole, pk=global_role_id)
 

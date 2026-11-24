@@ -1,4 +1,5 @@
 from django.urls import reverse
+from rest_framework.request import Request
 from suvereo_common.integrations import BaseOAuthIntegration
 
 from catalog.integrations.oauth import config
@@ -9,14 +10,14 @@ CALLBACK_URL_NAME = "integration-oauth-callback"
 CLIENT_REJECTED_ERRORS = frozenset({"invalid_client", "unauthorized_client"})
 
 
-def callback_uri(request) -> str:
+def callback_uri(request: Request) -> str:
     path = reverse(CALLBACK_URL_NAME)
     if base := config.BASE_URL:
         return f"{base.rstrip('/')}{path}"
     return request.build_absolute_uri(path)
 
 
-def return_origin(request, allowed: list[str]) -> str:
+def return_origin(request: Request, allowed: list[str]) -> str:
     origin = request.headers.get("Origin", "")
     return origin if origin in allowed else ""
 

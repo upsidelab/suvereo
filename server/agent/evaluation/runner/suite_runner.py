@@ -4,7 +4,7 @@ import tempfile
 import threading
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import ExitStack, contextmanager, nullcontext
+from contextlib import AbstractContextManager, ExitStack, contextmanager, nullcontext
 from datetime import datetime
 from itertools import product
 
@@ -152,7 +152,7 @@ class SuiteRunner:
         integrations = [factory.build(config) for config in suite.integrations_for(case)]
         return SandboxAgentTarget(suite.name, suite.agent.type, suite.agent.config, integrations, user, keep)
 
-    def _run_files_media_root(self):
+    def _run_files_media_root(self) -> AbstractContextManager:
         return nullcontext() if self.options.keep_run_data else self._temporary_media_root()
 
     @staticmethod

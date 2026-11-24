@@ -45,7 +45,7 @@ class EntityRegistry:
         return getattr(import_module(module_path), class_name)
 
     @staticmethod
-    def _build_serializer(model: type, meta) -> type[serializers.ModelSerializer]:
+    def _build_serializer(model: type, meta: type) -> type[serializers.ModelSerializer]:
         field_names = ["id"] + [field.name for field in getattr(meta, "list_fields", [])]
         meta_cls = type("Meta", (), {"model": model, "fields": field_names})
         return type(f"{model.__name__}Serializer", (serializers.ModelSerializer,), {"Meta": meta_cls})

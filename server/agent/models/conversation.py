@@ -1,4 +1,7 @@
+from datetime import datetime
+
 from django.contrib.auth import get_user_model
+from django.contrib.auth.base_user import AbstractBaseUser
 from django.db import models
 from django.db.models import Max, Q
 from suvereo_common.structures import LLMFile
@@ -8,23 +11,23 @@ from agent.models.agent import Agent
 from catalog.models import DataSet
 
 
-def conversation_file_path(instance, filename):
+def conversation_file_path(instance: "ConversationFile", filename: str) -> str:
     return f"conversations/{instance.conversation.id}/{filename}"
 
 
 class ConversationQuerySet(models.QuerySet):
-    def visible_to(self, user) -> "ConversationQuerySet":
+    def visible_to(self, user: AbstractBaseUser) -> "ConversationQuerySet":
         return self.filter(
             Q(user=user) | Q(data_set__in=datasets_with_permission(user, PERMISSIONS.CONVERSATION.VIEW_ALL))
         )
 
-    def last_activity(self):
+    def last_activity(self) -> datetime | None:
         latest = self.aggregate(started=Max("started_at"), messaged=Max("messages__created_at"))
         return max((t for t in latest.values() if t is not None), default=None)
 
 
 class ConversationManager(models.Manager.from_queryset(ConversationQuerySet)):
-    def get_queryset(self):
+    def get_queryset(self) -> ConversationQuerySet:
         return super().get_queryset().filter(is_temporary=False)
 
 
@@ -77,7 +80,7 @@ class ConversationFile(models.Model):
     def __str__(self):
         return self.file.name
 
-    def get_llm_file_object(self):
+    def get_llm_file_object(self) -> LLMFile:
         return LLMFile(
             id=self.pk,
             content=self.llm_content,

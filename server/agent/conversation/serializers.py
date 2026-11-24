@@ -27,7 +27,7 @@ class AskQuestionSerializer(serializers.Serializer):
         allow_empty=True,
     )
 
-    def validate(self, attrs):
+    def validate(self, attrs: dict) -> dict:
         conversation_id = self.context.get("conversation_id")
         conversation = Conversation.objects.get(pk=conversation_id)
         if not conversation:
@@ -36,7 +36,7 @@ class AskQuestionSerializer(serializers.Serializer):
                     "conversation_id": f"Conversation with the given ID ({conversation_id}) does not exist. Either skip this parameter (a new conversation will be created), or provide a valid ID of an existing conversation"
                 }
             )
-        if attrs.get("file_ids", None):
+        if attrs.get("file_ids"):
             valid_file_ids = set(conversation.files.values_list("id", flat=True))
             invalid_ids = [file_id for file_id in attrs["file_ids"] if file_id not in valid_file_ids]
             if invalid_ids:
@@ -82,7 +82,7 @@ class MessagesSerializer(serializers.ModelSerializer):
         model = Message
         fields = ["id", "text", "type", "file_type", "file_name"]
 
-    def get_text(self, obj: Message):
+    def get_text(self, obj: Message) -> str:
         if obj.type == Message.MessageType.FILE:
             return ""
         return obj.text
@@ -100,7 +100,7 @@ class ConversationContentSerializer(serializers.ModelSerializer):
         model = Conversation
         fields = ["id", "started_at", "summary", "history", "agent", "is_execution_conversation", "user_email"]
 
-    def get_is_execution_conversation(self, obj) -> bool:
+    def get_is_execution_conversation(self, obj: Conversation) -> bool:
         return hasattr(obj, "agentic_execution")
 
 
@@ -112,13 +112,13 @@ class ConversationFileSerializer(serializers.ModelSerializer):
         model = ConversationFile
         fields = ["id", "filename", "file_url", "content_type"]
 
-    def get_filename(self, obj):
+    def get_filename(self, obj: ConversationFile) -> str:
         return obj.file.name.split("/")[-1] if obj.file else ""
 
-    def get_file_url(self, obj):
+    def get_file_url(self, obj: ConversationFile) -> str:
         return obj.file.url if obj.file else ""
 
-    def create(self, validated_data):
+    def create(self, validated_data: dict) -> ConversationFile:
         file_obj = validated_data["file"]
         validated_data["content_type"] = getattr(file_obj, "content_type", None)
         return super().create(validated_data)

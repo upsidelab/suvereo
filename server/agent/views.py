@@ -3,6 +3,7 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -35,7 +36,7 @@ class AgentTypesView(APIView):
         operation_description="Get available Agents", responses={200: AvailableAgentsResponseSerializer()}
     )
     @any_permission_on_any_dataset_required(PERMISSIONS.AGENT.ADD, PERMISSIONS.AGENT.CHANGE)
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         agent_registry = AgentRegistry()
         choices = [
             {
@@ -68,7 +69,7 @@ class AgentView(APIView):
         ],
         responses={200: AgentListSerializer(many=True)},
     )
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         filterset = AgentFilter(request.GET, queryset=Agent.objects.order_by("created_at"))
         if not filterset.is_valid():
             return Response(filterset.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -89,7 +90,7 @@ class AgentView(APIView):
         request_body=AgentSerializer,
         responses={201: AgentSerializer()},
     )
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         try:
             dataset = DataSet.objects.get(pk=request.data.get("dataset"))
         except (DataSet.DoesNotExist, ValueError, TypeError):
@@ -107,7 +108,7 @@ class AgentDetailsView(APIView):
     """View to get manage agents"""
 
     @swagger_auto_schema(operation_description="Get a single configuration by id.", responses={200: AgentSerializer()})
-    def get(self, request, pk):
+    def get(self, request: Request, pk: int) -> Response:
         instance = get_object_or_404(Agent, pk=pk)
         enforce_dataset_scoped_permission(self, PERMISSIONS.AGENT.VIEW, instance.dataset, obscured_model=Agent)
 
@@ -119,7 +120,7 @@ class AgentDetailsView(APIView):
         request_body=AgentSerializer,
         responses={200: AgentSerializer()},
     )
-    def put(self, request, pk=None):
+    def put(self, request: Request, pk: int | None = None) -> Response:
         instance = get_object_or_404(Agent, pk=pk)
         enforce_dataset_scoped_permission(self, PERMISSIONS.AGENT.CHANGE, instance.dataset, obscured_model=Agent)
 
@@ -131,7 +132,7 @@ class AgentDetailsView(APIView):
     @swagger_auto_schema(
         operation_description="Delete a configuration by id.", responses={204: "No Content", 404: "Not Found"}
     )
-    def delete(self, request, pk=None):
+    def delete(self, request: Request, pk: int | None = None) -> Response:
         instance = get_object_or_404(Agent, pk=pk)
         enforce_dataset_scoped_permission(self, PERMISSIONS.AGENT.DELETE, instance.dataset, obscured_model=Agent)
 
@@ -151,7 +152,7 @@ class SelectableToolProvidingIntegrationsView(APIView):
         ],
         responses={200: ToolProvidingIntegrationOptionSerializer(many=True)},
     )
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         dataset_id = request.query_params.get("dataset", "")
         if not dataset_id.isdigit():
             return Response({"dataset": ["A data set id is required."]}, status=status.HTTP_400_BAD_REQUEST)

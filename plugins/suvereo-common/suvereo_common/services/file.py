@@ -8,12 +8,12 @@ class FileServiceException(Exception):
 
 
 class NotSupportedFileTypeException(FileServiceException):
-    def __init__(self, message="Unsupported file type."):
+    def __init__(self, message: str = "Unsupported file type.") -> None:
         super().__init__(message)
 
 
 class FileParsingException(FileServiceException):
-    def __init__(self, message="Failed to extract content from file."):
+    def __init__(self, message: str = "Failed to extract content from file.") -> None:
         super().__init__(message)
 
 

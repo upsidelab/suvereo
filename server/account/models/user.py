@@ -1,13 +1,15 @@
+from typing import Any
+
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
 class UserManager(BaseUserManager):
-    def get_queryset(self):
+    def get_queryset(self) -> models.QuerySet:
         return super().get_queryset().filter(is_internal=False)
 
-    def _create_user(self, email, password=None, **extra_fields):
+    def _create_user(self, email: str, password: str | None = None, **extra_fields: Any) -> "User":
         if not email:
             raise ValueError("The email field must be set")
 
@@ -20,17 +22,21 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_user(self, username=None, email=None, password=None, **extra_fields):
+    def create_user(
+        self, username: str | None = None, email: str | None = None, password: str | None = None, **extra_fields: Any
+    ) -> "User":
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_superuser", False)
         return self._create_user(email, password, **extra_fields)
 
-    def create_superuser(self, username=None, email=None, password=None, **extra_fields):
+    def create_superuser(
+        self, username: str | None = None, email: str | None = None, password: str | None = None, **extra_fields: Any
+    ) -> "User":
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         return self._create_user(email, password, **extra_fields)
 
-    def create_service_account(self, email, **extra_fields):
+    def create_service_account(self, email: str, **extra_fields: Any) -> "User":
         extra_fields.setdefault("is_service_account", True)
         return self._create_user(email, password=None, **extra_fields)
 

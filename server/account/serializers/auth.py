@@ -10,7 +10,7 @@ class TokenPairResponseSerializer(serializers.Serializer):
 
 
 class RefreshTokenSerializer(TokenRefreshSerializer):
-    def validate(self, attrs):
+    def validate(self, attrs: dict) -> dict:
         try:
             return super().validate(attrs)
         except get_user_model().DoesNotExist as e:

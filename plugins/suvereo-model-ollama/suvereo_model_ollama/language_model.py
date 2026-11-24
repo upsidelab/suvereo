@@ -1,3 +1,5 @@
+from typing import NoReturn
+
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.language_models import BaseLanguageModel
 from langchain_ollama import ChatOllama
@@ -37,5 +39,5 @@ class OllamaLanguageModelProvider(LanguageModelProvider):
         return OllamaImageContent(image_url=image_url)
 
     @staticmethod
-    def prepare_file_object(_):
+    def prepare_file_object(_: LLMFile) -> NoReturn:
         raise NotImplementedError("Ollama does not support document file inputs.")

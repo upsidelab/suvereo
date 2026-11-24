@@ -1,11 +1,12 @@
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from django.db.models import Min
 from django.utils import timezone
 
 from agent.evaluation.eval_user import EvalUser
 from agent.models import Agent, Conversation
+from agent.models.conversation import ConversationQuerySet
 from agent.services import ConversationDeletionService
 from catalog.models import DataSet
 from catalog.services import DataSetDeletionService
@@ -55,6 +56,6 @@ class AbandonedRuns:
         return purged
 
     @staticmethod
-    def _is_abandoned(created, conversations) -> bool:
+    def _is_abandoned(created: datetime | None, conversations: ConversationQuerySet) -> bool:
         latest = max((t for t in (created, conversations.last_activity()) if t is not None), default=None)
         return latest is None or timezone.now() - latest > ABANDONED_AFTER

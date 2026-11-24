@@ -32,7 +32,7 @@ class Message(models.Model):
         return [cls.MessageType.FUNCTION, cls.MessageType.INTERMEDIATE_STEP]
 
     @property
-    def langchain_type(self):
+    def langchain_type(self) -> str:
         langchain_type_mapping = {
             self.MessageType.FUNCTION: "tool",
             self.MessageType.FILE: "human",
@@ -43,7 +43,7 @@ class Message(models.Model):
         }
         return langchain_type_mapping[self.type]
 
-    def clean(self):
+    def clean(self) -> None:
         errors = {}
 
         if self.type == self.MessageType.FILE:

@@ -1,5 +1,7 @@
 from enum import StrEnum
 
+from django.contrib.auth.models import Permission
+
 from account.authorization.permission_codenames import PERMISSIONS
 
 PERMISSION_ENTITIES: dict[str, type[StrEnum]] = {
@@ -22,5 +24,5 @@ def entity_label(entity_name: str) -> str:
     return entity_name.replace("_", " ").title()
 
 
-def permission_label(permission) -> str:
+def permission_label(permission: Permission) -> str:
     return f"{permission.content_type.app_label}.{permission.codename}"

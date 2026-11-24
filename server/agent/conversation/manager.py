@@ -94,7 +94,7 @@ class ConversationManager:
         return conversation.messages.order_by("created_at").last()
 
 
-    def record_error(self, conversation_id: int, user_id: int, data_set_id: int, error: Exception):
+    def record_error(self, conversation_id: int, user_id: int, data_set_id: int, error: Exception) -> None:
         conversation = self.get_conversation(user_id=user_id, data_set_id=data_set_id, conversation_id=conversation_id)
         user_message = conversation.messages.order_by("-created_at").first()
         user_message.answer_failed = True

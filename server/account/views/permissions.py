@@ -3,6 +3,7 @@ from django.db.models import Q
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -38,7 +39,7 @@ class PermissionListView(APIView):
         responses={200: PermissionEntitySerializer(many=True)},
     )
     @any_global_permission_required(PERMISSIONS.GLOBAL_ROLE.VIEW, PERMISSIONS.DATA_SET_ROLE.VIEW)
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         scope = request.query_params.get("scope", DEFAULT_SCOPE)
         if scope not in PERMISSION_SCOPES:
             return Response(
@@ -71,14 +72,14 @@ class PermissionListView(APIView):
             )
         return Response(PermissionEntitySerializer(entities, many=True).data)
 
-    def _requirements_for(self, scope_permissions) -> dict[str, list[str]]:
+    def _requirements_for(self, scope_permissions: list[str]) -> dict[str, list[str]]:
         requirements: dict[str, list[str]] = {}
         for required, dependents in dependencies_within(scope_permissions).items():
             for dependent in dependents:
                 requirements.setdefault(PUBLIC_CODES[dependent], []).append(PUBLIC_CODES[required])
         return {code: sorted(required) for code, required in requirements.items()}
 
-    def _labels_for(self, codenames) -> dict[str, str]:
+    def _labels_for(self, codenames: list[str]) -> dict[str, str]:
         query = Q()
         for codename in codenames:
             app_label, bare_codename = codename.split(".")

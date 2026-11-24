@@ -1,3 +1,6 @@
+from typing import Any
+
+from django.apps import AppConfig
 from django.core.checks import CheckMessage, Error, Warning
 
 from agent.agentic_execution.registry import AgenticExecutionDefinitionRegistry
@@ -8,7 +11,7 @@ TOOL_SETTINGS_CONFLICT = "agent.E001"
 PLUGINS_NOT_LOADED = "agent.W001"
 
 
-def check_tool_settings_conflicts(app_configs, **kwargs) -> list[CheckMessage]:
+def check_tool_settings_conflicts(app_configs: list[AppConfig] | None, **kwargs: Any) -> list[CheckMessage]:
     try:
         AgenticExecutionDefinitionRegistry().get_all()
         agent_classes = AgentRegistry().get_plugin_classes()

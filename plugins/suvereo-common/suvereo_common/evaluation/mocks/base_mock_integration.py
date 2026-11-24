@@ -116,14 +116,14 @@ class BaseMockIntegration(BaseIntegration):
 
     @staticmethod
     def _builder(mock_class: type[BaseMock]) -> Any:
-        def build(self):
+        def build(self: "BaseMockIntegration") -> BaseMock:
             return self.mock_for(mock_class)
 
         return build
 
     @staticmethod
     def _forwarder(name: str, mock_class: type[BaseMock]) -> Any:
-        def method(self, *args, **kwargs):
+        def method(self: "BaseMockIntegration", *args: Any, **kwargs: Any) -> Any:
             return getattr(self.mock_for(mock_class), name)(*args, **kwargs)
 
         method.__name__ = name

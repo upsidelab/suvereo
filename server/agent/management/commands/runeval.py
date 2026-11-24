@@ -4,8 +4,9 @@ import sys
 from collections.abc import Iterator
 from contextlib import contextmanager, nullcontext
 from pathlib import Path
+from typing import Any
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandParser
 from pydantic import TypeAdapter, ValidationError
 from suvereo_common.evaluation.errors import EvalSuiteError
 from suvereo_common.evaluation.suite import ReportName
@@ -45,7 +46,7 @@ class Command(BaseCommand):
         "2 for an invalid suite, 3 when the budget stopped the run and 4 for any other error."
     )
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument("suite", type=Path, help="path to suite.yaml")
         parser.add_argument("--model", action="append", default=[], help="a suite model label or Provider:model")
         parser.add_argument("--variant", action="append", default=[], help="a variant to run besides the default")
@@ -66,7 +67,7 @@ class Command(BaseCommand):
         parser.add_argument("--allow-real-integrations", action="store_true", help="let unmocked integrations run")
         parser.add_argument("--keep-run-data", action="store_true", help="keep conversations and sandboxes")
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         suite_path: Path = options["suite"]
         if options["history"]:
             self._print_history(RunHistory(suite_path.resolve().parent))

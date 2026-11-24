@@ -1,21 +1,24 @@
+from django.db.models import QuerySet
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.serializers import BaseSerializer
 from rest_framework.views import APIView
 
 from account.authorization import datasets_visible_to, has_any_dataset_access
-from catalog.entities.registry import entity_registry
+from catalog.entities.registry import EntityRegistration, entity_registry
 
 
 class EntityListView(APIView):
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(operation_description="List the registered domain entities and the columns each table shows.")
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         if not has_any_dataset_access(request.user):
             self.permission_denied(request)
 
@@ -39,16 +42,16 @@ class EntityListView(APIView):
 class EntityRecordsView(ListAPIView):
     permission_classes = [IsAuthenticated]
 
-    def _registration(self):
+    def _registration(self) -> EntityRegistration:
         registration = entity_registry.get(self.kwargs["slug"])
         if registration is None:
             raise Http404("Unknown entity.")
         return registration
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> type[BaseSerializer]:
         return self._registration().serializer
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         registration = self._registration()
         data_set = get_object_or_404(datasets_visible_to(self.request.user), pk=self.kwargs["data_set_id"])
         return registration.model.objects.filter(dataset_id=data_set.id).order_by("id")

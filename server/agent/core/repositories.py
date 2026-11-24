@@ -36,15 +36,15 @@ class BaseDjangoRepository(BaseRepository[T]):
     def list(self) -> list[T]:
         return list(self.model.objects.all())
 
-    def filter(self, **kwargs) -> QuerySet[T]:
+    def filter(self, **kwargs: Any) -> QuerySet[T]:
         return self.model.objects.filter(**kwargs)
 
-    def create(self, **kwargs) -> T:
+    def create(self, **kwargs: Any) -> T:
         instance = self.model(**kwargs)
         instance.save()
         return instance
 
-    def update(self, pk: int, **kwargs) -> T | None:
+    def update(self, pk: int, **kwargs: Any) -> T | None:
         obj = self.get_by_id(pk)
         if obj:
             for key, value in kwargs.items():

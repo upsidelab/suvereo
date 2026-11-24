@@ -1,5 +1,7 @@
+from typing import Any
+
 from django.contrib.auth.models import Permission
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand, CommandError, CommandParser
 from django.db import transaction
 from django.db.models import Q
 
@@ -25,14 +27,14 @@ class Command(BaseCommand):
         "name is never modified, only reported on."
     )
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument(
             "--dry-run",
             action="store_true",
             help="report what would happen without writing anything",
         )
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         dry_run = options["dry_run"]
 
         role_sets = (
@@ -68,7 +70,7 @@ class Command(BaseCommand):
                 named = ", ".join(f"{entry['code']} (required by {', '.join(entry['required_by'])})" for entry in unmet)
                 raise CommandError(f"Starter role '{starter.name}' is missing required permissions: {named}.")
 
-    def _apply(self, model, starter: StarterRole, dry_run: bool) -> tuple[str, str]:
+    def _apply(self, model: type[GlobalRole | DatasetRole], starter: StarterRole, dry_run: bool) -> tuple[str, str]:
         existing = model.objects.filter(name=starter.name).first()
         if existing is None:
             if not dry_run:
@@ -79,7 +81,7 @@ class Command(BaseCommand):
         divergence = self._divergence(existing, starter)
         return (DIFFERS, divergence) if divergence else (MATCHES, "")
 
-    def _divergence(self, existing, starter: StarterRole) -> str:
+    def _divergence(self, existing: GlobalRole | DatasetRole, starter: StarterRole) -> str:
         differences = []
         if {permission_label(row) for row in existing.permissions.all()} != set(starter.permissions):
             differences.append("permissions")

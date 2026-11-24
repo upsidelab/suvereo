@@ -5,7 +5,7 @@ from account.models.global_role import GlobalRole
 
 
 class UserGroupQuerySet(models.QuerySet):
-    def with_counts(self):
+    def with_counts(self) -> "UserGroupQuerySet":
         return self.annotate(
             member_count=models.Count("members", distinct=True),
             global_role_count=models.Count("global_roles", distinct=True),

@@ -4,6 +4,7 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -26,7 +27,7 @@ class GroupMemberListView(APIView):
         responses={200: UserSummarySerializer(many=True)},
     )
     @global_permission_required(PERMISSIONS.GROUP.VIEW)
-    def get(self, request, id):
+    def get(self, request: Request, id: int) -> Response:
         group = get_object_or_404(UserGroup, pk=id)
         members = group.members.order_by("email")
         return Response(UserSummarySerializer(members, many=True).data)
@@ -37,7 +38,7 @@ class GroupMemberListView(APIView):
         manual_parameters=[GROUP_ID_PARAMETER],
     )
     @global_permission_required(PERMISSIONS.GROUP.ASSIGN)
-    def post(self, request, id):
+    def post(self, request: Request, id: int) -> Response:
         group = get_object_or_404(UserGroup, pk=id)
         serializer = UserReferenceSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -60,7 +61,7 @@ class GroupMemberDetailView(APIView):
         manual_parameters=[GROUP_ID_PARAMETER, USER_ID_PARAMETER],
     )
     @global_permission_required(PERMISSIONS.GROUP.ASSIGN)
-    def delete(self, request, id, user_id):
+    def delete(self, request: Request, id: int, user_id: int) -> Response:
         group = get_object_or_404(UserGroup, pk=id)
         user = get_object_or_404(User, pk=user_id)
 

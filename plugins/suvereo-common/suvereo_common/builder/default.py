@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from typing import Any
 
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.chat_history import BaseChatMessageHistory
@@ -45,7 +46,7 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
 
     _repositories: RepositoriesInstances
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self._llm_registry = None
         self._llm = None

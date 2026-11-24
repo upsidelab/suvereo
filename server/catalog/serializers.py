@@ -2,7 +2,7 @@ from typing import Any
 
 from pydantic import ValidationError as PydanticValidationError
 from rest_framework import serializers
-from suvereo_common.integrations import BaseOAuthIntegration
+from suvereo_common.integrations import BaseIntegration, BaseOAuthIntegration
 
 from account.authorization import dataset_permission_codes
 from agent.core.registries.embeddings.embedding_provider_registry import EmbeddingProviderRegistry
@@ -29,7 +29,7 @@ class DataSetSerializer(serializers.ModelSerializer):
         fields = DATASET_FIELDS + ["permissions"]
         read_only_fields = ["id", "permissions"]
 
-    def get_permissions(self, data_set) -> list[str]:
+    def get_permissions(self, data_set: DataSet) -> list[str]:
         request = self.context.get("request")
         if request is None:
             return []
@@ -42,7 +42,7 @@ class DataSetCreateSerializer(DataSetSerializer):
     class Meta(DataSetSerializer.Meta):
         fields = DataSetSerializer.Meta.fields + ["preconfigure_agents"]
 
-    def validate(self, data):
+    def validate(self, data: dict) -> dict:
         embedding_provider = data.get("embedding_provider")
         embedding_model = data.get("embedding_model")
         embedding_vector_dimensions = data.get("embedding_vector_dimensions")
@@ -121,12 +121,12 @@ class IntegrationSerializer(IntegrationConfigValidationMixin, serializers.ModelS
         ]
         read_only_fields = ["id", "dataset", "created_at", "updated_at"]
 
-    def validate(self, attrs):
+    def validate(self, attrs: dict) -> dict:
         attrs = super().validate(attrs)
         self._validate_config(attrs.get("type"), attrs.get("config", {}))
         return attrs
 
-    def _get_plugin_class(self, integration):
+    def _get_plugin_class(self, integration: Integration) -> type[BaseIntegration] | None:
         from catalog.integrations.registry import IntegrationPluginRegistry
 
         try:
@@ -134,7 +134,7 @@ class IntegrationSerializer(IntegrationConfigValidationMixin, serializers.ModelS
         except KeyError:
             return None
 
-    def _build_plugin(self, integration):
+    def _build_plugin(self, integration: Integration) -> BaseIntegration | None:
         from catalog.integrations.registry import IntegrationPluginRegistry
 
         if not hasattr(self, "_plugins"):
@@ -146,7 +146,7 @@ class IntegrationSerializer(IntegrationConfigValidationMixin, serializers.ModelS
                 self._plugins[integration.pk] = None
         return self._plugins[integration.pk]
 
-    def get_name(self, integration):
+    def get_name(self, integration: Integration) -> str:
         plugin_class = self._get_plugin_class(integration)
         if plugin_class is None:
             return integration.type
@@ -156,7 +156,7 @@ class IntegrationSerializer(IntegrationConfigValidationMixin, serializers.ModelS
         except Exception:
             return plugin_class.NAME
 
-    def get_needs_reconnect(self, integration) -> bool:
+    def get_needs_reconnect(self, integration: Integration) -> bool:
         plugin = self._build_plugin(integration)
         if not isinstance(plugin, BaseOAuthIntegration):
             return False
@@ -165,19 +165,19 @@ class IntegrationSerializer(IntegrationConfigValidationMixin, serializers.ModelS
         except Exception:
             return False
 
-    def get_integration_type_name(self, integration):
+    def get_integration_type_name(self, integration: Integration) -> str | None:
         plugin_class = self._get_plugin_class(integration)
         return plugin_class.INTEGRATION_TYPE_NAME if plugin_class else None
 
-    def get_syncable(self, integration):
+    def get_syncable(self, integration: Integration) -> bool:
         plugin_class = self._get_plugin_class(integration)
         return plugin_class.is_syncable() if plugin_class else False
 
-    def get_config_schema(self, integration) -> dict:
+    def get_config_schema(self, integration: Integration) -> dict:
         plugin_class = self._get_plugin_class(integration)
         return plugin_class().get_config_schema() if plugin_class else {}
 
-    def get_configurable(self, integration):
+    def get_configurable(self, integration: Integration) -> bool:
         plugin_class = self._get_plugin_class(integration)
         return plugin_class is not None and plugin_class.CONFIGURATION_ARGS is not None
 
@@ -188,7 +188,7 @@ class IntegrationUpdateSerializer(IntegrationConfigValidationMixin, serializers.
         fields = ["id", "dataset", "type", "config", "created_at", "updated_at"]
         read_only_fields = ["id", "dataset", "type", "created_at", "updated_at"]
 
-    def validate(self, attrs):
+    def validate(self, attrs: dict) -> dict:
         attrs = super().validate(attrs)
         if "config" in attrs:
             # type is read-only on update, so the instance is the only source for it.

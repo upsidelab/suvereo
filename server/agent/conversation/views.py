@@ -1,7 +1,8 @@
 import os
+from typing import Any
 
 from django.conf import settings
-from django.db.models import Prefetch
+from django.db.models import Prefetch, QuerySet
 from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -9,6 +10,7 @@ from rest_framework import status
 from rest_framework.generics import ListAPIView
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -54,7 +56,7 @@ class ConversationView(APIView):
         ],
         responses={200: ConversationContentSerializer()},
     )
-    def get(self, request, conversation_id):
+    def get(self, request: Request, conversation_id: int) -> Response:
         conversation = get_object_or_404(
             Conversation.objects.select_related("agent")
             .prefetch_related(
@@ -73,7 +75,7 @@ class ConversationView(APIView):
         operation_description="Ask a question in a conversation",
         request_body=AskQuestionSerializer,
     )
-    def post(self, request, conversation_id):
+    def post(self, request: Request, conversation_id: int) -> Response:
         conversation = get_object_or_404(Conversation, id=conversation_id, user=request.user)
         serializer = AskQuestionSerializer(data=request.data, context={"conversation_id": conversation_id})
         if not serializer.is_valid():
@@ -138,10 +140,10 @@ class ConversationListView(ListAPIView):
             openapi.Parameter("agent_id", openapi.IN_QUERY, description="ID of the agent", type=openapi.TYPE_INTEGER),
         ],
     )
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         return super().get(request, *args, **kwargs)
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Conversation]:
         user = self.request.user
         data_set_id = self.request.query_params.get("data_set_id")
         agent_id = self.request.query_params.get("agent_id")
@@ -160,7 +162,7 @@ class ConversationListView(ListAPIView):
         request_body=ConversationCreationSerializer,
         responses={201: ConversationContentSerializer()},
     )
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         input_serializer = ConversationCreationSerializer(data=request.data)
         if not input_serializer.is_valid():
             return Response(input_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -184,7 +186,7 @@ class MessageFeedbackView(APIView):
             openapi.Parameter("id", openapi.IN_PATH, description="ID of the message", type=openapi.TYPE_INTEGER)
         ],
     )
-    def patch(self, request, id):
+    def patch(self, request: Request, id: int) -> Response:
         message = get_object_or_404(Message, id=id, conversation__user=request.user)
 
         serializer = MessageFeedbackSerializer(message, data=request.data, partial=True)
@@ -207,7 +209,7 @@ class ConversationFileUploadView(APIView):
         ],
         responses={202: FileUploadTaskResponseSerializer()},
     )
-    def post(self, request, conversation_id, *args, **kwargs):
+    def post(self, request: Request, conversation_id: int, *args: Any, **kwargs: Any) -> Response:
         conversation = get_object_or_404(Conversation, pk=conversation_id, user=request.user)
 
         if not has_dataset_perm(request.user, PERMISSIONS.CONVERSATION.CONVERSE, conversation.data_set):
@@ -274,7 +276,7 @@ class SupportedFileTypesView(APIView):
         operation_description="Get list of supported file types for upload",
         responses={200: SupportedFileTypesSerializer()},
     )
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         supported_extensions = []
         for extensions_tuple in settings.FILE_PARSER_CLASSES:
             supported_extensions.extend(extensions_tuple)

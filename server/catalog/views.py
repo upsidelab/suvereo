@@ -1,11 +1,16 @@
+from typing import Any
+
 from django.db import transaction
+from django.db.models import QuerySet
 from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.generics import GenericAPIView, ListCreateAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.serializers import BaseSerializer
 
 from account.authorization import (
     PERMISSIONS,
@@ -24,24 +29,24 @@ from catalog.services import DataSetDeletionService
 class DataSetListView(ListCreateAPIView):
     permission_classes = [IsAuthenticated]
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> type[BaseSerializer]:
         if self.request.method == "POST":
             return DataSetCreateSerializer
         return DataSetSerializer
 
     @swagger_auto_schema(operation_description="List data sets")
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         return super().get(request, *args, **kwargs)
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[DataSet]:
         return datasets_visible_to(self.request.user).order_by("name", "id")
 
     @swagger_auto_schema(operation_description="Create a new data set", request_body=DataSetCreateSerializer)
     @global_permission_required(PERMISSIONS.DATA_SET.ADD)
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         return super().post(request, *args, **kwargs)
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: BaseSerializer) -> None:
         with transaction.atomic():
             preconfigure_agents = serializer.validated_data.pop("preconfigure_agents")
             data_set = serializer.save()
@@ -63,7 +68,7 @@ class DataSetDetailView(RetrieveAPIView):
             )
         ],
     )
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         instance = get_object_or_404(datasets_visible_to(request.user), pk=kwargs[self.lookup_url_kwarg])
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
@@ -78,7 +83,7 @@ class DataSetDetailView(RetrieveAPIView):
         ],
     )
     @global_permission_required(PERMISSIONS.DATA_SET.CHANGE)
-    def patch(self, request, *args, **kwargs):
+    def patch(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         instance = self.get_object()
 
         # Filter out embedding fields from the request data
@@ -103,7 +108,7 @@ class DataSetDetailView(RetrieveAPIView):
         ],
     )
     @global_permission_required(PERMISSIONS.DATA_SET.DELETE)
-    def delete(self, request, *args, **kwargs):
+    def delete(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         DataSetDeletionService.delete(self.get_object())
 
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -136,7 +141,7 @@ class ConfigView(GenericAPIView):
         },
     )
     @any_global_permission_required(PERMISSIONS.DATA_SET.ADD, PERMISSIONS.DATA_SET.CHANGE)
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         response_body = {
             "language_model_providers": [
                 cls.NAME for cls in LanguageModelRegistry().get_provider_classes()
@@ -165,7 +170,7 @@ class ConfigLanguageModelView(GenericAPIView):
         },
     )
     @any_global_permission_required(PERMISSIONS.DATA_SET.ADD, PERMISSIONS.DATA_SET.CHANGE)
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         provider_name = kwargs.get("provider_name")
         response_body = LanguageModelRegistry().provider_class_by_name(provider_name).available_models()
 
@@ -205,7 +210,7 @@ class ConfigEmbeddingModelView(GenericAPIView):
         },
     )
     @any_global_permission_required(PERMISSIONS.DATA_SET.ADD, PERMISSIONS.DATA_SET.CHANGE)
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         provider_name = kwargs.get("provider_name")
         provider_class = EmbeddingProviderRegistry().provider_class_by_name(provider_name)
         response_body = {

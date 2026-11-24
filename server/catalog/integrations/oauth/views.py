@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from suvereo_common.oauth import NoAuthorizationRequired
@@ -35,7 +36,7 @@ class IntegrationOAuthStartView(APIView):
     @swagger_auto_schema(
         operation_description="Begin the handshake and hand back the URL the admin's browser should open."
     )
-    def post(self, request, data_set_id):
+    def post(self, request: Request, data_set_id: int) -> Response:
         data_set = get_object_or_404(DataSet, pk=data_set_id)
         enforce_any_dataset_scoped_permission(self, data_set, *CONNECT_PERMISSIONS)
 
@@ -94,7 +95,7 @@ class IntegrationOAuthRefreshView(APIView):
     @swagger_auto_schema(
         operation_description="Renew a stored token on demand, without sending the admin through the provider again."
     )
-    def post(self, request, data_set_id):
+    def post(self, request: Request, data_set_id: int) -> Response:
         data_set = get_object_or_404(DataSet, pk=data_set_id)
         enforce_dataset_scoped_permission(self, PERMISSIONS.INTEGRATION.CHANGE, data_set)
 
@@ -124,7 +125,7 @@ class IntegrationOAuthResultView(APIView):
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(operation_description="Report the outcome of a flow to the window that began it.")
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         state = request.query_params.get("state") or ""
         result = storage.read_result(state)
         if result is None or result.get("user_id") != request.user.pk:
@@ -146,7 +147,7 @@ class IntegrationOAuthCallbackView(APIView):
     @swagger_auto_schema(
         operation_description="Receive the provider's redirect, exchange the code and pass the credentials back."
     )
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         state = request.query_params.get("state") or ""
         flow = storage.pop(state)
         if flow is None:
@@ -156,7 +157,7 @@ class IntegrationOAuthCallbackView(APIView):
         storage.store_result(state, {**payload, "user_id": flow["user_id"], "data_set_id": flow["data_set_id"]})
         return hand_back(state, flow["origin"])
 
-    def _outcome(self, request, flow: PendingFlow) -> HandshakeOutcome:
+    def _outcome(self, request: Request, flow: PendingFlow) -> HandshakeOutcome:
         if error := request.query_params.get("error"):
             if error in CLIENT_REJECTED_ERRORS:
                 self._forget_registration(flow)

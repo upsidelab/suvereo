@@ -1,8 +1,13 @@
+from typing import Any
+
 from django.utils.decorators import method_decorator
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.serializers import BaseSerializer
 
 from account.authorization import PERMISSIONS, global_permission_required
 from account.models import DatasetRole
@@ -17,21 +22,21 @@ class DatasetRoleListView(ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     queryset = DatasetRole.objects.prefetch_related("permissions__content_type").order_by("name")
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> type[BaseSerializer]:
         if self.request.method == "POST":
             return DatasetRoleDetailSerializer
         return DatasetRoleSerializer
 
     @swagger_auto_schema(operation_description="List dataset-scoped roles")
     @global_permission_required(PERMISSIONS.DATA_SET_ROLE.VIEW)
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         return super().get(request, *args, **kwargs)
 
     @swagger_auto_schema(
         operation_description="Create a new dataset-scoped role", request_body=DatasetRoleDetailSerializer
     )
     @global_permission_required(PERMISSIONS.DATA_SET_ROLE.ADD)
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         return super().post(request, *args, **kwargs)
 
 
@@ -54,11 +59,11 @@ class DatasetRoleDetailView(RetrieveUpdateDestroyAPIView):
         operation_description="Retrieve a dataset-scoped role", manual_parameters=[DATASET_ROLE_ID_PARAMETER]
     )
     @global_permission_required(PERMISSIONS.DATA_SET_ROLE.VIEW)
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         return super().get(request, *args, **kwargs)
 
     @global_permission_required(PERMISSIONS.DATA_SET_ROLE.CHANGE)
-    def update(self, request, *args, **kwargs):
+    def update(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         return super().update(request, *args, **kwargs)
 
     @swagger_auto_schema(
@@ -66,5 +71,5 @@ class DatasetRoleDetailView(RetrieveUpdateDestroyAPIView):
         manual_parameters=[DATASET_ROLE_ID_PARAMETER],
     )
     @global_permission_required(PERMISSIONS.DATA_SET_ROLE.DELETE)
-    def delete(self, request, *args, **kwargs):
+    def delete(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         return super().delete(request, *args, **kwargs)

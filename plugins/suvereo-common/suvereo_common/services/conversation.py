@@ -26,7 +26,7 @@ class BaseConversationService(ABC, Generic[T]):
         pass
 
     @abstractmethod
-    def save_user_message(self, conversation_id: Any, message: str):
+    def save_user_message(self, conversation_id: Any, message: str) -> Any:
         pass
 
     @abstractmethod
@@ -34,5 +34,5 @@ class BaseConversationService(ABC, Generic[T]):
         pass
 
     @abstractmethod
-    def record_error(self, conversation_id: Any):
+    def record_error(self, conversation_id: Any) -> None:
         pass

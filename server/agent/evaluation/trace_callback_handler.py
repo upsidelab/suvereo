@@ -3,6 +3,7 @@ from typing import Any
 from uuid import UUID
 
 from langchain_core.callbacks import BaseCallbackHandler
+from langchain_core.messages import BaseMessage
 from langchain_core.outputs import LLMResult
 from suvereo_common.evaluation.trace import LLMCall, ToolCall, TraceRecorder
 
@@ -16,23 +17,41 @@ class TraceCallbackHandler(BaseCallbackHandler):
         self._tool_starts: dict[UUID, tuple[float, str, dict[str, Any]]] = {}
 
     def on_chain_start(
-        self, serialized, inputs, *, run_id: UUID, parent_run_id: UUID | None = None, **kwargs: Any
+        self,
+        serialized: dict[str, Any],
+        inputs: dict[str, Any],
+        *,
+        run_id: UUID,
+        parent_run_id: UUID | None = None,
+        **kwargs: Any,
     ) -> None:
         self._record_parent(run_id, parent_run_id)
 
     def on_retriever_start(
-        self, serialized, query, *, run_id: UUID, parent_run_id: UUID | None = None, **kwargs: Any
+        self, serialized: dict[str, Any], query: str, *, run_id: UUID, parent_run_id: UUID | None = None, **kwargs: Any
     ) -> None:
         self._record_parent(run_id, parent_run_id)
 
     def on_chat_model_start(
-        self, serialized, messages, *, run_id: UUID, parent_run_id: UUID | None = None, **kwargs: Any
+        self,
+        serialized: dict[str, Any],
+        messages: list[list[BaseMessage]],
+        *,
+        run_id: UUID,
+        parent_run_id: UUID | None = None,
+        **kwargs: Any,
     ) -> None:
         self._record_parent(run_id, parent_run_id)
         self._start_llm(run_id, kwargs)
 
     def on_llm_start(
-        self, serialized, prompts, *, run_id: UUID, parent_run_id: UUID | None = None, **kwargs: Any
+        self,
+        serialized: dict[str, Any],
+        prompts: list[str],
+        *,
+        run_id: UUID,
+        parent_run_id: UUID | None = None,
+        **kwargs: Any,
     ) -> None:
         self._record_parent(run_id, parent_run_id)
         self._start_llm(run_id, kwargs)

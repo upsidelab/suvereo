@@ -1,5 +1,10 @@
+from typing import Any
+
+from django.contrib.auth.base_user import AbstractBaseUser
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
+from rest_framework.request import Request
+from rest_framework.response import Response
 from utils.views.task_status import TaskStatusView
 
 from account.authorization import PERMISSIONS, has_dataset_perm
@@ -9,7 +14,7 @@ from agent.task_status.serializers import FileUploadTaskStatusSerializer, Messag
 
 
 class ConversationTaskStatusView(TaskStatusView):
-    def _is_result_visible(self, user, result):
+    def _is_result_visible(self, user: AbstractBaseUser, result: Any) -> bool:
         if not isinstance(result, dict) or result.get("task_type") != self.task_type:
             return False
 
@@ -35,7 +40,7 @@ class FileUploadStatusView(ConversationTaskStatusView):
         ],
         responses={200: FileUploadTaskStatusSerializer()},
     )
-    def get(self, request, task_id, *args, **kwargs):
+    def get(self, request: Request, task_id: str, *args: Any, **kwargs: Any) -> Response:
         return super().get(request, task_id, *args, **kwargs)
 
 
@@ -52,5 +57,5 @@ class MessagePushStatusView(ConversationTaskStatusView):
         ],
         responses={200: MessagePushTaskStatusSerializer()},
     )
-    def get(self, request, task_id, *args, **kwargs):
+    def get(self, request: Request, task_id: str, *args: Any, **kwargs: Any) -> Response:
         return super().get(request, task_id, *args, **kwargs)

@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -6,6 +8,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -32,7 +35,7 @@ class CheckServiceNameView(APIView):
         responses={200: AvailabilityResponseSerializer},
     )
     @any_global_permission_required(PERMISSIONS.SERVICE_ACCOUNT.ADD, PERMISSIONS.SERVICE_ACCOUNT.CHANGE)
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         name = request.data.get("name")
         service = ServiceAccountNameService()
         is_available = service.is_service_account_name_available(name)
@@ -51,7 +54,7 @@ class ResetTokenView(APIView):
         responses={200: TokenResponseSerializer},
     )
     @global_permission_required(PERMISSIONS.SERVICE_ACCOUNT.CHANGE)
-    def post(self, request, id):
+    def post(self, request: Request, id: int) -> Response:
         service_account = get_object_or_404(User, id=id, is_service_account=True)
         if service_account.is_superuser and not request.user.is_superuser:
             # Handing back a fresh token for an admin account is handing over admin.
@@ -72,14 +75,14 @@ class ServiceAccountListView(ListAPIView):
         operation_description="Get list of service accounts",
     )
     @global_permission_required(PERMISSIONS.SERVICE_ACCOUNT.VIEW)
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         return super().get(request, *args, **kwargs)
 
     @swagger_auto_schema(
         operation_description="Create a new service account", request_body=CreateUpdateServiceAccountSerializer
     )
     @global_permission_required(PERMISSIONS.SERVICE_ACCOUNT.ADD)
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         serializer = CreateUpdateServiceAccountSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             user = serializer.save()
@@ -99,7 +102,7 @@ class ServiceAccountView(APIView):
         ],
     )
     @global_permission_required(PERMISSIONS.SERVICE_ACCOUNT.CHANGE)
-    def patch(self, request, id):
+    def patch(self, request: Request, id: int) -> Response:
         service_account = get_object_or_404(User, id=id, is_service_account=True)
         serializer = CreateUpdateServiceAccountSerializer(
             service_account, data=request.data, partial=True, context={"request": request}

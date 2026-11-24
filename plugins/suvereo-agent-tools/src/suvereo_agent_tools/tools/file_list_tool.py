@@ -10,7 +10,7 @@ class FileListTool(BaseFileTool):
     RETURN_DIRECT = False
     CONFIGURATION_ARGS = None
 
-    def run(self):
+    def run(self) -> str:
         files = self._injector.repositories.conversation.list_files(self._conversation_id)
         output = {"files": [{"filename": file.filename, "file_id": file.id} for file in files]}
         return f"Files found: {json.dumps(output)}"
