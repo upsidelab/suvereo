@@ -11,10 +11,21 @@ export const appendToken = (messages: MessageProps[], token: string): MessagePro
   return [...messages, { type: "ai", text: token, id: null }];
 };
 
-export const endToolCallNarration = (messages: MessageProps[]): MessageProps[] => {
+export const endStreamedMessage = (messages: MessageProps[]): MessageProps[] => {
   const last = messages[messages.length - 1];
   if (!isStreamedAnswer(last)) {
     return messages;
   }
   return [...messages.slice(0, -1), { ...last, type: "intermediate_step" }];
+};
+
+const isEndedStreamedMessage = (message: MessageProps | undefined): message is TextMessageProps =>
+  !!message && message.type === "intermediate_step" && message.id === null;
+
+export const markAsAnswer = (messages: MessageProps[], id: number): MessageProps[] => {
+  const last = messages[messages.length - 1];
+  if (!isEndedStreamedMessage(last)) {
+    return messages;
+  }
+  return [...messages.slice(0, -1), { ...last, type: "ai", id }];
 };

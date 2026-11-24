@@ -115,6 +115,41 @@ class TestPersistentChatHistory:
         # Then
         assert [m.content for m in rebuilt] == ["Let me check both.", ""]
 
+    def test_a_message_added_directly_keeps_its_narration_once(self, conversation):
+        # Given
+        history = PersistentChatHistory(
+            conversation_repo=DjangoConversationRepository(Conversation),
+            conversation_id=conversation.id,
+        )
+        message = AIMessage(
+            content="Let me check both.",
+            tool_calls=[
+                {"id": "call_1", "name": "search_products", "args": {}},
+                {"id": "call_2", "name": "search_documents", "args": {}},
+            ],
+        )
+
+        # When
+        history.add_message(message)
+
+        # Then
+        steps = conversation.messages.filter(type=Message.MessageType.INTERMEDIATE_STEP).order_by("id")
+        assert [m.text for m in steps] == ["Let me check both.", ""]
+
+    def test_whitespace_only_narration_is_saved_empty(self, conversation):
+        # Given
+        history = PersistentChatHistory(
+            conversation_repo=DjangoConversationRepository(Conversation),
+            conversation_id=conversation.id,
+        )
+        message = AIMessage(content="\n\n", tool_calls=[{"id": "call_1", "name": "search_products", "args": {}}])
+
+        # When
+        history.add_message(message)
+
+        # Then
+        assert conversation.messages.get(type=Message.MessageType.INTERMEDIATE_STEP).text == ""
+
     def test_add_tool_message_stored_as_function(self, conversation):
         # Given
         history = PersistentChatHistory(

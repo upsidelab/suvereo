@@ -14,7 +14,7 @@ import { AttachmentBubble } from "@/components/conversation-view/attachment-bubb
 import { MessageError } from "@/components/conversation-view/message-error.tsx";
 import { MessageBubbleTyping } from "@/components/conversation-view/message-bubble-typing.tsx";
 import { ChatWindow } from "@/components/conversation-view/chat-window.tsx";
-import { appendToken, endToolCallNarration } from "@/components/conversation-view/streamed-answer.ts";
+import { appendToken, endStreamedMessage, markAsAnswer } from "@/components/conversation-view/streamed-answer.ts";
 import { NotFound } from "@/pages/not-found.tsx";
 import { ApiError } from "@/lib/api-error.ts";
 
@@ -151,15 +151,13 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
         setMessages((prevMessages) => appendToken(prevMessages, data.data.chunk));
         scrollToLastMessage();
       },
-      tool_call_narration_end: () => {
+      message_end: () => {
         setIsAgentLoading(true);
-        setMessages(endToolCallNarration);
+        setMessages(endStreamedMessage);
       },
       message_id: () => {
-        setMessages((prevMessages) => {
-          const lastMessage = prevMessages[prevMessages.length - 1];
-          return [...prevMessages.slice(0, -1), { ...lastMessage, id: data.data.output }];
-        });
+        setIsAgentLoading(false);
+        setMessages((prevMessages) => markAsAnswer(prevMessages, data.data.output));
         setStatusText(DEFAULT_STATUS_TEXT);
       },
       tool_call: () => {
@@ -362,6 +360,10 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
                   return (
                     <AttachmentBubble key={index} variant="primary" message={message} inMessageGroup={inMessageGroup} />
                   );
+                }
+
+                if (message.type === 'intermediate_step' && message.text.trim() === '') {
+                  return null;
                 }
 
                 if (message.type === 'ai' && message.text === '') {

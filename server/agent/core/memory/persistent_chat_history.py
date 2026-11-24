@@ -58,10 +58,10 @@ class PersistentChatHistory(BaseChatMessageHistory):
             )
 
     def _create_intermediate_step_message(self, message: AIMessage) -> None:
-        for tool_call in message.tool_calls:
+        for index, tool_call in enumerate(message.tool_calls):
             self._conversation.messages.create(
                 type=Message.MessageType.INTERMEDIATE_STEP,
-                text=message.text,
+                text=message.text.strip() if index == 0 else "",
                 function_name=tool_call["name"],
                 tool_call_id=tool_call["id"],
                 tool_call_args=tool_call["args"],

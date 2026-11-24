@@ -75,10 +75,14 @@ class TestConversationView:
             "question_message": "Hello?",
             "streaming": True,
         }
-        with patch(
-            "agent.conversation.views.respond_to_user_message_task.apply_async",
-            return_value=type("obj", (), {"id": "fake-task-id"}),
-        ) as mock_task:
+        with (
+            patch(
+                "agent.conversation.views.respond_to_user_message_task.apply_async",
+                return_value=type("obj", (), {"id": "fake-task-id"}),
+            ) as mock_task,
+            patch("agent.conversation.views.LanguageModelRegistry.provider_for_dataset") as mock_provider,
+        ):
+            mock_provider.return_value = type("obj", (), {"STREAMING_AVAILABLE": True})
             response = api_client.post(url, payload, format="json")
 
         assert response.status_code == status.HTTP_202_ACCEPTED
@@ -86,17 +90,21 @@ class TestConversationView:
         assert response.data["streaming"] is True
         mock_task.assert_called_once()
 
-    def test_a_request_without_streaming_answers_without_streaming(self, api_client, user, url, conversation):
+    def test_non_streaming_provider_disables_streaming_in_task(self, api_client, user, url, conversation):
         _grant_dataset_permission(user, conversation.data_set, PERMISSIONS.CONVERSATION.CONVERSE)
         payload = {
             "data_set_id": conversation.data_set.id,
             "question_message": "Hello?",
-            "streaming": False,
+            "streaming": True,
         }
-        with patch(
-            "agent.conversation.views.respond_to_user_message_task.apply_async",
-            return_value=type("obj", (), {"id": "fake-task-id"}),
-        ) as mock_task:
+        with (
+            patch(
+                "agent.conversation.views.respond_to_user_message_task.apply_async",
+                return_value=type("obj", (), {"id": "fake-task-id"}),
+            ) as mock_task,
+            patch("agent.conversation.views.LanguageModelRegistry.provider_for_dataset") as mock_provider,
+        ):
+            mock_provider.return_value = type("obj", (), {"STREAMING_AVAILABLE": False})
             response = api_client.post(url, payload, format="json")
 
         assert response.status_code == status.HTTP_202_ACCEPTED
@@ -112,10 +120,14 @@ class TestConversationView:
             "question_message": "Hello?",
             "streaming": False,
         }
-        with patch(
-            "agent.conversation.views.respond_to_user_message_task.apply_async",
-            return_value=type("obj", (), {"id": "fake-task-id"}),
-        ) as mock_task:
+        with (
+            patch(
+                "agent.conversation.views.respond_to_user_message_task.apply_async",
+                return_value=type("obj", (), {"id": "fake-task-id"}),
+            ) as mock_task,
+            patch("agent.conversation.views.LanguageModelRegistry.provider_for_dataset") as mock_provider,
+        ):
+            mock_provider.return_value = type("obj", (), {"STREAMING_AVAILABLE": False})
             response = api_client.post(url, payload, format="json")
 
         assert response.status_code == status.HTTP_202_ACCEPTED
@@ -215,10 +227,14 @@ class TestConversationView:
         url = reverse("conversation-details", kwargs={"conversation_id": conversation.id})
         payload = {"data_set_id": dataset.id, "question_message": "How are you?", "streaming": False}
 
-        with patch(
-            "agent.conversation.views.respond_to_user_message_task.apply_async",
-            return_value=type("obj", (), {"id": "fake-task-id"}),
-        ) as mock_task:
+        with (
+            patch(
+                "agent.conversation.views.respond_to_user_message_task.apply_async",
+                return_value=type("obj", (), {"id": "fake-task-id"}),
+            ) as mock_task,
+            patch("agent.conversation.views.LanguageModelRegistry.provider_for_dataset") as mock_provider,
+        ):
+            mock_provider.return_value = type("obj", (), {"STREAMING_AVAILABLE": True})
             response = admin_api_client.post(url, payload, format="json")
 
         assert response.status_code == status.HTTP_202_ACCEPTED

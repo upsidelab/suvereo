@@ -1,6 +1,8 @@
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
+import pytest
 from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
 from langchain_core.messages import AIMessage, AIMessageChunk
 from langchain_core.outputs import ChatGeneration, ChatGenerationChunk, LLMResult
@@ -80,7 +82,7 @@ class TestConversationWebSocketCallbackHandlerContentBlocks:
         assert streamed == ["hello", " there"]
 
 
-class TestConversationWebSocketCallbackHandlerToolCallNarration:
+class TestConversationWebSocketCallbackHandlerMessageEvents:
     def _build_handler(self, mock_get_channel_layer):
         channel_layer = MagicMock()
         channel_layer.group_send = AsyncMock()
@@ -91,19 +93,40 @@ class TestConversationWebSocketCallbackHandlerToolCallNarration:
     def _events(channel_layer):
         return [call.args[1] for call in channel_layer.group_send.await_args_list]
 
+    @pytest.mark.parametrize(
+        "message",
+        [
+            AIMessage(content="Let me check.", tool_calls=[{"id": "call_1", "name": "ping_tool", "args": {}}]),
+            AIMessage(content="Done."),
+        ],
+        ids=["tool call narration", "final answer"],
+    )
     @patch("agent.core.callbacks.base_websocket_handler.get_channel_layer")
-    def test_a_model_call_ending_in_tool_calls_ends_the_narration(self, mock_get_channel_layer):
+    def test_a_model_call_that_streamed_text_ends_its_message(self, mock_get_channel_layer, message):
         handler, channel_layer = self._build_handler(mock_get_channel_layer)
-        message = AIMessage(content="Let me check.", tool_calls=[{"id": "call_1", "name": "ping_tool", "args": {}}])
+        run_id = uuid4()
 
-        handler.on_llm_end(LLMResult(generations=[[ChatGeneration(message=message)]]))
+        handler.on_llm_new_token(message.text, run_id=run_id)
+        handler.on_llm_end(LLMResult(generations=[[ChatGeneration(message=message)]]), run_id=run_id)
 
-        assert [event["event"] for event in self._events(channel_layer)] == ["tool_call_narration_end"]
+        assert [event["event"] for event in self._events(channel_layer)] == ["stream", "message_end"]
 
     @patch("agent.core.callbacks.base_websocket_handler.get_channel_layer")
-    def test_a_final_answer_does_not_end_a_narration(self, mock_get_channel_layer):
+    def test_a_model_call_that_fails_while_streaming_ends_its_message(self, mock_get_channel_layer):
+        handler, channel_layer = self._build_handler(mock_get_channel_layer)
+        run_id = uuid4()
+
+        handler.on_llm_new_token("Let me check the cat", run_id=run_id)
+        handler.on_llm_error(ConnectionError("stream dropped"), run_id=run_id)
+
+        assert [event["event"] for event in self._events(channel_layer)] == ["stream", "message_end"]
+
+    @patch("agent.core.callbacks.base_websocket_handler.get_channel_layer")
+    def test_a_model_call_that_streamed_nothing_sends_no_message_end(self, mock_get_channel_layer):
         handler, channel_layer = self._build_handler(mock_get_channel_layer)
 
-        handler.on_llm_end(LLMResult(generations=[[ChatGeneration(message=AIMessage(content="Done."))]]))
+        handler.on_llm_end(
+            LLMResult(generations=[[ChatGeneration(message=AIMessage(content="Done."))]]), run_id=uuid4()
+        )
 
         assert self._events(channel_layer) == []

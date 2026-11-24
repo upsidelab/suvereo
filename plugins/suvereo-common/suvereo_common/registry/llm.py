@@ -16,6 +16,7 @@ class LanguageModelProvider(ABC):
     """
 
     NAME: str = None
+    STREAMING_AVAILABLE = True
 
     def __init__(self, model: str):
         super(LanguageModelProvider, self).__init__()
@@ -30,9 +31,10 @@ class LanguageModelProvider(ABC):
         """
         pass
 
-    @abstractmethod
-    def provide_streaming_language_model(self, callbacks: list[BaseCallbackHandler] | None = None) -> BaseLanguageModel:
-        """Initializes and returns an instance of the language model that streams its tokens to the callbacks."""
+    def provide_streaming_language_model(
+        self, callbacks: list[BaseCallbackHandler] | None = None, **kwargs
+    ) -> BaseLanguageModel:
+        raise NotImplementedError()
 
     @abstractmethod
     def model_name(self) -> str:

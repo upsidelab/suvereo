@@ -128,9 +128,7 @@ Authorization: Token <API_TOKEN>
 Each message in `history` has:
 - `id`: the message identifier
 - `text`: the message content
-- `type`: `human` for the messages you sent, `ai` for the agent's answers, `intermediate_step` for text the agent wrote before calling a tool (such as "Let me check the catalog"), and `file` for an attached file (with `file_type` and `file_name` set)
-
-One question can produce several agent messages: the `intermediate_step` messages written before tool calls, then the `ai` answer.
+- `type`: `human` for the messages you sent, `ai` for the agent's answers, and `file` for an attached file (with `file_type` and `file_name` set)
 
 `GET /api/conversations` lists conversations, and accepts `data_set_id` and `agent_id` as query parameters.
 

@@ -1,7 +1,7 @@
 from typing import Any
+from uuid import UUID
 
-from langchain_core.messages import AIMessage
-from langchain_core.outputs import ChatGeneration, ChatGenerationChunk, GenerationChunk, LLMResult
+from langchain_core.outputs import ChatGenerationChunk, GenerationChunk, LLMResult
 
 from agent.core.callbacks.base_websocket_handler import BaseWebSocketHandler
 
@@ -9,17 +9,34 @@ from agent.core.callbacks.base_websocket_handler import BaseWebSocketHandler
 class ConversationWebSocketCallbackHandler(BaseWebSocketHandler):
     """Streams LLM tokens and tool events to the WebSocket group for a conversation."""
 
+    def __init__(self, conversation_id: int):
+        super().__init__(conversation_id)
+        self._streaming_runs: set[UUID] = set()
+
     def on_llm_new_token(
-        self, token: str | list, *, chunk: GenerationChunk | ChatGenerationChunk | None = None, **kwargs: Any
+        self,
+        token: str | list,
+        *,
+        chunk: GenerationChunk | ChatGenerationChunk | None = None,
+        run_id: UUID | None = None,
+        **kwargs: Any,
     ) -> None:
         text = chunk.message.text if isinstance(chunk, ChatGenerationChunk) else token
         if not text or not isinstance(text, str):
             return
+        self._streaming_runs.add(run_id)
         self.send_message({"type": "chat_message", "event": "stream", "token": text})
 
-    def on_llm_end(self, response: LLMResult, **kwargs: Any) -> None:
-        if self._requests_tool_calls(response):
-            self.send_message({"type": "chat_message", "event": "tool_call_narration_end"})
+    def on_llm_end(self, response: LLMResult, *, run_id: UUID | None = None, **kwargs: Any) -> None:
+        self._end_streamed_message(run_id)
+
+    def on_llm_error(self, error: BaseException, *, run_id: UUID | None = None, **kwargs: Any) -> None:
+        self._end_streamed_message(run_id)
+
+    def _end_streamed_message(self, run_id: UUID | None) -> None:
+        if run_id in self._streaming_runs:
+            self._streaming_runs.discard(run_id)
+            self.send_message({"type": "chat_message", "event": "message_end"})
 
     def on_tool_start(self, serialized: dict, input_str: str, **kwargs: Any) -> None:
         tool_name = serialized.get("name", "tool")
@@ -30,13 +47,3 @@ class ConversationWebSocketCallbackHandler(BaseWebSocketHandler):
 
     def on_tool_error(self, error: BaseException, **kwargs: Any) -> None:
         self.send_message({"type": "chat_message", "event": "tool_done"})
-
-    @staticmethod
-    def _requests_tool_calls(response: LLMResult) -> bool:
-        return any(
-            isinstance(generation, ChatGeneration)
-            and isinstance(generation.message, AIMessage)
-            and bool(generation.message.tool_calls)
-            for generations in response.generations
-            for generation in generations
-        )
