@@ -22,8 +22,6 @@ RATES: dict[SuiteKind, tuple[str, ...]] = {
 
 
 class MetricAggregator:
-    """Aggregates runs per candidate: every metric and component, and the rates of the suite's kind (RATES)."""
-
     def __init__(
         self,
         value_types: dict[str, str],
@@ -36,7 +34,6 @@ class MetricAggregator:
 
     @classmethod
     def for_suite(cls, loaded: LoadedSuite) -> "MetricAggregator":
-        """An aggregator knowing the value type and declared aggregate of every metric the suite measures."""
         value_types = {metric.NAME: metric.VALUE_TYPE for metric in AUTO_METRICS} | {
             JUDGE_COST: "number",
             USER_COST: "number",
@@ -50,7 +47,6 @@ class MetricAggregator:
         return cls(value_types, aggregates, resolved_kind(loaded.suite))
 
     def aggregate_per_candidate(self, runs: list[RunResult]) -> list[CandidateMetrics]:
-        """One entry per candidate, in the order their first run appears."""
         grouped: dict[str, list[RunResult]] = {}
         for run in runs:
             grouped.setdefault(run.candidate, []).append(run)
@@ -66,7 +62,6 @@ class MetricAggregator:
         ]
 
     def aggregate_runs(self, runs: list[RunResult]) -> dict[str, MetricAggregate]:
-        """Every metric over the runs, plus the rates of the suite's kind."""
         rates = self._rates(runs)
         return self._aggregate_measured_metrics(runs) | {name: rates[name] for name in RATES[self.kind]}
 

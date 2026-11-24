@@ -93,7 +93,6 @@ class Command(BaseCommand):
     @staticmethod
     @contextmanager
     def _logs_to_stderr() -> Iterator[None]:
-        """Point log handlers that write to stdout at stderr while running, so --format json prints only JSON."""
         loggers = [logging.getLogger(), *(logging.getLogger(name) for name in logging.root.manager.loggerDict)]
         handlers = {h for logger in loggers for h in logger.handlers if getattr(h, "stream", None) is sys.stdout}
         for handler in handlers:
@@ -106,7 +105,6 @@ class Command(BaseCommand):
 
     @staticmethod
     def _build_evaluation(suite_path: Path, options: dict) -> SuiteEvaluation:
-        """The evaluation the options describe; raises EvalSuiteError for an invalid suite or option."""
         suite_dir = suite_path.resolve().parent
         case_ids = options["case"]
         if options["rerun_failed"]:
@@ -146,7 +144,6 @@ class Command(BaseCommand):
 
     @staticmethod
     def _command_line(suite_path: Path, options: dict) -> list[str]:
-        """The run's command as given, rebuilt from its options, for the reports and the history."""
         parts = ["runeval", str(suite_path)]
         for name in RECORDED_OPTIONS:
             flag = f"--{name.replace('_', '-')}"

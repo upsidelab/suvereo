@@ -8,8 +8,6 @@ from agent.models import Conversation
 
 
 class EvalExecutionConversation(ExecutionConversation):
-    """An execution conversation that records each validated attempt, and what tools left on the scratchpad, into a trace."""
-
     def __init__(
         self,
         conversation: Conversation,
@@ -25,7 +23,6 @@ class EvalExecutionConversation(ExecutionConversation):
         return self._conversation
 
     def record_attempt(self, number: int, response: str, failed: ValidatorResponse | None) -> None:
-        """An AttemptObserver: failed is the failing validator's verdict, or None when the attempt passed."""
         self._recorder.record_attempt(
             Attempt(
                 number=number,
@@ -37,5 +34,4 @@ class EvalExecutionConversation(ExecutionConversation):
         )
 
     def copy_scratchpad_to_trace(self) -> None:
-        """Copy the last attempt's scratchpad into the trace."""
         self._recorder.trace.scratchpad = self.tool_scratchpad.entries()

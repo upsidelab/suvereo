@@ -9,9 +9,6 @@ from agent.models import Conversation
 
 
 class BaseRunDriver(ABC):
-    """Drives the agent through one case on a prepared conversation, recording what happened into the trace; raises
-    when the run cannot go on."""
-
     @abstractmethod
     def run(
         self,
@@ -21,5 +18,4 @@ class BaseRunDriver(ABC):
         recorder: TraceRecorder,
         user_llm: BaseModelClient | None = None,
     ) -> None:
-        """Run the case, filling the trace's output and the kind's own record (attempts or turns); user_llm is the
-        model simulated users ask."""
+        pass

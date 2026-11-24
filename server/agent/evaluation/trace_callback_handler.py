@@ -10,8 +10,6 @@ from agent.evaluation.run_context import EvalRunContext
 
 
 class TraceCallbackHandler(BaseCallbackHandler):
-    """Records LLM and tool calls into the current run's trace (or a given recorder); a no-op outside an evaluation."""
-
     def __init__(self, recorder: TraceRecorder | None = None):
         self._recorder = recorder
         self._llm_starts: dict[UUID, tuple[float, str | None]] = {}
@@ -115,7 +113,6 @@ class TraceCallbackHandler(BaseCallbackHandler):
         self._finish_tool(run_id, parent_run_id, error=f"{type(error).__name__}: {error}")
 
     def _record_parent(self, run_id: UUID, parent_run_id: UUID | None) -> None:
-        """Remember which run started this one, so nested LLM calls can be traced back to their tool."""
         recorder = self._active_recorder()
         if recorder is not None and parent_run_id is not None:
             recorder.record_run_parent(str(run_id), str(parent_run_id))

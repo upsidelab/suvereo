@@ -12,24 +12,18 @@ from account.authorization import (
 
 
 class PermissionOptionSerializer(serializers.Serializer):
-    """One checkbox in the role editor, with the boxes it cannot be ticked without."""
-
     code = serializers.CharField(read_only=True)
     label = serializers.CharField(read_only=True)
     requires = serializers.ListField(child=serializers.CharField(), read_only=True)
 
 
 class PermissionEntitySerializer(serializers.Serializer):
-    """The permissions of one entity, which is how the role editor groups its checkboxes."""
-
     entity = serializers.CharField(read_only=True)
     label = serializers.CharField(read_only=True)
     permissions = PermissionOptionSerializer(many=True, read_only=True)
 
 
 class PermissionCodeField(serializers.RelatedField):
-    """Represents a `Permission` by its public code (`dataset.add`) rather than by its row id."""
-
     queryset = Permission.objects.select_related("content_type")
 
     def to_representation(self, permission) -> str:
@@ -51,23 +45,6 @@ class PermissionCodeField(serializers.RelatedField):
 
 
 class GrantedPermissionsMixin:
-    """Validates a set of permissions being granted in one save.
-
-    Two rules, both rejecting rather than silently correcting, so the stored grant only ever
-    reflects what an admin explicitly ticked:
-
-    1. Only permissions this kind of grant can actually carry. One outside the set is inert once
-       stored - nothing would ever read it - so accepting it would misreport what the grant does.
-    2. Every dependency in `PERMISSION_DEPENDENCIES` that applies in this scope is satisfied. The
-       error names each missing requirement together with the permissions that made it necessary,
-       so the admin can see what they were about to agree to rather than what to type next.
-
-    Nothing is auto-added: a silent grant hides what was actually decided from whoever reads the
-    stored set later, while a rejection forces the box to be ticked deliberately.
-
-    Mixed into the global-role and dataset-role serializers, which differ only in the allowed set.
-    """
-
     grantable_permissions: list[str] = GLOBAL_SCOPE_PERMISSIONS
     not_grantable_error = "Cannot be granted here: {codes}."
 
@@ -94,6 +71,5 @@ class GrantedPermissionsMixin:
         return super().validate(attrs)
 
     def _missing_dependencies(self, permissions) -> list[dict]:
-        """Adapts `Permission` rows onto the shared rule."""
         granted = {permission_label(permission) for permission in permissions}
         return missing_dependencies(granted, self.grantable_permissions)

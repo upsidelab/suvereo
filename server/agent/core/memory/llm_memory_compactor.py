@@ -23,14 +23,6 @@ _INCREMENTAL_SUMMARIZATION_PROMPT = SystemMessage(
 
 
 class LLMMemoryCompactor(BaseMemoryCompactor):
-    """
-    Generates and persists an LLM-based summary of the conversation history.
-
-    A new summary is built every COMPACTION_INTERVAL human messages since the last compaction.
-    The summary is stored on the Conversation record and injected into subsequent agent calls
-    so that context beyond the token-trimming window is not lost.
-    """
-
     def __init__(
         self,
         conversation_repo: BaseConversationRepository,
@@ -43,11 +35,9 @@ class LLMMemoryCompactor(BaseMemoryCompactor):
         self._chat_history = chat_history
 
     def get_summary(self) -> str | None:
-        """Return the current persisted summary, or None if one has not been generated yet."""
         return self._conversation.conversation_summary or None
 
     def compact_if_needed(self) -> None:
-        """Generate a new summary if COMPACTION_INTERVAL human messages have been added since the last one."""
         last_summarized_message_id = self._conversation.last_summarized_message_id
         new_messages = self._chat_history.messages_after(last_summarized_message_id)
 

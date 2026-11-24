@@ -9,8 +9,6 @@ StopReason = Literal["budget_spent", "budget_untracked"]
 
 
 class SuiteRunResult(BaseModel):
-    """Every run of a suite; partial when stopped before all planned runs started (see stopped_reason)."""
-
     suite: str
     planned_runs: int
     runs: list[RunResult]

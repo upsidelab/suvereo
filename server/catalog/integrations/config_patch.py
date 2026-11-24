@@ -1,5 +1,3 @@
-"""Writing back config an integration renewed for itself."""
-
 from collections.abc import Awaitable, Callable
 from typing import Any
 
@@ -10,11 +8,6 @@ from catalog.models import DataSet, Integration
 
 
 def merge_into_integration(integration_id: Any, patch: dict[str, Any], dataset: DataSet | None = None) -> None:
-    """Merge `patch` into one integration's stored config, leaving the rest of the record alone.
-
-    Does nothing when no integration matches, so renewing a config that is not saved yet - a token
-    being connected in a form that has never been submitted - is not an error.
-    """
     if not integration_id:
         return
     with transaction.atomic():
@@ -29,8 +22,6 @@ def merge_into_integration(integration_id: Any, patch: dict[str, Any], dataset: 
 
 
 def config_writer_for(integration_id: Any) -> Callable[[dict[str, Any]], Awaitable[None]]:
-    """An awaitable writer a plugin instance can call to persist config it renewed mid-conversation."""
-
     @database_sync_to_async
     def write(patch: dict[str, Any]) -> None:
         merge_into_integration(integration_id, patch)

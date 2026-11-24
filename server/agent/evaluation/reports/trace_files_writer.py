@@ -6,9 +6,6 @@ from agent.evaluation.reports.suite_report import SuiteReport
 
 
 class TraceFilesWriter(BaseReportWriter):
-    """runs/<run_id>.json: each run's verdict, metric results (values, components, details such as a judge's
-    reasoning) and thresholds, then its full trace (LLM and tool calls, mock calls, attempts, output), for debugging."""
-
     NAME = "traces"
 
     def write(self, report: SuiteReport, run_dir: Path) -> list[Path]:

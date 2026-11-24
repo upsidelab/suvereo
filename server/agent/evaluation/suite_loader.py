@@ -25,18 +25,12 @@ from agent.models import Agent
 
 
 def reserved_metric_names(kind: SuiteKind) -> set[str]:
-    """Names a suite of this kind can't give its metrics: its auto metrics, the judge cost (and in a conversation the
-    simulated users' cost) and the derived rates."""
     costs = {JUDGE_COST, USER_COST} if kind == SuiteKind.CONVERSATION else {JUDGE_COST}
     return {metric.NAME for metric in auto_metrics_for(kind)} | costs | set(DERIVED_METRICS)
 
 
 class SuiteLoader:
-    """Reads a suite and checks what needs the host, so a mistake fails before any tokens are spent."""
-
     def load(self, path: Path, selection: SuiteSelection | None = None) -> LoadedSuite:
-        """The suite, narrowed to the selection if given, with its kind and execution key resolved; raises
-        EvalSuiteError naming the first problem found."""
         loaded = SuiteReader().read(path)
         if selection is not None:
             loaded = selection.apply(loaded)
@@ -60,8 +54,6 @@ class SuiteLoader:
 
     @staticmethod
     def _resolve_kind(suite: EvalSuite, agent_type: str) -> SuiteKind:
-        """The suite's kind; otherwise execution when it names an execution key or the agent type has an execution
-        definition, and conversation when neither."""
         if suite.kind is not None:
             return suite.kind
         if suite.execution_key:
@@ -85,7 +77,6 @@ class SuiteLoader:
 
     @staticmethod
     def _check_sandbox_agent_type(suite: EvalSuite) -> None:
-        """A sandbox builds its agent from the type, so the type must be registered (AVAILABLE_AGENTS)."""
         if not suite.agent.is_sandbox:
             return
         try:
@@ -104,8 +95,6 @@ class SuiteLoader:
 
     @staticmethod
     def _check_models(loaded: LoadedSuite) -> None:
-        """Models under test, every judge model (metric-level ones included) and the user model need a known
-        provider."""
         user_model = user_model_in_use(loaded)
         targets = [*loaded.suite.models, *judge_models_used_by_metrics(loaded), *([user_model] if user_model else [])]
         if not targets:
@@ -133,9 +122,6 @@ class SuiteLoader:
 
     @staticmethod
     def _check_metrics(loaded: LoadedSuite, kind: SuiteKind) -> None:
-        """Every metric builds, can measure the suite's kind, has a usable name, a judge if it needs one, and an
-        aggregate fitting its value type; a case's override keeps its suite metric's value type and aggregate, as
-        results are aggregated across cases."""
         registry = MetricRegistry()
         first_seen: dict[str, tuple[str, str | None]] = {}
         for config in loaded.suite.metrics:
@@ -206,8 +192,6 @@ class SuiteLoader:
 
     @staticmethod
     def _check_conversation_cases(loaded: LoadedSuite, agent_type: str) -> None:
-        """Each case is a conversation case, with fixed user messages or a simulated user: an LLM one needs
-        user_model, a custom one a loadable class, and a goal needs the judge, which decides whether it was reached."""
         suite = loaded.suite
         for case in loaded.cases:
             if not isinstance(case, ConversationEvalCase):

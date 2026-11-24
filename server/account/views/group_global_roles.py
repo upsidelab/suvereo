@@ -18,8 +18,6 @@ GLOBAL_ROLE_ID_PARAMETER = openapi.Parameter(
 
 
 class GroupGlobalRoleListView(APIView):
-    """Grant a global role to a group."""
-
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(

@@ -106,8 +106,6 @@ class DatasetRoleGroupListView(_DatasetAccessView):
     )
     @global_permission_required(PERMISSIONS.DATA_SET_ROLE.ASSIGN)
     def post(self, request, data_set_id, role_id):
-        """Granting to a group someone already holds this role through succeeds: the two grants
-        are independent, and group membership can change tomorrow."""
         data_set, role = self._get_dataset_and_role(data_set_id, role_id)
         serializer = GroupReferenceSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -132,8 +130,6 @@ class DatasetRoleGroupView(_DatasetAccessView):
     )
     @global_permission_required(PERMISSIONS.DATA_SET_ROLE.ASSIGN)
     def delete(self, request, data_set_id, role_id, group_id):
-        """Removes only this grant, even when the subjects behind it still hold the role another
-        way. The client re-fetches, and the remaining path is visible in the response."""
         data_set = self._get_dataset(data_set_id)
         assignment = get_object_or_404(
             DatasetGroupRoleAssignment, group_id=group_id, dataset=data_set, role_id=role_id

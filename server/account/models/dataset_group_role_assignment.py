@@ -5,8 +5,6 @@ from account.models.user_group import UserGroup
 
 
 class DatasetGroupRoleAssignment(models.Model):
-    """A dataset role held on one data set by everyone in one group."""
-
     group = models.ForeignKey(UserGroup, on_delete=models.CASCADE)
     dataset = models.ForeignKey("catalog.DataSet", on_delete=models.CASCADE)
     role = models.ForeignKey(DatasetRole, on_delete=models.CASCADE)

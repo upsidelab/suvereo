@@ -19,12 +19,10 @@ RAW_RESULT_FILE = "run_result.json"
 
 
 class ReportWritingError(Exception):
-    """The suite ran but its reports could not be written; the raw results were saved instead."""
+    pass
 
 
 class SuiteEvaluationOutcome(BaseModel):
-    """A finished evaluation: the report it wrote, its verdict, and the directory holding its files."""
-
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     report: SuiteReport
@@ -33,9 +31,6 @@ class SuiteEvaluationOutcome(BaseModel):
 
 
 class SuiteEvaluation:
-    """One evaluation end to end: runs the suite, writes summary.json and the selected reports to a new run directory,
-    and records the run in the suite's history."""
-
     def __init__(
         self,
         loaded: LoadedSuite,
@@ -53,8 +48,6 @@ class SuiteEvaluation:
         self.args = args or []
 
     def run(self) -> SuiteEvaluationOutcome:
-        """Run the suite and write its outputs; raises ReportWritingError, after saving the raw results, when the
-        reports cannot be made, so a paid-for run is never lost."""
         result = SuiteRunner(self.loaded, self.options).run()
         run_dir = RunDirectory.create(self.loaded.base_dir)
         try:

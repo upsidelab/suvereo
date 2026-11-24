@@ -19,17 +19,6 @@ def unique_email_field():
 
 
 class OnlyAdminsManageAdminsMixin:
-    """Restricts admin accounts to admins: a caller who is not an admin can neither grant admin
-    nor alter an account that already holds it.
-
-    The second half covers more than revoking and deactivating — editing an admin's email or
-    resetting their password would hand over the account just as effectively, so any write
-    against an admin target is refused.
-
-    Deliberately keyed off `is_superuser` directly rather than a grantable codename: a
-    "may grant admin" permission would let its holder grant it to themselves.
-    """
-
     def validate(self, attrs):
         request = self.context.get("request")
         if request is not None and not request.user.is_superuser:
@@ -82,14 +71,10 @@ class UserUpdatePasswordSerializer(OnlyAdminsManageAdminsMixin, serializers.Seri
 
 
 class UserSummarySerializer(serializers.ModelSerializer):
-    """A user as they appear inside someone else's payload - a global role's members, a role assignment."""
-
     class Meta:
         model = User
         fields = ["id", "email", "is_service_account"]
 
 
 class UserReferenceSerializer(serializers.Serializer):
-    """A request body that names a user - adding one to a global role, granting one a role."""
-
     user_id = serializers.PrimaryKeyRelatedField(source="user", queryset=User.objects.all())

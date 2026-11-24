@@ -41,7 +41,6 @@ class AgentPreconfigurationService:
 
     @staticmethod
     def default_agent_configuration(agent_class: type[BaseAgent]) -> dict:
-        """The config an agent type gets by default: its args, prompt input and extension, and tool settings."""
         return {
             "agent_args": get_model_descriptor_default_value_from_class(agent_class, "AGENT_ARGS"),
             "prompt_input": get_model_descriptor_default_value_from_class(agent_class, "PROMPT_INPUT"),

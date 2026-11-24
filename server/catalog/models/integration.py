@@ -10,13 +10,6 @@ UNIQUE_INTEGRATION_TYPE_CONSTRAINT = "unique_integration_type_per_dataset"
 
 
 class Integration(models.Model):
-    """One connection to an external system, configured on a DataSet.
-
-    The ``type`` matches a registered plugin's ``BaseIntegration.TYPE``; ``config`` holds
-    that plugin's stored settings. A DataSet may hold several integrations of a given type,
-    unless that type's plugin sets ``ALLOWS_MULTIPLE_INSTANCES`` to False.
-    """
-
     dataset = models.ForeignKey(DataSet, on_delete=models.CASCADE, related_name="integrations")
     type = models.CharField(max_length=128)
     config = models.JSONField(default=dict, blank=True)

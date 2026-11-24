@@ -8,8 +8,6 @@ from catalog.models import Integration
 
 
 class IntegrationPluginRegistry(BaseRegistry[BaseIntegration]):
-    """Resolves integration plugin classes registered in CATALOG_INTEGRATION_PLUGINS."""
-
     plugin_base = BaseIntegration
 
     def get_plugin_classes(self) -> list[type[BaseIntegration]]:
@@ -25,7 +23,6 @@ class IntegrationPluginRegistry(BaseRegistry[BaseIntegration]):
             raise KeyError(f"No integration plugin registered with TYPE='{integration_type}'.") from None
 
     def build_instance(self, integration: Integration) -> BaseIntegration:
-        """Instantiate the plugin for a stored Integration record, with its config on self."""
         plugin = self.get_plugin_class_by_type(integration.type)()
         if integration.config:
             plugin.set_runtime_arguments({"configuration_args": integration.config})

@@ -10,8 +10,6 @@ from pecl import settings
 
 
 class EmbeddingProviderRegistry(BaseRegistry[EmbeddingProvider], BaseEmbeddingProviderRegistry):
-    """Registry of available embedding providers registered in the system."""
-
     plugin_base = EmbeddingProvider
 
     def __init__(self, data_set_repo: BaseDataSetRepository | None = None):
@@ -23,24 +21,19 @@ class EmbeddingProviderRegistry(BaseRegistry[EmbeddingProvider], BaseEmbeddingPr
             self._data_set_repo = data_set_repo
 
     def get_provider_classes(self) -> list[type[EmbeddingProvider]]:
-        """Returns all registered provider classes."""
         return [self._get_plugin_class_by_path(path) for path in self._get_plugin_paths()]
 
     def _get_provider_classes_by_name(self) -> dict[str, type[EmbeddingProvider]]:
-        """Returns a mapping of provider NAME to provider class."""
         return {cls.NAME: cls for cls in self.get_provider_classes()}
 
     def provider_class_by_name(self, name: str) -> type[EmbeddingProvider]:
-        """Looks up a provider class by its ``NAME`` attribute."""
         return self._get_provider_classes_by_name()[name]
 
     def provider_instance_for_dataset(self, data_set_id: int) -> EmbeddingProvider:
-        """Returns a provider configured with the data set's embedding model and dimensions."""
         data_set = self._data_set_repo.get_by_id(data_set_id)
         provider_class = self.provider_class_by_name(data_set.embedding_provider)
         return provider_class(data_set.embedding_model, data_set.embedding_vector_dimensions)
 
     @staticmethod
     def _get_plugin_paths() -> list[str]:
-        """Returns the list of provider class paths from settings."""
         return settings.CATALOG_EMBEDDING_PROVIDERS

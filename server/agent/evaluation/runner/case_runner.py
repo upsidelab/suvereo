@@ -42,13 +42,6 @@ OUTCOME_METRIC: dict[SuiteKind, str] = {
 
 
 class CaseRunner:
-    """Runs one case against an opened target and scores it; each run gets its own conversation, mocks, trace and
-    judge client, so one CaseRunner can be shared by parallel threads.
-
-    judge_models_in_use are the judge models the suite asks, for its LLM metrics and goal_reached (see
-    judge_models_used_by_metrics); worked out here when not given.
-    """
-
     def __init__(
         self,
         loaded: LoadedSuite,
@@ -71,7 +64,6 @@ class CaseRunner:
     def run(
         self, case: EvalCase, model: ModelTarget | None = None, variant: PromptVariant | None = None, repeat: int = 1
     ) -> RunResult:
-        """Run the case once and score it; an exception while setting up or running becomes the trace's error."""
         suite = self.loaded.suite
         recorder = TraceRecorder()
         user_llm = EvalModelClient(self._user_model, self.pricing) if self._user_model else None
@@ -128,9 +120,6 @@ class CaseRunner:
         repeat: int,
         error: str,
     ) -> RunResult:
-        """A run that failed outside the agent, e.g. its sandbox could not be set up: the error in its trace, the
-        auto metrics, and the suite's metrics with no value and missed thresholds, so every run has the same metric
-        names."""
         trace, kind = ExecutionTrace(error=error), resolved_kind(loaded.suite)
         metrics, thresholds = RunScorer(loaded.base_dir, kind).scores_for_unfinished_run(
             loaded.suite.metrics_for(case), MetricContext(trace=trace, case=case, kind=kind), "the run did not complete"
@@ -157,7 +146,6 @@ class CaseRunner:
         recorder: TraceRecorder,
         user_llm: EvalModelClient | None = None,
     ) -> float | None:
-        """Set up and run the case, recording any exception as the trace's error; returns the agent's run time."""
         started = None
         try:
             integrations = [self._mocks.build(config) for config in self.loaded.suite.integrations_for(case)]
@@ -188,9 +176,6 @@ class CaseRunner:
             service.attach(conversation, path.name, path.read_bytes(), content_type)
 
     def _config_overrides(self, model: ModelTarget | None, variant: PromptVariant | None) -> AgentConfigOverrides:
-        """This run's agent changes, never saved: the pinned model, the variant's prompt and config patch, trace
-        handlers, the resolver that answers integration lookups from mocks, and repositories that see the sandbox's
-        temporary rows."""
         system_prompt = None
         if variant and variant.system_prompt_file:
             system_prompt = (self.loaded.base_dir / variant.system_prompt_file).read_text(encoding="utf-8")

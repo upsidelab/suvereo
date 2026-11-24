@@ -10,8 +10,6 @@ STATUS_RANK: dict[str, int] = {"fail": 0, "flaky": 1, "pass": 2}
 
 
 class ValueChange(BaseModel):
-    """A figure in the baseline and now; delta when both are numbers."""
-
     before: Any = None
     after: Any = None
     delta: float | None = None
@@ -23,17 +21,12 @@ class ValueChange(BaseModel):
 
 
 class CandidateChange(BaseModel):
-    """How one candidate's pass rate and metrics moved; before is None for a candidate the baseline didn't run, or ran
-    on other cases (e.g. this run is --rerun-failed), as figures over different cases don't compare."""
-
     candidate: str
     pass_rate: ValueChange
     metrics: dict[str, ValueChange]
 
 
 class CaseChange(BaseModel):
-    """A case whose status for a candidate changed between the baseline and now."""
-
     case_id: str
     candidate: str
     before: CaseStatus
@@ -41,9 +34,6 @@ class CaseChange(BaseModel):
 
 
 class BaselineDiff(BaseModel):
-    """This run against an earlier one (--baseline): each candidate's pass rate and metric changes, and the cases that
-    regressed (e.g. pass to flaky) or improved, per candidate both runs share."""
-
     baseline: str
     baseline_started_at: str | None
     candidates: list[CandidateChange]
@@ -79,7 +69,6 @@ class BaselineDiff(BaseModel):
 
     @staticmethod
     def _same_cases(candidate: str, outcomes: list[CaseOutcome], baseline: SummaryFile) -> bool:
-        """Whether this run and the baseline ran the candidate on the same cases."""
         now = {o.case_id for o in outcomes if o.candidate == candidate}
         return now == {c.case_id for c in baseline.cases if c.candidate == candidate}
 

@@ -19,7 +19,6 @@ class Command(BaseCommand):
 
     @staticmethod
     def _measured_on(metric: type[BaseMetric]) -> str:
-        """Which runs an auto metric is measured on with no configuration; empty for configured metrics."""
         if metric not in AUTO_METRICS:
             return ""
         if len(metric.KINDS) > 1:
@@ -28,7 +27,6 @@ class Command(BaseCommand):
 
     @staticmethod
     def _params_lines(params: type[BaseModel]) -> list[str]:
-        """One line per param: its name, whether it is required, and its description."""
         lines = []
         for name, field in params.model_fields.items():
             required = "required" if field.is_required() else "optional"

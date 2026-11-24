@@ -9,8 +9,6 @@ from account.services.ws_tickets import WebSocketTicketService
 
 
 class WebSocketTicketView(APIView):
-    """Issues a short-lived, single-use ticket that authenticates a WebSocket connection."""
-
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(

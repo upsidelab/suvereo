@@ -7,11 +7,6 @@ from agent.evaluation.user_model_in_use import has_user_goals
 
 
 def judge_models_used_by_metrics(loaded: LoadedSuite) -> list[ModelTarget]:
-    """The judge models a suite's LLM metrics will ask, each once: a metric's own `judge`, else the suite's `judge`.
-
-    Builds every metric to read its params; one that cannot be built is skipped (SuiteLoader and RunScorer report it).
-    A suite judge no LLM metric relies on is left out, unless a simulated user's goal needs it (goal_reached).
-    """
     registry = MetricRegistry()
     configs = [*loaded.suite.metrics, *(c for case in loaded.cases for c in loaded.suite.metrics_for(case))]
     models: dict[tuple[str, str], ModelTarget] = {}

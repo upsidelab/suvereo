@@ -1,5 +1,6 @@
 from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -15,10 +16,11 @@ from catalog.serializers import IntegrationSerializer, IntegrationTypeSerializer
 
 
 class IntegrationTypeListView(APIView):
-    """List the registered integration types and the config form each one expects."""
-
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(
+        operation_description="List the registered integration types and the config form each one expects."
+    )
     @any_permission_on_any_dataset_required(PERMISSIONS.INTEGRATION.ADD, PERMISSIONS.INTEGRATION.CHANGE)
     def get(self, request):
         types = [

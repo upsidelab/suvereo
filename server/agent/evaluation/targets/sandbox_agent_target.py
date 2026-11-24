@@ -13,14 +13,6 @@ logger = logging.getLogger(__name__)
 
 
 class SandboxAgentTarget(BaseAgentTarget):
-    """Tests an agent type on a temporary copy, so evaluation never touches real data (suite `agent: {type: ...}`).
-
-    Opening creates a temporary DataSet, hidden from the API, with a new agent of the type (default config plus
-    the suite's agent_config) and syncs the mock integrations' data into it, e.g. a mock shop's catalog. Only those
-    mocks answer; real integrations are never reached. Closing deletes the DataSet with everything the runs
-    created, or with keep_run_data keeps it as a regular DataSet for inspection.
-    """
-
     def __init__(
         self,
         suite_name: str,
@@ -46,7 +38,6 @@ class SandboxAgentTarget(BaseAgentTarget):
         return self.sandbox.agent
 
     def close(self) -> None:
-        """Destroy the sandbox, or keep it; a failure is logged so it never hides the run's error."""
         try:
             if self.sandbox is not None:
                 self.sandbox.keep() if self.keep_run_data else self.sandbox.destroy()

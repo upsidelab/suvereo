@@ -25,8 +25,6 @@ _BASE_FIELDS = [
 
 
 class AgenticExecutionSerializer(serializers.ModelSerializer):
-    """Lightweight read serializer used for list responses."""
-
     duration_seconds = serializers.FloatField(read_only=True)
     user_email = serializers.EmailField(source="conversation.user.email", read_only=True)
 
@@ -37,8 +35,6 @@ class AgenticExecutionSerializer(serializers.ModelSerializer):
 
 
 class AgenticExecutionDetailSerializer(AgenticExecutionSerializer):
-    """Extended read serializer used for the detail endpoint. Includes uploaded files."""
-
     files = serializers.SerializerMethodField()
 
     class Meta(AgenticExecutionSerializer.Meta):
@@ -46,13 +42,10 @@ class AgenticExecutionDetailSerializer(AgenticExecutionSerializer):
         read_only_fields = fields
 
     def get_files(self, obj: AgenticExecution):
-        """Return non-hidden files attached to the execution's conversation."""
         return ConversationFileSerializer(obj.conversation.files.filter(is_hidden=False), many=True).data
 
 
 class AgenticExecutionDefinitionSerializer(serializers.Serializer):
-    """Read serializer for an available agentic execution definition type on an agent."""
-
     key = serializers.CharField()
     name = serializers.CharField()
     description = serializers.CharField(allow_null=True)
@@ -60,13 +53,6 @@ class AgenticExecutionDefinitionSerializer(serializers.Serializer):
 
 
 class StartAgenticExecutionSerializer(serializers.Serializer):
-    """Write serializer for starting a new agentic execution.
-
-    The agent is resolved from the URL; this serializer validates the
-    ``execution_key`` and the input payload against the matching ExecutionInputType.
-    Pass the resolved execution definition class as ``context["execution_cls"]``.
-    """
-
     execution_key = serializers.CharField()
     input = serializers.DictField(default=dict)
 

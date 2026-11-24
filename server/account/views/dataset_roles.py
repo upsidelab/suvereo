@@ -1,3 +1,4 @@
+from django.utils.decorators import method_decorator
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
@@ -13,9 +14,6 @@ DATASET_ROLE_ID_PARAMETER = openapi.Parameter(
 
 
 class DatasetRoleListView(ListCreateAPIView):
-    """List dataset-scoped roles; create one with a name, a description and a set of dataset-scoped
-    permissions."""
-
     permission_classes = [IsAuthenticated]
     queryset = DatasetRole.objects.prefetch_related("permissions__content_type").order_by("name")
 
@@ -37,9 +35,16 @@ class DatasetRoleListView(ListCreateAPIView):
         return super().post(request, *args, **kwargs)
 
 
-class DatasetRoleDetailView(RetrieveUpdateDestroyAPIView):
-    """Retrieve a dataset role; update its name, description and permissions; delete it."""
+UPDATE_SCHEMA = swagger_auto_schema(
+    operation_description="Update a dataset role's name, description and permissions",
+    request_body=DatasetRoleDetailSerializer,
+    manual_parameters=[DATASET_ROLE_ID_PARAMETER],
+)
 
+
+@method_decorator(name="put", decorator=UPDATE_SCHEMA)
+@method_decorator(name="patch", decorator=UPDATE_SCHEMA)
+class DatasetRoleDetailView(RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = DatasetRoleDetailSerializer
     queryset = DatasetRole.objects.prefetch_related("permissions__content_type")
@@ -52,11 +57,6 @@ class DatasetRoleDetailView(RetrieveUpdateDestroyAPIView):
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
-    @swagger_auto_schema(
-        operation_description="Update a dataset role's name, description and permissions",
-        request_body=DatasetRoleDetailSerializer,
-        manual_parameters=[DATASET_ROLE_ID_PARAMETER],
-    )
     @global_permission_required(PERMISSIONS.DATA_SET_ROLE.CHANGE)
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
@@ -67,6 +67,4 @@ class DatasetRoleDetailView(RetrieveUpdateDestroyAPIView):
     )
     @global_permission_required(PERMISSIONS.DATA_SET_ROLE.DELETE)
     def delete(self, request, *args, **kwargs):
-        """Deleting a role takes its assignments with it, the way deleting a global role takes its
-        memberships - holding a role is not a reason the role has to stay."""
         return super().delete(request, *args, **kwargs)

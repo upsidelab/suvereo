@@ -9,8 +9,6 @@ from agent.task_status.serializers import FileUploadTaskStatusSerializer, Messag
 
 
 class ConversationTaskStatusView(TaskStatusView):
-    """Task status whose result is revealed to the conversation's owner or holders of CONVERSATION.VIEW_ALL."""
-
     def _is_result_visible(self, user, result):
         if not isinstance(result, dict) or result.get("task_type") != self.task_type:
             return False

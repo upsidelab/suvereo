@@ -16,13 +16,8 @@ ABANDONED_AFTER = timedelta(hours=6)
 
 
 class AbandonedRuns:
-    """Deletes what evaluation runs that died left behind: temporary DataSets (sandboxes) and the evaluation user's
-    temporary conversations on regular DataSets, once unused for ABANDONED_AFTER. A run still going keeps them alive
-    by starting conversations; one that cannot be deleted is logged and skipped."""
-
     @classmethod
     def purge(cls) -> int:
-        """Purge both; returns how many sandboxes and conversations were deleted."""
         return cls.purge_sandboxes() + cls.purge_conversations()
 
     @classmethod

@@ -13,13 +13,6 @@ from agent.evaluation.trace_callback_handler import TraceCallbackHandler
 
 
 class EvalModelClient(BaseModelClient):
-    """Sends prompts to a model the evaluation asks besides the agent, recording every call in its own trace so its
-    cost stays apart from the agent's.
-
-    target is the default model; a call may name another. Each model's LLM is built on first use, and a model's own
-    pricing (ModelTarget.pricing) is added to the table then.
-    """
-
     def __init__(self, target: ModelTarget | None, pricing: PricingTable):
         self.target = target
         self._pricing = pricing
@@ -28,7 +21,6 @@ class EvalModelClient(BaseModelClient):
         self._lock = Lock()
 
     def chat(self, messages: list[ChatMessage], system: str | None = None, model: ModelTarget | None = None) -> str:
-        """Ask the given model, or else the default one; raises ValueError when neither is set."""
         target = model or self.target
         if target is None:
             raise ValueError("No model to ask: set 'judge' in the suite or in the metric's params.")
@@ -37,11 +29,9 @@ class EvalModelClient(BaseModelClient):
         return self._llm_for(target).invoke(sent).text
 
     def cost(self) -> TraceCost:
-        """What every model this client asked has cost so far."""
         return self._pricing.trace_cost(self._recorder.trace)
 
     def _llm_for(self, target: ModelTarget) -> BaseChatModel:
-        """The LLM for a model, built once and shared by every caller naming it."""
         key = (target.provider, target.model)
         with self._lock:
             if key not in self._llms:

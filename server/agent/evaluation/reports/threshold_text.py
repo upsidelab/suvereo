@@ -7,7 +7,6 @@ WORDS = {"min": "≥", "max": "≤", "equals": "exactly", "in": "one of"}
 
 
 def threshold_text(threshold: PassThreshold | None) -> str | None:
-    """A pass threshold as text in the CSV and JSON conventions, e.g. "min 0.95, max 1", "equals true" or "in a;b"."""
     if threshold is None:
         return None
     conditions = threshold.model_dump(by_alias=True, exclude_none=True)
@@ -15,7 +14,6 @@ def threshold_text(threshold: PassThreshold | None) -> str | None:
 
 
 def threshold_words(threshold: PassThreshold) -> str:
-    """A pass threshold as report.md words, e.g. '≥ 0.95', 'exactly 1', 'true' or 'one of a, b'."""
     parts = []
     for key, value in threshold.model_dump(by_alias=True, exclude_none=True).items():
         if isinstance(value, bool):

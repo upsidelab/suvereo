@@ -10,9 +10,6 @@ SuiteRunStatus = Literal["complete", "partial"]
 
 
 class SuiteVerdict(BaseModel):
-    """How a suite run ended: complete, or partial when the budget stopped it before every planned run; its exit code;
-    and the candidates whose pass rate is below the suite's min_pass_rate, none when the suite sets none."""
-
     status: SuiteRunStatus
     exit_code: ExitCode
     below_min_pass_rate: list[str]

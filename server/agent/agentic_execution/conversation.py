@@ -7,11 +7,6 @@ from agent.models.conversation import Conversation
 
 
 class ExecutionConversation(ExecutionConversationInterface):
-    """The conversation an execution drives, building its agent with the definition's settings and the given overrides.
-
-    The given overrides win over what the definition declares.
-    """
-
     def __init__(
         self,
         conversation: Conversation,
@@ -25,7 +20,6 @@ class ExecutionConversation(ExecutionConversationInterface):
         self._tool_scratchpad = ToolScratchpad()
 
     def ask(self, message: str) -> str:
-        """Send a user message and return the agent's reply."""
         return ConversationManager().get_answer(
             self._conversation,
             message,
@@ -36,5 +30,4 @@ class ExecutionConversation(ExecutionConversationInterface):
 
     @property
     def tool_scratchpad(self) -> ToolScratchpad:
-        """The shared memory that tools write to and validators read from."""
         return self._tool_scratchpad

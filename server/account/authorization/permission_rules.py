@@ -102,13 +102,6 @@ PERMISSION_DEPENDENCIES: dict[str, list[str]] = {
 
 
 def build_transitive_dependencies(dependencies: dict[str, list[str]]) -> dict[str, list[str]]:
-    """`dependencies` with every requirement's own requirements folded into its dependents.
-
-    Rejects a cyclic map rather than closing over it. A cycle has a well-defined closure - every
-    permission in it requires all the others, so they can only ever be granted together - but that
-    is never what a requirement is meant to express, and it would surface as a code that
-    inexplicably drags others along rather than as the authoring mistake it is.
-    """
     requirements: dict[str, set[str]] = {}
     for required, dependents in dependencies.items():
         for dependent in dependents:
@@ -140,10 +133,6 @@ TRANSITIVE_PERMISSION_DEPENDENCIES: dict[str, list[str]] = build_transitive_depe
 
 
 def dependencies_within(scope_permissions: list[str]) -> dict[str, list[str]]:
-    """The dependencies checkable inside one permission set, keyed by requirement.
-
-    Transitive, so one response names everything a permission needs
-    """
     grantable = set(scope_permissions)
     return {
         required: [dependent for dependent in dependents if dependent in grantable]
@@ -153,7 +142,6 @@ def dependencies_within(scope_permissions: list[str]) -> dict[str, list[str]]:
 
 
 def missing_dependencies(granted: set[str], scope_permissions: list[str]) -> list[dict]:
-    """The requirements `granted` fails to meet, each with the permissions that made it necessary."""
     unmet = [
         {
             "code": PUBLIC_CODES[required],

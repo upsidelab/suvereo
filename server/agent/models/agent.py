@@ -11,9 +11,6 @@ class AgentQuerySet(models.QuerySet):
 
 
 class AgentManager(models.Manager):
-    """Hides deleted agents and those on temporary DataSets, such as evaluation sandboxes; use Agent.all_objects to
-    include them."""
-
     def get_queryset(self):
         return AgentQuerySet(self.model, using=self._db).active().filter(dataset__is_temporary=False)
 

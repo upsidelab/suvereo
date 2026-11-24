@@ -14,8 +14,6 @@ from suvereo_common.utils import deep_merge
 
 
 class AgentConfigOverrides(ArbitraryTypeBaseModel):
-    """Per-build changes to an agent's merged config; unset fields keep the config's values."""
-
     llm_class: type[BaseLLM] | None = None
     llm_callbacks: list[CallbackHandlerConfig] | None = None
     agent_callback_handler: AgentCallbackHandlerConfig | None = None
@@ -26,13 +24,11 @@ class AgentConfigOverrides(ArbitraryTypeBaseModel):
     agent_config_patch: dict[str, Any] | None = None
 
     def with_fallback(self, base: "AgentConfigOverrides") -> "AgentConfigOverrides":
-        """A copy where every field these overrides leave unset takes the value from ``base``."""
         return self.model_copy(
             update={name: getattr(base, name) for name in type(self).model_fields if getattr(self, name) is None}
         )
 
     def apply(self, config: AgentConfig) -> AgentConfig:
-        """A copy of the config with these overrides applied; LLM callbacks are added, the rest replaced."""
         llm_update: dict[str, Any] = {}
         if self.llm_class is not None:
             llm_update["llm_class"] = self.llm_class

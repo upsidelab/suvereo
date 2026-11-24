@@ -2,8 +2,6 @@ from django.db import models
 
 
 class DataSetManager(models.Manager):
-    """Hides temporary DataSets, such as evaluation sandboxes; use DataSet.all_objects to include them."""
-
     def get_queryset(self):
         return super().get_queryset().filter(is_temporary=False)
 

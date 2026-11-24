@@ -5,8 +5,6 @@ from suvereo_common.registry.llm import LanguageModelProvider
 
 
 class PinnedLLM(BaseLLM):
-    """A BaseLLM that builds one provider and model whatever the data set is configured with."""
-
     PROVIDER: ClassVar[str]
     MODEL: ClassVar[str]
 
@@ -14,7 +12,6 @@ class PinnedLLM(BaseLLM):
 
     @classmethod
     def for_model(cls, provider: str, model: str) -> type["PinnedLLM"]:
-        """The pinned class for a provider NAME and model, one cached class per pair."""
         key = (provider, model)
         if key not in PinnedLLM._classes:
             PinnedLLM._classes[key] = type(

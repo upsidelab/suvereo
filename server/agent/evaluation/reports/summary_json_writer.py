@@ -12,15 +12,6 @@ from agent.evaluation.runner import RunResult
 
 
 class SummaryJsonWriter(BaseReportWriter):
-    """summary.json, always written (ReportOutput runs it whatever is selected): the compact, machine-readable result
-    for scripts, CI and coding agents.
-
-    Holds the verdict (status, exit code), how the run was started, each candidate's rates, outcome figures (e.g. a
-    conversation's goal_reached rate and mean turns) and metric values, each pass threshold's pass rate, each case's
-    status per candidate, the runs that failed with the thresholds they missed, the diff against a baseline run
-    (--baseline), and the cost against the budget.
-    """
-
     NAME = "summary"
 
     def write(self, report: SuiteReport, run_dir: Path) -> list[Path]:
@@ -29,7 +20,6 @@ class SummaryJsonWriter(BaseReportWriter):
         return [path]
 
     def summary(self, report: SuiteReport) -> dict[str, Any]:
-        """The summary as a JSON-ready dict."""
         verdict, result = SuiteVerdict.of(report), report.result
         return {
             "status": verdict.status,
@@ -80,8 +70,6 @@ class SummaryJsonWriter(BaseReportWriter):
 
     @staticmethod
     def _threshold_summaries(report: SuiteReport) -> dict[str, Any]:
-        """Per metric with a pass threshold: how many checked runs met it, and the threshold as text (several when
-        cases override it)."""
         thresholds: dict[str, Any] = {}
         for name in report.metric_configs:
             checked = [run for run in report.runs if name in run.thresholds]

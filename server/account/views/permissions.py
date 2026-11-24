@@ -72,7 +72,6 @@ class PermissionListView(APIView):
         return Response(PermissionEntitySerializer(entities, many=True).data)
 
     def _requirements_for(self, scope_permissions) -> dict[str, list[str]]:
-        """What each permission cannot be granted without, keyed by the permission and in public codes."""
         requirements: dict[str, list[str]] = {}
         for required, dependents in dependencies_within(scope_permissions).items():
             for dependent in dependents:
@@ -80,9 +79,6 @@ class PermissionListView(APIView):
         return {code: sorted(required) for code, required in requirements.items()}
 
     def _labels_for(self, codenames) -> dict[str, str]:
-        """Django's own `Permission.name` ("Can add data set") is the label for now. Matched on
-        (app_label, codename) pairs rather than bare codenames, so an unrelated permission on
-        another model that happens to share a codename is never picked up."""
         query = Q()
         for codename in codenames:
             app_label, bare_codename = codename.split(".")

@@ -7,16 +7,6 @@ from rest_framework.views import APIView
 
 
 class TaskStatusView(APIView):
-    """
-    Base view to check the status of an enqueued task running in the background.
-
-    Only reports on tasks of `task_type` (subclasses must set it) - a task_id belonging to a
-    different job, or to no job we recognise, is reported as PENDING rather than 404, matching
-    Celery's own behaviour for unknown ids and avoiding confirming or denying its existence.
-    Once the task has succeeded, the result is only revealed to a requester allowed to see
-    the resource it belongs to (subclasses implement `_is_result_visible`) - anyone else also sees PENDING.
-    """
-
     permission_classes = [IsAuthenticated]
     task_type: str
     response_serializer_class: type

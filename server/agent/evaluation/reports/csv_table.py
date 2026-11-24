@@ -5,9 +5,6 @@ from typing import Any
 
 
 class CsvTable:
-    """Writes the evaluation CSVs one way: UTF-8 with a BOM (so spreadsheets open them cleanly), commas, RFC 4180
-    quoting, bools as true/false, lists joined with ';' and missing values as empty cells."""
-
     @classmethod
     def write(cls, path: Path, header: list[str], rows: Iterable[list[Any]]) -> Path:
         with path.open("w", encoding="utf-8-sig", newline="") as f:
@@ -18,7 +15,6 @@ class CsvTable:
 
     @classmethod
     def cell(cls, value: Any) -> str:
-        """One value as CSV text."""
         if value is None:
             return ""
         if isinstance(value, bool):

@@ -4,8 +4,6 @@ from django.db import models
 
 
 class UserManager(BaseUserManager):
-    """Hides internal users, such as the evaluation runner's; use User.all_objects to include them."""
-
     def get_queryset(self):
         return super().get_queryset().filter(is_internal=False)
 

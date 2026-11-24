@@ -20,12 +20,6 @@ GROUP_ID_PARAMETER = openapi.Parameter(
 
 
 class GlobalRoleGroupListView(APIView):
-    """List the groups holding a global role; grant it to one.
-
-    The same grant is reachable from the group side at `/api/groups/<id>/global_roles`: a role's
-    screen reads "who holds this" and a group's reads "what does this hold".
-    """
-
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(

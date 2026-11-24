@@ -9,12 +9,6 @@ from suvereo_common.integrations import BaseIntegration, BaseIntegrationPluginRe
 
 
 class EvalRunContext:
-    """What one evaluation run shares with code the agent builder creates: the trace recorder, the mock integrations,
-    the real resolver to fall back to (None refuses real integrations) and the suite directory.
-
-    activate() makes it current for a block; current() returns it, or None outside an evaluation.
-    """
-
     _current: ClassVar[ContextVar[Optional["EvalRunContext"]]] = ContextVar("eval_run_context", default=None)
 
     def __init__(
@@ -32,12 +26,10 @@ class EvalRunContext:
 
     @classmethod
     def current(cls) -> Optional["EvalRunContext"]:
-        """The run in progress on this thread or task, or None outside an evaluation."""
         return cls._current.get()
 
     @contextmanager
     def activate(self) -> Iterator["EvalRunContext"]:
-        """Make this the current run for the duration of the block."""
         token = self._current.set(self)
         try:
             yield self

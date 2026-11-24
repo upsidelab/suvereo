@@ -24,8 +24,6 @@ __all__ = ["AgenticExecutionService", "FileUploadNotSupportedError", "Unsupporte
 
 
 class AgenticExecutionService:
-    """Orchestrates the creation of an AgenticExecution and its associated resources."""
-
     def start(
         self,
         agent: Agent,
@@ -69,5 +67,4 @@ class AgenticExecutionService:
             )
 
     def get_execution_types(self, agent: Agent) -> list:
-        """Return all registered agentic execution definition classes for the given agent type."""
         return AgenticExecutionDefinitionRegistry().get_by_agent_type(agent.agent_type)

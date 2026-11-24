@@ -19,10 +19,6 @@ UNTRACKED_BUDGET_HEADLINE = (
 
 
 class VerdictSection:
-    """The top of report.md: the verdict in one bold line, each candidate's pass rate against the minimum, warnings,
-    and the run's exit code, size and spend in small print. Without a min_pass_rate there is no verdict to give, so
-    only a budget stop, the warnings and the small print remain."""
-
     @classmethod
     def render(cls, report: SuiteReport, verdict: SuiteVerdict) -> str:
         min_pass_rate = report.loaded.suite.min_pass_rate

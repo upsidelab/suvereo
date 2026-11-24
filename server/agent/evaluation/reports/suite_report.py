@@ -22,10 +22,6 @@ UNSAFE_IN_FILE_NAMES = re.compile(r"[^A-Za-z0-9._-]+")
 
 
 class SuiteReport:
-    """What every report writer reads from one suite run, worked out once: the runs with their ids and trace files,
-    each candidate's aggregated metrics in comparison order (pass rate, then mean cost), the cases and the metrics,
-    how the run was started (git state, command-line args), and its diff against a baseline run when given one."""
-
     def __init__(
         self,
         loaded: LoadedSuite,
@@ -59,17 +55,13 @@ class SuiteReport:
 
     @property
     def rates(self) -> tuple[str, ...]:
-        """The rates every candidate reports, by the suite's kind."""
         return RATES[self.kind]
 
     @property
     def outcome_figures(self) -> list[str]:
-        """The auto metrics comparisons show besides the rates: in a conversation, the goal_reached rate and the mean
-        turns."""
         return [GoalReached.NAME, Turns.NAME] if self.kind == SuiteKind.CONVERSATION else []
 
     def case_outcomes(self) -> list[CaseOutcome]:
-        """Each case's outcome per candidate that ran it, in case then comparison order."""
         outcomes = []
         for case in self.cases:
             for candidate in self.candidates:
@@ -82,8 +74,6 @@ class SuiteReport:
         return outcomes
 
     def run_id(self, run: RunResult) -> str:
-        """A run's id, also its trace file's name: <case>__<model>__<variant>__r<repeat>, safe in file names. When a
-        part had characters replaced (e.g. the '/' in openai/gpt-4o), a short hash of the original keeps ids unique."""
         parts = [run.case_id, run.model or DEFAULT_MODEL, run.variant]
         safe_parts = [UNSAFE_IN_FILE_NAMES.sub("-", part) for part in parts]
         run_id = f"{'__'.join(safe_parts)}__r{run.repeat}"
@@ -92,29 +82,23 @@ class SuiteReport:
         return f"{run_id}-{hashlib.sha1('/'.join(parts).encode()).hexdigest()[:6]}"
 
     def trace_path(self, run: RunResult) -> str:
-        """Where the traces report writes the run's trace, relative to the run directory."""
         return f"runs/{self.run_id(run)}.json"
 
     def linked_trace_path(self, run: RunResult) -> str | None:
-        """The run's trace file for other reports to link to; None when the traces report isn't selected."""
         return self.trace_path(run) if "traces" in self.reports else None
 
     def transcript_path(self, run: RunResult) -> str:
-        """Where the transcripts report writes the run's conversation, relative to the run directory."""
         return f"transcripts/{self.run_id(run)}.md"
 
     def linked_transcript_path(self, run: RunResult) -> str | None:
-        """The run's transcript for other reports to link to; None unless a conversation selected the report."""
         return (
             self.transcript_path(run) if self.kind == SuiteKind.CONVERSATION and "transcripts" in self.reports else None
         )
 
     def provider_of(self, model_label: str) -> str:
-        """The provider of a model under test, by its label; empty for the DataSet's configured model."""
         return next((m.provider for m in self.loaded.suite.models if m.display_label == model_label), "")
 
     def threshold_for(self, case_id: str, metric: str) -> PassThreshold | None:
-        """The threshold a case's metric was checked against: its own, or equals: true for a bool metric."""
         case = next((c for c in self.cases if c.id == case_id), None)
         config = next((m for m in self.loaded.suite.metrics_for(case) if m.name == metric), None) if case else None
         if config is None or config.pass_threshold is not None:
@@ -122,7 +106,6 @@ class SuiteReport:
         return BOOL_THRESHOLD if self._registry.metric_class(config.type).VALUE_TYPE == "bool" else None
 
     def metric_class_of(self, metric: str) -> type[BaseMetric]:
-        """The class that measures a configured metric."""
         return self._registry.metric_class(self.metric_configs[metric].type)
 
     @staticmethod

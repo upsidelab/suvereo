@@ -6,12 +6,7 @@ from suvereo_common.evaluation.users import BaseUserSimulator, ScriptedUser, Sim
 
 
 class UserSimulatorRegistry:
-    """Finds the user simulator of a conversation case: ScriptedUser for fixed user messages, the class a simulated
-    user names by dotted path, or else SimulatedUser, an LLM playing it."""
-
     def simulator_for(self, case: ConversationEvalCase, llm: BaseModelClient | None = None) -> BaseUserSimulator:
-        """A simulator playing the case's user, given the suite's user model; raises EvalSuiteError when its class
-        can't be loaded."""
         if case.user_messages:
             return ScriptedUser(case)
         if case.simulated_user.class_path is not None:
@@ -20,7 +15,6 @@ class UserSimulatorRegistry:
 
     @staticmethod
     def simulator_class(path: str) -> type[BaseUserSimulator]:
-        """The BaseUserSimulator subclass at a dotted path; raises EvalSuiteError."""
         try:
             simulator_class = import_string(path)
         except ImportError as e:

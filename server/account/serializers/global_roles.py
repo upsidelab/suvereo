@@ -6,8 +6,6 @@ from account.serializers.permissions import GrantedPermissionsMixin, PermissionC
 
 
 class GlobalRoleSerializer(serializers.ModelSerializer):
-    """A global role in a listing, or nested inside a dataset role assignment."""
-
     class Meta:
         model = GlobalRole
         fields = ["id", "name", "description"]
@@ -32,6 +30,4 @@ class GlobalRoleDetailSerializer(GrantedPermissionsMixin, serializers.ModelSeria
 
 
 class GlobalRoleReferenceSerializer(serializers.Serializer):
-    """A request body that names a global role."""
-
     global_role_id = serializers.PrimaryKeyRelatedField(source="global_role", queryset=GlobalRole.objects.all())

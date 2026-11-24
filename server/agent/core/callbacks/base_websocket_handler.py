@@ -6,8 +6,6 @@ from suvereo_common.callbacks import ConversationCallbackHandler
 
 
 class BaseWebSocketHandler(ConversationCallbackHandler):
-    """Base callback handler that sends messages to a Django Channels WebSocket group."""
-
     def __init__(self, conversation_id: int):
         self.group_name = f"conversation_{conversation_id}"
         self.channel_layer = get_channel_layer()

@@ -8,11 +8,6 @@ from account.services import WebSocketTicketService
 
 
 class TicketAuthMiddleware(BaseMiddleware):
-    """Authenticates a WebSocket connection by redeeming the single-use `ticket` from its query string.
-
-    Sets `scope["user"]` to the ticket's user, or to `AnonymousUser` when the ticket is missing or invalid.
-    """
-
     async def __call__(self, scope, receive, send):
         ticket = parse_qs(scope.get("query_string", b"").decode()).get("ticket", [None])[0]
         user = await self._redeem(ticket) if ticket else None

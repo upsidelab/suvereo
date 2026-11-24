@@ -12,11 +12,6 @@ DATED_SNAPSHOT = re.compile(r"-(\d{4}-\d{2}-\d{2}|\d{8})$")
 
 
 class TraceCost(BaseModel):
-    """What a trace's LLM calls cost; usd is None when any call can't be priced, priced_usd sums the calls that can.
-
-    unpriced_models have no price; models_without_usage answered without token counts, so their calls can't be priced.
-    """
-
     usd: float | None
     priced_usd: float = 0.0
     unpriced_models: list[str] = []
@@ -24,8 +19,6 @@ class TraceCost(BaseModel):
 
 
 class PricingTable:
-    """USD prices per model, from pricing.yaml with a suite's overrides on top."""
-
     def __init__(self, prices: dict[str, ModelPricing], as_of: str = ""):
         self.prices = prices
         self.as_of = as_of
@@ -46,11 +39,9 @@ class PricingTable:
         return cls(prices, str(data.get("as_of", "")))
 
     def with_overrides(self, overrides: dict[str, ModelPricing]) -> "PricingTable":
-        """A copy with some models' prices replaced, e.g. from a suite's models[].pricing."""
         return PricingTable({**self.prices, **overrides}, self.as_of)
 
     def price_for(self, model: str | None) -> ModelPricing | None:
-        """The price for a model, or for the base of a dated snapshot (gpt-4o-mini-2024-07-18); variants are unpriced."""
         if not model:
             return None
         if model in self.prices:
@@ -59,7 +50,6 @@ class PricingTable:
         return self.prices.get(base) if base != model else None
 
     def call_cost(self, call: LLMCall) -> float | None:
-        """One call's USD cost; None when its model has no price or the provider reported no token counts."""
         price = self._price_of(call)
         if price is None or not call.usage_reported:
             return None
@@ -75,7 +65,6 @@ class PricingTable:
         ) / TOKENS_PER_MILLION
 
     def trace_cost(self, trace: ExecutionTrace) -> TraceCost:
-        """The trace's total cost, or None with the unpriced model names if any call cannot be priced."""
         costs = [(call, self.call_cost(call)) for call in trace.llm_calls]
         unpriced = sorted({self._model_name(c) for c in trace.llm_calls if self._price_of(c) is None})
         without_usage = sorted({self._model_name(c) for c in trace.llm_calls if not c.usage_reported})

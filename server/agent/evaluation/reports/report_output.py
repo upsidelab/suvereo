@@ -25,14 +25,10 @@ WRITERS: list[type[BaseReportWriter]] = [
 
 
 class ReportOutput:
-    """Writes summary.json and the reports a run selected (suite.yaml `reports:`, or the CLI's --reports) into its run
-    directory."""
-
     def __init__(self, writers: list[type[BaseReportWriter]] | None = None):
         self.writers = {writer.NAME: writer for writer in (WRITERS if writers is None else writers)}
 
     def write(self, report: SuiteReport, names: list[ReportName], run_dir: Path) -> list[Path]:
-        """Write summary.json, then each selected report in the order selected; return the files written."""
         written = SummaryJsonWriter().write(report, run_dir)
         for name in dict.fromkeys(names):
             if writer := self.writers.get(name):

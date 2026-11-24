@@ -18,9 +18,6 @@ logger = logging.getLogger(__name__)
 
 
 class ConversationRunDriver(BaseRunDriver):
-    """Chats with the agent turn by turn, the case's user simulator writing the user's side, until it stops, the
-    case's turn limit is reached or a turn raises; records on the trace why it stopped."""
-
     def run(
         self,
         case: EvalCase,
@@ -67,7 +64,6 @@ class ConversationRunDriver(BaseRunDriver):
 
     @staticmethod
     def _max_turns(case: ConversationEvalCase) -> int | None:
-        """A simulated user's turn limit; fixed user messages end with the last one."""
         return case.simulated_user.max_turns if case.simulated_user is not None else None
 
     @staticmethod
@@ -104,7 +100,6 @@ class ConversationRunDriver(BaseRunDriver):
 
     @staticmethod
     def _output(turns: list[Turn]) -> dict | None:
-        """The last answer given, plus its fields when it is a JSON object, so output metrics can check them."""
         answer = next((turn.answer for turn in reversed(turns) if turn.answer is not None), None)
         if answer is None:
             return None

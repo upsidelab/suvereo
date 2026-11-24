@@ -6,15 +6,11 @@ DEFAULT_MODEL = "default"
 
 
 class ThresholdResult(BaseModel):
-    """Whether a run met a metric's pass threshold, and whether that decides the run."""
-
     passed: bool
     required: bool
 
 
 class RunResult(BaseModel):
-    """One run of one case, for one model, variant and repeat: its trace, metrics and verdict."""
-
     case_id: str
     model: str = Field(description="The model's label, or empty for the DataSet's configured model.")
     variant: str
@@ -28,5 +24,4 @@ class RunResult(BaseModel):
 
     @property
     def candidate(self) -> str:
-        """The model and prompt variant a run is compared as: <model label>/<variant>, with 'default' for the DataSet's configured model."""
         return f"{self.model or DEFAULT_MODEL}/{self.variant}"
