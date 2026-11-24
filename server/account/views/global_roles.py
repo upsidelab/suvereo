@@ -1,8 +1,13 @@
+from typing import Any
+
 from django.utils.decorators import method_decorator
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.serializers import BaseSerializer
 
 from account.authorization import PERMISSIONS, global_permission_required
 from account.models import GlobalRole
@@ -15,19 +20,19 @@ class GlobalRoleListView(ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     queryset = GlobalRole.objects.prefetch_related("permissions__content_type").order_by("name")
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> type[BaseSerializer]:
         if self.request.method == "POST":
             return GlobalRoleDetailSerializer
         return GlobalRoleSerializer
 
     @swagger_auto_schema(operation_description="List all global roles")
     @global_permission_required(PERMISSIONS.GLOBAL_ROLE.VIEW)
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         return super().get(request, *args, **kwargs)
 
     @swagger_auto_schema(operation_description="Create a new global role", request_body=GlobalRoleDetailSerializer)
     @global_permission_required(PERMISSIONS.GLOBAL_ROLE.ADD)
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         return super().post(request, *args, **kwargs)
 
 
@@ -48,11 +53,11 @@ class GlobalRoleDetailView(RetrieveUpdateDestroyAPIView):
 
     @swagger_auto_schema(operation_description="Retrieve a global role", manual_parameters=[GLOBAL_ROLE_ID_PARAMETER])
     @global_permission_required(PERMISSIONS.GLOBAL_ROLE.VIEW)
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         return super().get(request, *args, **kwargs)
 
     @global_permission_required(PERMISSIONS.GLOBAL_ROLE.CHANGE)
-    def update(self, request, *args, **kwargs):
+    def update(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         return super().update(request, *args, **kwargs)
 
     @swagger_auto_schema(
@@ -60,5 +65,5 @@ class GlobalRoleDetailView(RetrieveUpdateDestroyAPIView):
         manual_parameters=[GLOBAL_ROLE_ID_PARAMETER],
     )
     @global_permission_required(PERMISSIONS.GLOBAL_ROLE.DELETE)
-    def delete(self, request, *args, **kwargs):
+    def delete(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         return super().delete(request, *args, **kwargs)

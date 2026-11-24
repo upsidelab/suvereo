@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from enum import StrEnum
 
 from asgiref.sync import async_to_sync
+from billiard.einfo import ExceptionInfo
 from celery import Task, shared_task
 from channels.layers import get_channel_layer
 from django.core.files.base import ContentFile
@@ -29,7 +30,7 @@ class TaskStatus(StrEnum):
 
 
 class SaveMessageOnFailureTask(Task):
-    def on_failure(self, exc, task_id, args, kwargs, einfo):
+    def on_failure(self, exc: Exception, task_id: str, args: tuple, kwargs: dict, einfo: ExceptionInfo) -> None:
         conversation_id = kwargs.get("conversation_id")
         try:
             self._save_failed_turn(
@@ -56,8 +57,8 @@ class SaveMessageOnFailureTask(Task):
 
 @shared_task(base=SaveMessageOnFailureTask, bind=True, max_retries=3)
 def respond_to_user_message_task(
-    self, conversation_id: int, data_set_id: int, user_id: int, message: str, streaming: bool
-):
+    self: Task, conversation_id: int, data_set_id: int, user_id: int, message: str, streaming: bool
+) -> dict:
     manager = ConversationManager()
     try:
         answer = manager.respond_to_user_message(
@@ -85,7 +86,7 @@ def respond_to_user_message_task(
 
 
 @shared_task
-def process_file_upload_task(conversation_id: int, file_content: bytes, filename: str, content_type: str):
+def process_file_upload_task(conversation_id: int, file_content: bytes, filename: str, content_type: str) -> dict:
     try:
         conversation = Conversation.objects.get(id=conversation_id)
         django_file = ContentFile(file_content, name=filename)
@@ -128,7 +129,7 @@ def process_file_upload_task(conversation_id: int, file_content: bytes, filename
 
 
 @shared_task
-def clean_uploaded_files():
+def clean_uploaded_files() -> None:
     ConversationFile.objects.filter(
         created_at__lt=timezone.now() - timedelta(hours=settings.UPLOADED_FILE_RETENTION_PERIOD_HOURS)
     ).delete()

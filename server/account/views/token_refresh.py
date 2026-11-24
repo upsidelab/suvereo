@@ -1,4 +1,8 @@
+from typing import Any
+
 from drf_yasg.utils import swagger_auto_schema
+from rest_framework.request import Request
+from rest_framework.response import Response
 from rest_framework_simplejwt import views as simplejwt_views
 
 from account.serializers import RefreshTokenSerializer, TokenPairResponseSerializer
@@ -14,5 +18,5 @@ class TokenRefreshView(simplejwt_views.TokenRefreshView):
             401: "Refresh token invalid, expired or revoked",
         },
     )
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         return super().post(request, *args, **kwargs)

@@ -26,14 +26,14 @@ class PermissionEntitySerializer(serializers.Serializer):
 class PermissionCodeField(serializers.RelatedField):
     queryset = Permission.objects.select_related("content_type")
 
-    def to_representation(self, permission) -> str:
+    def to_representation(self, permission: Permission) -> str:
         label = permission_label(permission)
         try:
             return PUBLIC_CODES[label]
         except KeyError:
             raise ImproperlyConfigured(f"Permission {label} is in the database but is not declared in PERMISSIONS.") from None
 
-    def to_internal_value(self, code) -> Permission:
+    def to_internal_value(self, code: str) -> Permission:
         codename = INTERNAL_CODES.get(code)
         if codename is None:
             raise serializers.ValidationError(f"Unknown permission: {code}.")
@@ -48,7 +48,7 @@ class GrantedPermissionsMixin:
     grantable_permissions: list[str] = GLOBAL_SCOPE_PERMISSIONS
     not_grantable_error = "Cannot be granted here: {codes}."
 
-    def validate_permissions(self, permissions):
+    def validate_permissions(self, permissions: list[Permission]) -> list[Permission]:
         granted = {permission_label(permission) for permission in permissions}
 
         not_grantable = sorted(PUBLIC_CODES[codename] for codename in granted - set(self.grantable_permissions))
@@ -56,7 +56,7 @@ class GrantedPermissionsMixin:
             raise serializers.ValidationError(self.not_grantable_error.format(codes=", ".join(not_grantable)))
         return permissions
 
-    def validate(self, attrs):
+    def validate(self, attrs: dict) -> dict:
         if "permissions" in attrs:
             missing = self._missing_dependencies(attrs["permissions"])
             if missing:
@@ -70,6 +70,6 @@ class GrantedPermissionsMixin:
                 )
         return super().validate(attrs)
 
-    def _missing_dependencies(self, permissions) -> list[dict]:
+    def _missing_dependencies(self, permissions: list[Permission]) -> list[dict]:
         granted = {permission_label(permission) for permission in permissions}
         return missing_dependencies(granted, self.grantable_permissions)

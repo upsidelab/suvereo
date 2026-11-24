@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Any
 
 from django.conf import settings
 from suvereo_common.agentic_execution.memory import ToolScratchpad
@@ -27,15 +28,15 @@ class BaseAgentRegistry(ABC, BaseRegistry[BaseAgent]):
     plugin_base = BaseAgent
 
     @abstractmethod
-    def get_conversation_agent(self, *args, **kwargs) -> BaseAgent:
+    def get_conversation_agent(self, *args: Any, **kwargs: Any) -> BaseAgent:
         pass
 
     @abstractmethod
-    async def aget_conversation_agent(self, *args, **kwargs) -> BaseAgent:
+    async def aget_conversation_agent(self, *args: Any, **kwargs: Any) -> BaseAgent:
         pass
 
     @abstractmethod
-    def get_agent_class_by_type(self, *args, **kwargs) -> type[BaseAgent]:
+    def get_agent_class_by_type(self, *args: Any, **kwargs: Any) -> type[BaseAgent]:
         pass
 
 
@@ -73,7 +74,7 @@ class AgentRegistry(BaseAgentRegistry):
         streaming: bool,
         tool_scratchpad: ToolScratchpad | None,
         overrides: AgentConfigOverrides | None = None,
-    ):
+    ) -> AgentBuilder:
         agent_class = self.get_agent_class_by_type(conversation.agent.agent_type)
         builder_cls = agent_class.BUILDER_CLASS or AgentBuilder
         config = merge_config(partial=agent_class.get_config())

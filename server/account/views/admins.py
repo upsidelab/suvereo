@@ -1,5 +1,6 @@
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -16,6 +17,6 @@ class AdminListView(APIView):
         responses={200: UserSummarySerializer(many=True)},
     )
     @global_permission_required(PERMISSIONS.GLOBAL_ROLE.VIEW)
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         admins = User.objects.filter(is_superuser=True).order_by("email")
         return Response(UserSummarySerializer(admins, many=True).data)

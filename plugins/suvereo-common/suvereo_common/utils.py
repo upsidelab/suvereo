@@ -54,7 +54,7 @@ def deep_merge(base: dict, patch: dict) -> dict:
     return merged
 
 
-def prioritize_items(items: list[str], priorities: list[str]):
+def prioritize_items(items: list[str], priorities: list[str]) -> list[str]:
     items_set = set(items)
     priorities_set = set(priorities)
 
@@ -63,7 +63,7 @@ def prioritize_items(items: list[str], priorities: list[str]):
     return result
 
 
-def validate_required_vars(cls, name: str, required_vars: dict[str, type]):
+def validate_required_vars(cls: type, name: str, required_vars: dict[str, type]) -> type:
     if inspect.isabstract(cls):
         return cls
 
@@ -95,7 +95,7 @@ class ExtraArgsClassBaseMeta(ABCMeta):
     REQUIRED_VARS: dict[str, Any] = {}
     OPTIONAL_VARS: dict[str, Any] = {}
 
-    def __new__(mcs, name, bases, namespace, **kwargs):
+    def __new__(mcs, name: str, bases: tuple[type, ...], namespace: dict[str, Any], **kwargs: Any) -> type:
         cls = super().__new__(mcs, name, bases, namespace, **kwargs)
         if namespace.get("__abstract__", False) or inspect.isabstract(cls):
             return cls
@@ -128,10 +128,10 @@ class ExtraArgsClassBaseMeta(ABCMeta):
 class RequiredFieldsMeta(ModelMetaclass):
     MAX_DEPTH = 2
 
-    def __new__(cls, name, bases, namespace):
+    def __new__(cls, name: str, bases: tuple[type, ...], namespace: dict[str, Any]) -> type:
         new_cls = super().__new__(cls, name, bases, namespace)
 
-        def check_type_depth(annotation: Any, current_depth=1):
+        def check_type_depth(annotation: Any, current_depth: int = 1) -> None:
             if current_depth > cls.MAX_DEPTH:
                 raise TypeError(f"Exceeded max depth of {cls.MAX_DEPTH} in field annotation")
 

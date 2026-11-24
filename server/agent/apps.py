@@ -6,7 +6,7 @@ class AgentConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "agent"
 
-    def ready(self):
+    def ready(self) -> None:
         from agent.agentic_execution.checks import check_tool_settings_conflicts
 
         register(check_tool_settings_conflicts)

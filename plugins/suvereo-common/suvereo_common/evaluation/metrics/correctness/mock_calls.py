@@ -1,3 +1,5 @@
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict
 from suvereo_common.evaluation.metrics.base_metric import BaseMetric
 from suvereo_common.evaluation.metrics.matching import MISSING, DottedPath, ListScore, ListScorer, MatchMode
@@ -63,7 +65,7 @@ class MockCalls(BaseMetric):
         return score
 
     @staticmethod
-    def _as_list(value) -> list:
+    def _as_list(value: Any) -> list:
         if value is None:
             return []
         return list(value) if isinstance(value, (list, tuple)) else [value]

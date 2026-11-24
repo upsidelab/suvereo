@@ -24,7 +24,7 @@ class ToolMeta(ABCMeta):
         "CONFIGURATION_ARGS": RequiredFieldsModel,
     }
 
-    def __new__(mcs, name, bases, namespace, **kwargs):
+    def __new__(mcs, name: str, bases: tuple[type, ...], namespace: dict[str, Any], **kwargs: Any) -> type:
         cls = super().__new__(mcs, name, bases, namespace, **kwargs)
         if inspect.isabstract(cls):
             return cls
@@ -47,7 +47,7 @@ class BaseTool(metaclass=ToolMeta):
     }
 
     @abstractmethod
-    def run(self, *args, **kwargs):
+    def run(self, *args: Any, **kwargs: Any) -> Any:
         pass
 
     def as_tool(self) -> LCBaseTool:

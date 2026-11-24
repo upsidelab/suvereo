@@ -41,7 +41,7 @@ class AgenticExecutionDetailSerializer(AgenticExecutionSerializer):
         fields = _BASE_FIELDS + ["files"]
         read_only_fields = fields
 
-    def get_files(self, obj: AgenticExecution):
+    def get_files(self, obj: AgenticExecution) -> list[dict]:
         return ConversationFileSerializer(obj.conversation.files.filter(is_hidden=False), many=True).data
 
 
@@ -56,7 +56,7 @@ class StartAgenticExecutionSerializer(serializers.Serializer):
     execution_key = serializers.CharField()
     input = serializers.DictField(default=dict)
 
-    def to_internal_value(self, data):
+    def to_internal_value(self, data: dict) -> dict:
         # When the request is multipart/form-data, `input` arrives as a JSON-encoded string.
         # QueryDict must be collapsed to a plain dict so that DictField.get_value uses the
         # normal dict path rather than the HTML form-parsing path.
@@ -69,7 +69,7 @@ class StartAgenticExecutionSerializer(serializers.Serializer):
                 raise serializers.ValidationError({"input": f"Invalid JSON: {exc}"}) from exc
         return super().to_internal_value(data)
 
-    def validate_input(self, value):
+    def validate_input(self, value: dict) -> dict:
         execution_cls = self.context["execution_cls"]
         try:
             validated = execution_cls.INPUT_TYPE(**value)

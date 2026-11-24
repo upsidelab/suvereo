@@ -1,7 +1,8 @@
 import sys
 from pathlib import Path
+from typing import Any
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandParser
 from suvereo_common.evaluation.errors import EvalSuiteError
 
 from agent.evaluation.reports import ExitCode
@@ -15,10 +16,10 @@ class Command(BaseCommand):
         "it is invalid."
     )
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument("suite", type=Path, help="path to suite.yaml")
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         try:
             loaded = SuiteLoader().load(options["suite"])
             runner = SuiteRunner(loaded)

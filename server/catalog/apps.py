@@ -5,7 +5,7 @@ class CatalogConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "catalog"
 
-    def ready(self):
+    def ready(self) -> None:
         from catalog.entities.registry import entity_registry
 
         entity_registry.build_from_settings()

@@ -7,7 +7,7 @@ from account.models import User
 from account.services import RefreshTokenRevocationService
 
 
-def unique_email_field():
+def unique_email_field() -> serializers.EmailField:
     return serializers.EmailField(
         validators=[
             UniqueValidator(
@@ -19,7 +19,7 @@ def unique_email_field():
 
 
 class OnlyAdminsManageAdminsMixin:
-    def validate(self, attrs):
+    def validate(self, attrs: dict) -> dict:
         request = self.context.get("request")
         if request is not None and not request.user.is_superuser:
             if attrs.get("is_superuser"):
@@ -36,7 +36,7 @@ class UserSerializer(OnlyAdminsManageAdminsMixin, serializers.Serializer):
     is_admin = serializers.BooleanField(source="is_superuser")
     password = serializers.CharField(write_only=True)
 
-    def create(self, validated_data):
+    def create(self, validated_data: dict) -> User:
         return User.objects.create_user(
             email=validated_data["email"],
             password=validated_data["password"],
@@ -51,7 +51,7 @@ class UserUpdateSerializer(OnlyAdminsManageAdminsMixin, serializers.Serializer):
     is_active = serializers.BooleanField()
     is_admin = serializers.BooleanField(source="is_superuser")
 
-    def update(self, instance, validated_data):
+    def update(self, instance: User, validated_data: dict) -> User:
         for attribute, value in validated_data.items():
             setattr(instance, attribute, value)
         instance.save()
@@ -62,7 +62,7 @@ class UserUpdatePasswordSerializer(OnlyAdminsManageAdminsMixin, serializers.Seri
     id = serializers.IntegerField(read_only=True)
     password = serializers.CharField(write_only=True)
 
-    def update(self, instance, validated_data):
+    def update(self, instance: User, validated_data: dict) -> User:
         with transaction.atomic():
             instance.set_password(validated_data["password"])
             instance.save()

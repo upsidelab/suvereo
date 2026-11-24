@@ -4,13 +4,13 @@ from typing import Any, get_args, get_origin
 from pydantic_core import PydanticUndefined
 
 
-def import_from_string(path: str):
+def import_from_string(path: str) -> Any:
     module_path, class_name = path.rsplit(".", 1)
     module = importlib.import_module(module_path)
     return getattr(module, class_name)
 
 
-def extract_type_info(annotation) -> dict:
+def extract_type_info(annotation: Any) -> dict:
     origin = get_origin(annotation)
     args = get_args(annotation)
     if origin is list:

@@ -1,3 +1,5 @@
+from typing import Any
+
 from drf_yasg import openapi
 from pydantic import BaseModel
 from pydantic import ValidationError as PydanticValidationError
@@ -10,11 +12,11 @@ from agent.core.registries.agents.agent_registry import AgentRegistry
 
 
 class PydanticModelField(BasePydanticModelField):
-    def __init__(self, *, agent_field_name: str, **kwargs):
+    def __init__(self, *, agent_field_name: str, **kwargs: Any):
         self.agent_field_name = agent_field_name
         super().__init__(**kwargs)
 
-    def to_internal_value(self, data):
+    def to_internal_value(self, data: dict) -> dict:
         agent_type = self.context.get("agent_type")
         if not agent_type:
             raise AssertionError("Missing 'agent_type' in field context")
@@ -37,7 +39,7 @@ class PydanticModelField(BasePydanticModelField):
         except PydanticValidationError as e:
             raise serializers.ValidationError(self._format_pydantic_errors(e)) from e
 
-    def to_representation(self, value):
+    def to_representation(self, value: Any) -> Any:
         if isinstance(value, BaseModel):
             return value.model_dump()
         return value
@@ -47,7 +49,7 @@ class PydanticModelField(BasePydanticModelField):
 
 
 class PydanticModelToolMapField(BasePydanticModelField):
-    def to_internal_value(self, data):
+    def to_internal_value(self, data: dict) -> dict:
         agent_type = self.context.get("agent_type")
         if not agent_type:
             raise AssertionError("Missing 'agent_type' in field context")
@@ -78,7 +80,7 @@ class PydanticModelToolMapField(BasePydanticModelField):
 
         return validated
 
-    def to_representation(self, value):
+    def to_representation(self, value: dict) -> dict:
         return value
 
     class Meta:

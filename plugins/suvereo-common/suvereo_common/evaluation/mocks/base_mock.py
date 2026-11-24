@@ -259,11 +259,11 @@ class BaseMock:
     def _recording_method(name: str, original: Any) -> Any:
         if inspect.iscoroutinefunction(original):
 
-            async def method(self, *args, **kwargs):
+            async def method(self: "BaseMock", *args: Any, **kwargs: Any) -> Any:
                 return await self._handle_call_async(name, args, kwargs)
         else:
 
-            def method(self, *args, **kwargs):
+            def method(self: "BaseMock", *args: Any, **kwargs: Any) -> Any:
                 return self._handle_call(name, args, kwargs)
 
         functools.update_wrapper(method, original)

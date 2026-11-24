@@ -1,6 +1,7 @@
 from django.contrib.auth.models import Permission
 from django.db.models import Q, QuerySet
 from django.http import Http404
+from rest_framework.views import APIView
 
 from account.authorization.permission_codenames import PERMISSIONS
 from account.authorization.permission_codes import PUBLIC_CODES
@@ -98,7 +99,7 @@ def has_any_permission_on_any_dataset(user: User, *codenames: str) -> bool:
 
 
 def enforce_any_dataset_scoped_permission(
-    view, dataset: DataSet, *codenames: str, obscured_model: type = DataSet
+    view: APIView, dataset: DataSet, *codenames: str, obscured_model: type = DataSet
 ) -> None:
     if any(has_dataset_perm(view.request.user, codename, dataset) for codename in codenames):
         return
@@ -107,5 +108,5 @@ def enforce_any_dataset_scoped_permission(
     raise Http404(f"No {obscured_model._meta.object_name} matches the given query.")
 
 
-def enforce_dataset_scoped_permission(view, codename: str, dataset: DataSet, *, obscured_model: type = DataSet) -> None:
+def enforce_dataset_scoped_permission(view: APIView, codename: str, dataset: DataSet, *, obscured_model: type = DataSet) -> None:
     enforce_any_dataset_scoped_permission(view, dataset, codename, obscured_model=obscured_model)

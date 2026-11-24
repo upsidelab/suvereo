@@ -16,7 +16,7 @@ class BaseToolCallingAgent(BaseAgent):
 
     DEFAULT_FILE_TOOLS = [FileListTool, FileRetrievalTool]
 
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls, **kwargs: Any):
         super().__init_subclass__(**kwargs)
         if getattr(cls, "FILE_UPLOAD", False):
             from suvereo_common.config import FileToolConfig

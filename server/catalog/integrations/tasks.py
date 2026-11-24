@@ -7,7 +7,7 @@ from catalog.task_status.task_types import CatalogTaskType
 
 
 @shared_task
-def sync_integration_task(integration_id: int):
+def sync_integration_task(integration_id: int) -> dict:
     integration = Integration.objects.get(pk=integration_id)
     synced = IntegrationSyncService().sync(IntegrationPluginRegistry().build_instance(integration), integration)
     return {

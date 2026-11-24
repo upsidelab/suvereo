@@ -6,12 +6,12 @@ from catalog.models import DataSet
 
 
 class AgentQuerySet(models.QuerySet):
-    def active(self):
+    def active(self) -> "AgentQuerySet":
         return self.filter(deleted_at__isnull=True)
 
 
 class AgentManager(models.Manager):
-    def get_queryset(self):
+    def get_queryset(self) -> "AgentQuerySet":
         return AgentQuerySet(self.model, using=self._db).active().filter(dataset__is_temporary=False)
 
 
@@ -40,6 +40,6 @@ class Agent(models.Model):
     def __str__(self):
         return self.name
 
-    def set_deleted_at(self):
+    def set_deleted_at(self) -> None:
         self.deleted_at = timezone.now()
         self.save()

@@ -19,15 +19,15 @@ class BaseRepository(ABC, Generic[T]):
         pass
 
     @abstractmethod
-    def filter(self, **kwargs) -> builtins.list[T]:
+    def filter(self, **kwargs: Any) -> builtins.list[T]:
         pass
 
     @abstractmethod
-    def create(self, **kwargs) -> T:
+    def create(self, **kwargs: Any) -> T:
         pass
 
     @abstractmethod
-    def update(self, pk: int, **kwargs) -> T:
+    def update(self, pk: int, **kwargs: Any) -> T:
         pass
 
     @abstractmethod

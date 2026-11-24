@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.db.models import Model, QuerySet
 
 
@@ -13,7 +15,7 @@ class AllObjectsRepositoryMixin:
     def list(self) -> list[Model]:
         return list(self.model.all_objects.all())
 
-    def filter(self, **kwargs) -> QuerySet:
+    def filter(self, **kwargs: Any) -> QuerySet:
         return self.model.all_objects.filter(**kwargs)
 
     def delete(self, pk: int) -> bool:

@@ -1,4 +1,7 @@
-from django.db.models import Q
+from typing import Any
+
+from django.contrib.auth.base_user import AbstractBaseUser
+from django.db.models import Q, QuerySet
 from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -6,6 +9,7 @@ from rest_framework import status
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -41,7 +45,7 @@ class AgenticExecutionDefinitionTypesView(APIView):
             404: "Not Found — agent does not exist, or the caller has no access to its data set.",
         },
     )
-    def get(self, request, agent_id):
+    def get(self, request: Request, agent_id: int) -> Response:
         agent = get_object_or_404(Agent, pk=agent_id)
         enforce_dataset_scoped_permission(
             self, PERMISSIONS.AGENTIC_EXECUTION.CREATE, agent.dataset, obscured_model=Agent
@@ -74,7 +78,7 @@ class StartAgenticExecutionView(APIView):
             404: "Not Found — agent does not exist, or the caller has no access to its data set.",
         },
     )
-    def post(self, request, agent_id):
+    def post(self, request: Request, agent_id: int) -> Response:
         agent = get_object_or_404(Agent, pk=agent_id)
         enforce_dataset_scoped_permission(
             self, PERMISSIONS.AGENTIC_EXECUTION.CREATE, agent.dataset, obscured_model=Agent
@@ -117,7 +121,7 @@ class StartAgenticExecutionView(APIView):
         return Response(AgenticExecutionDetailSerializer(execution).data, status=status.HTTP_202_ACCEPTED)
 
 
-def _visible_to(user) -> Q:
+def _visible_to(user: AbstractBaseUser) -> Q:
     return Q(conversation__user=user) | Q(
         agent__dataset__in=datasets_with_permission(user, PERMISSIONS.AGENTIC_EXECUTION.VIEW_ALL)
     )
@@ -142,10 +146,10 @@ class AgenticExecutionListView(ListAPIView):
         ],
         responses={200: AgenticExecutionSerializer(many=True)},
     )
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         return super().get(request, *args, **kwargs)
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[AgenticExecution]:
         qs = AgenticExecution.objects.select_related("agent").filter(_visible_to(self.request.user))
         dataset_id = self.request.query_params.get("dataset_id")
         if dataset_id:
@@ -170,8 +174,8 @@ class AgenticExecutionDetailView(RetrieveAPIView):
         ],
         responses={200: AgenticExecutionDetailSerializer(), 404: "Not Found"},
     )
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         return super().get(request, *args, **kwargs)
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[AgenticExecution]:
         return AgenticExecution.objects.select_related("agent", "conversation").filter(_visible_to(self.request.user))

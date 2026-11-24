@@ -1,5 +1,6 @@
 import contextlib
 
+from billiard.einfo import ExceptionInfo
 from celery import Task, shared_task
 from suvereo_common.agentic_execution import ExecutionFailureCode
 
@@ -10,7 +11,7 @@ from agent.models.agentic_execution import AgenticExecution
 
 
 class MarkExecutionFailedOnErrorTask(Task):
-    def on_failure(self, exc, task_id, args, kwargs, einfo):
+    def on_failure(self, exc: Exception, task_id: str, args: tuple, kwargs: dict, einfo: ExceptionInfo) -> None:
         execution_id = args[0] if args else kwargs.get("execution_id")
         if execution_id is None:
             return
@@ -22,7 +23,7 @@ class MarkExecutionFailedOnErrorTask(Task):
 
 
 @shared_task(base=MarkExecutionFailedOnErrorTask, max_retries=0)
-def run_agentic_execution_task(execution_id: int):
+def run_agentic_execution_task(execution_id: int) -> None:
     execution = AgenticExecution.objects.select_related("agent", "conversation__agent").get(pk=execution_id)
     execution.mark_in_progress()
 

@@ -1,5 +1,6 @@
 from collections.abc import Iterable
 from copy import deepcopy
+from typing import Any
 
 from pydantic import ValidationError
 from suvereo_common.agents import BaseAgent
@@ -56,7 +57,7 @@ class AgentVerificationService:
                 field(**value)
 
     @staticmethod
-    def _validate_tools_config(tools_config, configurable_tools: dict[str, type[BaseTool]]) -> None:
+    def _validate_tools_config(tools_config: Any, configurable_tools: dict[str, type[BaseTool]]) -> None:
         if not isinstance(tools_config, dict):
             raise TypeError("Tool configurations must be keyed by tool name")
 

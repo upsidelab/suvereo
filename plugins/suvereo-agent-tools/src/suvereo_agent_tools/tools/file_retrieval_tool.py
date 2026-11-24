@@ -15,7 +15,7 @@ class FileRetrievalTool(BaseFileTool):
     RETURN_DIRECT = False
     CONFIGURATION_ARGS = None
 
-    def run(self, file_ids: str, action: str):
+    def run(self, file_ids: str, action: str) -> str:
         parsed_file_ids = file_ids.split(",")
         file_objects = self._injector.repositories.conversation.get_file_objects(self._conversation_id, parsed_file_ids)
 

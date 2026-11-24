@@ -4,6 +4,7 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -28,7 +29,7 @@ class GlobalRoleGroupListView(APIView):
         responses={200: GroupSerializer(many=True)},
     )
     @global_permission_required(PERMISSIONS.GLOBAL_ROLE.VIEW)
-    def get(self, request, id):
+    def get(self, request: Request, id: int) -> Response:
         global_role = get_object_or_404(GlobalRole, pk=id)
         groups = UserGroup.objects.with_counts().filter(global_roles=global_role).order_by("name")
         return Response(GroupSerializer(groups, many=True).data)
@@ -40,7 +41,7 @@ class GlobalRoleGroupListView(APIView):
         responses={201: GroupSerializer},
     )
     @global_permission_required(PERMISSIONS.GLOBAL_ROLE.ASSIGN)
-    def post(self, request, id):
+    def post(self, request: Request, id: int) -> Response:
         global_role = get_object_or_404(GlobalRole, pk=id)
         serializer = GroupReferenceSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -63,7 +64,7 @@ class GlobalRoleGroupDetailView(APIView):
         manual_parameters=[GLOBAL_ROLE_ID_PARAMETER, GROUP_ID_PARAMETER],
     )
     @global_permission_required(PERMISSIONS.GLOBAL_ROLE.ASSIGN)
-    def delete(self, request, id, group_id):
+    def delete(self, request: Request, id: int, group_id: int) -> Response:
         global_role = get_object_or_404(GlobalRole, pk=id)
         group = get_object_or_404(UserGroup, pk=group_id)
 
