@@ -13,6 +13,7 @@ class ConversationEnd(BaseMetric):
     KINDS = (SuiteKind.CONVERSATION,)
 
     def measure(self, context: MetricContext) -> MetricResult:
+        """Report how the conversation ended."""
         trace = context.trace
         if trace.error is not None:
             return MetricResult(value=StopReason.ERROR, details={"error": trace.error})

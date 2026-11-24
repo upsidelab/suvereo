@@ -10,4 +10,5 @@ class Turns(RunFigure):
     KINDS = (SuiteKind.CONVERSATION,)
 
     def read_figure(self, context: MetricContext) -> int:
+        """Return the conversation's number of turns."""
         return len(context.trace.turns)

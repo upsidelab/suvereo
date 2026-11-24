@@ -23,12 +23,15 @@ class Injector(BaseInjector):
 
     @property
     def chat_history(self) -> BaseChatMessageHistory:
+        """The conversation's chat history."""
         return self._chat_history
 
     @property
     def memory_compactor(self) -> BaseMemoryCompactor | None:
+        """The memory compactor, or None when compaction is off."""
         return self._memory_compactor
 
     @property
     def tool_scratchpad(self) -> ToolScratchpad:
+        """The scratchpad tools share during an agentic execution."""
         return self._tool_scratchpad

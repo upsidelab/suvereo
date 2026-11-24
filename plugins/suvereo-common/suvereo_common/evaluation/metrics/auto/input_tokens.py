@@ -8,4 +8,5 @@ class InputTokens(RunFigure):
     NAME = "input_tokens"
 
     def read_figure(self, context: MetricContext) -> int:
+        """Return the run's input tokens."""
         return context.trace.input_tokens

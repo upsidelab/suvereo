@@ -8,6 +8,8 @@ from suvereo_common.repositories import BaseDataSetRepository
 
 
 class BaseLLM:
+    """Builds the language model a data set is configured to use."""
+
     def __init__(
         self,
         llm_registry: BaseLanguageModelRegistry,

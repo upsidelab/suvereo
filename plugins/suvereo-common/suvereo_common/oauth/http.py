@@ -45,6 +45,7 @@ def require_public_url(url: str) -> str:
 
 
 def open_client() -> httpx.Client:
+    """Return an HTTP client for calls to third parties."""
     return httpx.Client(timeout=TIMEOUT, follow_redirects=False, headers={"User-Agent": USER_AGENT})
 
 
@@ -67,6 +68,7 @@ def request(method: str, url: str, **kwargs: Any) -> httpx.Response:
 
 
 def get_json(client: httpx.Client, url: str) -> dict[str, Any]:
+    """GET the URL and return its JSON body."""
     response = send(client, "GET", url, headers={"Accept": "application/json"})
     response.raise_for_status()
     return response.json()

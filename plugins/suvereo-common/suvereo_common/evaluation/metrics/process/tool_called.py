@@ -8,6 +8,8 @@ from suvereo_common.evaluation.metrics.metric_result import MetricResult
 
 
 class ToolCalledParams(BaseModel):
+    """Settings for the tool called metric."""
+
     model_config = ConfigDict(extra="forbid")
 
     name: str
@@ -23,6 +25,7 @@ class ToolCalled(BaseMetric):
     PARAMS = ToolCalledParams
 
     def measure(self, context: MetricContext) -> MetricResult:
+        """Check whether the tool was called."""
         accepted = ArgumentFilter(self.params.args, self.params.coerce)
         calls = [c for c in context.trace.tool_calls_named(self.params.name) if accepted.matches_arguments(c.args)]
         return MetricResult(value=float(len(calls)))

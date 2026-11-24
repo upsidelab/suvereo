@@ -18,6 +18,8 @@ Question: {question}
 
 
 class LLMClassifyParams(JudgePromptParams):
+    """Settings for the LLM classify metric."""
+
     PLACEHOLDERS: ClassVar[tuple[str, ...]] = ("labels", "question", "material")
 
     question: str
@@ -37,9 +39,11 @@ class LLMClassify(BaseMetric):
     PARAMS = LLMClassifyParams
 
     def supports(self, kind: SuiteKind) -> bool:
+        """Return whether this metric can measure the given kind of suite."""
         return super().supports(kind) and self.params.fits(kind)
 
     def measure(self, context: MetricContext) -> MetricResult:
+        """Have the judge model label the run with one of the classes."""
         if reason := context.unjudged_reason():
             return MetricResult(value=None, details={"reason": reason})
         prompt = (self.params.prompt or DEFAULT_PROMPT).format(

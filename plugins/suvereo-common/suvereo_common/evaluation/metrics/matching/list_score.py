@@ -13,16 +13,19 @@ class ListScore(BaseModel):
 
     @property
     def precision(self) -> float:
+        """Share of found items that were expected."""
         found = self.matched + len(self.extra) + len(self.mismatched)
         return self.matched / found if found else 1.0
 
     @property
     def recall(self) -> float:
+        """Share of expected items that were found."""
         wanted = self.matched + len(self.missing) + len(self.mismatched)
         return self.matched / wanted if wanted else 1.0
 
     @property
     def f1(self) -> float:
+        """Harmonic mean of precision and recall."""
         errors = len(self.missing) + len(self.extra) + 2 * len(self.mismatched)
         return 2 * self.matched / (2 * self.matched + errors) if self.matched or errors else 1.0
 

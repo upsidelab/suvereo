@@ -20,6 +20,7 @@ class IsValidJsonValidator(BaseExecutionValidator):
                  response: str,
                  _execution_input: ExecutionInputType,
                  _tool_scratchpad: ToolScratchpad) -> ValidatorResponse:
+        """Check that the response is valid JSON."""
         try:
             json.loads(response)
             return ValidatorSuccessResponse()

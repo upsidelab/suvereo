@@ -12,4 +12,5 @@ class Attempts(BaseMetric):
     KINDS = (SuiteKind.EXECUTION,)
 
     def measure(self, context: MetricContext) -> MetricResult:
+        """Count the run's attempts."""
         return MetricResult(value=float(len(context.trace.attempts)))

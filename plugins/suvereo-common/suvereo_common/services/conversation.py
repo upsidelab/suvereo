@@ -11,6 +11,8 @@ T = TypeVar("T")
 
 
 class BaseConversationService(ABC, Generic[T]):
+    """Creates conversations and records their messages."""
+
     def __init__(
         self,
         conversation_repo: BaseConversationRepository,
@@ -23,16 +25,16 @@ class BaseConversationService(ABC, Generic[T]):
 
     @abstractmethod
     def create_conversation(self, user_id: Any, data_set_id: Any) -> T:
-        pass
+        """Create a conversation for the user in the data set."""
 
     @abstractmethod
     def save_user_message(self, conversation_id: Any, message: str) -> Any:
-        pass
+        """Save a message the user sent."""
 
     @abstractmethod
     def get_messages(self, conversation_id: Any) -> list[Any]:
-        pass
+        """Return the conversation's messages."""
 
     @abstractmethod
     def record_error(self, conversation_id: Any) -> None:
-        pass
+        """Record that answering the conversation failed."""

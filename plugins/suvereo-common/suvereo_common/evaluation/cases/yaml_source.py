@@ -8,6 +8,7 @@ class YamlCaseSource(BaseCaseSource):
     """A YAML file holding one case, or a list of cases."""
 
     def load(self) -> list[EvalCase]:
+        """Load the cases from the YAML file."""
         try:
             data = yaml.safe_load(self.path.read_text(encoding="utf-8"))
         except (OSError, yaml.YAMLError) as e:

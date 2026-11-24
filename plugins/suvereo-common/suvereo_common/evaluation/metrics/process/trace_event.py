@@ -11,6 +11,8 @@ EXECUTION_EVENTS = ("retry", "validator_failed", "stop_execution")
 
 
 class TraceEventParams(BaseModel):
+    """Settings for the trace event metric."""
+
     model_config = ConfigDict(extra="forbid")
 
     event: str
@@ -32,9 +34,11 @@ class TraceEvent(BaseMetric):
     PARAMS = TraceEventParams
 
     def supports(self, kind: SuiteKind) -> bool:
+        """Return whether this metric can measure the given kind of suite."""
         return kind == SuiteKind.EXECUTION or self.params.event.partition(":")[0] not in EXECUTION_EVENTS
 
     def measure(self, context: MetricContext) -> MetricResult:
+        """Check whether the run's trace contains the event."""
         name, _, code = self.params.event.partition(":")
         trace = context.trace
         happened = {

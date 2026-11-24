@@ -8,6 +8,8 @@ from suvereo_common.evaluation.metrics.metric_result import MetricResult
 
 
 class MockCalledParams(BaseModel):
+    """Settings for the mock called metric."""
+
     model_config = ConfigDict(extra="forbid")
 
     method: str
@@ -23,6 +25,7 @@ class MockCalled(BaseMetric):
     PARAMS = MockCalledParams
 
     def measure(self, context: MetricContext) -> MetricResult:
+        """Check whether the mock was called."""
         accepted = ArgumentFilter(self.params.args, self.params.coerce)
         calls = [c for c in context.trace.mock_calls_to(self.params.method) if accepted.matches_arguments(c.arguments)]
         return MetricResult(value=float(len(calls)))

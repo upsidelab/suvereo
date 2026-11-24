@@ -23,6 +23,8 @@ Score it {scale}. Reply with JSON only: {{"score": <score>, "reasoning": "<one o
 
 
 class Criterion(BaseModel):
+    """One criterion the judge scores the answer on."""
+
     model_config = ConfigDict(extra="forbid")
 
     name: str
@@ -46,6 +48,8 @@ class ScoreRange(BaseModel):
 
 
 class LLMJudgeParams(JudgePromptParams):
+    """Settings for the LLM judge metric."""
+
     PLACEHOLDERS: ClassVar[tuple[str, ...]] = ("name", "description", "scale", "material")
     DEFAULT_INCLUDE: ClassVar[dict[SuiteKind, list[Section]]] = {
         SuiteKind.EXECUTION: ["outcome", "output", "expected"],
@@ -79,9 +83,11 @@ class LLMJudge(BaseMetric):
     PARAMS = LLMJudgeParams
 
     def supports(self, kind: SuiteKind) -> bool:
+        """Return whether this metric can measure the given kind of suite."""
         return super().supports(kind) and self.params.fits(kind)
 
     def measure(self, context: MetricContext) -> MetricResult:
+        """Have the judge model score the run against the criteria."""
         if reason := context.unjudged_reason():
             return MetricResult(value=None, details={"reason": reason})
         material = JudgeMaterial.build_prompt_text(context, self.params.include_for(context))

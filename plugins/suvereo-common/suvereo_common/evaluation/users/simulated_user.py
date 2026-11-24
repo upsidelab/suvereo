@@ -39,6 +39,7 @@ class SimulatedUser(BaseUserSimulator):
     reminder of the format."""
 
     def next_message(self, turns: list[Turn]) -> UserMessage:
+        """Have the model write the user's next message."""
         if self.llm is None:
             raise ValueError("The simulated user needs a model; set 'user_model' in the suite.")
         system, messages = self._system(), self._messages(turns)

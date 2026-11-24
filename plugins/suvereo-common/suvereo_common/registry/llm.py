@@ -32,6 +32,7 @@ class LanguageModelProvider(ABC):
     def provide_streaming_language_model(
         self, callbacks: list[BaseCallbackHandler] | None = None, **kwargs: Any
     ) -> BaseLanguageModel:
+        """Return a language model that streams its tokens to the callbacks."""
         raise NotImplementedError()
 
     @abstractmethod
@@ -52,6 +53,7 @@ class LanguageModelProvider(ABC):
 
     @classmethod
     def prepare_files_objects(cls, files_objects: list[LLMFile]):
+        """Convert files into the content objects this provider accepts."""
         objects = []
         for file in files_objects:
             if file.file_category == FileTypes.FILE.value:
@@ -63,12 +65,12 @@ class LanguageModelProvider(ABC):
     @staticmethod
     @abstractmethod
     def prepare_image_object(file_object: LLMFile) -> BaseImageContent:
-        pass
+        """Convert an image into this provider's image content."""
 
     @staticmethod
     @abstractmethod
     def prepare_file_object(file_object: LLMFile) -> BaseFileContent:
-        pass
+        """Convert a document into this provider's file content."""
 
 
 class BaseLanguageModelRegistry(ABC):

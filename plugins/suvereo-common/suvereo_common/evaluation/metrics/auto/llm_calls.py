@@ -8,4 +8,5 @@ class LLMCalls(RunFigure):
     NAME = "llm_calls"
 
     def read_figure(self, context: MetricContext) -> int:
+        """Return the run's number of language model calls."""
         return len(context.trace.llm_calls)

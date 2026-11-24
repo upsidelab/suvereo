@@ -12,6 +12,8 @@ MAX_REPORTED_ERRORS = 5
 
 
 class JsonSchemaParams(BaseModel):
+    """Settings for the JSON schema metric."""
+
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
     json_schema: dict[str, Any] | None = Field(default=None, alias="schema")
@@ -40,6 +42,7 @@ class JsonSchema(BaseMetric):
     PARAMS = JsonSchemaParams
 
     def measure(self, context: MetricContext) -> MetricResult:
+        """Check the result against the JSON schema."""
         if context.trace.output is None:
             return MetricResult(value=False, details={"reason": "the run produced no output"})
         errors = sorted(

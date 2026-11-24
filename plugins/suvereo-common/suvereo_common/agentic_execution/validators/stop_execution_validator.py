@@ -22,6 +22,7 @@ class StopExecutionValidator(BaseExecutionValidator):
         _execution_input: ExecutionInputType,
         tool_scratchpad: ToolScratchpad,
     ) -> ValidatorResponse:
+        """Check whether the agent asked to stop the execution."""
         result = tool_scratchpad.read(self.TOOL_NAME)
         if result is None:
             return ValidatorSuccessResponse()

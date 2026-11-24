@@ -8,6 +8,8 @@ from suvereo_common.evaluation.metrics.metric_result import MetricResult
 
 
 class MockCallsParams(BaseModel):
+    """Settings for the mock calls metric."""
+
     model_config = ConfigDict(extra="forbid")
 
     method: str
@@ -29,6 +31,7 @@ class MockCalls(BaseMetric):
     PARAMS = MockCallsParams
 
     def measure(self, context: MetricContext) -> MetricResult:
+        """Compare the arguments of mock calls with the expected ones."""
         expected_calls = DottedPath(f"mock_calls.{self.params.method}").value_in(context.case.expected)
         if expected_calls is MISSING or not isinstance(expected_calls, list):
             return MetricResult(value=None, details={"reason": f"the case expects no calls to {self.params.method}"})

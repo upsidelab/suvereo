@@ -55,6 +55,7 @@ def deep_merge(base: dict, patch: dict) -> dict:
 
 
 def prioritize_items(items: list[str], priorities: list[str]) -> list[str]:
+    """Return the items with the prioritized ones first, in priority order."""
     items_set = set(items)
     priorities_set = set(priorities)
 
@@ -64,6 +65,7 @@ def prioritize_items(items: list[str], priorities: list[str]) -> list[str]:
 
 
 def validate_required_vars(cls: type, name: str, required_vars: dict[str, type]) -> type:
+    """Raise TypeError unless a concrete class sets the required class variables with the right types."""
     if inspect.isabstract(cls):
         return cls
 
@@ -92,10 +94,12 @@ def validate_required_vars(cls: type, name: str, required_vars: dict[str, type])
 
 
 class ExtraArgsClassBaseMeta(ABCMeta):
+    """Checks a class's required and optional class variables when it is defined."""
     REQUIRED_VARS: dict[str, Any] = {}
     OPTIONAL_VARS: dict[str, Any] = {}
 
     def __new__(mcs, name: str, bases: tuple[type, ...], namespace: dict[str, Any], **kwargs: Any) -> type:
+        """Create the class after checking its class variables."""
         cls = super().__new__(mcs, name, bases, namespace, **kwargs)
         if namespace.get("__abstract__", False) or inspect.isabstract(cls):
             return cls
@@ -126,9 +130,11 @@ class ExtraArgsClassBaseMeta(ABCMeta):
 
 
 class RequiredFieldsMeta(ModelMetaclass):
+    """Limits how deeply nested a model's field types may be."""
     MAX_DEPTH = 2
 
     def __new__(cls, name: str, bases: tuple[type, ...], namespace: dict[str, Any]) -> type:
+        """Create the model class after checking its field types' depth."""
         new_cls = super().__new__(cls, name, bases, namespace)
 
         def check_type_depth(annotation: Any, current_depth: int = 1) -> None:
@@ -151,8 +157,10 @@ class RequiredFieldsMeta(ModelMetaclass):
 
 
 class RequiredFieldsModel(BaseModel, metaclass=RequiredFieldsMeta):
+    """A model whose fields have limited nesting, used for agent and tool configuration."""
     @model_validator(mode="before")
     def convert_json_fields(cls, values: dict) -> dict:
+        """Serialize dict values given to JSON fields."""
         for name, field in cls.model_fields.items():
             if field.annotation is Json and name in values:
                 v = values[name]
@@ -162,6 +170,7 @@ class RequiredFieldsModel(BaseModel, metaclass=RequiredFieldsMeta):
 
 
 class AgentAdditionalArguments(BaseModel):
+    """The extra arguments an agent class declares."""
     AGENT_ARGS: dict[str, str]
     PROMPT_INPUT: dict[str, str]
     TOOLS: list[dict[str, str]]

@@ -6,6 +6,8 @@ from suvereo_common.evaluation.metrics.metric_result import MetricResult
 
 
 class FieldMatchParams(BaseModel):
+    """Settings for the field match metric."""
+
     model_config = ConfigDict(extra="forbid")
 
     path: str
@@ -22,6 +24,7 @@ class FieldMatch(BaseMetric):
     PARAMS = FieldMatchParams
 
     def measure(self, context: MetricContext) -> MetricResult:
+        """Compare the result's fields with the expected ones."""
         expected = DottedPath(f"output.{self.params.expected_path or self.params.path}").value_in(context.case.expected)
         if expected is MISSING:
             return MetricResult(value=None, details={"reason": "the case expects no value at this path"})

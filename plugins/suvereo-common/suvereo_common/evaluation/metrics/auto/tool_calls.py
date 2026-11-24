@@ -8,4 +8,5 @@ class ToolCalls(RunFigure):
     NAME = "tool_calls"
 
     def read_figure(self, context: MetricContext) -> int:
+        """Return the run's number of tool calls."""
         return len(context.trace.tool_calls)

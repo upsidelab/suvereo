@@ -8,4 +8,5 @@ class CostUsd(RunFigure):
     NAME = "cost_usd"
 
     def read_figure(self, context: MetricContext) -> float | None:
+        """Return the run's cost in USD, or None without pricing."""
         return context.cost_usd
