@@ -117,11 +117,11 @@ class BaseAgent(ABC, metaclass=AgentExtraArgsClassBaseMeta):
 
     @abstractmethod
     def get_answer(self, input_text: str) -> str:
-        pass
+        """Answer the user's message."""
 
     @abstractmethod
     async def aget_answer(self, input_text: str) -> str:
-        pass
+        """Answer the user's message asynchronously."""
 
     def _get_system_prompt(self) -> str:
         return self._system_prompt.format(**self._get_system_prompt_variables())
@@ -137,6 +137,7 @@ class BaseAgent(ABC, metaclass=AgentExtraArgsClassBaseMeta):
         return {}
 
     def set_runtime_arguments(self, runtime_arguments: Any) -> None:
+        """Apply the agent settings stored on the agent, including tool settings."""
         tools_runtime_arguments = runtime_arguments.pop("tools", {})
         if not isinstance(tools_runtime_arguments, dict):
             logger.warning("Tool settings are stored as a list; tools use their defaults until the agent is saved")

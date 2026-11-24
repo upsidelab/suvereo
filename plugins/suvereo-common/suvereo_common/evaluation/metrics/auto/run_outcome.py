@@ -8,6 +8,7 @@ class RunOutcome:
 
     @staticmethod
     def matches_expected_outcome(context: MetricContext) -> bool:
+        """Return whether the run ended as the case expects."""
         result, expected_failure = context.trace.execution_result, context.case.expected.get(EXPECTED_FAILURE_KEY)
         if context.trace.error is not None or result is None:
             return False

@@ -11,6 +11,8 @@ from suvereo_common.repositories import (
 
 @dataclass
 class RepositoriesInstances:
+    """The repositories an agent is built with."""
+
     user: BaseUserRepository
     message: BaseMessageRepository
     conversation: BaseConversationRepository

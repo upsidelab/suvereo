@@ -23,4 +23,5 @@ class AgentRef(EvalModel):
 
     @property
     def is_sandbox(self) -> bool:
+        """Whether the agent runs in a sandbox data set."""
         return self.type is not None

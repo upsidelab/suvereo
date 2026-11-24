@@ -8,6 +8,8 @@ from suvereo_common.evaluation.metrics.metric_result import MetricResult
 
 
 class JsonSubsetParams(BaseModel):
+    """Settings for the JSON subset metric."""
+
     model_config = ConfigDict(extra="forbid")
 
     path: str = ""
@@ -23,6 +25,7 @@ class JsonSubset(BaseMetric):
     PARAMS = JsonSubsetParams
 
     def measure(self, context: MetricContext) -> MetricResult:
+        """Check that the result contains the expected JSON."""
         expected = DottedPath(f"output.{self.params.path}").value_in(context.case.expected)
         if not isinstance(expected, dict) or not expected:
             return MetricResult(value=None, details={"reason": "the case expects no fields at this path"})

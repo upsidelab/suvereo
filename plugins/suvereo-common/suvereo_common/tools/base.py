@@ -16,6 +16,8 @@ from suvereo_common.utils import RequiredFieldsModel, validate_required_vars
 
 
 class ToolMeta(ABCMeta):
+    """Checks that a tool class declares the required class variables."""
+
     REQUIRED_VARS = {
         "NAME": str,
         "DESCRIPTION": str,
@@ -25,6 +27,7 @@ class ToolMeta(ABCMeta):
     }
 
     def __new__(mcs, name: str, bases: tuple[type, ...], namespace: dict[str, Any], **kwargs: Any) -> type:
+        """Create the tool class after checking its class variables."""
         cls = super().__new__(mcs, name, bases, namespace, **kwargs)
         if inspect.isabstract(cls):
             return cls
@@ -32,6 +35,8 @@ class ToolMeta(ABCMeta):
 
 
 class BaseTool(metaclass=ToolMeta):
+    """Base class for tools an agent can call."""
+
     NAME: str
     DESCRIPTION: str
     ARGS_SCHEMA: type[BaseModel]
@@ -48,9 +53,10 @@ class BaseTool(metaclass=ToolMeta):
 
     @abstractmethod
     def run(self, *args: Any, **kwargs: Any) -> Any:
-        pass
+        """Run the tool with the arguments the model chose."""
 
     def as_tool(self) -> LCBaseTool:
+        """Return the tool as a LangChain tool."""
         return StructuredTool.from_function(
             func=self.run,
             name=self.NAME,
@@ -60,6 +66,7 @@ class BaseTool(metaclass=ToolMeta):
         )
 
     def set_runtime_arguments(self, runtime_arguments: Any) -> None:
+        """Apply the tool settings stored on the agent."""
         field = getattr(self, "CONFIGURATION_ARGS", None)
         if field is None:
             return
@@ -67,10 +74,12 @@ class BaseTool(metaclass=ToolMeta):
 
 
 class BaseFunctionTool(BaseTool, ABC):
-    pass
+    """A tool that needs no language model or injector."""
 
 
 class BaseLLMTool(BaseTool, ABC):
+    """A tool that uses the language model and the injector."""
+
     def __init__(
         self,
         data_set_id: Any,
@@ -83,6 +92,8 @@ class BaseLLMTool(BaseTool, ABC):
 
 
 class BaseFileTool(BaseTool, ABC):
+    """A tool that works with files attached to the conversation."""
+
     def __init__(
         self,
         data_set_id: Any,
@@ -99,6 +110,8 @@ class BaseFileTool(BaseTool, ABC):
 
 
 class BaseAgentTool(BaseTool, ABC):
+    """A tool that calls another agent."""
+
     def __init__(
         self,
         agent: "BaseAgent",  # noqa: F821

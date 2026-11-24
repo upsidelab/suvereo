@@ -5,9 +5,11 @@ T = TypeVar("T")
 
 
 class BaseDBModelsRegistry(ABC, Generic[T]):
+    """Loads database model classes."""
+
     def __init__(self, models_config: dict[Any, Any]):
         self._models_config = models_config
 
     @abstractmethod
     def get_model_class_by_name(self, name: str) -> type[T]:
-        pass
+        """Return the model class with this name."""

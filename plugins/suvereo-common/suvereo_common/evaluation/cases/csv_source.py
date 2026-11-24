@@ -18,6 +18,7 @@ class CsvCaseSource(BaseCaseSource):
     column takes a JSON list or ';'-separated items."""
 
     def load(self) -> list[EvalCase]:
+        """Load the cases from the CSV file."""
         try:
             with self.path.open(encoding="utf-8-sig", newline="") as f:
                 reader = csv.DictReader(f)

@@ -13,4 +13,5 @@ class FirstAttemptSuccess(BaseMetric):
     KINDS = (SuiteKind.EXECUTION,)
 
     def measure(self, context: MetricContext) -> MetricResult:
+        """Check whether the run succeeded on its first attempt."""
         return MetricResult(value=RunOutcome.matches_expected_outcome(context) and len(context.trace.attempts) <= 1)

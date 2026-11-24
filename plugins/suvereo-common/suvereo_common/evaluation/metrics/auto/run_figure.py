@@ -11,6 +11,7 @@ class RunFigure(BaseMetric):
     VALUE_TYPE = "number"
 
     def measure(self, context: MetricContext) -> MetricResult:
+        """Report the figure read from the run."""
         value = self.read_figure(context)
         return MetricResult(value=None if value is None else float(value))
 

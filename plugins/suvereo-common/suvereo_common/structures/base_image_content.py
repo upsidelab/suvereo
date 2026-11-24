@@ -2,4 +2,4 @@ from suvereo_common.structures.base_content import BaseContent
 
 
 class BaseImageContent(BaseContent):
-    pass
+    """An image passed to a language model."""

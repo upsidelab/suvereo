@@ -6,6 +6,8 @@ from suvereo_common.evaluation.metrics.metric_result import MetricResult
 
 
 class ListMatchParams(BaseModel):
+    """Settings for the list match metric."""
+
     model_config = ConfigDict(extra="forbid")
 
     path: str
@@ -23,6 +25,7 @@ class ListMatch(BaseMetric):
     PARAMS = ListMatchParams
 
     def measure(self, context: MetricContext) -> MetricResult:
+        """Compare the result's list items with the expected ones."""
         expected = DottedPath(f"output.{self.params.expected_path or self.params.path}").value_in(context.case.expected)
         if not isinstance(expected, list):
             return MetricResult(value=None, details={"reason": "the case expects no list at this path"})

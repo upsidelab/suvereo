@@ -13,4 +13,5 @@ class ModelTarget(EvalModel):
 
     @property
     def display_label(self) -> str:
+        """The name shown in reports."""
         return self.label or self.model

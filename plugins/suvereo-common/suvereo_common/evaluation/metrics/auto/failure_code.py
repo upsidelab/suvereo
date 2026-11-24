@@ -14,6 +14,7 @@ class FailureCode(BaseMetric):
     KINDS = (SuiteKind.EXECUTION,)
 
     def measure(self, context: MetricContext) -> MetricResult:
+        """Report the execution's failure code."""
         if context.trace.error is not None:
             return MetricResult(value=RUNTIME_ERROR, details={"error": context.trace.error})
         result = context.trace.execution_result

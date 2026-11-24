@@ -13,6 +13,7 @@ class ConversationCompleted(BaseMetric):
     KINDS = (SuiteKind.CONVERSATION,)
 
     def measure(self, context: MetricContext) -> MetricResult:
+        """Check whether the conversation finished."""
         trace = context.trace
         answered = bool(trace.turns) and all(turn.answer is not None for turn in trace.turns)
         return MetricResult(value=answered and trace.error is None and trace.stop_reason == StopReason.DONE)

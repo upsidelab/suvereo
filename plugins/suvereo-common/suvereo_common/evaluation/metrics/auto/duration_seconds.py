@@ -8,4 +8,5 @@ class DurationSeconds(RunFigure):
     NAME = "duration_s"
 
     def read_figure(self, context: MetricContext) -> float | None:
+        """Return the run's duration in seconds."""
         return context.duration_s

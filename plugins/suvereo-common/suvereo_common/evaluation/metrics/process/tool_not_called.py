@@ -5,6 +5,8 @@ from suvereo_common.evaluation.metrics.metric_result import MetricResult
 
 
 class ToolNotCalledParams(BaseModel):
+    """Settings for the tool not called metric."""
+
     model_config = ConfigDict(extra="forbid")
 
     name: str
@@ -18,4 +20,5 @@ class ToolNotCalled(BaseMetric):
     PARAMS = ToolNotCalledParams
 
     def measure(self, context: MetricContext) -> MetricResult:
+        """Check that the tool was not called."""
         return MetricResult(value=not context.trace.tool_calls_named(self.params.name))

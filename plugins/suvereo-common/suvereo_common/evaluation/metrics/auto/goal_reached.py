@@ -25,6 +25,7 @@ class GoalReached(BaseMetric):
     KINDS = (SuiteKind.CONVERSATION,)
 
     def measure(self, context: MetricContext) -> MetricResult:
+        """Check whether the simulated user reached their goal."""
         case = context.case
         if not isinstance(case, ConversationEvalCase) or case.simulated_user is None or not case.simulated_user.goal:
             return MetricResult(value=None, details={"reason": "the case has no simulated user goal"})

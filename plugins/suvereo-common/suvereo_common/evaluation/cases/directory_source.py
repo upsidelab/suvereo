@@ -11,6 +11,7 @@ class DirectoryCaseSource(BaseCaseSource):
     """The YAML and CSV case files directly in a directory, skipping suite.yaml, subdirectories and input files."""
 
     def load(self) -> list[EvalCase]:
+        """Load the cases from the directory's files."""
         return [case for source in self.file_sources() for case in source.load()]
 
     def file_sources(self) -> list[BaseCaseSource]:

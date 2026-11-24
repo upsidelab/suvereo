@@ -5,6 +5,8 @@ from suvereo_common.evaluation.metrics.metric_result import MetricResult
 
 
 class ToolOrderParams(BaseModel):
+    """Settings for the tool order metric."""
+
     model_config = ConfigDict(extra="forbid")
 
     sequence: list[str] = Field(min_length=1)
@@ -19,6 +21,7 @@ class ToolOrder(BaseMetric):
     PARAMS = ToolOrderParams
 
     def measure(self, context: MetricContext) -> MetricResult:
+        """Check that the tools were called in the expected order."""
         called = [c.name for c in context.trace.tool_calls]
         if self.params.strict:
             in_order = called == self.params.sequence

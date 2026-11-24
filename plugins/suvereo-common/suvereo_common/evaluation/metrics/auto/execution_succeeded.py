@@ -13,4 +13,5 @@ class ExecutionSucceeded(BaseMetric):
     KINDS = (SuiteKind.EXECUTION,)
 
     def measure(self, context: MetricContext) -> MetricResult:
+        """Check whether the execution succeeded."""
         return MetricResult(value=RunOutcome.matches_expected_outcome(context))
