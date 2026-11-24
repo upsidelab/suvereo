@@ -4,8 +4,8 @@ from suvereo_common.evaluation.metrics.llm import LLMClassify, LLMJudge
 from suvereo_common.evaluation.suite import ConversationEvalCase
 from suvereo_common.evaluation.trace import ExecutionTrace, ToolCall, Turn
 
-from .contexts import mock_call, run
-from .scripted_judge import ScriptedJudge
+from evaluation.metrics.contexts import mock_call, run
+from evaluation.metrics.scripted_judge import ScriptedJudge
 
 CRITERIA = [
     {"name": "completeness", "description": "Every line item is ordered", "weight": 3},

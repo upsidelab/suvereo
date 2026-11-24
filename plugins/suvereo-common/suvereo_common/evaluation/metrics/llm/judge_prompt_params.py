@@ -3,11 +3,10 @@ from pathlib import Path
 from typing import ClassVar
 
 from pydantic import BaseModel, ConfigDict, ValidationInfo, model_validator
-
-from ...suite import ModelTarget, SuiteKind
-from ..base_metric import BASE_DIR
-from ..metric_context import MetricContext
-from .judge_material import JudgeMaterial, Section
+from suvereo_common.evaluation.metrics.base_metric import BASE_DIR
+from suvereo_common.evaluation.metrics.llm.judge_material import JudgeMaterial, Section
+from suvereo_common.evaluation.metrics.metric_context import MetricContext
+from suvereo_common.evaluation.suite import ModelTarget, SuiteKind
 
 
 class JudgePromptParams(BaseModel):

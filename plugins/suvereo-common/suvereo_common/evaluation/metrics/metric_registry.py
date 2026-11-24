@@ -1,10 +1,10 @@
 import importlib
 from pathlib import Path
 
-from ..suite import MetricConfig
-from .base_metric import BaseMetric
-from .builtins import BUILTIN_METRICS
-from .errors import MetricNotFoundError
+from suvereo_common.evaluation.metrics.base_metric import BaseMetric
+from suvereo_common.evaluation.metrics.builtins import BUILTIN_METRICS
+from suvereo_common.evaluation.metrics.errors import MetricNotFoundError
+from suvereo_common.evaluation.suite import MetricConfig
 
 
 class MetricRegistry:

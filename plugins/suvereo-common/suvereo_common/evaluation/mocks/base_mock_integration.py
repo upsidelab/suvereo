@@ -3,11 +3,11 @@ import typing
 from pathlib import Path
 from typing import Any, ClassVar
 
-from ...integrations import BaseIntegration
-from ..trace import TraceRecorder
-from .base_mock import BaseMock
-from .errors import MockConfigError
-from .mock_integration_config import MockIntegrationConfig
+from suvereo_common.evaluation.mocks.base_mock import BaseMock
+from suvereo_common.evaluation.mocks.errors import MockConfigError
+from suvereo_common.evaluation.mocks.mock_integration_config import MockIntegrationConfig
+from suvereo_common.evaluation.trace import TraceRecorder
+from suvereo_common.integrations import BaseIntegration
 
 BUILDER_PREFIX = "build_"
 

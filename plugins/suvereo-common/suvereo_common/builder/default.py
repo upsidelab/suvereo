@@ -5,10 +5,10 @@ from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.tools import BaseTool
-
-from ..agents import BaseAgent
-from ..callbacks import ConversationCallbackHandler
-from ..config.base import (
+from suvereo_common.agents import BaseAgent
+from suvereo_common.builder.base import BaseAgentBuilder, ConfigT
+from suvereo_common.callbacks import ConversationCallbackHandler
+from suvereo_common.config.base import (
     AgentConfig,
     AgentToolConfig,
     FileToolConfig,
@@ -16,14 +16,13 @@ from ..config.base import (
     LLMConfig,
     LLMToolConfig,
 )
-from ..injectors import BaseInjector
-from ..integrations import BaseToolProvidingIntegration
-from ..memory import BaseMemoryCompactor
-from ..registry import BaseDBModelsRegistry, BaseEmbeddingProviderRegistry, BaseLanguageModelRegistry
-from ..structures import RepositoriesInstances
-from ..tools import BaseAgentTool, BaseFileTool, BaseFunctionTool, BaseLLMTool
-from ..utils import deep_merge, run_off_event_loop
-from .base import BaseAgentBuilder, ConfigT
+from suvereo_common.injectors import BaseInjector
+from suvereo_common.integrations import BaseToolProvidingIntegration
+from suvereo_common.memory import BaseMemoryCompactor
+from suvereo_common.registry import BaseDBModelsRegistry, BaseEmbeddingProviderRegistry, BaseLanguageModelRegistry
+from suvereo_common.structures import RepositoriesInstances
+from suvereo_common.tools import BaseAgentTool, BaseFileTool, BaseFunctionTool, BaseLLMTool
+from suvereo_common.utils import deep_merge, run_off_event_loop
 
 logger = logging.getLogger(__name__)
 

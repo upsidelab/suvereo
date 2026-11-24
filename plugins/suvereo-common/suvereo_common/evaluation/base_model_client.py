@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
-from .chat_message import ChatMessage
-from .suite import ModelTarget
+from suvereo_common.evaluation.chat_message import ChatMessage
+from suvereo_common.evaluation.suite import ModelTarget
 
 
 class BaseModelClient(ABC):

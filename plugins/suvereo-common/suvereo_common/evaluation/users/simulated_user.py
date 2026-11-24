@@ -1,10 +1,10 @@
 import json
 
-from ..chat_message import ChatMessage
-from ..json_reply import JsonReply
-from ..trace import StopReason, Turn
-from .base_user_simulator import BaseUserSimulator
-from .user_message import USER_STOP_REASONS, UserMessage
+from suvereo_common.evaluation.chat_message import ChatMessage
+from suvereo_common.evaluation.json_reply import JsonReply
+from suvereo_common.evaluation.trace import StopReason, Turn
+from suvereo_common.evaluation.users.base_user_simulator import BaseUserSimulator
+from suvereo_common.evaluation.users.user_message import USER_STOP_REASONS, UserMessage
 
 ATTEMPTS = 2
 SYSTEM = """You are role-playing a user chatting with an AI assistant, whose answers reach you as the other side of

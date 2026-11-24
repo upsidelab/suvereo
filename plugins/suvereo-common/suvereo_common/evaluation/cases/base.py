@@ -3,9 +3,8 @@ from pathlib import Path
 from typing import Any
 
 from pydantic import TypeAdapter, ValidationError
-
-from ..errors import CaseSourceError
-from ..suite import AnyEvalCase, EvalCase, SuiteKind
+from suvereo_common.evaluation.errors import CaseSourceError
+from suvereo_common.evaluation.suite import AnyEvalCase, EvalCase, SuiteKind
 
 CASE = TypeAdapter(AnyEvalCase)
 

@@ -1,10 +1,10 @@
 from threading import Lock
 
-from .attempt import Attempt
-from .execution_trace import ExecutionTrace
-from .llm_call import LLMCall
-from .mock_call import MockCall
-from .tool_call import ToolCall
+from suvereo_common.evaluation.trace.attempt import Attempt
+from suvereo_common.evaluation.trace.execution_trace import ExecutionTrace
+from suvereo_common.evaluation.trace.llm_call import LLMCall
+from suvereo_common.evaluation.trace.mock_call import MockCall
+from suvereo_common.evaluation.trace.tool_call import ToolCall
 
 
 class TraceRecorder:

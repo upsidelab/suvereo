@@ -6,14 +6,13 @@ from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, ValidationError
-
-from ..injectors import BaseInjector
-from ..utils import RequiredFieldsModel
-from .meta import AgentExtraArgsClassBaseMeta
+from suvereo_common.agents.meta import AgentExtraArgsClassBaseMeta
+from suvereo_common.injectors import BaseInjector
+from suvereo_common.utils import RequiredFieldsModel
 
 if TYPE_CHECKING:
-    from ..builder import BaseAgentBuilder
-    from ..config import AgentConfig, ToolConfig
+    from suvereo_common.builder import BaseAgentBuilder
+    from suvereo_common.config import AgentConfig, ToolConfig
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +85,7 @@ class BaseAgent(ABC, metaclass=AgentExtraArgsClassBaseMeta):
 
         Returns an ``AgentConfigWithDefaults``: fields left unset are filled from the host's defaults.
         """
-        from ..config import AgentConfigWithDefaults
+        from suvereo_common.config import AgentConfigWithDefaults
 
         return AgentConfigWithDefaults(
             system_prompt=cls.SYSTEM_PROMPT,

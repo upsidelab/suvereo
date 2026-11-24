@@ -2,15 +2,14 @@ from statistics import median
 from typing import ClassVar, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-
-from ...base_model_client import BaseModelClient
-from ...json_reply import JsonReply
-from ...suite import SuiteKind
-from ..base_metric import BaseMetric
-from ..metric_context import MetricContext
-from ..metric_result import MetricResult
-from .judge_material import JudgeMaterial, Section
-from .judge_prompt_params import JudgePromptParams
+from suvereo_common.evaluation.base_model_client import BaseModelClient
+from suvereo_common.evaluation.json_reply import JsonReply
+from suvereo_common.evaluation.metrics.base_metric import BaseMetric
+from suvereo_common.evaluation.metrics.llm.judge_material import JudgeMaterial, Section
+from suvereo_common.evaluation.metrics.llm.judge_prompt_params import JudgePromptParams
+from suvereo_common.evaluation.metrics.metric_context import MetricContext
+from suvereo_common.evaluation.metrics.metric_result import MetricResult
+from suvereo_common.evaluation.suite import SuiteKind
 
 SCALES = {"binary": (0, 1, "0 (not met) or 1 (met)"), "1-5": (1, 5, "from 1 (not met at all) to 5 (fully met)")}
 DEFAULT_PROMPT = """You are grading an AI agent's work against one criterion. In a conversation, grade the agent's

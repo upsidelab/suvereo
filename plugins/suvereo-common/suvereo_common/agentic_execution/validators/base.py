@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 
-from ..input import ExecutionInputType
-from ..memory import ToolScratchpad
-from .response import ValidatorResponse
+from suvereo_common.agentic_execution.input import ExecutionInputType
+from suvereo_common.agentic_execution.memory import ToolScratchpad
+from suvereo_common.agentic_execution.validators.response import ValidatorResponse
 
 
 class BaseExecutionValidator(ABC):

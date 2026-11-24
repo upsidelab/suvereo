@@ -1,8 +1,7 @@
 from typing import Any
 
 from pydantic import Field, model_validator
-
-from .base import EvalModel
+from suvereo_common.evaluation.suite.base import EvalModel
 
 
 class SimulatedUserConfig(EvalModel):

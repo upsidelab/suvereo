@@ -10,7 +10,7 @@ from suvereo_common.evaluation.metrics import (
 from suvereo_common.evaluation.suite import EvalCase, MetricConfig
 from suvereo_common.evaluation.trace import Attempt, ExecutionTrace
 
-from .sample_metrics import AttemptsAtMost
+from evaluation.metrics.sample_metrics import AttemptsAtMost
 
 
 class TestBaseMetric:

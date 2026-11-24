@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field, model_validator
-
-from ..trace import StopReason
+from suvereo_common.evaluation.trace import StopReason
 
 #: The reasons a user simulator may stop for; the runner records the others.
 USER_STOP_REASONS = (StopReason.DONE, StopReason.GAVE_UP)

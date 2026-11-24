@@ -1,8 +1,7 @@
 import yaml
-
-from ..errors import CaseSourceError
-from ..suite import EvalCase
-from .base import BaseCaseSource
+from suvereo_common.evaluation.cases.base import BaseCaseSource
+from suvereo_common.evaluation.errors import CaseSourceError
+from suvereo_common.evaluation.suite import EvalCase
 
 
 class YamlCaseSource(BaseCaseSource):

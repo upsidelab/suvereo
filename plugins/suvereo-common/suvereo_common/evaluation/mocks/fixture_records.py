@@ -4,8 +4,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-
-from .errors import MockConfigError
+from suvereo_common.evaluation.mocks.errors import MockConfigError
 
 READERS = {
     ".yaml": yaml.safe_load,

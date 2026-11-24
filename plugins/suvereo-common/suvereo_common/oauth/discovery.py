@@ -5,10 +5,9 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import httpx
-
-from . import http
-from .errors import OAuthError
-from .types import OAuthClientCredentials
+from suvereo_common.oauth import http
+from suvereo_common.oauth.errors import OAuthError
+from suvereo_common.oauth.types import OAuthClientCredentials
 
 
 @dataclass

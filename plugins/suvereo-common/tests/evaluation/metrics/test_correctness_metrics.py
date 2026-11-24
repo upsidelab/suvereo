@@ -5,7 +5,7 @@ from suvereo_common.evaluation.metrics import MetricConfigError, MetricRegistry
 from suvereo_common.evaluation.metrics.correctness import FieldMatch, JsonSchema, JsonSubset, ListMatch, MockCalls
 from suvereo_common.evaluation.suite import MetricConfig
 
-from .contexts import mock_call, run
+from evaluation.metrics.contexts import mock_call, run
 
 ORDER = {"order_id": "ORD-1", "customer": {"email": "A@B.c", "city": "Krakow"}, "total": 12.5}
 

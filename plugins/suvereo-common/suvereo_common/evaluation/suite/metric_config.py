@@ -1,9 +1,8 @@
 from typing import Any, Literal
 
 from pydantic import Field, model_validator
-
-from .base import EvalModel
-from .pass_threshold import PassThreshold
+from suvereo_common.evaluation.suite.base import EvalModel
+from suvereo_common.evaluation.suite.pass_threshold import PassThreshold
 
 Aggregate = Literal["mean", "rate", "sum", "min", "max", "p50", "p95", "distribution"]
 

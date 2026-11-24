@@ -5,7 +5,7 @@ from ollama import Client
 from suvereo_common.registry.llm import LanguageModelProvider
 from suvereo_common.structures import BaseContent, LLMFile
 
-from .embedding import OllamaEmbeddingProvider
+from suvereo_model_ollama.embedding import OllamaEmbeddingProvider
 
 
 class OllamaImageContent(BaseContent):

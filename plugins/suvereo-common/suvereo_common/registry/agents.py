@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Generic, TypeVar
 
-from ..builder import BaseAgentBuilder
+from suvereo_common.builder import BaseAgentBuilder
 
 T = TypeVar("T", bound=BaseAgentBuilder)
 

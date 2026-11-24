@@ -2,9 +2,8 @@ from collections.abc import Iterable
 from typing import Any, ClassVar, Generic, TypeVar
 
 from suvereo_common.registry import BaseEmbeddingProviderRegistry
-
-from .base import BaseRetriever
-from .searcher import BaseSimilaritySearcher
+from suvereo_common.retrievers.base import BaseRetriever
+from suvereo_common.retrievers.searcher import BaseSimilaritySearcher
 
 T = TypeVar("T")
 

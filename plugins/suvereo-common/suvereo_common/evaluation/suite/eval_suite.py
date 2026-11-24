@@ -1,18 +1,17 @@
 from typing import Any
 
 from pydantic import Field, model_validator
-
-from ...utils import deep_merge
-from .agent_ref import AgentRef
-from .any_eval_case import AnyEvalCase
-from .base import EvalModel
-from .eval_case import EvalCase
-from .integration_config import IntegrationConfig
-from .metric_config import MetricConfig
-from .model_target import ModelTarget
-from .prompt_variant import PromptVariant
-from .report_name import DEFAULT_REPORTS, ReportName
-from .suite_kind import SuiteKind
+from suvereo_common.evaluation.suite.agent_ref import AgentRef
+from suvereo_common.evaluation.suite.any_eval_case import AnyEvalCase
+from suvereo_common.evaluation.suite.base import EvalModel
+from suvereo_common.evaluation.suite.eval_case import EvalCase
+from suvereo_common.evaluation.suite.integration_config import IntegrationConfig
+from suvereo_common.evaluation.suite.metric_config import MetricConfig
+from suvereo_common.evaluation.suite.model_target import ModelTarget
+from suvereo_common.evaluation.suite.prompt_variant import PromptVariant
+from suvereo_common.evaluation.suite.report_name import DEFAULT_REPORTS, ReportName
+from suvereo_common.evaluation.suite.suite_kind import SuiteKind
+from suvereo_common.utils import deep_merge
 
 CasesSpec = str | list[str | AnyEvalCase]
 

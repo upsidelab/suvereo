@@ -5,10 +5,10 @@ import hashlib
 import secrets
 from urllib.parse import urlencode
 
-from . import http
-from .discovery import AuthorizationServer
-from .errors import OAuthError
-from .types import OAuthTokens
+from suvereo_common.oauth import http
+from suvereo_common.oauth.discovery import AuthorizationServer
+from suvereo_common.oauth.errors import OAuthError
+from suvereo_common.oauth.types import OAuthTokens
 
 
 def build_authorization_url(server: AuthorizationServer, client_id: str, redirect_uri: str) -> tuple[str, str, str]:

@@ -3,9 +3,9 @@ from collections import Counter
 from textwrap import indent
 from typing import Any, Literal
 
-from ...suite import AgenticExecutionEvalCase, ConversationEvalCase, SuiteKind
-from ...trace import StopReason
-from ..metric_context import MetricContext
+from suvereo_common.evaluation.metrics.metric_context import MetricContext
+from suvereo_common.evaluation.suite import AgenticExecutionEvalCase, ConversationEvalCase, SuiteKind
+from suvereo_common.evaluation.trace import StopReason
 
 Section = Literal["input", "outcome", "output", "expected", "trace_summary", "transcript"]
 #: Sections only a conversation has.

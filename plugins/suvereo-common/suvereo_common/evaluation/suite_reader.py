@@ -2,11 +2,10 @@ from pathlib import Path
 
 import yaml
 from pydantic import ValidationError
-
-from .cases import CaseCollector
-from .errors import EvalSuiteError
-from .loaded_suite import LoadedSuite
-from .suite import EvalSuite
+from suvereo_common.evaluation.cases import CaseCollector
+from suvereo_common.evaluation.errors import EvalSuiteError
+from suvereo_common.evaluation.loaded_suite import LoadedSuite
+from suvereo_common.evaluation.suite import EvalSuite
 
 
 class SuiteReader:

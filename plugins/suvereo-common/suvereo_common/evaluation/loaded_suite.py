@@ -1,8 +1,7 @@
 from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict
-
-from .suite import EvalCase, EvalSuite
+from suvereo_common.evaluation.suite import EvalCase, EvalSuite
 
 
 class LoadedSuite(BaseModel):

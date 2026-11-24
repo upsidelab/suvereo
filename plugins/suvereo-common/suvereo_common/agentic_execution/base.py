@@ -4,14 +4,14 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import TYPE_CHECKING, ClassVar, Protocol
 
-from .errors import ExecutionFailureCode
-from .input import ExecutionInputType
-from .memory import ToolScratchpad
-from .result import ExecutionResult
-from .validators import BaseExecutionValidator, IsValidJsonValidator, ValidatorResponse
+from suvereo_common.agentic_execution.errors import ExecutionFailureCode
+from suvereo_common.agentic_execution.input import ExecutionInputType
+from suvereo_common.agentic_execution.memory import ToolScratchpad
+from suvereo_common.agentic_execution.result import ExecutionResult
+from suvereo_common.agentic_execution.validators import BaseExecutionValidator, IsValidJsonValidator, ValidatorResponse
 
 if TYPE_CHECKING:
-    from ..config import ToolConfig
+    from suvereo_common.config import ToolConfig
 
 logger = logging.getLogger(__name__)
 

@@ -4,10 +4,9 @@ from typing import Any
 
 from jsonschema import Draft202012Validator, SchemaError
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, model_validator
-
-from ..base_metric import BASE_DIR, BaseMetric
-from ..metric_context import MetricContext
-from ..metric_result import MetricResult
+from suvereo_common.evaluation.metrics.base_metric import BASE_DIR, BaseMetric
+from suvereo_common.evaluation.metrics.metric_context import MetricContext
+from suvereo_common.evaluation.metrics.metric_result import MetricResult
 
 MAX_REPORTED_ERRORS = 5
 

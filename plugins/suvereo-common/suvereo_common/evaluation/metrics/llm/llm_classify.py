@@ -2,13 +2,12 @@ import re
 from typing import ClassVar
 
 from pydantic import Field
-
-from ...suite import SuiteKind
-from ..base_metric import BaseMetric
-from ..metric_context import MetricContext
-from ..metric_result import MetricResult
-from .judge_material import JudgeMaterial
-from .judge_prompt_params import JudgePromptParams
+from suvereo_common.evaluation.metrics.base_metric import BaseMetric
+from suvereo_common.evaluation.metrics.llm.judge_material import JudgeMaterial
+from suvereo_common.evaluation.metrics.llm.judge_prompt_params import JudgePromptParams
+from suvereo_common.evaluation.metrics.metric_context import MetricContext
+from suvereo_common.evaluation.metrics.metric_result import MetricResult
+from suvereo_common.evaluation.suite import SuiteKind
 
 DEFAULT_PROMPT = """Answer a question about an AI agent's work with exactly one of these labels: {labels}.
 Reply with the label only. In a conversation, the agent's work is its own messages, not the user's.

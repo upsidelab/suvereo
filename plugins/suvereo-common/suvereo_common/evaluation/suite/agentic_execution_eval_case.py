@@ -1,8 +1,7 @@
 from typing import Any
 
 from pydantic import Field
-
-from .eval_case import EvalCase
+from suvereo_common.evaluation.suite.eval_case import EvalCase
 
 
 class AgenticExecutionEvalCase(EvalCase):

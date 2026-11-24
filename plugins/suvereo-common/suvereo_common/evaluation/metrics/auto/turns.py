@@ -1,6 +1,6 @@
-from ...suite import SuiteKind
-from ..metric_context import MetricContext
-from .run_figure import RunFigure
+from suvereo_common.evaluation.metrics.auto.run_figure import RunFigure
+from suvereo_common.evaluation.metrics.metric_context import MetricContext
+from suvereo_common.evaluation.suite import SuiteKind
 
 
 class Turns(RunFigure):
