@@ -1,8 +1,8 @@
 from typing import Any
 
-from .dotted_path import MISSING, DottedPath
-from .list_score import ListScore
-from .value_matcher import ValueMatcher
+from suvereo_common.evaluation.metrics.matching.dotted_path import MISSING, DottedPath
+from suvereo_common.evaluation.metrics.matching.list_score import ListScore
+from suvereo_common.evaluation.metrics.matching.value_matcher import ValueMatcher
 
 
 class ListScorer:

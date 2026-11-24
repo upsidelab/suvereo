@@ -1,8 +1,7 @@
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-
-from .mock_raise import MockRaise
+from suvereo_common.evaluation.mocks.mock_raise import MockRaise
 
 
 class MockBehaviour(BaseModel):

@@ -2,10 +2,9 @@ from pathlib import Path
 from typing import Any
 
 from pydantic import Field
-
-from .base import EvalModel
-from .integration_config import IntegrationConfig
-from .metric_config import MetricConfig
+from suvereo_common.evaluation.suite.base import EvalModel
+from suvereo_common.evaluation.suite.integration_config import IntegrationConfig
+from suvereo_common.evaluation.suite.metric_config import MetricConfig
 
 
 class EvalCase(EvalModel):

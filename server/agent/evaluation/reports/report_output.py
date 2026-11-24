@@ -2,16 +2,16 @@ from pathlib import Path
 
 from suvereo_common.evaluation.suite import ReportName
 
-from .base_report_writer import BaseReportWriter
-from .cases_csv_writer import CasesCsvWriter
-from .comparison_csv_writer import ComparisonCsvWriter
-from .metrics_csv_writer import MetricsCsvWriter
-from .report_md_writer import ReportMdWriter
-from .results_csv_writer import ResultsCsvWriter
-from .suite_report import SuiteReport
-from .summary_json_writer import SummaryJsonWriter
-from .trace_files_writer import TraceFilesWriter
-from .transcripts_writer import TranscriptsWriter
+from agent.evaluation.reports.base_report_writer import BaseReportWriter
+from agent.evaluation.reports.cases_csv_writer import CasesCsvWriter
+from agent.evaluation.reports.comparison_csv_writer import ComparisonCsvWriter
+from agent.evaluation.reports.metrics_csv_writer import MetricsCsvWriter
+from agent.evaluation.reports.report_md_writer import ReportMdWriter
+from agent.evaluation.reports.results_csv_writer import ResultsCsvWriter
+from agent.evaluation.reports.suite_report import SuiteReport
+from agent.evaluation.reports.summary_json_writer import SummaryJsonWriter
+from agent.evaluation.reports.trace_files_writer import TraceFilesWriter
+from agent.evaluation.reports.transcripts_writer import TranscriptsWriter
 
 WRITERS: list[type[BaseReportWriter]] = [
     ReportMdWriter,

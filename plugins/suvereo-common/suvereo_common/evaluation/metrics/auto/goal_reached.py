@@ -1,9 +1,9 @@
-from ...json_reply import JsonReply
-from ...suite import ConversationEvalCase, SuiteKind
-from ..base_metric import BaseMetric
-from ..llm.judge_material import JudgeMaterial
-from ..metric_context import MetricContext
-from ..metric_result import MetricResult
+from suvereo_common.evaluation.json_reply import JsonReply
+from suvereo_common.evaluation.metrics.base_metric import BaseMetric
+from suvereo_common.evaluation.metrics.llm.judge_material import JudgeMaterial
+from suvereo_common.evaluation.metrics.metric_context import MetricContext
+from suvereo_common.evaluation.metrics.metric_result import MetricResult
+from suvereo_common.evaluation.suite import ConversationEvalCase, SuiteKind
 
 PROMPT = """A simulated user chatted with an AI assistant to reach a goal. Decide from the transcript whether the
 goal was reached, whatever the user said at the end. Go only by the turns shown, and name in your reasoning the turn

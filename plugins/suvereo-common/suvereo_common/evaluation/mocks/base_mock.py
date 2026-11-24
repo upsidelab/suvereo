@@ -15,10 +15,9 @@ from types import SimpleNamespace
 from typing import Any, ClassVar
 
 from pydantic import TypeAdapter, ValidationError
-
-from ..trace import MockCall, TraceRecorder
-from .errors import MockConfigError, UnmockedCallError
-from .mock_behaviour import MockBehaviour
+from suvereo_common.evaluation.mocks.errors import MockConfigError, UnmockedCallError
+from suvereo_common.evaluation.mocks.mock_behaviour import MockBehaviour
+from suvereo_common.evaluation.trace import MockCall, TraceRecorder
 
 BEHAVIOURS = TypeAdapter(MockBehaviour | list[MockBehaviour])
 INSTANCE_ATTRIBUTES = frozenset({"data", "strict", "recorder", "calls"})

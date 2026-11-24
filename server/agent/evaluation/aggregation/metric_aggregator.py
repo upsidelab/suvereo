@@ -3,13 +3,12 @@ from suvereo_common.evaluation.metrics import MetricRegistry
 from suvereo_common.evaluation.metrics.auto import AUTO_METRICS, Attempts
 from suvereo_common.evaluation.suite import Aggregate, SuiteKind
 
+from agent.evaluation.aggregation.candidate_metrics import CandidateMetrics
+from agent.evaluation.aggregation.metric_aggregate import MetricAggregate
 from agent.evaluation.resolved_kind import resolved_kind
 from agent.evaluation.runner import RunResult
 from agent.evaluation.runner.case_runner import JUDGE_COST, USER_COST
 from agent.evaluation.suite_metric_configs import suite_metric_configs
-
-from .candidate_metrics import CandidateMetrics
-from .metric_aggregate import MetricAggregate
 
 PASS_RATE = "pass_rate"
 FIRST_ATTEMPT_PASS_RATE = "first_attempt_pass_rate"

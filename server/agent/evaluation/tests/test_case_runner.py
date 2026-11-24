@@ -20,10 +20,9 @@ from agent.evaluation.pricing_table import PricingTable, TraceCost
 from agent.evaluation.repositories import EVAL_REPOSITORIES
 from agent.evaluation.runner import CaseRunner, EvalExecutionConversation
 from agent.evaluation.targets import ExistingAgentTarget
+from agent.evaluation.tests.greeter import GreeterMockIntegration, GreetingExecution
 from agent.models import Agent
 from agent.models.conversation import ConversationFile
-
-from .greeter import GreeterMockIntegration, GreetingExecution
 
 pytestmark = pytest.mark.django_db
 

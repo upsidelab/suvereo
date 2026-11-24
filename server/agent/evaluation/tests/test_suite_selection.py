@@ -3,8 +3,7 @@ from suvereo_common.evaluation.errors import EvalSuiteError
 from suvereo_common.evaluation.suite import AgenticExecutionEvalCase
 
 from agent.evaluation.suite_selection import SuiteSelection
-
-from .suite_reports import loaded_suite
+from agent.evaluation.tests.suite_reports import loaded_suite
 
 CASES = [
     AgenticExecutionEvalCase(id="ada", tags=["vip"]),

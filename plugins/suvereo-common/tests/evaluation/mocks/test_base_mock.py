@@ -7,7 +7,7 @@ import pytest
 from suvereo_common.evaluation.mocks import BaseMock, MockConfigError, UnmockedCallError
 from suvereo_common.evaluation.trace import TraceRecorder
 
-from .shop import Shop, ShopError, ShopMock
+from evaluation.mocks.shop import Shop, ShopError, ShopMock
 
 
 class TestBaseMockOutcomes:

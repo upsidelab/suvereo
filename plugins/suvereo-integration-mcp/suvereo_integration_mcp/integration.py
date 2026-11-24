@@ -22,8 +22,8 @@ from suvereo_common.oauth import (
     register_client,
 )
 
-from .config import MCPServerConfigArgs
-from .oauth import discover
+from suvereo_integration_mcp.config import MCPServerConfigArgs
+from suvereo_integration_mcp.oauth import discover
 
 TRANSPORTS: dict[str, type[ClientTransport]] = {
     "http": StreamableHttpTransport,

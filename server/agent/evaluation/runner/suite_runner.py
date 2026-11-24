@@ -20,13 +20,12 @@ from agent.evaluation.eval_user import EvalUser
 from agent.evaluation.integrations import MockIntegrationFactory
 from agent.evaluation.judge_models_used_by_metrics import judge_models_used_by_metrics
 from agent.evaluation.pricing_table import PricingTable
+from agent.evaluation.runner.case_runner import CaseRunner
+from agent.evaluation.runner.run_result import RunResult
+from agent.evaluation.runner.suite_run_options import SuiteRunOptions
+from agent.evaluation.runner.suite_run_result import StopReason, SuiteRunResult
 from agent.evaluation.targets import BaseAgentTarget, ExistingAgentTarget, SandboxAgentTarget
 from agent.evaluation.user_model_in_use import user_model_in_use
-
-from .case_runner import CaseRunner
-from .run_result import RunResult
-from .suite_run_options import SuiteRunOptions
-from .suite_run_result import StopReason, SuiteRunResult
 
 logger = logging.getLogger(__name__)
 

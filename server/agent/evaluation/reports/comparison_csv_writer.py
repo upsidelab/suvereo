@@ -6,11 +6,10 @@ from suvereo_common.evaluation.suite import SuiteKind
 
 from agent.evaluation.aggregation import CandidateMetrics
 from agent.evaluation.aggregation.metric_aggregate import DEFAULT_AGGREGATE_NAMES, MetricAggregate
+from agent.evaluation.reports.base_report_writer import BaseReportWriter
+from agent.evaluation.reports.csv_table import CsvTable
+from agent.evaluation.reports.suite_report import SuiteReport
 from agent.evaluation.runner.case_runner import JUDGE_COST, USER_COST
-
-from .base_report_writer import BaseReportWriter
-from .csv_table import CsvTable
-from .suite_report import SuiteReport
 
 #: The comparison column totalling each cost apart from the agent's.
 COST_TOTALS = {JUDGE_COST: "judge_cost_total_usd", USER_COST: "user_cost_total_usd"}

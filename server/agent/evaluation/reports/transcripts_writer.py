@@ -2,12 +2,11 @@ from pathlib import Path
 
 from suvereo_common.evaluation.suite import ConversationEvalCase, SuiteKind
 
+from agent.evaluation.reports.base_report_writer import BaseReportWriter
+from agent.evaluation.reports.markdown_text import MarkdownText
+from agent.evaluation.reports.suite_report import SuiteReport
+from agent.evaluation.reports.transcript_markdown import TranscriptMarkdown
 from agent.evaluation.runner import RunResult
-
-from .base_report_writer import BaseReportWriter
-from .markdown_text import MarkdownText
-from .suite_report import SuiteReport
-from .transcript_markdown import TranscriptMarkdown
 
 
 class TranscriptsWriter(BaseReportWriter):

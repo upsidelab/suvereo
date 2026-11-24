@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.db import models
 
-from .global_role import GlobalRole
+from account.models.global_role import GlobalRole
 
 
 class UserGroupQuerySet(models.QuerySet):

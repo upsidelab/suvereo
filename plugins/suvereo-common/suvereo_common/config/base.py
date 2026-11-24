@@ -5,26 +5,25 @@ from typing import Any, Generic, TypeVar
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.chat_history import BaseChatMessageHistory
 from pydantic import BaseModel, ConfigDict, Field
-
-from ..agents import BaseAgent
-from ..injectors.base import BaseInjector
-from ..integrations.base import BaseIntegrationPluginResolver
-from ..llm import BaseLLM
-from ..memory import BaseMemoryCompactor
-from ..registry import (
+from suvereo_common.agents import BaseAgent
+from suvereo_common.injectors.base import BaseInjector
+from suvereo_common.integrations.base import BaseIntegrationPluginResolver
+from suvereo_common.llm import BaseLLM
+from suvereo_common.memory import BaseMemoryCompactor
+from suvereo_common.registry import (
     BaseDBModelsRegistry,
     BaseEmbeddingProviderRegistry,
     BaseLanguageModelRegistry,
 )
-from ..repositories.base import (
+from suvereo_common.repositories.base import (
     BaseAgentRepository,
     BaseConversationRepository,
     BaseDataSetRepository,
     BaseMessageRepository,
     BaseUserRepository,
 )
-from ..retrievers import BaseSimilaritySearcher
-from ..tools import BaseAgentTool, BaseFileTool, BaseFunctionTool, BaseLLMTool
+from suvereo_common.retrievers import BaseSimilaritySearcher
+from suvereo_common.tools import BaseAgentTool, BaseFileTool, BaseFunctionTool, BaseLLMTool
 
 InjectorT = TypeVar("InjectorT", bound=BaseInjector)
 

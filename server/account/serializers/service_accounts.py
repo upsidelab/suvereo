@@ -1,9 +1,8 @@
 from rest_framework import serializers
 
 from account.models import User
+from account.serializers.users import OnlyAdminsManageAdminsMixin
 from account.services import ServiceAccountNameService
-
-from .users import OnlyAdminsManageAdminsMixin
 
 
 class CreateUpdateServiceAccountSerializer(OnlyAdminsManageAdminsMixin, serializers.Serializer):

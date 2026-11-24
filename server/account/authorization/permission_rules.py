@@ -1,6 +1,6 @@
 from django.core.exceptions import ImproperlyConfigured
 
-from .permission_codenames import (
+from account.authorization.permission_codenames import (
     AgenticExecutionPermission,
     AgentPermission,
     ConversationPermission,
@@ -12,7 +12,7 @@ from .permission_codenames import (
     UserGroupPermission,
     UserPermission,
 )
-from .permission_codes import PUBLIC_CODES
+from account.authorization.permission_codes import PUBLIC_CODES
 
 _GLOBAL_ONLY_PERMISSIONS: list[str] = [
     *DatasetPermission,

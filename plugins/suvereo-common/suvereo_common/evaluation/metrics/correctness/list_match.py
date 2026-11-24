@@ -1,9 +1,8 @@
 from pydantic import BaseModel, ConfigDict
-
-from ..base_metric import BaseMetric
-from ..matching import DottedPath, ListScorer, MatchMode
-from ..metric_context import MetricContext
-from ..metric_result import MetricResult
+from suvereo_common.evaluation.metrics.base_metric import BaseMetric
+from suvereo_common.evaluation.metrics.matching import DottedPath, ListScorer, MatchMode
+from suvereo_common.evaluation.metrics.metric_context import MetricContext
+from suvereo_common.evaluation.metrics.metric_result import MetricResult
 
 
 class ListMatchParams(BaseModel):

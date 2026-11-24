@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.db import models
 
-from .dataset_role import DatasetRole
+from account.models.dataset_role import DatasetRole
 
 
 class DatasetUserRoleAssignment(models.Model):

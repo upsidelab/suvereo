@@ -1,7 +1,7 @@
-from ..suite import EvalCase
-from .base import BaseCaseSource
-from .csv_source import CsvCaseSource
-from .yaml_source import YamlCaseSource
+from suvereo_common.evaluation.cases.base import BaseCaseSource
+from suvereo_common.evaluation.cases.csv_source import CsvCaseSource
+from suvereo_common.evaluation.cases.yaml_source import YamlCaseSource
+from suvereo_common.evaluation.suite import EvalCase
 
 SOURCES_BY_SUFFIX = {".yaml": YamlCaseSource, ".yml": YamlCaseSource, ".csv": CsvCaseSource}
 SUITE_FILE_NAMES = ("suite.yaml", "suite.yml")

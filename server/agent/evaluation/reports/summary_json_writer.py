@@ -3,13 +3,12 @@ from pathlib import Path
 from typing import Any
 
 from agent.evaluation.aggregation import CandidateMetrics
+from agent.evaluation.reports.base_report_writer import BaseReportWriter
+from agent.evaluation.reports.suite_report import SuiteReport
+from agent.evaluation.reports.suite_verdict import SuiteVerdict
+from agent.evaluation.reports.summary_file import SUMMARY_FILE
+from agent.evaluation.reports.threshold_text import threshold_text
 from agent.evaluation.runner import RunResult
-
-from .base_report_writer import BaseReportWriter
-from .suite_report import SuiteReport
-from .suite_verdict import SuiteVerdict
-from .summary_file import SUMMARY_FILE
-from .threshold_text import threshold_text
 
 
 class SummaryJsonWriter(BaseReportWriter):

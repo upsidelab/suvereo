@@ -1,10 +1,9 @@
 
 from langchain_core.chat_history import BaseChatMessageHistory
-
-from ..agentic_execution import ToolScratchpad
-from ..memory import BaseMemoryCompactor
-from ..structures import RepositoriesInstances
-from .base import BaseInjector
+from suvereo_common.agentic_execution import ToolScratchpad
+from suvereo_common.injectors.base import BaseInjector
+from suvereo_common.memory import BaseMemoryCompactor
+from suvereo_common.structures import RepositoriesInstances
 
 
 class Injector(BaseInjector):

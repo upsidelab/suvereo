@@ -1,10 +1,9 @@
 from pydantic import BaseModel, ConfigDict, field_validator
-
-from ....agentic_execution import StopExecutionValidator
-from ...suite import SuiteKind
-from ..base_metric import BaseMetric
-from ..metric_context import MetricContext
-from ..metric_result import MetricResult
+from suvereo_common.agentic_execution import StopExecutionValidator
+from suvereo_common.evaluation.metrics.base_metric import BaseMetric
+from suvereo_common.evaluation.metrics.metric_context import MetricContext
+from suvereo_common.evaluation.metrics.metric_result import MetricResult
+from suvereo_common.evaluation.suite import SuiteKind
 
 EVENTS = ("retry", "tool_error", "validator_failed", "stop_execution")
 #: Events of the validator loop, which only executions have.

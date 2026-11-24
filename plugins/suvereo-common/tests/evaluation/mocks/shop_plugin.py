@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 from suvereo_common.integrations import BaseIntegration, BaseIntegrationManager
 
-from .shop import Shop
+from evaluation.mocks.shop import Shop
 
 
 class Catalog(ABC):

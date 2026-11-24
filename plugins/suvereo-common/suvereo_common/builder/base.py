@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import Any, Generic, TypeVar
 
-from ..agentic_execution.memory import ToolScratchpad
-from ..agents import BaseAgent
-from ..config.base import AgentConfig
+from suvereo_common.agentic_execution.memory import ToolScratchpad
+from suvereo_common.agents import BaseAgent
+from suvereo_common.config.base import AgentConfig
 
 ConfigT = TypeVar("ConfigT", bound=AgentConfig)
 

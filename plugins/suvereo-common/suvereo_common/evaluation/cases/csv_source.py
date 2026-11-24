@@ -2,9 +2,9 @@ import csv
 import json
 from typing import Any
 
-from ..errors import CaseSourceError
-from ..suite import EvalCase
-from .base import BaseCaseSource
+from suvereo_common.evaluation.cases.base import BaseCaseSource
+from suvereo_common.evaluation.errors import CaseSourceError
+from suvereo_common.evaluation.suite import EvalCase
 
 LIST_SEPARATOR = ";"
 DOTTED_PREFIXES = ("input", "expected", "simulated_user")

@@ -4,7 +4,7 @@ from suvereo_common.evaluation.trace import Turn
 from suvereo_common.evaluation.users import SimulatedUser, StopReason
 from suvereo_common.evaluation.users.simulated_user import OPENING, REMINDER
 
-from .metrics.scripted_judge import ScriptedJudge
+from evaluation.metrics.scripted_judge import ScriptedJudge
 
 USER = {"goal": "Find a kettle under 50 EUR", "persona": "terse", "facts": {"budget": "50 EUR"}}
 

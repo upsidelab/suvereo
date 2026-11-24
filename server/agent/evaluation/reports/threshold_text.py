@@ -1,7 +1,7 @@
 from suvereo_common.evaluation.suite import PassThreshold
 
-from .csv_table import CsvTable
-from .markdown_text import MarkdownText
+from agent.evaluation.reports.csv_table import CsvTable
+from agent.evaluation.reports.markdown_text import MarkdownText
 
 WORDS = {"min": "≥", "max": "≤", "equals": "exactly", "in": "one of"}
 

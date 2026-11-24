@@ -3,13 +3,12 @@ from pathlib import Path
 from typing import Any, ClassVar
 
 from pydantic import BaseModel, ValidationError
-
-from ..suite import SuiteKind
-from .errors import MetricConfigError
-from .metric_context import MetricContext
-from .metric_meta import MetricMeta
-from .metric_result import MetricResult
-from .no_params import NoParams
+from suvereo_common.evaluation.metrics.errors import MetricConfigError
+from suvereo_common.evaluation.metrics.metric_context import MetricContext
+from suvereo_common.evaluation.metrics.metric_meta import MetricMeta
+from suvereo_common.evaluation.metrics.metric_result import MetricResult
+from suvereo_common.evaluation.metrics.no_params import NoParams
+from suvereo_common.evaluation.suite import SuiteKind
 
 #: The validation-context key under which params find the suite directory.
 BASE_DIR = "base_dir"

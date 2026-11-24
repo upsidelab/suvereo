@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from .protocols import IndexableEntity
+from suvereo_common.indexing.protocols import IndexableEntity
 
 
 class BaseEntityIndexer(ABC):

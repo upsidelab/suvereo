@@ -3,12 +3,11 @@ from typing import Any, Literal, NamedTuple
 
 from suvereo_common.evaluation.suite import SuiteKind
 
+from agent.evaluation.reports.base_report_writer import BaseReportWriter
+from agent.evaluation.reports.csv_table import CsvTable
+from agent.evaluation.reports.judge_reasoning import REASONING, JudgeReasoning
+from agent.evaluation.reports.suite_report import SuiteReport
 from agent.evaluation.runner import RunResult
-
-from .base_report_writer import BaseReportWriter
-from .csv_table import CsvTable
-from .judge_reasoning import REASONING, JudgeReasoning
-from .suite_report import SuiteReport
 
 OUTCOME_COLUMNS = {
     SuiteKind.EXECUTION: ["execution_succeeded", "failure_code", "attempts", "first_attempt_success"],

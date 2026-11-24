@@ -1,7 +1,6 @@
 from pydantic import BaseModel
-
-from ...utils import ExtraArgsClassBaseMeta
-from ..suite import SuiteKind
+from suvereo_common.evaluation.suite import SuiteKind
+from suvereo_common.utils import ExtraArgsClassBaseMeta
 
 VALUE_TYPES = ("number", "bool", "label")
 

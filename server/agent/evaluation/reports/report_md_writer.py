@@ -4,17 +4,16 @@ from suvereo_common.evaluation.metrics.auto import DurationSeconds
 from suvereo_common.evaluation.suite import SuiteKind
 
 from agent.evaluation.aggregation import FLAKY_RATE, PASS_RATE
+from agent.evaluation.reports.base_report_writer import BaseReportWriter
+from agent.evaluation.reports.judge_reasoning import REASONING, JudgeReasoning
+from agent.evaluation.reports.markdown_text import MarkdownText
+from agent.evaluation.reports.suite_report import SuiteReport
+from agent.evaluation.reports.suite_verdict import SuiteVerdict
+from agent.evaluation.reports.threshold_text import threshold_words
+from agent.evaluation.reports.transcript_markdown import TranscriptMarkdown
+from agent.evaluation.reports.value_legend import ValueLegend
+from agent.evaluation.reports.verdict_section import VerdictSection
 from agent.evaluation.runner import RunResult
-
-from .base_report_writer import BaseReportWriter
-from .judge_reasoning import REASONING, JudgeReasoning
-from .markdown_text import MarkdownText
-from .suite_report import SuiteReport
-from .suite_verdict import SuiteVerdict
-from .threshold_text import threshold_words
-from .transcript_markdown import TranscriptMarkdown
-from .value_legend import ValueLegend
-from .verdict_section import VerdictSection
 
 EMPTY = (None, "", [], {})
 

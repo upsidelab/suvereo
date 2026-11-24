@@ -4,9 +4,8 @@ from utils.views.task_status import TaskStatusView
 
 from account.authorization import PERMISSIONS, has_dataset_perm
 from catalog.models import DataSet
+from catalog.task_status.serializers import IntegrationSyncTaskStatusSerializer
 from catalog.task_status.task_types import CatalogTaskType
-
-from .serializers import IntegrationSyncTaskStatusSerializer
 
 
 class IntegrationSyncStatusView(TaskStatusView):

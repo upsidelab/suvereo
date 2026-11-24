@@ -5,15 +5,14 @@ from typing import TYPE_CHECKING, Any
 from suvereo_common.registry import BaseLanguageModelRegistry
 
 if TYPE_CHECKING:
-    from ..agents import BaseAgent
+    from suvereo_common.agents import BaseAgent
 
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.tools import BaseTool as LCBaseTool
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel
-
-from ..injectors import BaseInjector
-from ..utils import RequiredFieldsModel, validate_required_vars
+from suvereo_common.injectors import BaseInjector
+from suvereo_common.utils import RequiredFieldsModel, validate_required_vars
 
 
 class ToolMeta(ABCMeta):

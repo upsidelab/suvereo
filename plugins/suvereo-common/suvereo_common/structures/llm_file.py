@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Any
 
-from .file_types import FileTypes
+from suvereo_common.structures.file_types import FileTypes
 
 
 @dataclass

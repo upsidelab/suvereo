@@ -5,8 +5,7 @@ from suvereo_common.evaluation.errors import EvalSuiteError
 from suvereo_common.evaluation.suite import IntegrationConfig
 
 from agent.evaluation.integrations import MockIntegrationFactory
-
-from .greeter import Greeter, GreeterIntegrationPlugin, GreeterMockIntegration
+from agent.evaluation.tests.greeter import Greeter, GreeterIntegrationPlugin, GreeterMockIntegration
 
 MODULE = Greeter.__module__
 

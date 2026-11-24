@@ -3,8 +3,7 @@ from typing import Any
 
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.language_models import BaseLanguageModel
-
-from ..structures import BaseFileContent, BaseImageContent, FileTypes, LLMFile
+from suvereo_common.structures import BaseFileContent, BaseImageContent, FileTypes, LLMFile
 
 
 class LanguageModelProvider(ABC):

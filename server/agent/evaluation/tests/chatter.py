@@ -3,8 +3,7 @@ from suvereo_common.evaluation.users import BaseUserSimulator, StopReason, UserM
 
 from agent.evaluation.integrations import EvalIntegrationPluginResolver
 from agent.evaluation.run_context import EvalRunContext
-
-from .greeter import GreeterIntegrationPlugin
+from agent.evaluation.tests.greeter import GreeterIntegrationPlugin
 
 
 class FakeChat:

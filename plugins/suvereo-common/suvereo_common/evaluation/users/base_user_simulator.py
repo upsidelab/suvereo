@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 
-from ..base_model_client import BaseModelClient
-from ..suite import ConversationEvalCase
-from ..trace import Turn
-from .user_message import UserMessage
+from suvereo_common.evaluation.base_model_client import BaseModelClient
+from suvereo_common.evaluation.suite import ConversationEvalCase
+from suvereo_common.evaluation.trace import Turn
+from suvereo_common.evaluation.users.user_message import UserMessage
 
 
 class BaseUserSimulator(ABC):

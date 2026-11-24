@@ -1,6 +1,5 @@
 from pydantic import Field
-
-from .base import EvalModel
+from suvereo_common.evaluation.suite.base import EvalModel
 
 
 class ModelPricing(EvalModel):

@@ -1,6 +1,5 @@
 from pydantic import BaseModel
-
-from ..utils import ExtraArgsClassBaseMeta, RequiredFieldsModel
+from suvereo_common.utils import ExtraArgsClassBaseMeta, RequiredFieldsModel
 
 
 class AgentExtraArgsClassBaseMeta(ExtraArgsClassBaseMeta):

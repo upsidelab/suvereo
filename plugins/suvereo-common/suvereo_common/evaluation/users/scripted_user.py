@@ -1,6 +1,6 @@
-from ..trace import StopReason, Turn
-from .base_user_simulator import BaseUserSimulator
-from .user_message import UserMessage
+from suvereo_common.evaluation.trace import StopReason, Turn
+from suvereo_common.evaluation.users.base_user_simulator import BaseUserSimulator
+from suvereo_common.evaluation.users.user_message import UserMessage
 
 
 class ScriptedUser(BaseUserSimulator):

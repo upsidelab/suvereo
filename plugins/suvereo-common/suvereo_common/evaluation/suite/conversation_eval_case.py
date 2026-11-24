@@ -1,7 +1,6 @@
 from pydantic import Field, field_validator, model_validator
-
-from .eval_case import EvalCase
-from .simulated_user_config import SimulatedUserConfig
+from suvereo_common.evaluation.suite.eval_case import EvalCase
+from suvereo_common.evaluation.suite.simulated_user_config import SimulatedUserConfig
 
 
 class ConversationEvalCase(EvalCase):

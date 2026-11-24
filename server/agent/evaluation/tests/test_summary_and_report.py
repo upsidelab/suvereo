@@ -7,8 +7,7 @@ from suvereo_common.evaluation.trace import ExecutionTrace, ToolCall
 from agent.evaluation.reports import ExitCode, GitState, ReportMdWriter, SuiteReport, SuiteVerdict, SummaryJsonWriter
 from agent.evaluation.runner import ThresholdResult
 from agent.evaluation.runner.suite_run_result import SuiteRunResult
-
-from .suite_reports import (
+from agent.evaluation.tests.suite_reports import (
     conversation_run,
     conversation_suite_report,
     judged_run,

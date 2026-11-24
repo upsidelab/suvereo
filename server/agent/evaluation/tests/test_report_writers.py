@@ -17,8 +17,7 @@ from agent.evaluation.reports import (
     TraceFilesWriter,
     TranscriptsWriter,
 )
-
-from .suite_reports import (
+from agent.evaluation.tests.suite_reports import (
     conversation_run,
     conversation_suite_report,
     judged_run,

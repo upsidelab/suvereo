@@ -1,8 +1,7 @@
 from pydantic import BaseModel, ConfigDict
-
-from ..base_model_client import BaseModelClient
-from ..suite import EvalCase, SuiteKind
-from ..trace import ExecutionTrace
+from suvereo_common.evaluation.base_model_client import BaseModelClient
+from suvereo_common.evaluation.suite import EvalCase, SuiteKind
+from suvereo_common.evaluation.trace import ExecutionTrace
 
 
 class MetricContext(BaseModel):

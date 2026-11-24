@@ -6,8 +6,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 import httpx
-
-from .errors import OAuthError
+from suvereo_common.oauth.errors import OAuthError
 
 # Required: Notion, Asana, Atlassian, Sentry and PayPal all sit behind a WAF that answers
 # 403 to non-browser clients, so discovery fails before any OAuth question is asked.

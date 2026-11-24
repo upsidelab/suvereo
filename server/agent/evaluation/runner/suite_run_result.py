@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from .run_result import RunResult
+from agent.evaluation.runner.run_result import RunResult
 
 StopReason = Literal["budget_spent", "budget_untracked"]
 

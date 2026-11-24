@@ -1,6 +1,6 @@
 from functools import wraps
 
-from .helpers import has_any_permission_on_any_dataset
+from account.authorization.helpers import has_any_permission_on_any_dataset
 
 
 def global_permission_required(codename: str):

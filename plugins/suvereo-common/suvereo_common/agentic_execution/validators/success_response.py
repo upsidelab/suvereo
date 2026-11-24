@@ -1,4 +1,4 @@
-from .response import ValidatorResponse
+from suvereo_common.agentic_execution.validators.response import ValidatorResponse
 
 
 class ValidatorSuccessResponse(ValidatorResponse):

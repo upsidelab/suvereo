@@ -2,8 +2,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
 from account.models import GlobalRole
-
-from .permissions import GrantedPermissionsMixin, PermissionCodeField
+from account.serializers.permissions import GrantedPermissionsMixin, PermissionCodeField
 
 
 class GlobalRoleSerializer(serializers.ModelSerializer):

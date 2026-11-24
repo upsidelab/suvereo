@@ -3,9 +3,9 @@ import json
 from pathlib import Path
 from typing import Any
 
-from .run_directory import RESULTS_DIR
-from .suite_report import SuiteReport
-from .suite_verdict import SuiteVerdict
+from agent.evaluation.reports.run_directory import RESULTS_DIR
+from agent.evaluation.reports.suite_report import SuiteReport
+from agent.evaluation.reports.suite_verdict import SuiteVerdict
 
 HISTORY_FILE = "history.jsonl"
 

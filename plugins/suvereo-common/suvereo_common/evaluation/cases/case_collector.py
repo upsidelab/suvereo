@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from ..errors import CaseSourceError, DuplicateCaseError
-from ..suite import CasesSpec, EvalCase
-from .base import BaseCaseSource
-from .directory_source import SOURCES_BY_SUFFIX, DirectoryCaseSource
+from suvereo_common.evaluation.cases.base import BaseCaseSource
+from suvereo_common.evaluation.cases.directory_source import SOURCES_BY_SUFFIX, DirectoryCaseSource
+from suvereo_common.evaluation.errors import CaseSourceError, DuplicateCaseError
+from suvereo_common.evaluation.suite import CasesSpec, EvalCase
 
 
 class CaseCollector:

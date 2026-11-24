@@ -3,8 +3,7 @@ from difflib import SequenceMatcher
 from typing import Annotated, Any
 
 from pydantic import AfterValidator, BaseModel
-
-from ..errors import MetricConfigError
+from suvereo_common.evaluation.metrics.errors import MetricConfigError
 
 MODES = ("exact", "ci", "numeric", "fuzzy", "regex")
 DEFAULT_FUZZY_THRESHOLD = 0.85

@@ -4,7 +4,7 @@ from suvereo_common.evaluation.metrics import MetricConfigError
 from suvereo_common.evaluation.metrics.process import MockCalled, ToolCalled, ToolNotCalled, ToolOrder, TraceEvent
 from suvereo_common.evaluation.trace import Attempt, ToolCall
 
-from .contexts import mock_call, run
+from evaluation.metrics.contexts import mock_call, run
 
 
 def _tools(*names, errors=()):

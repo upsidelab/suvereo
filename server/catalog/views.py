@@ -16,10 +16,9 @@ from account.authorization import (
 from agent.core.registries.embeddings import EmbeddingProviderRegistry
 from agent.core.registries.language_models import LanguageModelRegistry
 from agent.services import AgentPreconfigurationService
-
-from .models import DataSet
-from .serializers import DataSetCreateSerializer, DataSetSerializer
-from .services import DataSetDeletionService
+from catalog.models import DataSet
+from catalog.serializers import DataSetCreateSerializer, DataSetSerializer
+from catalog.services import DataSetDeletionService
 
 
 class DataSetListView(ListCreateAPIView):

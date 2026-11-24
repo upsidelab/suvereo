@@ -2,10 +2,9 @@ from rest_framework import serializers
 
 from account.authorization import DATASET_SCOPE_PERMISSIONS
 from account.models import DatasetGroupRoleAssignment, DatasetRole, DatasetUserRoleAssignment
-
-from .groups import GroupSerializer
-from .permissions import GrantedPermissionsMixin, PermissionCodeField
-from .users import UserSummarySerializer
+from account.serializers.groups import GroupSerializer
+from account.serializers.permissions import GrantedPermissionsMixin, PermissionCodeField
+from account.serializers.users import UserSummarySerializer
 
 
 class DatasetRoleSerializer(serializers.ModelSerializer):

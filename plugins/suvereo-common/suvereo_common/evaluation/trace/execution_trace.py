@@ -1,14 +1,13 @@
 from typing import Any
 
 from pydantic import BaseModel
-
-from ...agentic_execution.result import ExecutionResult
-from .attempt import Attempt
-from .llm_call import LLMCall
-from .mock_call import MockCall
-from .stop_reason import StopReason
-from .tool_call import ToolCall
-from .turn import Turn
+from suvereo_common.agentic_execution.result import ExecutionResult
+from suvereo_common.evaluation.trace.attempt import Attempt
+from suvereo_common.evaluation.trace.llm_call import LLMCall
+from suvereo_common.evaluation.trace.mock_call import MockCall
+from suvereo_common.evaluation.trace.stop_reason import StopReason
+from suvereo_common.evaluation.trace.tool_call import ToolCall
+from suvereo_common.evaluation.trace.turn import Turn
 
 
 class ExecutionTrace(BaseModel):

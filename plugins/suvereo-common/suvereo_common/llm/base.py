@@ -2,10 +2,9 @@ from typing import Any
 
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.language_models import BaseLanguageModel
+from suvereo_common.registry import BaseLanguageModelRegistry
 from suvereo_common.registry.llm import LanguageModelProvider
-
-from ..registry import BaseLanguageModelRegistry
-from ..repositories import BaseDataSetRepository
+from suvereo_common.repositories import BaseDataSetRepository
 
 
 class BaseLLM:

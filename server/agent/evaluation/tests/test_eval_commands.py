@@ -11,8 +11,7 @@ from suvereo_common.evaluation.errors import EvalSuiteError
 from agent.evaluation.reports import ExitCode, SuiteVerdict
 from agent.evaluation.suite_evaluation import SuiteEvaluation, SuiteEvaluationOutcome
 from agent.evaluation.suite_loader import SuiteLoader
-
-from .suite_reports import loaded_suite, run_result, suite_report
+from agent.evaluation.tests.suite_reports import loaded_suite, run_result, suite_report
 
 
 def _run_command(command, *args):

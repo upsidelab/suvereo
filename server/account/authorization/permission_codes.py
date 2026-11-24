@@ -1,6 +1,6 @@
 from enum import StrEnum
 
-from .permission_codenames import PERMISSIONS
+from account.authorization.permission_codenames import PERMISSIONS
 
 PERMISSION_ENTITIES: dict[str, type[StrEnum]] = {
     name: permission_set

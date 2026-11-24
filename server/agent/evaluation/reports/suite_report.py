@@ -7,17 +7,16 @@ from suvereo_common.evaluation.metrics.auto import GoalReached, Turns
 from suvereo_common.evaluation.suite import EvalCase, MetricConfig, PassThreshold, ReportName, SuiteKind
 
 from agent.evaluation.aggregation import PASS_RATE, RATES, CandidateMetrics, MetricAggregator
+from agent.evaluation.reports.baseline_diff import BaselineDiff
+from agent.evaluation.reports.case_outcome import CaseOutcome
+from agent.evaluation.reports.git_state import GitState
+from agent.evaluation.reports.summary_file import SummaryFile
 from agent.evaluation.resolved_kind import resolved_kind
 from agent.evaluation.runner import RunResult
 from agent.evaluation.runner.run_result import DEFAULT_MODEL
 from agent.evaluation.runner.run_scorer import BOOL_THRESHOLD
 from agent.evaluation.runner.suite_run_result import SuiteRunResult
 from agent.evaluation.suite_metric_configs import suite_metric_configs
-
-from .baseline_diff import BaselineDiff
-from .case_outcome import CaseOutcome
-from .git_state import GitState
-from .summary_file import SummaryFile
 
 UNSAFE_IN_FILE_NAMES = re.compile(r"[^A-Za-z0-9._-]+")
 

@@ -1,6 +1,6 @@
 from suvereo_common.evaluation.trace import ExecutionTrace, Turn
 
-from .markdown_text import MarkdownText
+from agent.evaluation.reports.markdown_text import MarkdownText
 
 #: How many of a failed conversation's last turns report.md shows.
 LAST_TURNS = 2

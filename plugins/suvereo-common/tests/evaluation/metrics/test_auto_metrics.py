@@ -18,8 +18,8 @@ from suvereo_common.evaluation.metrics.auto import (
 from suvereo_common.evaluation.suite import ConversationEvalCase
 from suvereo_common.evaluation.trace import Attempt, ExecutionTrace, LLMCall, Turn
 
-from .contexts import run
-from .scripted_judge import ScriptedJudge
+from evaluation.metrics.contexts import run
+from evaluation.metrics.scripted_judge import ScriptedJudge
 
 PASSED, FAILED = Attempt(number=1, response="", passed=True), Attempt(number=1, response="", passed=False)
 ANSWERED = [Turn(user_message="Hi", answer="Hello"), Turn(user_message="Bye", answer="Bye")]

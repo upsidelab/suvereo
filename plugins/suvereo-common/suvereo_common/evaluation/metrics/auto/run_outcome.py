@@ -1,4 +1,4 @@
-from ..metric_context import MetricContext
+from suvereo_common.evaluation.metrics.metric_context import MetricContext
 
 EXPECTED_FAILURE_KEY = "failure_code"
 

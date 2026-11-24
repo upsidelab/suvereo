@@ -6,8 +6,7 @@ from suvereo_common.integrations import BaseOAuthIntegration
 
 from account.authorization import dataset_permission_codes
 from agent.core.registries.embeddings.embedding_provider_registry import EmbeddingProviderRegistry
-
-from .models import DataSet, Integration
+from catalog.models import DataSet, Integration
 
 DATASET_FIELDS = [
     "id",

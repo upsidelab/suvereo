@@ -1,7 +1,7 @@
-from ...suite import SuiteKind
-from ..base_metric import BaseMetric
-from ..metric_context import MetricContext
-from ..metric_result import MetricResult
+from suvereo_common.evaluation.metrics.base_metric import BaseMetric
+from suvereo_common.evaluation.metrics.metric_context import MetricContext
+from suvereo_common.evaluation.metrics.metric_result import MetricResult
+from suvereo_common.evaluation.suite import SuiteKind
 
 RUNTIME_ERROR = "RUNTIME_ERROR"
 

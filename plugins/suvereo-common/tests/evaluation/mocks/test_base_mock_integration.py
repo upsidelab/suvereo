@@ -2,8 +2,8 @@ import pytest
 from suvereo_common.evaluation.mocks import BaseMockIntegration, MockConfigError, UnmockedCallError
 from suvereo_common.evaluation.trace import TraceRecorder
 
-from .shop import Shop, ShopMock
-from .shop_plugin import Catalog, ShopIntegrationManager, ShopIntegrationPlugin
+from evaluation.mocks.shop import Shop, ShopMock
+from evaluation.mocks.shop_plugin import Catalog, ShopIntegrationManager, ShopIntegrationPlugin
 
 
 def _configured(integration_class, **config):

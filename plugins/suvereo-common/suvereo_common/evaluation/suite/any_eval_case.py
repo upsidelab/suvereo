@@ -1,10 +1,9 @@
 from typing import Annotated, Any
 
 from pydantic import Discriminator, Tag
-
-from .agentic_execution_eval_case import AgenticExecutionEvalCase
-from .conversation_eval_case import ConversationEvalCase
-from .suite_kind import SuiteKind
+from suvereo_common.evaluation.suite.agentic_execution_eval_case import AgenticExecutionEvalCase
+from suvereo_common.evaluation.suite.conversation_eval_case import ConversationEvalCase
+from suvereo_common.evaluation.suite.suite_kind import SuiteKind
 
 CONVERSATION_FIELDS = ("user_messages", "simulated_user")
 
