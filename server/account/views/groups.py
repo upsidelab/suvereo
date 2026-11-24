@@ -1,3 +1,4 @@
+from django.utils.decorators import method_decorator
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
@@ -11,8 +12,6 @@ GROUP_ID_PARAMETER = openapi.Parameter("id", openapi.IN_PATH, description="ID of
 
 
 class GroupListView(ListCreateAPIView):
-    """List groups; create one with a name and a description."""
-
     permission_classes = [IsAuthenticated]
     queryset = UserGroup.objects.with_counts().order_by("name")
     serializer_class = GroupSerializer
@@ -25,14 +24,19 @@ class GroupListView(ListCreateAPIView):
     @swagger_auto_schema(operation_description="Create a new group", request_body=GroupSerializer)
     @global_permission_required(PERMISSIONS.GROUP.ADD)
     def post(self, request, *args, **kwargs):
-        """A group is created empty. Its members and the roles it holds are granted separately,
-        each gated on the authority that grant actually needs."""
         return super().post(request, *args, **kwargs)
 
 
-class GroupDetailView(RetrieveUpdateDestroyAPIView):
-    """Retrieve a group with the global roles it holds; edit its name and description; delete it."""
+UPDATE_SCHEMA = swagger_auto_schema(
+    operation_description="Update a group's name and description",
+    request_body=GroupDetailSerializer,
+    manual_parameters=[GROUP_ID_PARAMETER],
+)
 
+
+@method_decorator(name="put", decorator=UPDATE_SCHEMA)
+@method_decorator(name="patch", decorator=UPDATE_SCHEMA)
+class GroupDetailView(RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = GroupDetailSerializer
     queryset = UserGroup.objects.with_counts().prefetch_related("global_roles")
@@ -43,11 +47,6 @@ class GroupDetailView(RetrieveUpdateDestroyAPIView):
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
-    @swagger_auto_schema(
-        operation_description="Update a group's name and description",
-        request_body=GroupDetailSerializer,
-        manual_parameters=[GROUP_ID_PARAMETER],
-    )
     @global_permission_required(PERMISSIONS.GROUP.CHANGE)
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
@@ -58,5 +57,4 @@ class GroupDetailView(RetrieveUpdateDestroyAPIView):
     )
     @global_permission_required(PERMISSIONS.GROUP.DELETE)
     def delete(self, request, *args, **kwargs):
-        """Deleting a group takes its memberships and its dataset role assignments with it"""
         return super().delete(request, *args, **kwargs)

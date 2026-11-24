@@ -27,9 +27,6 @@ USER_COST_COLUMN = "user_cost_usd"
 
 
 class ResultsCsvWriter(BaseReportWriter):
-    """results.csv: one row per run with its identity, outcome, cost and timing, every metric (with whether the run
-    met its pass threshold, its components and a judge's reasoning), the missed thresholds and the trace file."""
-
     NAME = "results"
 
     def write(self, report: SuiteReport, run_dir: Path) -> list[Path]:
@@ -65,8 +62,6 @@ class ResultsCsvWriter(BaseReportWriter):
 
     @staticmethod
     def _metric_columns(report: SuiteReport) -> list["MetricColumn"]:
-        """Per configured metric, in suite order: its value, whether the run met its pass threshold if any run was checked, each
-        component any run reported, and the judge's reasoning if any run gave one."""
         columns = []
         for name in report.metric_configs:
             columns.append(MetricColumn(name, name, kind="value"))
@@ -87,9 +82,6 @@ class ResultsCsvWriter(BaseReportWriter):
 
 
 class MetricColumn(NamedTuple):
-    """One metric column of results.csv: its header, the metric it reads, and what of it (value, threshold, component,
-    reasoning)."""
-
     header: str
     metric: str
     kind: Literal["value", "threshold_passed", "component", "reasoning"]

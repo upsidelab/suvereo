@@ -18,8 +18,6 @@ USER_ID_PARAMETER = openapi.Parameter(
 
 
 class GroupMemberListView(APIView):
-    """List a group's members; add a user to it."""
-
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(

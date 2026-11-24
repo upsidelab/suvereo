@@ -13,9 +13,6 @@ BOOL_THRESHOLD = PassThreshold(equals=True)
 
 
 class RunScorer:
-    """Measures a run's auto metrics (those of the suite's kind) and configured ones, and checks the configured ones'
-    pass thresholds; bools default to equals: true."""
-
     def __init__(self, base_dir: Path, kind: SuiteKind = SuiteKind.EXECUTION, registry: MetricRegistry | None = None):
         self.base_dir = base_dir
         self.auto_metrics = auto_metrics_for(kind)
@@ -24,9 +21,6 @@ class RunScorer:
     def score(
         self, configs: list[MetricConfig], context: MetricContext
     ) -> tuple[dict[str, MetricResult], dict[str, ThresholdResult]]:
-        """Measure the auto metrics and each configured metric, and check pass thresholds: a configured one, or
-        equals: true for a bool metric. A metric that cannot be built has no value and misses its threshold, as a
-        broken check never passes."""
         results = {metric.NAME: self._measure_safely(metric(), context) for metric in self.auto_metrics}
         thresholds = {}
         for config in configs:
@@ -47,8 +41,6 @@ class RunScorer:
     def scores_for_unfinished_run(
         self, configs: list[MetricConfig], context: MetricContext, reason: str
     ) -> tuple[dict[str, MetricResult], dict[str, ThresholdResult]]:
-        """For a run that never ran: the auto metrics, and each configured metric with no value and a missed
-        threshold."""
         results = {metric.NAME: self._measure_safely(metric(), context) for metric in self.auto_metrics}
         results |= {config.name: MetricResult(value=None, details={"reason": reason}) for config in configs}
         thresholds = {config.name: ThresholdResult(passed=False, required=config.required) for config in configs}

@@ -1,5 +1,7 @@
 from django.http import Http404
 from django.shortcuts import get_object_or_404
+from django.utils.decorators import method_decorator
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -10,10 +12,9 @@ from catalog.entities.registry import entity_registry
 
 
 class EntityListView(APIView):
-    """List the registered domain entities and the columns each table shows."""
-
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(operation_description="List the registered domain entities and the columns each table shows.")
     def get(self, request):
         if not has_any_dataset_access(request.user):
             self.permission_denied(request)
@@ -29,9 +30,13 @@ class EntityListView(APIView):
         return Response(data)
 
 
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="Read-only, paginated list of one entity's records within a DataSet."
+    ),
+)
 class EntityRecordsView(ListAPIView):
-    """Read-only, paginated list of one entity's records within a DataSet."""
-
     permission_classes = [IsAuthenticated]
 
     def _registration(self):

@@ -6,8 +6,6 @@ from catalog.models import DataSet
 
 
 class DataSetDeletionService:
-    """Deletes a DataSet with its conversations first, as they protect it from deletion."""
-
     @staticmethod
     def delete(data_set: DataSet) -> None:
         with transaction.atomic():

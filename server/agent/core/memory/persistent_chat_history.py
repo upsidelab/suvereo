@@ -8,21 +8,10 @@ from agent.models import Message
 
 
 class PersistentChatHistory(BaseChatMessageHistory):
-    """
-    A chat history implementation that persists messages in the database.
-    Inject it into the agent to enable conversation persistence.
-    """
-
     def __init__(self, conversation_repo: BaseConversationRepository, conversation_id: Any):
         self._conversation = conversation_repo.get_by_id(conversation_id)
 
     def add_messages(self, messages: list[BaseMessage]) -> None:
-        """Persist messages, interleaving each tool call with its result.
-
-        LLMs can invoke tools in parallel, producing an AIMessage with multiple tool_calls
-        followed by multiple ToolMessages. This reorders them so each tool call is immediately
-        followed by its result, which allows straightforward one-to-one reconstruction.
-        """
         tool_messages = {m.tool_call_id: m for m in messages if isinstance(m, ToolMessage)}
         for message in messages:
             if isinstance(message, AIMessage) and message.tool_calls:
@@ -36,12 +25,6 @@ class PersistentChatHistory(BaseChatMessageHistory):
                 self.add_message(message)
 
     def add_message(self, message: BaseMessage) -> None:
-        """Persist a message to the database.
-
-        AIMessages that contain tool calls are stored as INTERMEDIATE_STEP records.
-        ToolMessages (tool results) are stored as FUNCTION records.
-        All other standard message types are stored using their LangChain type string directly.
-        """
         if isinstance(message, AIMessage) and message.tool_calls:
             self._create_intermediate_step_message(message)
         elif isinstance(message, ToolMessage):
@@ -81,16 +64,10 @@ class PersistentChatHistory(BaseChatMessageHistory):
 
     @property
     def last_message_database_id(self) -> int | None:
-        """Return the DB primary key of the most recent message in this conversation, or None."""
         last = self._conversation.messages.filter(answer_failed=False).order_by("id").last()
         return last.id if last else None
 
     def messages_after(self, message_id: int | None) -> list[BaseMessage]:
-        """Return messages after the given message ID.
-
-        If message_id is None, returns all messages. Used by the memory compactor to fetch
-        only messages that have not yet been included in the conversation summary.
-        """
         queryset = self._conversation.messages.filter(answer_failed=False).order_by("id")
         if message_id is not None:
             queryset = queryset.filter(id__gt=message_id)

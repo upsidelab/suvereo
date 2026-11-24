@@ -7,22 +7,10 @@ from suvereo_common.registry import BaseEmbeddingProviderRegistry, EmbeddingProv
 
 
 class EmbeddingIndexer(BaseEntityIndexer):
-    """Chunks an entity's indexable content, embeds each chunk, and stores the vectors.
-
-    Splits ``entity.get_indexable_content()`` with the DataSet's token settings, embeds
-    each chunk with the DataSet's provider, and writes the chunks to the entity's chunk
-    table. Existing chunks are replaced atomically — concurrent calls for the same entity
-    are serialised via a row-level lock so no duplicate chunks accumulate.
-
-    See ``BaseEntityIndexer`` for the contract the entity must satisfy.
-    """
-
     def __init__(self, registry: BaseEmbeddingProviderRegistry):
-        """Uses registry to resolve the embedding provider configured for the entity's DataSet."""
         self._registry = registry
 
     def index(self, entity: IndexableEntity) -> None:
-        """Chunk, embed, and store the entity's indexable content."""
         data_set = entity.dataset
 
         splitter = TokenTextSplitter(

@@ -85,7 +85,6 @@ class AgentSerializer(ParentDataContextSerializerMixin, serializers.ModelSeriali
         read_only_fields = ["id", "created_at", "updated_at", "file_upload"]
 
     def get_fields(self):
-        """Return the serializer fields, making `dataset` read-only once the agent exists."""
         fields = super().get_fields()
         if self.instance is not None:
             fields["dataset"] = serializers.PrimaryKeyRelatedField(read_only=True)

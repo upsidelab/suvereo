@@ -11,8 +11,6 @@ from agent.models import Conversation
 
 
 class ExecutionRunDriver(BaseRunDriver):
-    """Runs the case's input through an agentic execution and its validator loop, recording each attempt."""
-
     def __init__(self, execution_key: str):
         self.execution_key = execution_key
 

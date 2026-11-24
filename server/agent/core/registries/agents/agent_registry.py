@@ -12,15 +12,15 @@ from agent.models import Conversation
 
 
 class AgentRegistryError(Exception):
-    """Base exception for all AgentRegistry errors."""
+    pass
 
 
 class AgentNotFoundError(AgentRegistryError):
-    """Raised when agent type is not found in config."""
+    pass
 
 
 class AgentConfigError(AgentRegistryError):
-    """Raised when agent configuration is missing or invalid."""
+    pass
 
 
 class BaseAgentRegistry(ABC, BaseRegistry[BaseAgent]):

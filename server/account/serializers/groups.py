@@ -6,8 +6,6 @@ from account.serializers.global_roles import GlobalRoleSerializer
 
 
 class GroupSerializer(serializers.ModelSerializer):
-    """A group in a listing, with how far what it holds reaches."""
-
     member_count = serializers.IntegerField(read_only=True, default=0)
     global_role_count = serializers.IntegerField(read_only=True, default=0)
     data_set_role_count = serializers.IntegerField(read_only=True, default=0)
@@ -28,8 +26,6 @@ class GroupSerializer(serializers.ModelSerializer):
 
 
 class GroupDetailSerializer(GroupSerializer):
-    """A single group, carrying the global roles it holds."""
-
     global_roles = GlobalRoleSerializer(many=True, read_only=True)
 
     class Meta(GroupSerializer.Meta):
@@ -37,6 +33,4 @@ class GroupDetailSerializer(GroupSerializer):
 
 
 class GroupReferenceSerializer(serializers.Serializer):
-    """A request body that names a group."""
-
     group_id = serializers.PrimaryKeyRelatedField(source="group", queryset=UserGroup.objects.all())

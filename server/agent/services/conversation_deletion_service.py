@@ -6,8 +6,6 @@ from agent.models.conversation import ConversationFile
 
 
 class ConversationDeletionService:
-    """Deletes conversations with everything that points at them, and their stored files once that commits."""
-
     @staticmethod
     def delete(conversations: QuerySet[Conversation]) -> None:
         ids = list(conversations.values_list("id", flat=True))

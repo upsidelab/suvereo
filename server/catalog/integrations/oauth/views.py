@@ -1,9 +1,8 @@
-"""Views driving the OAuth handshake for any integration that implements ``BaseOAuthIntegration``."""
-
 import logging
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -31,10 +30,11 @@ CONNECT_PERMISSIONS = (PERMISSIONS.INTEGRATION.ADD, PERMISSIONS.INTEGRATION.CHAN
 
 
 class IntegrationOAuthStartView(APIView):
-    """Begin the handshake and hand back the URL the admin's browser should open."""
-
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(
+        operation_description="Begin the handshake and hand back the URL the admin's browser should open."
+    )
     def post(self, request, data_set_id):
         data_set = get_object_or_404(DataSet, pk=data_set_id)
         enforce_any_dataset_scoped_permission(self, data_set, *CONNECT_PERMISSIONS)
@@ -89,10 +89,11 @@ class IntegrationOAuthStartView(APIView):
 
 
 class IntegrationOAuthRefreshView(APIView):
-    """Renew a stored token on demand, without sending the admin through the provider again."""
-
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(
+        operation_description="Renew a stored token on demand, without sending the admin through the provider again."
+    )
     def post(self, request, data_set_id):
         data_set = get_object_or_404(DataSet, pk=data_set_id)
         enforce_dataset_scoped_permission(self, PERMISSIONS.INTEGRATION.CHANGE, data_set)
@@ -120,10 +121,9 @@ class IntegrationOAuthRefreshView(APIView):
 
 
 class IntegrationOAuthResultView(APIView):
-    """Report the outcome of a flow to the window that began it."""
-
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(operation_description="Report the outcome of a flow to the window that began it.")
     def get(self, request):
         state = request.query_params.get("state") or ""
         result = storage.read_result(state)
@@ -140,11 +140,12 @@ class IntegrationOAuthResultView(APIView):
 
 
 class IntegrationOAuthCallbackView(APIView):
-    """Receive the provider's redirect, exchange the code and pass the credentials back."""
-
     permission_classes = [AllowAny]
     authentication_classes = []
 
+    @swagger_auto_schema(
+        operation_description="Receive the provider's redirect, exchange the code and pass the credentials back."
+    )
     def get(self, request):
         state = request.query_params.get("state") or ""
         flow = storage.pop(state)

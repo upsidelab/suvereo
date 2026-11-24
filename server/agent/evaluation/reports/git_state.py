@@ -5,8 +5,6 @@ from pydantic import BaseModel
 
 
 class GitState(BaseModel):
-    """The commit a suite ran at and whether the working tree had uncommitted changes; None outside a git checkout."""
-
     sha: str | None = None
     dirty: bool | None = None
 

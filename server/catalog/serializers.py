@@ -30,7 +30,6 @@ class DataSetSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "permissions"]
 
     def get_permissions(self, data_set) -> list[str]:
-        """The requesting user's dataset-scoped permissions on this data set"""
         request = self.context.get("request")
         if request is None:
             return []
@@ -44,7 +43,6 @@ class DataSetCreateSerializer(DataSetSerializer):
         fields = DataSetSerializer.Meta.fields + ["preconfigure_agents"]
 
     def validate(self, data):
-        """Validate that embedding_vector_dimensions satisfies provider constraints."""
         embedding_provider = data.get("embedding_provider")
         embedding_model = data.get("embedding_model")
         embedding_vector_dimensions = data.get("embedding_vector_dimensions")
@@ -72,13 +70,6 @@ class DataSetCreateSerializer(DataSetSerializer):
 
 
 class IntegrationConfigValidationMixin:
-    """Checks a stored ``config`` against the plugin's ``CONFIGURATION_ARGS`` before it is saved.
-
-    Without this the API accepts any JSON, and the mistake only surfaces much later: the plugin
-    cannot be instantiated, the resolver logs and skips it, and the agent quietly runs without the
-    integration's tools. Validating on write turns that silent failure into a 400 the admin can act on.
-    """
-
     def _validate_config(self, integration_type: str | None, config: Any) -> None:
         from catalog.integrations.registry import IntegrationPluginRegistry
 
@@ -101,7 +92,6 @@ class IntegrationConfigValidationMixin:
 
     @staticmethod
     def _field_errors(error: PydanticValidationError) -> dict[str, str]:
-        """Flatten pydantic's errors into ``{field: message}``, which the frontend renders per field."""
         return {str(item["loc"][0]) if item["loc"] else "config": item["msg"] for item in error.errors()}
 
 
@@ -145,7 +135,6 @@ class IntegrationSerializer(IntegrationConfigValidationMixin, serializers.ModelS
             return None
 
     def _build_plugin(self, integration):
-        """The configured plugin for this record, built once however many fields ask for it."""
         from catalog.integrations.registry import IntegrationPluginRegistry
 
         if not hasattr(self, "_plugins"):
@@ -158,11 +147,6 @@ class IntegrationSerializer(IntegrationConfigValidationMixin, serializers.ModelS
         return self._plugins[integration.pk]
 
     def get_name(self, integration):
-        """The instance's own label, so several integrations of one type are distinguishable.
-
-        Falls back to the type's name if the plugin cannot be built from the stored config, since a
-        listing that breaks on one bad record is worse than one that labels it generically.
-        """
         plugin_class = self._get_plugin_class(integration)
         if plugin_class is None:
             return integration.type
@@ -173,7 +157,6 @@ class IntegrationSerializer(IntegrationConfigValidationMixin, serializers.ModelS
             return plugin_class.NAME
 
     def get_needs_reconnect(self, integration) -> bool:
-        """Whether this instance has stopped working in a way only a person can put right."""
         plugin = self._build_plugin(integration)
         if not isinstance(plugin, BaseOAuthIntegration):
             return False

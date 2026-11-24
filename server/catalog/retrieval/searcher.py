@@ -8,8 +8,6 @@ T = TypeVar("T")
 
 
 class EmbeddingSimilaritySearcher(BaseSimilaritySearcher):
-    """Ranks chunks by pgvector cosine distance to the query embedding."""
-
     def search(
         self,
         chunk_model: type[T],

@@ -18,9 +18,6 @@ from pecl import settings
 
 
 class TaskType(StrEnum):
-    """Identifies which job produced a background task's result, so a task's status can only be
-    read back through the endpoint meant for that job type."""
-
     MESSAGE_PUSH = "message_push"
     FILE_UPLOAD = "file_upload"
 

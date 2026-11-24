@@ -12,8 +12,6 @@ DEFAULT_AGGREGATE_NAMES = {"number": "mean", "bool": "rate", "label": "most_comm
 
 
 class MetricAggregate(BaseModel):
-    """One metric over a candidate's runs: the default aggregate as value, plus the figures reports show."""
-
     value_type: str
     measured: int
     value: float | str | None
@@ -28,7 +26,6 @@ class MetricAggregate(BaseModel):
 
     @classmethod
     def from_values(cls, values: list[Any], value_type: str, aggregate: Aggregate | None = None) -> "MetricAggregate":
-        """Compute mean, min, max, sum, percentiles (or label counts) from one metric's per-run values; skips None."""
         present = [v for v in values if v is not None]
         if value_type == "label":
             if aggregate not in (None, "distribution"):
@@ -48,8 +45,6 @@ class MetricAggregate(BaseModel):
         return cls(value_type=value_type, measured=len(numbers), value=value, **figures)
 
     def value_for(self, aggregate: Aggregate | None = None) -> float | str | None:
-        """The value under an aggregate: the top label for labels; for numbers and bools the mean (a bool's rate) by
-        default. Raises ValueError for an aggregate that doesn't fit the value type, e.g. distribution of numbers."""
         if self.value_type == "label":
             if aggregate not in (None, "distribution"):
                 raise ValueError(f"A label metric has no '{aggregate}'; use distribution.")

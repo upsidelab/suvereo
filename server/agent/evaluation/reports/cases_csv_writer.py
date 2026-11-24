@@ -6,9 +6,6 @@ from agent.evaluation.reports.suite_report import SuiteReport
 
 
 class CasesCsvWriter(BaseReportWriter):
-    """cases.csv: one row per case and candidate with how its repeats went: pass (all passed), fail (none did) or
-    flaky, and how many passed; filter on status to find the cases a candidate fails."""
-
     NAME = "cases"
 
     def write(self, report: SuiteReport, run_dir: Path) -> list[Path]:

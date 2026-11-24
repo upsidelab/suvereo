@@ -9,8 +9,6 @@ from catalog.task_status.task_types import CatalogTaskType
 
 
 class IntegrationSyncStatusView(TaskStatusView):
-    """Status of an integration sync, revealed to holders of INTEGRATION.VIEW on the integration's data set."""
-
     task_type = CatalogTaskType.INTEGRATION_SYNC
     response_serializer_class = IntegrationSyncTaskStatusSerializer
 

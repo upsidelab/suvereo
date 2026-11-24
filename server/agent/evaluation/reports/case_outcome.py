@@ -6,8 +6,6 @@ CaseStatus = Literal["pass", "fail", "flaky"]
 
 
 class CaseOutcome(BaseModel):
-    """How one case went for one candidate across its repeats: pass (all passed), fail (none did) or flaky."""
-
     case_id: str
     candidate: str
     passed_runs: int

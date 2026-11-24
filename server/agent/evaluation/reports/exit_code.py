@@ -2,8 +2,6 @@ from enum import IntEnum
 
 
 class ExitCode(IntEnum):
-    """What a suite run exits with, so scripts and CI can act on it."""
-
     PASSED = 0
     BELOW_MIN_PASS_RATE = 1
     INVALID_SUITE = 2

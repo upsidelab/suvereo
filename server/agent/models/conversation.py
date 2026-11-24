@@ -14,20 +14,16 @@ def conversation_file_path(instance, filename):
 
 class ConversationQuerySet(models.QuerySet):
     def visible_to(self, user) -> "ConversationQuerySet":
-        """Conversations `user` owns or may view through `CONVERSATION.VIEW_ALL` on their data set."""
         return self.filter(
             Q(user=user) | Q(data_set__in=datasets_with_permission(user, PERMISSIONS.CONVERSATION.VIEW_ALL))
         )
 
     def last_activity(self):
-        """When the latest of these conversations started or got a message, or None for no conversations."""
         latest = self.aggregate(started=Max("started_at"), messaged=Max("messages__created_at"))
         return max((t for t in latest.values() if t is not None), default=None)
 
 
 class ConversationManager(models.Manager.from_queryset(ConversationQuerySet)):
-    """Hides temporary conversations, such as evaluation runs; use Conversation.all_objects to include them."""
-
     def get_queryset(self):
         return super().get_queryset().filter(is_temporary=False)
 

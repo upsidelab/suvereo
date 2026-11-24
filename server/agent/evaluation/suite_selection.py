@@ -7,9 +7,6 @@ from suvereo_common.evaluation.suite import DEFAULT_VARIANT, ModelTarget, Prompt
 
 
 class SuiteSelection(BaseModel):
-    """Narrows a suite to part of it for one run (the runeval options), without editing suite.yaml; empty fields keep
-    what the suite has."""
-
     models: list[str] = Field(default=[], description="Suite model labels, or Provider:model for a model it lacks.")
     variants: list[str] = Field(default=[], description="Variant names; the default variant always runs.")
     prompt_file: Path | None = Field(default=None, description="An ad-hoc variant named after the file.")
@@ -18,7 +15,6 @@ class SuiteSelection(BaseModel):
     repeats: int | None = Field(default=None, ge=1)
 
     def apply(self, loaded: LoadedSuite) -> LoadedSuite:
-        """The suite narrowed to the selection; raises EvalSuiteError for a name the suite doesn't have."""
         suite = loaded.suite
         changes = {
             "models": [self._model_target(spec, suite.models) for spec in dict.fromkeys(self.models)] or suite.models,
@@ -38,7 +34,6 @@ class SuiteSelection(BaseModel):
 
     @staticmethod
     def _model_target(spec: str, models: list[ModelTarget]) -> ModelTarget:
-        """A suite model by label, else Provider:model."""
         if model := next((m for m in models if m.display_label == spec), None):
             return model
         provider, separator, name = spec.partition(":")

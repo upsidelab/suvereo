@@ -19,11 +19,6 @@ EMPTY = (None, "", [], {})
 
 
 class ReportMdWriter(BaseReportWriter):
-    """report.md, for people and coding agents: the verdict, a comparison of the candidates, the diff against a
-    baseline run, each failed run with the pass thresholds it missed (values, the judge's reasoning, errors, a
-    conversation's ending and last turns, and links to the trace and transcript), flaky cases, and how the run was
-    made."""
-
     NAME = "report"
 
     def write(self, report: SuiteReport, run_dir: Path) -> list[Path]:
@@ -111,7 +106,6 @@ class ReportMdWriter(BaseReportWriter):
 
     @classmethod
     def _failure_fields(cls, report: SuiteReport) -> list[str]:
-        """The fields the failures section lists, in order of first appearance."""
         fields: dict[str, None] = {}
         for run in (run for run in report.runs if not run.passed):
             for name in cls._missed(run):
@@ -159,7 +153,6 @@ class ReportMdWriter(BaseReportWriter):
 
     @staticmethod
     def _missed_lines(run: RunResult, name: str, report: SuiteReport) -> list[str]:
-        """'❌ **name** value (needs …)', then the metric's details one level down."""
         result = run.metrics.get(name)
         if result is None:
             return [f"  - ❌ **{name}**"]

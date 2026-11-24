@@ -1,5 +1,3 @@
-"""The starter role set, offered by `manage.py seedroles`."""
-
 from dataclasses import dataclass, field
 
 from account.authorization import PERMISSIONS

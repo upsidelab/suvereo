@@ -7,9 +7,6 @@ NAME = "evaluation"
 
 
 class EvalUser:
-    """The internal service account evaluation conversations belong to; it is inactive and hidden, so it cannot sign in
-    or be seen."""
-
     @staticmethod
     def email() -> str:
         return ServiceAccountNameService().generate_service_account_email(NAME)

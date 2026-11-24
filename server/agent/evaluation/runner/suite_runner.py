@@ -33,8 +33,6 @@ PlannedRun = tuple[EvalCase, ModelTarget | None, PromptVariant | None, int]
 
 
 class SuiteRunner:
-    """Runs a loaded suite's models x variants x cases x repeats, in parallel if asked, until its budget runs out."""
-
     def __init__(
         self, loaded: LoadedSuite, options: SuiteRunOptions | None = None, pricing: PricingTable | None = None
     ):
@@ -53,11 +51,9 @@ class SuiteRunner:
 
     @property
     def planned_run_count(self) -> int:
-        """How many runs the suite plans: models x variants (with the default) x cases x repeats."""
         return len(self._planned_runs(self.loaded.cases))
 
     def run(self) -> SuiteRunResult:
-        """Run every planned run; raises EvalSuiteError when a budget is set but a model under test has no price."""
         self.check_budget_is_trackable()
         self._spent, self._stopped_reason = 0.0, None
         self._warn_on_self_judging()
@@ -81,7 +77,6 @@ class SuiteRunner:
         )
 
     def _run_group(self, cases: list[EvalCase]) -> list[RunResult]:
-        """Run cases sharing a sandbox; if it cannot be set up, their runs are recorded as errored and the suite goes on."""
         with ExitStack() as stack:
             try:
                 target = stack.enter_context(self._target_for_group(cases))
@@ -119,10 +114,6 @@ class SuiteRunner:
             connection.close()
 
     def _run_within_budget(self, runner: CaseRunner, planned: PlannedRun) -> RunResult | None:
-        """Run one planned run, or skip it and return None once the run has stopped (budget spent or untracked).
-
-        A failure outside the agent (which CaseRunner already records in the trace) becomes an errored run.
-        """
         budget = self.budget_usd
         with self._lock:
             if budget is not None and self._spent >= budget and self._stopped_reason is None:
@@ -144,7 +135,6 @@ class SuiteRunner:
         return result
 
     def _cases_by_sandbox(self) -> list[list[EvalCase]]:
-        """Cases grouped by the integration data their sandbox is synced from; one group for an existing agent."""
         if not self.loaded.suite.agent.is_sandbox:
             return [self.loaded.cases]
         groups: dict[str, list[EvalCase]] = {}
@@ -154,7 +144,6 @@ class SuiteRunner:
         return list(groups.values())
 
     def _target_for_group(self, cases: list[EvalCase]) -> BaseAgentTarget:
-        """An unopened target for cases sharing integration data: a sandbox built from it, or the existing agent."""
         case = cases[0]
         suite, user, keep = self.loaded.suite, EvalUser.get(), self.options.keep_run_data
         if not suite.agent.is_sandbox:
@@ -164,7 +153,6 @@ class SuiteRunner:
         return SandboxAgentTarget(suite.name, suite.agent.type, suite.agent.config, integrations, user, keep)
 
     def _run_files_media_root(self):
-        """A temporary MEDIA_ROOT for the run's files, unless the run data, and so its files, are kept."""
         return nullcontext() if self.options.keep_run_data else self._temporary_media_root()
 
     @staticmethod

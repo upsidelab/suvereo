@@ -10,10 +10,6 @@ from agent.evaluation.runner import RunResult
 
 
 class TranscriptsWriter(BaseReportWriter):
-    """transcripts/<run_id>.md: each conversation run as a readable dialogue, with how it ended, the simulated user's
-    goal, persona and facts (to check it stayed within them) and the tools called per turn; nothing for an execution
-    suite."""
-
     NAME = "transcripts"
 
     def write(self, report: SuiteReport, run_dir: Path) -> list[Path]:

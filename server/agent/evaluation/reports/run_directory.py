@@ -11,12 +11,8 @@ LATEST_LINK = "latest"
 
 
 class RunDirectory:
-    """Where one suite run's outputs go: <suite_dir>/results/<YYYYmmdd-HHMMSS>-<id>/, with results/latest linking to
-    the newest run; results/ carries its own .gitignore, so runs stay out of git wherever the suite lives."""
-
     @staticmethod
     def create(suite_dir: Path, now: datetime | None = None) -> Path:
-        """Create the run's directory and point results/latest at it; a failed link is logged, not raised."""
         results = suite_dir / RESULTS_DIR
         run_dir = results / f"{(now or datetime.now()):%Y%m%d-%H%M%S}-{secrets.token_hex(3)}"
         run_dir.mkdir(parents=True)

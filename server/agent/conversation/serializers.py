@@ -10,15 +10,6 @@ logger = logging.getLogger(__name__)
 
 
 class AskQuestionSerializer(serializers.Serializer):
-    """A serializer to ask questions.
-
-    Arguments:
-        data_set_id:
-            Integer, Provide an ID of a data set to be used
-        question_message:
-            Str, A question message.
-    """
-
     data_set_id = serializers.IntegerField(
         required=False, allow_null=False, error_messages={"null": "Data Set ID cannot be blank"}
     )

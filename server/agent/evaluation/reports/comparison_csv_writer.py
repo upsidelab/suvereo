@@ -16,11 +16,6 @@ COST_TOTALS = {JUDGE_COST: "judge_cost_total_usd", USER_COST: "user_cost_total_u
 
 
 class ComparisonCsvWriter(BaseReportWriter):
-    """comparison.csv: one row per candidate (model x prompt variant), by pass rate then mean cost, with its rates
-    (RATES, by suite kind), a conversation's goal_reached rate and mean turns, each metric under its aggregate
-    (<name>__mean, <name>__rate, <name>__distribution as label counts such as yes:3;no:1), latency and cost, with the
-    judge's and, in conversations, the simulated users' totalled apart."""
-
     NAME = "comparison"
 
     def write(self, report: SuiteReport, run_dir: Path) -> list[Path]:
@@ -60,13 +55,11 @@ class ComparisonCsvWriter(BaseReportWriter):
 
     @staticmethod
     def _aggregate_column_name(name: str, aggregate: str | None, report: SuiteReport) -> str:
-        """<name>__<aggregate>, the aggregate being the metric's own or its value type's default."""
         value_type = next((c.metrics[name].value_type for c in report.candidates if name in c.metrics), "number")
         return f"{name}__{aggregate or DEFAULT_AGGREGATE_NAMES[value_type]}"
 
     @staticmethod
     def _aggregate_value(candidate: CandidateMetrics, name: str, report: SuiteReport) -> Any:
-        """The metric's aggregated value; for aggregate: distribution, every label with its count."""
         figures = candidate.metrics.get(name)
         if figures is None:
             return None
@@ -81,6 +74,5 @@ class ComparisonCsvWriter(BaseReportWriter):
 
     @staticmethod
     def _aggregate_figure(candidate: CandidateMetrics, name: str, figure: str) -> float | None:
-        """One figure (p50, mean, sum...) of a metric's aggregate, e.g. the p95 of duration_s."""
         figures: MetricAggregate | None = candidate.metrics.get(name)
         return getattr(figures, figure) if figures else None

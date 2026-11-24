@@ -10,8 +10,6 @@ from pecl import settings
 
 
 class UnsupportedFileTypeError(Exception):
-    """Raised when an uploaded file's extension is not supported."""
-
     def __init__(self, ext: str, supported: list[str]):
         self.ext = ext
         self.supported = supported
@@ -19,14 +17,11 @@ class UnsupportedFileTypeError(Exception):
 
 
 class FileUploadNotSupportedError(Exception):
-    """Raised when files are submitted to an agent that does not support file uploads."""
+    pass
 
 
 class ConversationFileAttachService:
-    """Checks files against what an agent accepts, and attaches them to a conversation for it to read."""
-
     def validate(self, agent: Agent, filenames: list[str]) -> None:
-        """Raise FileUploadNotSupportedError or UnsupportedFileTypeError unless the agent accepts every file."""
         if not filenames:
             return
         if not agent.file_upload:
@@ -39,7 +34,6 @@ class ConversationFileAttachService:
                 raise UnsupportedFileTypeError(ext, supported)
 
     def attach(self, conversation: Conversation, name: str, content: bytes, content_type: str) -> ConversationFile:
-        """Parse the file, store it on the conversation and add the message that shows it to the agent."""
         file_category = (
             ConversationFile.FileCategory.IMAGE
             if content_type.startswith("image/")

@@ -8,8 +8,6 @@ from account.serializers.users import UserSummarySerializer
 
 
 class DatasetRoleSerializer(serializers.ModelSerializer):
-    """A role in a listing, or nested inside an assignment."""
-
     class Meta:
         model = DatasetRole
         fields = ["id", "name", "description"]

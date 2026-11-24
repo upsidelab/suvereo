@@ -19,10 +19,8 @@ INTERNAL_CODES: dict[str, str] = {public: internal for internal, public in PUBLI
 
 
 def entity_label(entity_name: str) -> str:
-    """The display name for a permission entity - "AGENTIC_EXECUTION" reads as "Agentic Execution"."""
     return entity_name.replace("_", " ").title()
 
 
 def permission_label(permission) -> str:
-    """The `app_label.codename` form of a `Permission` row, matching what `has_perm` expects."""
     return f"{permission.content_type.app_label}.{permission.codename}"

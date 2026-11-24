@@ -14,11 +14,6 @@ SUMMARY = "Evaluation run"
 
 
 class BaseAgentTarget(ABC):
-    """The agent a suite runs against; opened once per suite, it hands out one conversation per run.
-
-    keep_run_data leaves what the runs created (conversations, and a sandbox's whole DataSet) for inspection.
-    """
-
     def __init__(self, user: User, keep_run_data: bool = False):
         self.user = user
         self.keep_run_data = keep_run_data
@@ -28,14 +23,13 @@ class BaseAgentTarget(ABC):
     @property
     @abstractmethod
     def real_resolver(self) -> type[BaseIntegrationPluginResolver] | None:
-        """The resolver for integrations no mock covers; None refuses real integrations."""
+        pass
 
     @abstractmethod
     def open(self) -> Agent:
-        """Prepare the agent and return it."""
+        pass
 
     def close(self) -> None:
-        """Delete the runs' conversations, or mark them kept; a failure is logged so it never hides the run's error."""
         conversations = Conversation.all_objects.filter(id__in=self._conversation_ids)
         try:
             if self.keep_run_data:
@@ -55,14 +49,12 @@ class BaseAgentTarget(ABC):
         return conversation
 
     def purge_abandoned_runs(self) -> None:
-        """Delete what runs that died left behind: their sandboxes, and their conversations on real DataSets."""
         try:
             AbandonedRuns.purge()
         except Exception:
             logger.exception("Could not purge abandoned evaluation runs")
 
     def __enter__(self) -> "BaseAgentTarget":
-        """Purge abandoned runs, then open the agent."""
         self.purge_abandoned_runs()
         self.agent = self.open()
         return self

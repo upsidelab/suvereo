@@ -54,7 +54,6 @@ class Command(BaseCommand):
                 self.stdout.write("\nDry run - nothing was written.")
 
     def _reject_unsatisfiable(self, starter_roles: list[StarterRole], scope: list[str]) -> None:
-        """Applies the rule the role editor applies, over every set before the first write."""
         for starter in starter_roles:
             granted = set(starter.permissions)
 
@@ -81,7 +80,6 @@ class Command(BaseCommand):
         return (DIFFERS, divergence) if divergence else (MATCHES, "")
 
     def _divergence(self, existing, starter: StarterRole) -> str:
-        """Names what an admin changed, to report rather than overwrite it."""
         differences = []
         if {permission_label(row) for row in existing.permissions.all()} != set(starter.permissions):
             differences.append("permissions")

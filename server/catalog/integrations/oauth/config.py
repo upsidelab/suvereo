@@ -1,9 +1,3 @@
-"""Configuration for the integration OAuth handshake.
-
-Kept with the feature rather than in Django settings, since nothing outside it reads these. Values
-are resolved once at import, so they behave like settings and tests can override them in place.
-"""
-
 from environ import Env
 
 env = Env()

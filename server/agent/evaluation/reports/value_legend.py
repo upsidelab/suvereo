@@ -43,11 +43,8 @@ OUTCOME_FIGURE_WORDS = {
 
 
 class ValueLegend:
-    """Short small-print legends for report.md, under the table or list they explain."""
-
     @classmethod
     def comparison_note(cls, report: SuiteReport) -> str:
-        """One short line per comparison column."""
         return cls._legend(
             [
                 ("Candidate", "model/prompt; default = the agent's own prompt"),
@@ -63,7 +60,6 @@ class ValueLegend:
 
     @classmethod
     def failures_note(cls, failure_fields: list[str]) -> str:
-        """One short line per field the failed runs list; empty when they list none."""
         used = {"says" if field.endswith(" says") else field: field for field in failure_fields}
         used |= {"missed": "❌ metric"} if "missed" in used else {}
         return cls._legend([(used[key], meaning) for key, meaning in FAILURE_FIELDS.items() if key in used])
@@ -85,7 +81,6 @@ class ValueLegend:
 
     @staticmethod
     def _metric_words(report: SuiteReport, name: str) -> str:
-        """e.g. 'right items and quantities sent · avg · pass ≥ 0.95'."""
         config = report.metric_configs[name]
         metric_class = report.metric_class_of(name)
         what = config.description or " ".join((metric_class.__doc__ or "").split()).split(". ")[0].split("; ")[0]

@@ -32,9 +32,6 @@ class SummarizedRun(BaseModel):
 
 
 class SummaryFile(BaseModel):
-    """The parts of an earlier run's summary.json read back to compare against (--baseline) or to rerun its failures;
-    other keys are ignored, and summaries without cases give no case changes."""
-
     path: Path
     run: SummarizedRun = SummarizedRun()
     candidates: list[SummarizedCandidate] = []
@@ -43,8 +40,6 @@ class SummaryFile(BaseModel):
 
     @classmethod
     def load(cls, reference: str, suite_dir: Path) -> "SummaryFile":
-        """Read a summary by reference: 'latest' (the suite's newest run), a run directory, or a summary.json path;
-        raises EvalSuiteError when it is missing, unreadable or not shaped like a summary."""
         path = suite_dir / RESULTS_DIR / LATEST_LINK if reference == LATEST_LINK else Path(reference)
         if path.is_dir():
             path = path / SUMMARY_FILE
@@ -60,5 +55,4 @@ class SummaryFile(BaseModel):
             raise EvalSuiteError(f"{path} is not a summary.json: {e}") from e
 
     def failing_case_ids(self) -> list[str]:
-        """The ids of the cases with a failed run, in the order they first failed."""
         return list(dict.fromkeys(run.case_id for run in self.failing_runs))

@@ -16,8 +16,6 @@ USER_ID_PARAMETER = openapi.Parameter("user_id", openapi.IN_PATH, description="I
 
 
 class GlobalRoleMemberListView(APIView):
-    """List a global role's members; add a user to it."""
-
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(

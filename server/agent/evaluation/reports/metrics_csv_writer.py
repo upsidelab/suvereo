@@ -8,10 +8,6 @@ from agent.evaluation.reports.threshold_text import threshold_text
 
 
 class MetricsCsvWriter(BaseReportWriter):
-    """metrics.csv, long format for pivots and charts: one row per run and metric, plus one per component, with
-    whether the run met the metric's pass threshold, the threshold itself (e.g. "min 0.95") and the metric's details
-    as JSON (missing and extra items, a judge's reasoning)."""
-
     NAME = "metrics"
 
     def write(self, report: SuiteReport, run_dir: Path) -> list[Path]:

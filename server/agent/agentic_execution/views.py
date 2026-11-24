@@ -31,8 +31,6 @@ from agent.serializers.agentic_execution import (
 
 
 class AgenticExecutionDefinitionTypesView(APIView):
-    """List available agentic execution definition types for a specific agent."""
-
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
@@ -63,8 +61,6 @@ class AgenticExecutionDefinitionTypesView(APIView):
 
 
 class StartAgenticExecutionView(APIView):
-    """Start a new agentic execution for a specific agent."""
-
     parser_classes = (MultiPartParser, JSONParser)
     permission_classes = [IsAuthenticated]
 
@@ -128,8 +124,6 @@ def _visible_to(user) -> Q:
 
 
 class AgenticExecutionListView(ListAPIView):
-    """Paginated list of past agentic executions, newest first."""
-
     permission_classes = [IsAuthenticated]
     serializer_class = AgenticExecutionSerializer
 
@@ -166,8 +160,6 @@ class AgenticExecutionListView(ListAPIView):
 
 
 class AgenticExecutionDetailView(RetrieveAPIView):
-    """Fetch a single agentic execution record (used for status polling)."""
-
     permission_classes = [IsAuthenticated]
     serializer_class = AgenticExecutionDetailSerializer
 

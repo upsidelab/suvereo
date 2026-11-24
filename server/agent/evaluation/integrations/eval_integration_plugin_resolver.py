@@ -7,8 +7,6 @@ from agent.evaluation.run_context import EvalRunContext
 
 
 class EvalIntegrationPluginResolver(BaseIntegrationPluginResolver):
-    """Answers integration lookups from the current run's mocks; an interface no mock covers goes to the real resolver if the run allows it."""
-
     def resolve(self, data_set_id: Any, plugin_base: type[IntegrationT]) -> IntegrationT | None:
         mocks = self._mocks(plugin_base)
         if mocks:
