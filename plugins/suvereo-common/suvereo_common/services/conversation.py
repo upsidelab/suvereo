@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Generic, TypeVar
 
-from repositories import (
+from suvereo_common.repositories import (
     BaseConversationRepository,
     BaseMessageRepository,
     BaseUserRepository,
