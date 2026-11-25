@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from model_bakery import baker
 
-from agent.core.memory.errors import SummaryTooLongError, SummaryTruncatedError
+from agent.core.memory.errors import EmptySummaryError, SummaryTooLongError, SummaryTruncatedError
 from agent.core.memory.llm_memory_compactor import (
     MAX_SHORTENING_ATTEMPTS,
     TOOL_RESULT_MAX_CHARACTERS,
@@ -29,7 +29,6 @@ def conversation():
 def llm():
     mock = MagicMock()
     mock.invoke.return_value = AIMessage(content="This is a summary.")
-    mock.bind.return_value = mock
     return mock
 
 
@@ -220,12 +219,11 @@ class TestLLMMemoryCompactorRequest:
 class TestLLMMemoryCompactorSummarySize:
     TOO_LONG = "w" * 200  # the summary limit is 30 tokens, about 120 characters
 
-    def test_states_the_limit_and_caps_the_output(self, compactor, llm, chat_history):
+    def test_states_the_limit_in_the_request(self, compactor, llm, chat_history):
         _add_turns(chat_history, 6)
 
         compactor.compact_if_needed()
 
-        llm.bind.assert_called_with(max_tokens=60)
         assert "must not exceed 30 tokens" in llm.invoke.call_args[0][0][1].content
 
     def test_asks_for_a_shorter_summary_when_over_the_limit(self, conversation, compactor, llm, chat_history):
@@ -285,3 +283,14 @@ class TestLLMMemoryCompactorSummaryInTrigger:
         compactor.compact_if_needed()
 
         llm.invoke.assert_not_called()
+
+    def test_does_not_save_an_empty_summary(self, conversation, compactor, llm, chat_history):
+        llm.invoke.return_value = AIMessage(content="  ")
+        _add_turns(chat_history, 6)
+
+        with pytest.raises(EmptySummaryError):
+            compactor.compact_if_needed()
+
+        conversation.refresh_from_db()
+        assert conversation.conversation_summary is None
+        assert conversation.last_summarized_message_id is None

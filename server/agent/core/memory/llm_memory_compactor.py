@@ -5,13 +5,12 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, System
 from langchain_core.messages.utils import count_tokens_approximately
 from suvereo_common.memory import BaseMemoryCompactor
 
-from agent.core.memory.errors import SummaryTooLongError, SummaryTruncatedError
+from agent.core.memory.errors import EmptySummaryError, SummaryTooLongError, SummaryTruncatedError
 from agent.core.memory.persistent_chat_history import NOTICE_ORIGIN, PersistentChatHistory
 from agent.models import Conversation
 
 RECENT_TAIL_FRACTION = 0.3  # share of the token limit kept verbatim after a compaction
 SUMMARY_TOKEN_FRACTION = 0.1  # share of the token limit the summary may take
-SUMMARY_OUTPUT_CAP_MULTIPLIER = 2  # safety net on the LLM output, relative to the summary limit
 MAX_SHORTENING_ATTEMPTS = 3
 TOOL_RESULT_MAX_CHARACTERS = 500
 CHARACTERS_PER_TOKEN = 4  # matches count_tokens_approximately
@@ -134,12 +133,13 @@ class LLMMemoryCompactor(BaseMemoryCompactor):
         )
 
     def _invoke(self, messages: list[BaseMessage]) -> str:
-        llm = self._llm.bind(max_tokens=self._summary_token_limit * SUMMARY_OUTPUT_CAP_MULTIPLIER)
-        response = llm.invoke(messages)
+        response = self._llm.invoke(messages)
         metadata = response.response_metadata
         finish_reason = str(metadata.get("finish_reason") or metadata.get("stop_reason") or "").lower()
         if finish_reason in TRUNCATION_FINISH_REASONS:
-            raise SummaryTruncatedError("The LLM cut the summary off at the output token cap")
+            raise SummaryTruncatedError("The LLM cut the summary off at its output token limit")
+        if not response.text.strip():
+            raise EmptySummaryError("The LLM returned an empty summary")
         return response.text
 
     def _build_request(self, messages: list[BaseMessage], existing_summary: Optional[str]) -> str:
