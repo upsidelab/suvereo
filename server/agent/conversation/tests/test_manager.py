@@ -310,6 +310,7 @@ class TestConversationManager:
         assert error_message.type == Message.MessageType.NOTICE
         assert error_message.text == "We couldn't process your request at this time"
         assert error_message.created_at is not None
+        assert error_message.answer_failed is True
         assert user_message.answer_failed is True
 
     def test_record_error_with_invalid_conversation(self):

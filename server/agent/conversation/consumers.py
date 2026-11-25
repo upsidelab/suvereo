@@ -61,7 +61,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.send(json.dumps({"event": "message_end", "data": {}}))
 
     async def handle_message_created(self, event):
-        await self.send(json.dumps({"event": "message_id", "data": {"output": event.get("answer_id")}}))
+        await self.send(
+            json.dumps(
+                {"event": "message_id", "data": {"output": event.get("answer_id"), "text": event.get("answer_text")}}
+            )
+        )
 
     async def handle_tool_call(self, event):
         await self.send(json.dumps({"event": "tool_call", "data": {"tool_name": event.get("tool_name")}}))
