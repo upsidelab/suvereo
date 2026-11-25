@@ -41,6 +41,15 @@ The admin user is created only on the first start, when the database has no user
 
 Environment files are read when a container is created. After editing one, run `docker compose up -d --force-recreate`.
 
+## Try it out
+
+The starter ships with example code, the diet advice vertical built in the [tutorial](/docs/customization/tutorial), and is pre-configured to run it by default. To see Suvereo in action, sync the example integration and chat with the agent:
+
+1. In the admin panel, open your data set and go to **Integrations** under **Configure**.
+2. Click **Add integration**, then choose **Recipe source** > **Sample recipes**.
+3. Click the sync button next to the new integration. The sync runs in the background and loads the example recipes.
+4. Under **Ask**, choose the **Nutrition assistant** agent and start a conversation, for example: "Suggest a vegetarian dinner under 600 calories."
+
 ## Next steps
 
 - Learn how [data sets, users and permissions](/docs/management) are managed.
