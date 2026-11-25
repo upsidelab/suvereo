@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button.tsx";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible.tsx";
 import { useEffect, useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select.tsx";
+import { SearchableSelect } from "@/components/ui/searchable-select.tsx";
 import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 import { ApiClient } from "@/lib/api.ts";
 import { authenticationProviderInstance } from "@/lib/authentication-provider.ts";
@@ -300,21 +301,15 @@ export function DataSetForm({ initialData, onSubmit, submitButtonText, isOnboard
                 render={({field}) => (
                   <FormItem>
                     <FormLabel className="hidden">Language Model</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange} defaultValue={field.value}>
-                      <SelectTrigger disabled={readOnly || !languageModelNames}>
-                          <SelectValue placeholder="Loading..."/>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {
-                          languageModelOptions &&
-                          <>
-                            {languageModelOptions.map((modelName) => (
-                              <SelectItem key={modelName} value={modelName}>{modelName}</SelectItem>
-                            ))}
-                          </>
-                        }
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      value={field.value}
+                      onChange={field.onChange}
+                      options={languageModelOptions}
+                      placeholder="Loading..."
+                      searchPlaceholder="Search models..."
+                      emptyText="No models found."
+                      disabled={readOnly || !languageModelNames}
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
