@@ -63,9 +63,6 @@ class BaseToolCallingAgent(BaseAgent):
 
         self._injector.chat_history.add_messages(new_messages)
 
-        if compactor := self._injector.memory_compactor:
-            compactor.compact_if_needed()
-
         return final_message.text
 
     def _build_context_messages(self) -> list[BaseMessage]:

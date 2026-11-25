@@ -32,9 +32,7 @@ class ConversationManager:
         """
         if self._should_answer_asynchronously(conversation, overrides):
             return asyncio.run(
-                self._get_answer_async(
-                    conversation, question_message, streaming, tool_scratchpad, overrides
-                )
+                self._get_answer_async(conversation, question_message, streaming, tool_scratchpad, overrides)
             )
 
         agent = AgentRegistry().get_conversation_agent(
@@ -59,7 +57,9 @@ class ConversationManager:
         host that swaps its implementation is honoured here as well as in the agent builder; a run's
         overrides win over both, so an evaluation asks its own resolver.
         """
-        resolver_class = (overrides and overrides.integration_plugin_resolver) or get_default_config().integration_plugin_resolver
+        resolver_class = (
+            overrides and overrides.integration_plugin_resolver
+        ) or get_default_config().integration_plugin_resolver
         if resolver_class is None:
             return False
         return resolver_class().has_any_for_agent(conversation.agent_id, BaseToolProvidingIntegration)

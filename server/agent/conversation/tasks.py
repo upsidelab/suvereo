@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta
 from enum import StrEnum
 
@@ -7,14 +8,18 @@ from channels.layers import get_channel_layer
 from django.core.files.base import ContentFile
 from django.utils import timezone
 
+from agent.conversation.compaction_lock import ConversationCompactionLock
 from agent.conversation.manager import ConversationManager
 from agent.conversation.serializers import ConversationFileSerializer
 from agent.conversation.services import FileParsingService
 from agent.conversation.turn_lock import ConversationTurnLock
 from agent.core.callbacks import BaseWebSocketHandler
+from agent.core.registries.agents.agent_registry import AgentRegistry
 from agent.models import Message
 from agent.models.conversation import Conversation, ConversationFile
 from pecl import settings
+
+logger = logging.getLogger(__name__)
 
 
 class TaskType(StrEnum):
@@ -82,9 +87,36 @@ def respond_to_user_message_task(
                     "answer_id": answer.id,
                 },
             )
-        return {"task_type": TaskType.MESSAGE_PUSH, "conversation_id": conversation_id, "message_id": answer.id}
     except Exception:
         self.retry(countdown=1)
+
+    _queue_compaction(conversation_id)
+    return {"task_type": TaskType.MESSAGE_PUSH, "conversation_id": conversation_id, "message_id": answer.id}
+
+
+def _queue_compaction(conversation_id: int) -> None:
+    try:
+        compact_conversation_task.delay(conversation_id=conversation_id)
+    except Exception:
+        logger.exception("Could not queue compaction of conversation %s", conversation_id)
+
+
+@shared_task(bind=True, max_retries=3)
+def compact_conversation_task(self, conversation_id: int):
+    lock = ConversationCompactionLock(conversation_id)
+    if not lock.acquire():
+        return
+    try:
+        conversation = Conversation.objects.select_related("agent").get(id=conversation_id)
+        if compactor := AgentRegistry().get_memory_compactor(conversation):
+            compactor.compact_if_needed()
+    except Exception as exc:
+        if self.request.retries >= self.max_retries:
+            logger.exception("Compaction of conversation %s failed", conversation_id)
+            return
+        raise self.retry(exc=exc, countdown=5 * 2**self.request.retries)
+    finally:
+        lock.release()
 
 
 @shared_task

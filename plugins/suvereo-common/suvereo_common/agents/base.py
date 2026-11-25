@@ -8,6 +8,7 @@ from langchain_core.tools import BaseTool
 from pydantic import BaseModel, ValidationError
 
 from ..injectors import BaseInjector
+from ..memory import BaseMemoryCompactor
 from ..utils import RequiredFieldsModel
 from .meta import AgentExtraArgsClassBaseMeta
 
@@ -79,6 +80,14 @@ class BaseAgent(ABC, metaclass=AgentExtraArgsClassBaseMeta):
         self._injector = injector
         self._conversation_history_token_limit = conversation_history_token_limit
         self._dynamic_tools: list[BaseTool] = []
+
+    @property
+    def memory_compactor(self) -> Optional[BaseMemoryCompactor]:
+        """The agent's memory compactor, or None when memory compaction is disabled for it.
+
+        The agent does not run it during a conversation; the host does, in the background.
+        """
+        return self._injector.memory_compactor
 
     @classmethod
     def get_config(cls) -> "AgentConfig":

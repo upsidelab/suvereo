@@ -186,7 +186,8 @@ class TestSupportedFileTypesView:
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     @patch(
-        "agent.conversation.views.settings.FILE_PARSER_CLASSES", {(".txt", ".pdf"): "parser_class", (".jpg", ".png"): "image_parser"}
+        "agent.conversation.views.settings.FILE_PARSER_CLASSES",
+        {(".txt", ".pdf"): "parser_class", (".jpg", ".png"): "image_parser"},
     )
     def test_get_supported_file_types_success(self, api_client, url):
         response = api_client.get(url)
