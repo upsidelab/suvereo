@@ -1,13 +1,14 @@
-from typing import Any, Optional
+from functools import cached_property
+from typing import Optional
 
-from langchain_core.language_models import BaseLanguageModel
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_core.messages.utils import count_tokens_approximately
 from suvereo_common.memory import BaseMemoryCompactor
-from suvereo_common.repositories import BaseConversationRepository
 
 from agent.core.memory.persistent_chat_history import NOTICE_ORIGIN, PersistentChatHistory
+from agent.models import Conversation
 
-COMPACTION_INTERVAL = 10  # number of human messages between summary generations
+RECENT_TAIL_FRACTION = 0.3  # share of the token limit kept verbatim after a compaction
 TOOL_RESULT_MAX_CHARACTERS = 500
 
 _SUMMARY_QUALITY_GUIDELINES = (
@@ -35,44 +36,54 @@ _INCREMENTAL_SUMMARIZATION_PROMPT = SystemMessage(
 
 class LLMMemoryCompactor(BaseMemoryCompactor):
     """
-    Generates and persists an LLM-based summary of the conversation history.
+    Generates and persists an LLM-based summary of the older part of the conversation.
 
-    A new summary is built every COMPACTION_INTERVAL human messages since the last compaction.
-    The summary is stored on the Conversation record and injected into subsequent agent calls
-    so that context beyond the token-trimming window is not lost.
+    The messages after the last summarized one form the window sent to the agent verbatim.
+    When the window outgrows the token limit, everything but its most recent turns
+    (RECENT_TAIL_FRACTION of the limit) is folded into the summary, and the window starts after it.
     """
 
-    def __init__(
-        self,
-        conversation_repo: BaseConversationRepository,
-        conversation_id: Any,
-        llm: BaseLanguageModel,
-        chat_history: PersistentChatHistory,
-    ):
-        self._conversation = conversation_repo.get_by_id(conversation_id)
-        self._llm = llm
-        self._chat_history = chat_history
+    _chat_history: PersistentChatHistory
+
+    @cached_property
+    def _conversation(self) -> Conversation:
+        return self._conversation_repo.get_by_id(self._conversation_id)
 
     def get_summary(self) -> Optional[str]:
-        """Return the current persisted summary, or None if one has not been generated yet."""
         return self._conversation.conversation_summary or None
 
     def compact_if_needed(self) -> None:
-        """Generate a new summary if COMPACTION_INTERVAL human messages have been added since the last one."""
-        last_summarized_message_id = self._conversation.last_summarized_message_id
-        new_messages = self._chat_history.messages_after(last_summarized_message_id)
+        records = self._chat_history.records_after(self._conversation.last_summarized_message_id)
+        messages = self._chat_history.to_langchain_messages(records)
 
-        if not new_messages:
+        if count_tokens_approximately(messages) <= self._token_limit:
             return
 
-        human_messages_count = sum(1 for m in new_messages if isinstance(m, HumanMessage))
-        if human_messages_count < COMPACTION_INTERVAL:
+        recent_start = self._find_recent_turns_start(messages)
+        if recent_start == 0:
             return
 
-        summary = self._generate_summary(new_messages, self._conversation.conversation_summary)
+        summary = self._generate_summary(messages[:recent_start], self._conversation.conversation_summary)
         self._conversation.conversation_summary = summary
-        self._conversation.last_summarized_message_id = self._chat_history.last_message_database_id
+        self._conversation.last_summarized_message_id = records[recent_start - 1].id
         self._conversation.save(update_fields=["conversation_summary", "last_summarized_message_id"])
+
+    def _find_recent_turns_start(self, messages: list[BaseMessage]) -> int:
+        """Index of the human message that starts the most recent turns fitting the verbatim budget.
+
+        The latest turn is always kept, however large, and the cut never splits a turn.
+        """
+        budget = self._token_limit * RECENT_TAIL_FRACTION
+        start: Optional[int] = None
+        tokens = 0
+        for index in reversed(range(len(messages))):
+            tokens += count_tokens_approximately([messages[index]])
+            if not isinstance(messages[index], HumanMessage):
+                continue
+            if start is not None and tokens > budget:
+                break
+            start = index
+        return start or 0
 
     def _generate_summary(self, new_messages: list[BaseMessage], existing_summary: Optional[str]) -> str:
         prompt = _INCREMENTAL_SUMMARIZATION_PROMPT if existing_summary else _INITIAL_SUMMARIZATION_PROMPT

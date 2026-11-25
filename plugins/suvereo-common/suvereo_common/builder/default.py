@@ -312,5 +312,9 @@ class AgentBuilder(BaseAgentBuilder[ConfigT]):
             )
         llm = self._build_default_llm()
         return self._config.memory.compactor_class(
-            self._repositories.conversation, self.conversation_id, llm, chat_history
+            conversation_repo=self._repositories.conversation,
+            conversation_id=self.conversation_id,
+            llm=llm,
+            chat_history=chat_history,
+            token_limit=self._config.conversation_history_token_limit,
         )
