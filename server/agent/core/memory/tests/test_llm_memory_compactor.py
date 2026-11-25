@@ -5,7 +5,12 @@ from django.contrib.auth import get_user_model
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from model_bakery import baker
 
-from agent.core.memory.llm_memory_compactor import TOOL_RESULT_MAX_CHARACTERS, LLMMemoryCompactor
+from agent.core.memory.errors import SummaryTooLongError, SummaryTruncatedError
+from agent.core.memory.llm_memory_compactor import (
+    MAX_SHORTENING_ATTEMPTS,
+    TOOL_RESULT_MAX_CHARACTERS,
+    LLMMemoryCompactor,
+)
 from agent.core.memory.persistent_chat_history import PersistentChatHistory
 from agent.core.repositories import DjangoConversationRepository
 from agent.models import Agent, Conversation
@@ -24,6 +29,7 @@ def conversation():
 def llm():
     mock = MagicMock()
     mock.invoke.return_value = AIMessage(content="This is a summary.")
+    mock.bind.return_value = mock
     return mock
 
 
@@ -65,13 +71,16 @@ class TestLLMMemoryCompactorGetSummary:
         conversation.conversation_summary = "Existing summary."
         conversation.save()
 
-        assert LLMMemoryCompactor(
-            conversation_repo=DjangoConversationRepository(Conversation),
-            conversation_id=conversation.id,
-            llm=MagicMock(),
-            chat_history=MagicMock(),
-            token_limit=TOKEN_LIMIT,
-        ).get_summary() == "Existing summary."
+        assert (
+            LLMMemoryCompactor(
+                conversation_repo=DjangoConversationRepository(Conversation),
+                conversation_id=conversation.id,
+                llm=MagicMock(),
+                chat_history=MagicMock(),
+                token_limit=TOKEN_LIMIT,
+            ).get_summary()
+            == "Existing summary."
+        )
 
 
 @pytest.mark.django_db
@@ -205,3 +214,74 @@ class TestLLMMemoryCompactorRequest:
         assert "x" * (TOOL_RESULT_MAX_CHARACTERS + 1) not in content
         assert "\n[Notice shown to the user: We couldn't process" in content
         assert "Assistant: [Notice" not in content
+
+
+@pytest.mark.django_db
+class TestLLMMemoryCompactorSummarySize:
+    TOO_LONG = "w" * 200  # the summary limit is 30 tokens, about 120 characters
+
+    def test_states_the_limit_and_caps_the_output(self, compactor, llm, chat_history):
+        _add_turns(chat_history, 6)
+
+        compactor.compact_if_needed()
+
+        llm.bind.assert_called_with(max_tokens=60)
+        assert "must not exceed 30 tokens" in llm.invoke.call_args[0][0][1].content
+
+    def test_asks_for_a_shorter_summary_when_over_the_limit(self, conversation, compactor, llm, chat_history):
+        llm.invoke.side_effect = [AIMessage(content=self.TOO_LONG), AIMessage(content="Short.")]
+        _add_turns(chat_history, 6)
+
+        compactor.compact_if_needed()
+
+        conversation.refresh_from_db()
+        assert conversation.conversation_summary == "Short."
+        assert llm.invoke.call_count == 2
+        assert self.TOO_LONG in llm.invoke.call_args[0][0][1].content
+
+    def test_does_not_save_a_summary_that_stays_too_long(self, conversation, compactor, llm, chat_history):
+        llm.invoke.return_value = AIMessage(content=self.TOO_LONG)
+        _add_turns(chat_history, 6)
+
+        with pytest.raises(SummaryTooLongError):
+            compactor.compact_if_needed()
+
+        conversation.refresh_from_db()
+        assert conversation.conversation_summary is None
+        assert conversation.last_summarized_message_id is None
+        assert llm.invoke.call_count == 1 + MAX_SHORTENING_ATTEMPTS
+
+    @pytest.mark.parametrize(
+        "metadata", [{"finish_reason": "length"}, {"stop_reason": "max_tokens"}], ids=["openai", "anthropic"]
+    )
+    def test_does_not_save_a_summary_that_was_cut_off(self, conversation, compactor, llm, chat_history, metadata):
+        llm.invoke.return_value = AIMessage(content="Cut off", response_metadata=metadata)
+        _add_turns(chat_history, 6)
+
+        with pytest.raises(SummaryTruncatedError):
+            compactor.compact_if_needed()
+
+        conversation.refresh_from_db()
+        assert conversation.conversation_summary is None
+        assert conversation.last_summarized_message_id is None
+
+
+@pytest.mark.django_db
+class TestLLMMemoryCompactorSummaryInTrigger:
+    SUMMARY = "s" * 440  # about 113 tokens
+
+    def test_compacts_when_summary_pushes_the_window_over_the_limit(self, conversation, compactor, llm, chat_history):
+        _add_turns(chat_history, 4)  # about 225 tokens, under the limit of 300 on its own
+        conversation.conversation_summary = self.SUMMARY
+        conversation.save()
+
+        compactor.compact_if_needed()
+
+        llm.invoke.assert_called_once()
+
+    def test_does_not_compact_a_window_under_the_limit_without_a_summary(self, compactor, llm, chat_history):
+        _add_turns(chat_history, 4)
+
+        compactor.compact_if_needed()
+
+        llm.invoke.assert_not_called()
