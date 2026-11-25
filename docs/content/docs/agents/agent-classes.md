@@ -77,9 +77,9 @@ When the agent is built, the class variables `AGENT_ARGS` and `PROMPT_INPUT` are
 
 `get_answer()` runs one turn:
 
-1. Builds the context messages: the recent history trimmed to a token budget, preceded by the conversation summary when a memory compactor is enabled (see [Memory](/docs/agents/memory)).
+1. Builds the context messages: the recent history within a token budget, preceded by the summary of the older conversation when a memory compactor is enabled (see [Memory](/docs/agents/memory)).
 2. Builds a LangGraph agent from the language model, the tools and the system prompt, and invokes it with the context and the new message.
-3. Records the messages produced during the turn in the chat history, and runs the memory compactor if one is present.
+3. Records the messages produced during the turn in the chat history.
 4. Returns the final answer.
 
 ```python

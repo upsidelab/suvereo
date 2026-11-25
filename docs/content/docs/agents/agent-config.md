@@ -34,7 +34,7 @@ class AgentConfig(ArbitraryTypeBaseModel, Generic[InjectorT]):
 | `memory` | `MemoryConfig`: the chat history class and, optionally, the memory compactor class. |
 | `tools` | The tools of the agent, as `FunctionToolConfig`, `LLMToolConfig`, `AgentToolConfig` or `FileToolConfig`. See [Tools](/docs/agents/tools). |
 | `agent_callback_handler` | Receives agent events. By default, it streams them to the conversation. |
-| `conversation_history_token_limit` | The number of tokens of recent chat history sent to the language model on each turn, see [Memory](/docs/agents/memory#context-window-builder). Must be greater than 0. |
+| `conversation_history_token_limit` | The number of tokens of chat history sent to the language model on each turn, see [Memory](/docs/agents/memory#context-window-builder). It is also the limit that triggers memory compaction if memory compactor is enabled. Must be greater than 0. |
 | `memory_compactor_enabled` | Turns on the memory compactor for this agent. Off by default, see [Memory](/docs/agents/memory). |
 | `similarity_searcher` | The class that runs similarity search for retrievers. |
 | `integration_plugin_resolver` | The class that finds the [integrations](/docs/concepts#integration) connected to a data set, used to attach their tools to the agent. |

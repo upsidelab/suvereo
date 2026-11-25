@@ -4,7 +4,7 @@ Suvereo consists of two main applications:
 
 1. Server - A Python-based server that contains the core application logic. It is deployed as three separate processes:
     - API - handles requests from the frontend and from other applications that authenticate with an API key, and streams [conversations](/docs/concepts#conversation) over WebSocket.
-    - Worker - executes agent requests, [agentic executions](/docs/concepts#agentic-execution) and [integration](/docs/concepts#integration) synchronization in the background.
+    - Worker - executes agent requests, memory compaction of conversations, [agentic executions](/docs/concepts#agentic-execution) and [integration](/docs/concepts#integration) synchronization in the background.
     - Beat - schedules periodic jobs, such as cleaning up uploaded files and removing expired refresh tokens.
 2. Frontend - A React-based web application used to work with and configure Suvereo.
 
