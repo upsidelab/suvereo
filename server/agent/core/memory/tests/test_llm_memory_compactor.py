@@ -13,7 +13,7 @@ from agent.core.memory.llm_memory_compactor import (
 )
 from agent.core.memory.persistent_chat_history import PersistentChatHistory
 from agent.core.repositories import DjangoConversationRepository
-from agent.models import Agent, Conversation
+from agent.models import Agent, Conversation, Message
 from catalog.models import DataSet
 
 
@@ -192,7 +192,9 @@ class TestLLMMemoryCompactorRequest:
         assert call_args[1].content.index("Assistant: answer 000") > call_args[1].content.index("User: question 000")
         assert "<existing_summary>" not in call_args[1].content
 
-    def test_transcript_renders_tool_calls_notices_and_truncates_tool_results(self, compactor, llm, chat_history):
+    def test_transcript_renders_tool_calls_notices_and_truncates_tool_results(
+        self, conversation, compactor, llm, chat_history
+    ):
         _add_turns(chat_history, 3)
         chat_history.add_message(HumanMessage(content="Find shoes"))
         chat_history.add_messages(
@@ -201,7 +203,9 @@ class TestLLMMemoryCompactorRequest:
                 ToolMessage(content="x" * (TOOL_RESULT_MAX_CHARACTERS + 50), tool_call_id="1", name="search"),
             ]
         )
-        chat_history.add_message(SystemMessage(content="We couldn't process your request at this time"))
+        conversation.messages.create(
+            type=Message.MessageType.NOTICE, text="We couldn't process your request at this time"
+        )
         _add_turns(chat_history, 2, start=3)
 
         compactor.compact_if_needed()
