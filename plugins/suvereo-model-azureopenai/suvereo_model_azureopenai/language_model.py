@@ -1,3 +1,5 @@
+import re
+
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.language_models import BaseLanguageModel
 from langchain_openai import AzureChatOpenAI
@@ -8,6 +10,12 @@ from suvereo_common.structures import BaseContent, LLMFile
 from suvereo_common.utils import prioritize_items
 
 PRIORITIZED_MODELS = ["gpt-4.1", "gpt-4.1-mini", "gpt-5", "gpt-5.2"]
+
+# Model families that can't hold a text conversation with tools: they serve other endpoints
+# (transcription, speech, realtime/live voice, images), need audio, or reject function tools (search).
+# Each pattern matches whole dash-separated parts of the model name, e.g. "tts" in "gpt-4o-mini-tts".
+UNSUPPORTED_MODEL_PATTERNS = ["transcribe", "tts", "realtime", "live", "audio", "image", "search"]
+UNSUPPORTED_MODEL_REGEX = re.compile(rf"(^|-)({'|'.join(map(re.escape, UNSUPPORTED_MODEL_PATTERNS))})(-|$)")
 
 
 class AzureOpenAIImageUrl(BaseModel):
@@ -31,10 +39,10 @@ class AzureOpenAILanguageModelProvider(LanguageModelProvider):
     NAME = "Azure OpenAI"
 
     def provide_language_model(self, callbacks: list[BaseCallbackHandler] | None = None) -> BaseLanguageModel:
-        return AzureChatOpenAI(model=self._model, callbacks=callbacks)
+        return AzureChatOpenAI(model=self._model, callbacks=callbacks, use_responses_api=True, store=False)
 
     def provide_streaming_language_model(self, callbacks: list[BaseCallbackHandler] | None = None, **kwargs) -> BaseLanguageModel:
-        return AzureChatOpenAI(model=self._model, callbacks=callbacks, streaming=True)
+        return AzureChatOpenAI(model=self._model, callbacks=callbacks, streaming=True, use_responses_api=True, store=False)
 
     def model_name(self) -> str:
         return self._model
@@ -43,7 +51,8 @@ class AzureOpenAILanguageModelProvider(LanguageModelProvider):
     def available_models() -> list[str]:
         all_models = AzureOpenAI().models.list().data
         gpt_models = [model.id for model in all_models if model.id.startswith("gpt-")]
-        return prioritize_items(gpt_models, PRIORITIZED_MODELS)
+        chat_models = [model for model in gpt_models if not UNSUPPORTED_MODEL_REGEX.search(model)]
+        return prioritize_items(chat_models, PRIORITIZED_MODELS)
 
     @staticmethod
     def prepare_image_object(file_object: LLMFile) -> AzureOpenAIImageContent:
