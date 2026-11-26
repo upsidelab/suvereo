@@ -74,10 +74,7 @@ class TestAnsweringFreesTheConversation:
     def test_after_an_answer(self, conversation):
         ConversationTurnLock(conversation.id).acquire()
 
-        with (
-            patch("agent.conversation.tasks.ConversationManager") as manager,
-            patch("agent.conversation.tasks.compact_conversation_task"),
-        ):
+        with patch("agent.conversation.tasks.ConversationManager") as manager:
             manager.return_value.respond_to_user_message.return_value = MagicMock(id=1)
             respond_to_user_message_task.apply(
                 kwargs={

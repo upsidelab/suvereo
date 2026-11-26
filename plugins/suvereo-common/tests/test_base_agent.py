@@ -189,25 +189,3 @@ class TestClassVariableValidation:
 
         assert PartialAgent.AGENT_ARGS is None
 
-
-class TestMemoryCompactor:
-    @staticmethod
-    def _agent(compactor) -> StubAgent:
-        injector = MagicMock()
-        injector.memory_compactor = compactor
-        return StubAgent(
-            tools=[],
-            llm=MagicMock(),
-            system_prompt="",
-            conversation_id=1,
-            injector=injector,
-            conversation_history_token_limit=1000,
-        )
-
-    def test_is_taken_from_the_injector(self):
-        compactor = MagicMock()
-
-        assert self._agent(compactor).memory_compactor is compactor
-
-    def test_is_none_when_compaction_is_disabled(self):
-        assert self._agent(None).memory_compactor is None

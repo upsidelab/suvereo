@@ -5,7 +5,6 @@ from django.conf import settings
 from suvereo_common.agentic_execution.memory import ToolScratchpad
 from suvereo_common.agents import BaseAgent
 from suvereo_common.builder import AgentBuilder
-from suvereo_common.memory import BaseMemoryCompactor
 from utils.base_registry import BaseRegistry
 
 from agent.core.agents.config_overrides import AgentConfigOverrides
@@ -67,10 +66,6 @@ class AgentRegistry(BaseAgentRegistry):
             return await builder.abuild()
         except Exception as e:
             raise AgentRegistryError(f"Failed to build agent for conversation {conversation.id}") from e
-
-    def get_memory_compactor(self, conversation: Conversation) -> Optional[BaseMemoryCompactor]:
-        """The conversation's memory compactor, or None when its agent has compaction disabled."""
-        return self.get_conversation_agent(conversation, streaming=False).memory_compactor
 
     def _build_agent_builder(
         self,
