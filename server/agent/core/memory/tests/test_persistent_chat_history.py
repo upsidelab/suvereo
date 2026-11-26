@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from model_bakery import baker
 
-from agent.core.memory.persistent_chat_history import PersistentChatHistory
+from agent.core.memory.persistent_chat_history import EMPTY_ANSWER, REFUSED_ANSWER, PersistentChatHistory
 from agent.core.repositories import DjangoConversationRepository
 from agent.models import Agent, Conversation, Message
 from catalog.models import DataSet
@@ -194,15 +194,19 @@ class TestPersistentChatHistory:
         )
         synth_id = "call_xyz"
         history.add_message(HumanMessage(content="Find me shoes"))
-        history.add_message(AIMessage(
-            content="",
-            tool_calls=[{"id": synth_id, "name": "search_products", "args": {}}],
-        ))
-        history.add_message(ToolMessage(
-            content="Found 3 shoes",
-            tool_call_id=synth_id,
-            name="search_products",
-        ))
+        history.add_message(
+            AIMessage(
+                content="",
+                tool_calls=[{"id": synth_id, "name": "search_products", "args": {}}],
+            )
+        )
+        history.add_message(
+            ToolMessage(
+                content="Found 3 shoes",
+                tool_call_id=synth_id,
+                name="search_products",
+            )
+        )
         history.add_message(AIMessage(content="I found 3 shoes for you."))
 
         # When
@@ -229,10 +233,12 @@ class TestPersistentChatHistory:
         # Two tool call turns with distinct IDs
         for i in range(2):
             history.add_message(HumanMessage(content=f"Question {i}"))
-            history.add_message(AIMessage(
-                content="",
-                tool_calls=[{"id": f"call_{i}", "name": "search_products", "args": {}}],
-            ))
+            history.add_message(
+                AIMessage(
+                    content="",
+                    tool_calls=[{"id": f"call_{i}", "name": "search_products", "args": {}}],
+                )
+            )
             history.add_message(ToolMessage(content=f"Result {i}", tool_call_id=f"call_{i}", name="search_products"))
             history.add_message(AIMessage(content=f"Answer {i}"))
 
@@ -315,3 +321,88 @@ class TestPersistentChatHistory:
         # Then
         assert len(messages) == 1
         assert messages[0].content == "Will succeed"
+
+
+REFUSALS = [
+    AIMessage(content=[], response_metadata={"stop_reason": "refusal"}),
+    AIMessage(content="Here is how to", response_metadata={"stop_reason": "refusal"}),
+    AIMessage(content="", response_metadata={"finish_reason": "content_filter"}),
+    AIMessage(content="", response_metadata={"finish_reason": "SAFETY"}),
+    AIMessage(content="", additional_kwargs={"refusal": "I can't assist with that."}),
+    AIMessage(content=[{"type": "refusal", "refusal": "I can't assist with that."}]),
+]
+REFUSAL_IDS = [
+    "anthropic refusal",
+    "anthropic refusal after partial text",
+    "content filter",
+    "gemini safety block",
+    "openai refusal",
+    "openai responses api refusal",
+]
+
+
+@pytest.mark.django_db
+class TestPersistentChatHistoryFinalAnswer:
+    @pytest.fixture
+    def history(self, conversation):
+        return PersistentChatHistory(
+            conversation_repo=DjangoConversationRepository(Conversation),
+            conversation_id=conversation.id,
+        )
+
+    def test_a_normal_answer_is_stored_as_is(self, history, conversation):
+        # When
+        history.add_messages([HumanMessage(content="Hi"), AIMessage(content="It's 14:05.")])
+
+        # Then
+        assert list(conversation.messages.order_by("id").values_list("text", "answer_failed")) == [
+            ("Hi", False),
+            ("It's 14:05.", False),
+        ]
+
+    @pytest.mark.parametrize("refusal", REFUSALS, ids=REFUSAL_IDS)
+    def test_a_refused_turn_is_stored_as_failed_with_an_answer_that_says_so(self, history, conversation, refusal):
+        # When
+        history.add_messages([HumanMessage(content="Hi"), refusal])
+
+        # Then
+        assert list(conversation.messages.order_by("id").values_list("text", "answer_failed")) == [
+            ("Hi", True),
+            (REFUSED_ANSWER, True),
+        ]
+
+    def test_a_refused_turn_with_tool_calls_is_stored_as_failed_entirely(self, history, conversation):
+        # When
+        history.add_messages(
+            [
+                HumanMessage(content="Hi"),
+                AIMessage(content="", tool_calls=[{"id": "call_1", "name": "search", "args": {}}]),
+                ToolMessage(content="[]", tool_call_id="call_1", name="search"),
+                AIMessage(content=[], response_metadata={"stop_reason": "refusal"}),
+            ]
+        )
+
+        # Then
+        assert not conversation.messages.filter(answer_failed=False).exists()
+        assert conversation.messages.count() == 4
+
+    def test_a_refused_turn_is_left_out_of_the_next_turns_history(self, history):
+        # Given
+        history.add_messages([HumanMessage(content="Hi"), AIMessage(content="Hello!")])
+        history.add_messages([HumanMessage(content="Refused request"), REFUSALS[0]])
+
+        # When
+        messages = history.messages
+
+        # Then
+        assert [m.text for m in messages] == ["Hi", "Hello!"]
+
+    def test_an_empty_answer_asks_to_rephrase(self, history, conversation):
+        # When
+        history.add_messages([HumanMessage(content="Hi"), AIMessage(content="")])
+
+        # Then
+        assert list(conversation.messages.order_by("id").values_list("text", "answer_failed")) == [
+            ("Hi", False),
+            (EMPTY_ANSWER, False),
+        ]

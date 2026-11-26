@@ -122,4 +122,5 @@ class ConversationManager:
             created_at=datetime.now(),
             type=Message.MessageType.NOTICE,
             text=self.DEFAULT_ERROR_MESSAGE,
+            answer_failed=True,
         )

@@ -8,6 +8,18 @@ from agent.models import Message
 
 SYSTEM_NOTICE_TEMPLATE = "[Notice shown to the user: {text}]"
 NOTICE_ORIGIN = {"origin": "notice"}
+REFUSED_ANSWER = "I can't help with that request."
+EMPTY_ANSWER = "I couldn't come up with an answer. Please try rephrasing your message."
+# Gemini block reasons and the OpenAI/Azure content filter, as reported in finish_reason.
+FILTERED_FINISH_REASONS = {
+    "content_filter",
+    "SAFETY",
+    "PROHIBITED_CONTENT",
+    "BLOCKLIST",
+    "SPII",
+    "RECITATION",
+    "IMAGE_SAFETY",
+}
 
 
 class PersistentChatHistory(BaseChatMessageHistory):
@@ -20,24 +32,53 @@ class PersistentChatHistory(BaseChatMessageHistory):
         self._conversation = conversation_repo.get_by_id(conversation_id)
 
     def add_messages(self, messages: list[BaseMessage]) -> None:
-        """Persist messages, interleaving each tool call with its result.
+        """Persist a turn's messages, interleaving each tool call with its result.
 
         LLMs can invoke tools in parallel, producing an AIMessage with multiple tool_calls
         followed by multiple ToolMessages. This reorders them so each tool call is immediately
         followed by its result, which allows straightforward one-to-one reconstruction.
+
+        A refused answer is stored as REFUSED_ANSWER and its whole turn as failed, so the turn is never
+        sent to the model again: providers keep refusing a conversation that still contains the refused
+        request. An empty answer is stored as EMPTY_ANSWER.
         """
+        answer_failed = any(self._is_refused_answer(m) for m in messages)
+        messages = [self._readable_answer(m) for m in messages]
         tool_messages = {m.tool_call_id: m for m in messages if isinstance(m, ToolMessage)}
         for message in messages:
             if isinstance(message, AIMessage) and message.tool_calls:
                 for index, tool_call in enumerate(message.tool_calls):
                     narration = message.text if index == 0 else ""
-                    self.add_message(AIMessage(content=narration, tool_calls=[tool_call]))
+                    self._store(AIMessage(content=narration, tool_calls=[tool_call]), answer_failed)
                     if tool_call["id"] in tool_messages:
-                        self.add_message(tool_messages[tool_call["id"]])
+                        self._store(tool_messages[tool_call["id"]], answer_failed)
             elif isinstance(message, ToolMessage):
                 pass  # already persisted paired with its tool call above
             else:
-                self.add_message(message)
+                self._store(message, answer_failed)
+
+    @classmethod
+    def _readable_answer(cls, message: BaseMessage) -> BaseMessage:
+        if not isinstance(message, AIMessage) or message.tool_calls:
+            return message
+        if cls._is_refused_answer(message):
+            return message.model_copy(update={"content": REFUSED_ANSWER})
+        if not message.text.strip():
+            return message.model_copy(update={"content": EMPTY_ANSWER})
+        return message
+
+    @staticmethod
+    def _is_refused_answer(message: BaseMessage) -> bool:
+        if not isinstance(message, AIMessage) or message.tool_calls:
+            return False
+        metadata = message.response_metadata
+        blocks = message.content if isinstance(message.content, list) else []
+        return (
+            metadata.get("stop_reason") == "refusal"
+            or metadata.get("finish_reason") in FILTERED_FINISH_REASONS
+            or bool(message.additional_kwargs.get("refusal"))
+            or any(isinstance(block, dict) and block.get("type") == "refusal" for block in blocks)
+        )
 
     def add_message(self, message: BaseMessage) -> None:
         """Persist a message to the database.
@@ -46,18 +87,22 @@ class PersistentChatHistory(BaseChatMessageHistory):
         ToolMessages (tool results) are stored as FUNCTION records.
         All other standard message types are stored using their LangChain type string directly.
         """
+        self._store(message, answer_failed=False)
+
+    def _store(self, message: BaseMessage, answer_failed: bool) -> None:
         if isinstance(message, AIMessage) and message.tool_calls:
-            self._create_intermediate_step_message(message)
+            self._create_intermediate_step_message(message, answer_failed)
         elif isinstance(message, ToolMessage):
-            self.create_tool_message(message)
+            self.create_tool_message(message, answer_failed)
         else:
             self._conversation.messages.create(
                 type=message.type,
                 text=message.text,
                 function_name=getattr(message, "name", None),
+                answer_failed=answer_failed,
             )
 
-    def _create_intermediate_step_message(self, message: AIMessage) -> None:
+    def _create_intermediate_step_message(self, message: AIMessage, answer_failed: bool = False) -> None:
         for index, tool_call in enumerate(message.tool_calls):
             self._conversation.messages.create(
                 type=Message.MessageType.INTERMEDIATE_STEP,
@@ -65,14 +110,16 @@ class PersistentChatHistory(BaseChatMessageHistory):
                 function_name=tool_call["name"],
                 tool_call_id=tool_call["id"],
                 tool_call_args=tool_call["args"],
+                answer_failed=answer_failed,
             )
 
-    def create_tool_message(self, message: ToolMessage) -> None:
+    def create_tool_message(self, message: ToolMessage, answer_failed: bool = False) -> None:
         self._conversation.messages.create(
             type=Message.MessageType.FUNCTION,
             text=message.text,
             function_name=message.name,
             tool_call_id=message.tool_call_id,
+            answer_failed=answer_failed,
         )
 
     @property

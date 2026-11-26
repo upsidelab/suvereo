@@ -156,8 +156,9 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
         setMessages(endStreamedMessage);
       },
       message_id: () => {
+        setIsLoading(false);
         setIsAgentLoading(false);
-        setMessages((prevMessages) => markAsAnswer(prevMessages, data.data.output));
+        setMessages((prevMessages) => markAsAnswer(prevMessages, data.data.output, data.data.text ?? ""));
         setStatusText(DEFAULT_STATUS_TEXT);
       },
       tool_call: () => {

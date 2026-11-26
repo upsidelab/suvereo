@@ -22,10 +22,11 @@ export const endStreamedMessage = (messages: MessageProps[]): MessageProps[] => 
 const isEndedStreamedMessage = (message: MessageProps | undefined): message is TextMessageProps =>
   !!message && message.type === "intermediate_step" && message.id === null;
 
-export const markAsAnswer = (messages: MessageProps[], id: number): MessageProps[] => {
+export const markAsAnswer = (messages: MessageProps[], id: number, text: string): MessageProps[] => {
+  const answer: TextMessageProps = { type: "ai", text, id };
   const last = messages[messages.length - 1];
   if (!isEndedStreamedMessage(last)) {
-    return messages;
+    return [...messages, answer];
   }
-  return [...messages.slice(0, -1), { ...last, type: "ai", id }];
+  return [...messages.slice(0, -1), answer];
 };

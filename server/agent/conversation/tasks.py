@@ -80,6 +80,7 @@ def respond_to_user_message_task(
                     "type": "chat_message",
                     "event": "message_created",
                     "answer_id": answer.id,
+                    "answer_text": answer.text,
                 },
             )
         return {"task_type": TaskType.MESSAGE_PUSH, "conversation_id": conversation_id, "message_id": answer.id}
