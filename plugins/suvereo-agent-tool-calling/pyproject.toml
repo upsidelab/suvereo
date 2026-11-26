@@ -1,6 +1,6 @@
 [project]
 name = "suvereo-agent-tool-calling"
-version = "1.0.0"
+version = "1.0.1"
 description = "Base implementation of a Tool Calling agent for Suvereo"
 authors = [
     {name = "Damian Sowiński",email = "damian.sowinski@upsidelab.io"}

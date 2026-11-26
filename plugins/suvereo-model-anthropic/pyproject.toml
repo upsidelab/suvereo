@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "suvereo-model-anthropic"
-version = "1.0.0"
+version = "1.0.1"
 description = "A plugin for Suvereo that provides an Anthropic connector."
 authors = ["Mateusz Porębski <mateusz.porebski@upsidelab.io>"]
 readme = "README.md"
