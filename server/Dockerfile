@@ -10,7 +10,6 @@ ENV POETRY_VIRTUALENVS_CREATE=false
 WORKDIR /app
 
 COPY pyproject.toml .
-COPY poetry.lock .
 
 RUN apt-get update && apt-get install -y libpq-dev
 
