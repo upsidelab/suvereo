@@ -361,23 +361,15 @@ export function DataSetForm({ initialData, onSubmit, submitButtonText, isOnboard
                 render={({field}) => (
                   <FormItem>
                     <FormLabel>Embedding Model</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange} defaultValue={field.value}>
-                      <SelectTrigger disabled={readOnly || !embeddingModelsConfig || disabledFields.includes('embeddingModel')}>
-                        <FormControl>
-                          <SelectValue placeholder="Select a model for embeddings"/>
-                        </FormControl>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {
-                          embeddingModelOptions &&
-                          <>
-                            {embeddingModelOptions.map((modelName) => (
-                              <SelectItem key={modelName} value={modelName}>{modelName}</SelectItem>
-                            ))}
-                          </>
-                        }
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      value={field.value}
+                      onChange={field.onChange}
+                      options={embeddingModelOptions}
+                      placeholder="Select a model for embeddings"
+                      searchPlaceholder="Search models..."
+                      emptyText="No models found."
+                      disabled={readOnly || !embeddingModelsConfig || disabledFields.includes('embeddingModel')}
+                    />
                     <FormDescription>The model provided by the plugin</FormDescription>
                     <FormMessage />
                   </FormItem>
