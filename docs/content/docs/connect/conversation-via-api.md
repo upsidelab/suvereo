@@ -128,7 +128,7 @@ Authorization: Token <API_TOKEN>
 Each message in `history` has:
 - `id`: the message identifier
 - `text`: the message content
-- `type`: `human` for the messages you sent, `ai` for the agent's answers, and `file` for an attached file (with `file_type` and `file_name` set)
+- `type`: `human` for the messages you sent, `ai` for the agent's answers, `notice` for a message the platform recorded, and `file` for an attached file (with `file_type` and `file_name` set)
 
 `GET /api/conversations` lists conversations, and accepts `data_set_id` and `agent_id` as query parameters.
 

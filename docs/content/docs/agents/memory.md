@@ -8,7 +8,7 @@ On every turn, the agent sends the language model these messages, in this order:
 
 1. **The system prompt** of the agent, see [Prompts](/docs/agents/prompts). It is passed separately from the chat history.
 2. (optional) **A summary of the earlier conversation**, sent as a second system message. It is included only when the [memory compactor](#memory-compactor) is enabled and has produced a summary.
-3. **The most recent messages** of the chat history, trimmed to the conversation history token limit, see [Context Window Builder](#context-window-builder).
+3. **The most recent messages** of the chat history, trimmed to the conversation history token limit, see [Context Window Builder](#context-window-builder). If the memory compactor is enabled for the agent, the messages that are already summarized are by default not included, to prevent the summary and the history from overlapping.
 4. **The new message** from the person.
 
 ## Chat History
@@ -17,7 +17,8 @@ On every turn, the agent sends the language model these messages, in this order:
 
 - It stores all message types: human, AI, tool calls, tool results and intermediate steps.
 - It interleaves parallel tool calls with their results, so the conversation is reconstructed correctly.
-- `messages_after(message_id)` returns the messages added after a given one, which the compactor uses to summarize incrementally.
+- `messages` returns only the messages the conversation summary does not cover yet. Without a summary, which is always the case when the compactor is off, it returns the whole conversation.
+- `messages_after(message_id)` returns the messages added after a given one, and `messages_after(None)` the whole conversation.
 
 ## Context Window Builder
 
@@ -25,6 +26,7 @@ On every turn, the agent sends the language model these messages, in this order:
 
 - It keeps the most recent messages that fit the token limit, starting on a human message.
 - It counts tokens approximately.
+- It reads `chat_history.messages`, which leaves out the messages the summary covers, so the summary and the messages never overlap.
 - When the compactor has a summary, it adds it at the start as a `SystemMessage`.
 
 The limit is the agent's `conversation_history_token_limit`. By default it is 10,000 tokens, the value of the `DEFAULT_CONVERSATION_HISTORY_TOKEN_LIMIT` instance setting, which can be set through an environment variable of the same name. An agent can use a different limit by setting the `CONVERSATION_HISTORY_TOKEN_LIMIT` class variable, see [Agent Configuration](/docs/agents/agent-config).
@@ -38,13 +40,21 @@ context_messages = ContextWindowBuilder(
 
 ## Memory Compactor
 
-The memory compactor keeps a summary of the conversation, written by the language model and stored with the conversation. It is meant to be used together with the trimming above: the trimming keeps recent messages, and the summary carries what was said before them.
+The memory compactor keeps a summary of the older part of the conversation, written by the language model and stored with the conversation. The default implementation is `LLMMemoryCompactor`, which every agent that enables the compactor uses unless it sets its own, see [Enabling the compactor](#enabling-the-compactor).
 
 ### How it works
 
-After each turn, the agent calls `compact_if_needed()`. Once 10 human messages have been added since the last summary, the compactor asks the language model for a new one. The summary is stored on the `Conversation` record and added to the context of each following turn.
+The compaction mechanism is coupled with the agent's `CONVERSATION_HISTORY_TOKEN_LIMIT`. Once the limit is exceeded, the compactor summarizes the oldest messages with the language model. By default, the compactor leaves out around 30% (token-wise) of the newest messages: they are neither included in the summary nor cut off from the message history. The purpose of that is to keep the most recent history fresh in the model's memory. The most recent turn is always left as it is.
 
-Summaries are incremental. A new one is built from the previous summary and the messages added since, so the cost of a compaction does not grow with the length of the conversation.
+Additionally, the summary is bound to take up at most 10% (by default) of the history token limit, to prevent it from growing uncontrollably. If the summary does not meet the length requirement, the language model is invoked again with a request to shorten it, up to 3 times. A summary that is still too long, empty or cut off is not saved, and the compaction is retried later.
+
+The token count is approximate (about 4 characters per token). The limits mentioned above (30% and 10%) are constants of `LLMMemoryCompactor` (`RECENT_TAIL_FRACTION` and `SUMMARY_TOKEN_FRACTION`), and a custom compactor can define its own.
+
+### When it runs
+
+When the compactor is enabled, the agent calls `compact_if_needed()` after every turn, once the answer is stored. It checks whether the token limit is exceeded and, if so, compacts. The call runs as part of the turn, so a turn that compacts takes longer, and the conversation accepts no new message until it finishes.
+
+A failing compaction never fails the turn: the error is logged and the turn still returns its answer. The next turn checks again.
 
 ### Enabling the compactor
 
@@ -73,7 +83,7 @@ class MyMemoryCompactor(BaseMemoryCompactor):
         ...
 
     def compact_if_needed(self) -> None:
-        """Generate and persist a new summary when the threshold is reached."""
+        """Summarize the older part of the window when it has outgrown the token limit."""
         ...
 ```
 
@@ -97,8 +107,6 @@ class ArticlesAgent(BaseToolCallingAgent):
 ```
 
 Alternatively, the class can be set as the default compactor, by using it as `compactor_class` in the `memory` of the Suvereo server's `DefaultAgentConfig` (`server/agent/core/agents/default_config.py`). It is then used by every agent whose configuration leaves `memory` empty.
-
-The builder creates the compactor as `compactor_class(conversation_repo, conversation_id, llm, chat_history)`.
 
 ### Custom injector
 
