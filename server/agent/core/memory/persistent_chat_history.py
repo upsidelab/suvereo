@@ -76,13 +76,13 @@ class PersistentChatHistory(BaseChatMessageHistory):
 
     @property
     def messages(self) -> list[BaseMessage]:
-        messages = list(self._conversation.messages.order_by("id"))
+        messages = list(self._conversation.messages.filter(answer_failed=False).order_by("id"))
         return messages_from_dict([self._parse_message_to_dict(m) for m in messages])
 
     @property
     def last_message_database_id(self) -> Optional[int]:
         """Return the DB primary key of the most recent message in this conversation, or None."""
-        last = self._conversation.messages.order_by("id").last()
+        last = self._conversation.messages.filter(answer_failed=False).order_by("id").last()
         return last.id if last else None
 
     def messages_after(self, message_id: Optional[int]) -> list[BaseMessage]:
@@ -91,7 +91,7 @@ class PersistentChatHistory(BaseChatMessageHistory):
         If message_id is None, returns all messages. Used by the memory compactor to fetch
         only messages that have not yet been included in the conversation summary.
         """
-        queryset = self._conversation.messages.order_by("id")
+        queryset = self._conversation.messages.filter(answer_failed=False).order_by("id")
         if message_id is not None:
             queryset = queryset.filter(id__gt=message_id)
         db_messages = list(queryset)
