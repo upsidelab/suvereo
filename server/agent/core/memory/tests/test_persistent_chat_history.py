@@ -114,19 +114,15 @@ class TestPersistentChatHistory:
         )
         synth_id = "call_xyz"
         history.add_message(HumanMessage(content="Find me shoes"))
-        history.add_message(
-            AIMessage(
-                content="",
-                tool_calls=[{"id": synth_id, "name": "search_products", "args": {}}],
-            )
-        )
-        history.add_message(
-            ToolMessage(
-                content="Found 3 shoes",
-                tool_call_id=synth_id,
-                name="search_products",
-            )
-        )
+        history.add_message(AIMessage(
+            content="",
+            tool_calls=[{"id": synth_id, "name": "search_products", "args": {}}],
+        ))
+        history.add_message(ToolMessage(
+            content="Found 3 shoes",
+            tool_call_id=synth_id,
+            name="search_products",
+        ))
         history.add_message(AIMessage(content="I found 3 shoes for you."))
 
         # When
@@ -153,12 +149,10 @@ class TestPersistentChatHistory:
         # Two tool call turns with distinct IDs
         for i in range(2):
             history.add_message(HumanMessage(content=f"Question {i}"))
-            history.add_message(
-                AIMessage(
-                    content="",
-                    tool_calls=[{"id": f"call_{i}", "name": "search_products", "args": {}}],
-                )
-            )
+            history.add_message(AIMessage(
+                content="",
+                tool_calls=[{"id": f"call_{i}", "name": "search_products", "args": {}}],
+            ))
             history.add_message(ToolMessage(content=f"Result {i}", tool_call_id=f"call_{i}", name="search_products"))
             history.add_message(AIMessage(content=f"Answer {i}"))
 

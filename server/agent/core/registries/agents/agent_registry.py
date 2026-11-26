@@ -41,6 +41,7 @@ class BaseAgentRegistry(ABC, BaseRegistry[BaseAgent]):
 
 
 class AgentRegistry(BaseAgentRegistry):
+
     def get_conversation_agent(
         self,
         conversation: Conversation,

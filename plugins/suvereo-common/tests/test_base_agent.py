@@ -62,12 +62,8 @@ class PlainTool(ProxiedTool):
 
 def build(agent_class: type[BaseAgent], system_prompt: str, prompt_input=None, tools=None) -> BaseAgent:
     agent = agent_class(
-        tools=tools or [],
-        llm=MagicMock(),
-        system_prompt=system_prompt,
-        conversation_id=1,
-        injector=MagicMock(),
-        conversation_history_token_limit=10_000,
+        tools=tools or [], llm=MagicMock(), system_prompt=system_prompt, conversation_id=1, injector=MagicMock(),
+        conversation_history_token_limit=10_000
     )
     if prompt_input is not None:
         agent.PROMPT_INPUT = prompt_input
@@ -107,12 +103,14 @@ class TestSetRuntimeArguments:
 
         assert agent._tools[0].CONFIGURATION_ARGS == ProxyConfig()
 
+
     def test_tool_settings_still_stored_as_a_list_fall_back_to_defaults(self):
         agent = build(StubAgent, "Prompt.", tools=[ProxiedTool()])
 
         agent.set_runtime_arguments({"prompt_input": {}, "tools": [{"proxy": "http://proxy:8080"}]})
 
         assert agent._tools[0].CONFIGURATION_ARGS == ProxyConfig()
+
 
     def test_a_tool_missing_a_required_setting_names_the_tool(self):
         agent = build(StubAgent, "Prompt.", tools=[TokenTool()])
@@ -188,4 +186,3 @@ class TestClassVariableValidation:
             pass
 
         assert PartialAgent.AGENT_ARGS is None
-

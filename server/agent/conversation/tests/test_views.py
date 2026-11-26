@@ -516,7 +516,9 @@ class TestConversationListView:
         assert visible_conversation.id in conversation_ids
         assert hidden_conversation.id not in conversation_ids
 
-    def test_plain_converse_holder_without_view_all_sees_only_their_own_conversations(self, api_client, user, dataset):
+    def test_plain_converse_holder_without_view_all_sees_only_their_own_conversations(
+        self, api_client, user, dataset
+    ):
         other_user = baker.make(User)
         agent = baker.make(Agent, deleted_at=None, dataset=dataset)
         others_conversation = baker.make(Conversation, user=other_user, agent=agent, data_set=dataset)
@@ -565,9 +567,7 @@ class TestConversationListView:
         execution_conversation = baker.make(Conversation, user=user, agent=linked_agent, data_set=dataset)
         baker.make(AgenticExecution, agent=linked_agent, conversation=execution_conversation, input={})
 
-        response = api_client.get(
-            reverse("conversation-details", kwargs={"conversation_id": execution_conversation.id})
-        )
+        response = api_client.get(reverse("conversation-details", kwargs={"conversation_id": execution_conversation.id}))
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["id"] == execution_conversation.id
