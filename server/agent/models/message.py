@@ -24,12 +24,9 @@ class Message(models.Model):
     answer_failed = models.BooleanField(default=False)
     function_name = models.CharField(max_length=50, blank=True, null=True)
     tool_call_id = models.CharField(max_length=255, blank=True, null=True)
+    tool_call_args = models.JSONField(blank=True, null=True)
     file_name = models.CharField(max_length=256, blank=True, null=True)
     file_type = models.CharField(max_length=50, blank=True, null=True)
-
-    @classmethod
-    def internal_message_types(cls):
-        return [cls.MessageType.FUNCTION, cls.MessageType.INTERMEDIATE_STEP]
 
     @property
     def langchain_type(self):

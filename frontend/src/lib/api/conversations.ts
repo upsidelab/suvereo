@@ -99,12 +99,12 @@ export class ConversationsApiClient extends BaseApiClient {
     return await response.json() as MessageTaskStatusResponse;
   }
 
-  async fetchResponseMessage(conversationId: number, taskHandle: TaskHandle): Promise<Message | null> {
+  async fetchHistoryWhenAnswered(conversationId: number, taskHandle: TaskHandle): Promise<Message[] | null> {
     const { status: taskStatus } = await this.getTaskStatus(taskHandle);
 
     if (taskStatus === "SUCCESS" || taskStatus === "FAILURE") {
       const conversation = await this.getConversation(conversationId);
-      return conversation.history![conversation.history!.length - 1];
+      return conversation.history!;
     }
 
     return null;

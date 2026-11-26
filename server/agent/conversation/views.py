@@ -60,7 +60,9 @@ class ConversationView(APIView):
             .prefetch_related(
                 Prefetch(
                     "messages",
-                    queryset=Message.objects.exclude(type__in=Message.internal_message_types()).order_by("id"),
+                    queryset=Message.objects.exclude(type=Message.MessageType.FUNCTION)
+                    .exclude(type=Message.MessageType.INTERMEDIATE_STEP, text="")
+                    .order_by("id"),
                 )
             )
             .visible_to(request.user),

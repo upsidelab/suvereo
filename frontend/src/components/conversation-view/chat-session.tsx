@@ -14,6 +14,7 @@ import { AttachmentBubble } from "@/components/conversation-view/attachment-bubb
 import { MessageError } from "@/components/conversation-view/message-error.tsx";
 import { MessageBubbleTyping } from "@/components/conversation-view/message-bubble-typing.tsx";
 import { ChatWindow } from "@/components/conversation-view/chat-window.tsx";
+import { appendToken, endStreamedMessage, markAsAnswer } from "@/components/conversation-view/streamed-answer.ts";
 import { NotFound } from "@/pages/not-found.tsx";
 import { ApiError } from "@/lib/api-error.ts";
 
@@ -30,11 +31,13 @@ export type FileMessageProps = {
   file_type: string;
 };
 
-export type MessageProps = {
-  type: "human" | "ai" | "notice";
+export type TextMessageProps = {
+  type: "human" | "ai" | "notice" | "intermediate_step";
   text: string;
   id: number | null;
-} | FileMessageProps;
+};
+
+export type MessageProps = TextMessageProps | FileMessageProps;
 
 interface ChatSessionProps {
   pendingMessage?: Message;
@@ -145,26 +148,16 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
         setIsLoading(false);
         setIsAgentLoading(false);
 
-        setMessages((prevMessages) => {
-          const lastMessage = prevMessages[prevMessages.length - 1];
-
-          if (lastMessage && lastMessage.type === "ai" && lastMessage.id === null) {
-            return [
-              ...prevMessages.slice(0, -1),
-              { ...lastMessage, text: lastMessage.text + data.data.chunk }
-            ];
-          } else {
-            return [...prevMessages, { type: "ai", text: data.data.chunk, id: null }];
-          }
-        });
-
+        setMessages((prevMessages) => appendToken(prevMessages, data.data.chunk));
         scrollToLastMessage();
       },
+      message_end: () => {
+        setIsAgentLoading(true);
+        setMessages(endStreamedMessage);
+      },
       message_id: () => {
-        setMessages((prevMessages) => {
-          const lastMessage = prevMessages[prevMessages.length - 1];
-          return [...prevMessages.slice(0, -1), { ...lastMessage, id: data.data.output }];
-        });
+        setIsAgentLoading(false);
+        setMessages((prevMessages) => markAsAnswer(prevMessages, data.data.output));
         setStatusText(DEFAULT_STATUS_TEXT);
       },
       tool_call: () => {
@@ -251,14 +244,11 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
     }
 
     try {
-      const response = await api.conversations().fetchResponseMessage(conversationId!, taskHandle);
+      const history = await api.conversations().fetchHistoryWhenAnswered(conversationId!, taskHandle);
 
-      if (response) {
+      if (history) {
         setIsAgentLoading(false);
-        setMessages((prev) => [
-          ...prev,
-          { type: response.type === "notice" ? "notice" : "ai", text: response.text, id: response.id }
-        ]);
+        setMessages(history as MessageProps[]);
         setIsLoading(false);
         scrollToLastMessage();
       } else {
@@ -372,6 +362,10 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
                   );
                 }
 
+                if (message.type === 'intermediate_step' && message.text.trim() === '') {
+                  return null;
+                }
+
                 if (message.type === 'ai' && message.text === '') {
                   return (<MessageBubbleTyping key={index} statusText={statusText} />);
                 }
@@ -381,7 +375,7 @@ export function ChatSession({ pendingMessage }: ChatSessionProps) {
                     key={index}
                     text={message.text}
                     variant={message.type === "human" ? "primary" : "secondary"}
-                    questionId={message.id}
+                    questionId={message.type === "intermediate_step" ? null : message.id}
                     inMessageGroup={inMessageGroup}
                   />
                 );

@@ -37,9 +37,7 @@ class TestAskingWhileAnswering:
         grant(user, PERMISSIONS.CONVERSATION.CONVERSE)
         url = reverse("conversation-details", kwargs={"conversation_id": conversation.id})
         payload = {"data_set_id": conversation.data_set.id, "question_message": "Hello?", "streaming": False}
-        with patch("agent.conversation.views.LanguageModelRegistry.provider_for_dataset") as provider:
-            provider.return_value = type("obj", (), {"STREAMING_AVAILABLE": False})
-            yield lambda: api_client.post(url, payload, format="json")
+        yield lambda: api_client.post(url, payload, format="json")
 
     @pytest.fixture
     def apply_async(self):

@@ -29,8 +29,9 @@ class PersistentChatHistory(BaseChatMessageHistory):
         tool_messages = {m.tool_call_id: m for m in messages if isinstance(m, ToolMessage)}
         for message in messages:
             if isinstance(message, AIMessage) and message.tool_calls:
-                for tool_call in message.tool_calls:
-                    self.add_message(AIMessage(content="", tool_calls=[tool_call]))
+                for index, tool_call in enumerate(message.tool_calls):
+                    narration = message.text if index == 0 else ""
+                    self.add_message(AIMessage(content=narration, tool_calls=[tool_call]))
                     if tool_call["id"] in tool_messages:
                         self.add_message(tool_messages[tool_call["id"]])
             elif isinstance(message, ToolMessage):
@@ -57,13 +58,13 @@ class PersistentChatHistory(BaseChatMessageHistory):
             )
 
     def _create_intermediate_step_message(self, message: AIMessage) -> None:
-        for tool_call in message.tool_calls:
-            text = f"Invoking `{tool_call['name']}` with `{tool_call['args']}`."
+        for index, tool_call in enumerate(message.tool_calls):
             self._conversation.messages.create(
                 type=Message.MessageType.INTERMEDIATE_STEP,
-                text=text,
+                text=message.text.strip() if index == 0 else "",
                 function_name=tool_call["name"],
                 tool_call_id=tool_call["id"],
+                tool_call_args=tool_call["args"],
             )
 
     def create_tool_message(self, message: ToolMessage) -> None:
@@ -103,7 +104,13 @@ class PersistentChatHistory(BaseChatMessageHistory):
             case Message.MessageType.INTERMEDIATE_STEP:
                 data = {
                     "content": message.text,
-                    "tool_calls": [{"id": message.tool_call_id, "name": message.function_name or "", "args": {}}],
+                    "tool_calls": [
+                        {
+                            "id": message.tool_call_id,
+                            "name": message.function_name or "",
+                            "args": message.tool_call_args or {},
+                        }
+                    ],
                 }
             case Message.MessageType.FUNCTION:
                 data = {"content": message.text, "name": message.function_name, "tool_call_id": message.tool_call_id}
