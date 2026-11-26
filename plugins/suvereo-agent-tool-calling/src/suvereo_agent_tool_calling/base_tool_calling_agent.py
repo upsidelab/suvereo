@@ -13,18 +13,6 @@ from suvereo_agent_tool_calling.context_window_builder import ContextWindowBuild
 
 logger = logging.getLogger(__name__)
 
-REFUSED_ANSWER = "I can't help with that request."
-EMPTY_ANSWER = "I couldn't come up with an answer. Please try rephrasing your message."
-FILTERED_FINISH_REASONS = {
-    "content_filter",
-    "SAFETY",
-    "PROHIBITED_CONTENT",
-    "BLOCKLIST",
-    "SPII",
-    "RECITATION",
-    "IMAGE_SAFETY",
-}
-
 
 class BaseToolCallingAgent(BaseAgent):
     __abstract__ = True
@@ -75,10 +63,6 @@ class BaseToolCallingAgent(BaseAgent):
             m for m in reversed(new_messages)
             if isinstance(m, AIMessage) and not m.tool_calls
         )
-        if fallback := self._fallback_answer(final_message):
-            answer = final_message.model_copy(update={"content": fallback})
-            new_messages = [answer if m is final_message else m for m in new_messages]
-            final_message = answer
 
         self._injector.chat_history.add_messages(new_messages)
         self._compact_history()
@@ -95,25 +79,6 @@ class BaseToolCallingAgent(BaseAgent):
                 compactor.compact_if_needed()
             except Exception:
                 logger.exception("Compaction of conversation %s failed", self._conversation_id)
-
-    @classmethod
-    def _fallback_answer(cls, message: AIMessage) -> str | None:
-        if cls._was_refused(message):
-            return REFUSED_ANSWER
-        if not message.text.strip():
-            return EMPTY_ANSWER
-        return None
-
-    @staticmethod
-    def _was_refused(message: AIMessage) -> bool:
-        metadata = message.response_metadata
-        blocks = message.content if isinstance(message.content, list) else []
-        return (
-            metadata.get("stop_reason") == "refusal"
-            or metadata.get("finish_reason") in FILTERED_FINISH_REASONS
-            or bool(message.additional_kwargs.get("refusal"))
-            or any(isinstance(block, dict) and block.get("type") == "refusal" for block in blocks)
-        )
 
     def _build_context_messages(self) -> list[BaseMessage]:
         return ContextWindowBuilder(
