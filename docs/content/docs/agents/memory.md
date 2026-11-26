@@ -52,9 +52,9 @@ The token count is approximate (about 4 characters per token). The limits mentio
 
 ### When it runs
 
-When the compactor is enabled, the check whether compaction is needed, that is, whether the token limit is exceeded, fires after every turn, as a separate background worker task. It does not interfere with the conversation: the person can keep sending messages while a compaction runs, and a slow or failing compaction never delays or fails an answer. A failed compaction is retried a few times and then only logged, and the next turn checks again.
+When the compactor is enabled, the agent calls `compact_if_needed()` after every turn, once the answer is stored. It checks whether the token limit is exceeded and, if so, compacts. The call runs as part of the turn, so a turn that compacts takes longer, and the conversation accepts no new message until it finishes.
 
-Only conversation turns queue the check. Runs that call the agent directly, such as agentic executions and evaluations, do not compact the history.
+A failing compaction never fails the turn: the error is logged and the turn still returns its answer. The next turn checks again.
 
 ### Enabling the compactor
 
