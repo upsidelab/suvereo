@@ -76,28 +76,25 @@ class PersistentChatHistory(BaseChatMessageHistory):
 
     @property
     def messages(self) -> list[BaseMessage]:
-        messages = list(self._conversation.messages.filter(answer_failed=False).order_by("id"))
-        return messages_from_dict([self._parse_message_to_dict(m) for m in messages])
-
-    @property
-    def last_message_database_id(self) -> Optional[int]:
-        """Return the DB primary key of the most recent message in this conversation, or None."""
-        last = self._conversation.messages.filter(answer_failed=False).order_by("id").last()
-        return last.id if last else None
+        """The messages the conversation summary does not cover yet; all of them if there is no summary."""
+        self._conversation.refresh_from_db(fields=["last_summarized_message_id"])
+        return self.messages_after(self._conversation.last_summarized_message_id)
 
     def messages_after(self, message_id: Optional[int]) -> list[BaseMessage]:
-        """Return messages after the given message ID.
+        """Return messages after the given message ID, or all messages if it is None."""
+        return self.to_langchain_messages(self.records_after(message_id))
 
-        If message_id is None, returns all messages. Used by the memory compactor to fetch
-        only messages that have not yet been included in the conversation summary.
-        """
+    def records_after(self, message_id: Optional[int]) -> list[Message]:
+        """Return the stored messages after the given message ID, or all of them if it is None, oldest first."""
         queryset = self._conversation.messages.filter(answer_failed=False).order_by("id")
         if message_id is not None:
             queryset = queryset.filter(id__gt=message_id)
-        db_messages = list(queryset)
-        if not db_messages:
-            return []
-        return messages_from_dict([self._parse_message_to_dict(m) for m in db_messages])
+        return list(queryset)
+
+    @classmethod
+    def to_langchain_messages(cls, records: list[Message]) -> list[BaseMessage]:
+        """Convert stored messages one to one, in the same order."""
+        return messages_from_dict([cls._parse_message_to_dict(record) for record in records])
 
     @staticmethod
     def _parse_message_to_dict(message: BaseMessage) -> Dict[str, Any]:

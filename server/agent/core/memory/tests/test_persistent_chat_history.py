@@ -169,6 +169,25 @@ class TestPersistentChatHistory:
         assert ai_with_tool_calls[1].tool_calls[0]["id"] == "call_1"
         assert tool_messages[1].tool_call_id == "call_1"
 
+    def test_messages_property_returns_only_messages_after_the_summary(self, conversation):
+        # Given
+        history = PersistentChatHistory(
+            conversation_repo=DjangoConversationRepository(Conversation),
+            conversation_id=conversation.id,
+        )
+        history.add_message(HumanMessage(content="Summarized"))
+        history.add_message(AIMessage(content="Summarized too"))
+        history.add_message(HumanMessage(content="Still verbatim"))
+        summarized_up_to = conversation.messages.order_by("id")[1].id
+        Conversation.objects.filter(id=conversation.id).update(last_summarized_message_id=summarized_up_to)
+
+        # When
+        messages = history.messages
+
+        # Then
+        assert [m.content for m in messages] == ["Still verbatim"]
+        assert len(history.messages_after(None)) == 3
+
     def test_clear(self, conversation):
         # Given
         history = PersistentChatHistory(

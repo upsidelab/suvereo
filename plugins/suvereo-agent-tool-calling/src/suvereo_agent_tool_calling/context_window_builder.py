@@ -9,8 +9,8 @@ class ContextWindowBuilder:
     """Builds the list of context messages passed to the agent on each invocation.
 
     Trims history to fit within the token budget and prepends a summary SystemMessage
-    when a memory compactor has generated one, so context outside the token window is
-    preserved in compressed form.
+    when a memory compactor has generated one. The chat history returns only the messages
+    the summary does not cover, so the two never overlap.
     """
 
     def __init__(

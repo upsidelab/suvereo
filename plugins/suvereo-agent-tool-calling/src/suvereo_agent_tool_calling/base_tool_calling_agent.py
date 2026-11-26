@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 from langchain.agents import create_agent
@@ -9,6 +10,8 @@ from suvereo_common.agents import BaseAgent
 from suvereo_common.utils import run_off_event_loop
 
 from suvereo_agent_tool_calling.context_window_builder import ContextWindowBuilder
+
+logger = logging.getLogger(__name__)
 
 
 class BaseToolCallingAgent(BaseAgent):
@@ -62,11 +65,20 @@ class BaseToolCallingAgent(BaseAgent):
         )
 
         self._injector.chat_history.add_messages(new_messages)
-
-        if compactor := self._injector.memory_compactor:
-            compactor.compact_if_needed()
+        self._compact_history()
 
         return final_message.text
+
+    def _compact_history(self) -> None:
+        """Compact the history if it has grown too long.
+
+        A failure is logged and skipped: the turn's answer is already stored, and the next turn tries again.
+        """
+        if compactor := self._injector.memory_compactor:
+            try:
+                compactor.compact_if_needed()
+            except Exception:
+                logger.exception("Compaction of conversation %s failed", self._conversation_id)
 
     def _build_context_messages(self) -> list[BaseMessage]:
         return ContextWindowBuilder(

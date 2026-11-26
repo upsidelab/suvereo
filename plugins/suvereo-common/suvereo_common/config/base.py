@@ -101,7 +101,7 @@ class MemoryConfig(ArbitraryTypeBaseModel):
     """Conversation memory classes the host provides for agent building.
 
     ``chat_history_class`` is constructed as ``(conversation_repo, conversation_id)``;
-    ``compactor_class`` as ``(conversation_repo, conversation_id, llm, chat_history)``.
+    ``compactor_class`` with the keyword arguments of ``BaseMemoryCompactor.__init__``.
     """
 
     chat_history_class: Type[BaseChatMessageHistory]
