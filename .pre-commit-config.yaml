@@ -14,3 +14,11 @@ repos:
       language: system
       files: ^frontend/.*\.(js|ts|tsx)$
       pass_filenames: false
+
+    - id: code-conventions
+      name: Code conventions
+      entry: python scripts/lint/check_conventions.py
+      language: python
+      additional_dependencies: ["ruff==0.15.9"]
+      files: ^(server|plugins|scripts/lint)/.*\.(py|toml|json)$
+      pass_filenames: false

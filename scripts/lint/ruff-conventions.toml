@@ -1,0 +1,30 @@
+# Ruff rules that encode the code conventions in AGENTS.md. Run through check_conventions.py,
+# which fails only on violations beyond scripts/lint/baseline.json.
+extend = "../../pyproject.toml"
+
+[lint]
+extend-select = [
+    "ANN001", "ANN003", "ANN201", "ANN202",  # annotate function signatures
+    "D101", "D102", "D103",                  # docstrings on suvereo-common public interfaces
+    "TID252",                                # absolute imports
+    "ERA001",                                # no commented-out code
+    "B", "SIM", "RET", "PIE", "T20", "N", "C90", "UP",
+]
+ignore = [
+    "UP042", "UP046", "UP047",  # plugins support Python 3.10; these rewrite to 3.11 and 3.12 syntax
+    "N818",                     # renaming public exceptions would break plugins
+    "N805",                     # metaclass methods and pydantic validators take cls
+    "B024",                     # base classes are abstract on purpose
+    "SIM117",                   # nested with statements read fine
+]
+
+[lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[lint.per-file-ignores]
+"**/tests/**" = ["ANN", "D"]
+"**/conftest.py" = ["ANN", "D"]
+"**/migrations/**" = ["ANN", "D", "ERA001"]
+"**/__init__.py" = ["TID252"]
+# The instance configuration carries example settings as comments.
+"**/pecl/settings_override.py" = ["ERA001"]
