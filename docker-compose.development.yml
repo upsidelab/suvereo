@@ -27,6 +27,7 @@ services:
       dockerfile: server/Dockerfile.development
     volumes:
       - ./server:/app
+      - ./plugins:/plugins
     ports:
       - "10000:10000"
     env_file:
@@ -41,6 +42,10 @@ services:
       context: .
       dockerfile: server/Dockerfile.development
     user: celery
+    restart: unless-stopped
+    volumes:
+      - ./server:/app
+      - ./plugins:/plugins
     env_file:
       - ./server/.env
     environment:

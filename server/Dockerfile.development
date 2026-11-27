@@ -18,6 +18,8 @@ COPY plugins/ /plugins/
 
 RUN /root/.local/bin/poetry install
 
+RUN pip install --no-cache-dir "watchfiles>=1.0,<2"
+
 COPY server/ /app/
 
 RUN groupadd -r celery && useradd -r -g celery celery
