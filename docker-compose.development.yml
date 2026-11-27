@@ -42,6 +42,7 @@ services:
       context: .
       dockerfile: server/Dockerfile.development
     user: celery
+    restart: unless-stopped
     volumes:
       - ./server:/app
       - ./plugins:/plugins

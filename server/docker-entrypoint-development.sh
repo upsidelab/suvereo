@@ -1,7 +1,7 @@
 #!/bin/sh
 
 if [ "$RUN_WORKER" = "True" ]; then
-    exec watchfiles --filter python "celery -A pecl.celery worker --loglevel=info -E" /app /plugins
+    exec watchfiles --filter python --sigint-timeout 300 --sigkill-timeout 10 "celery -A pecl.celery worker --loglevel=info -E" /app /plugins
 elif [ "$RUN_BEAT" = "True" ]; then
     exec celery -A pecl.celery beat --loglevel=info
 else
